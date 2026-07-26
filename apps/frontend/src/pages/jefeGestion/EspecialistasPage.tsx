@@ -10,6 +10,16 @@ import { EspecialistasStatsWidget, EspecialistasTableWidget } from '@widgets/esp
 import { fetchEspecialistas } from '@features/especialistas/especialista-service';
 import type { Especialista } from '@entities/model-especialistas';
 
+// Roles de nivel institucional (docente con cargo de monitor). Tienen un registro
+// de especialista SOLO para poder monitorear en su propia IE, pero no son
+// especialistas UGEL y no deben aparecer en este padrón.
+const ROLES_INSTITUCIONALES = [
+  'coordinador_pedagogico',
+  'jefe_taller',
+  'director_institucion',
+  'docente',
+];
+
 export const EspecialistasPage = () => {
   const navigate = useNavigate();
   const [especialistas, setEspecialistas] = useState<Especialista[]>([]);
@@ -18,7 +28,10 @@ export const EspecialistasPage = () => {
   const loadEspecialistas = async () => {
     setLoading(true);
     const mapped = await fetchEspecialistas({ cargo: 'Especialista' });
-    const filtered = mapped.filter((esp) => esp.cargo === 'Especialista');
+    const filtered = mapped.filter(
+      (esp) =>
+        esp.cargo === 'Especialista' && !ROLES_INSTITUCIONALES.includes(esp.rolCode ?? ''),
+    );
     setEspecialistas(filtered);
     setLoading(false);
   };

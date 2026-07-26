@@ -494,7 +494,10 @@ export const CronogramaPage = () => {
 
   // --- Precarga desde una Solicitud de Visita ("Atender" del Jefe de Gestión) ---
   useEffect(() => {
-    const prefill = (location.state as { prefillSolicitud?: { solicitudId: string; institucionId: string; docenteId?: string | null } } | null)
+    // `solicitudId` es opcional: viene de "Atender" una solicitud (Jefe de
+    // Gestión la marca ATENDIDA al guardar) o está ausente cuando el Jefe de
+    // Gestión genera la visita directamente desde Focos de Atención.
+    const prefill = (location.state as { prefillSolicitud?: { solicitudId?: string; institucionId: string; docenteId?: string | null } } | null)
       ?.prefillSolicitud;
     if (!prefill) return;
     if (instituciones.length === 0 || docentes.length === 0) return; // esperar datos
@@ -512,7 +515,7 @@ export const CronogramaPage = () => {
       }
       setFormTipo('DOCENTE');
       if (doc) setFormDocente(`${doc.nombres} ${doc.apellidos}`.trim());
-      setPendingSolicitudId(prefill.solicitudId);
+      setPendingSolicitudId(prefill.solicitudId ?? null);
       setShowFormModal(true);
 
       // Limpiar el state para no reabrir el modal en cada render.

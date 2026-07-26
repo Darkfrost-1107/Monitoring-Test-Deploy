@@ -29,7 +29,7 @@ export class CrearAlertaInstitucionDto implements ICrearAlertaInstitucionRequest
 
   @IsArray()
   @ArrayNotEmpty({ message: 'Debe indicar al menos un destinatario' })
-  @IsIn(['director_ie', 'jefe_gestion'], { each: true })
+  @IsIn(['director_ie', 'jefe_area'], { each: true })
   destinatarios!: DestinatarioAlerta[];
 
   @IsOptional()

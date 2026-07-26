@@ -12,6 +12,7 @@ import {
 import L, { type Layer, type PathOptions } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Card } from '@shared/ui/card';
+import { useUser } from '@entities/model-user';
 import lampaDistritos from '@shared/assets/lampa-distritos.geojson.json';
 import type {
   IUgelDashboardDistrito,
@@ -87,6 +88,14 @@ const ESTADO_UI: Record<string, { key: string; color: string; label: string }> =
   sinRegistro: { key: 'sinRegistro', color: '#94a3b8', label: 'Sin registro' },
 };
 
+/** Leyenda del coroplético distrital: refleja los umbrales de cobertura. */
+const COBERTURA_LEYENDA = [
+  { color: '#22c55e', label: 'Cobertura ≥ 75%' },
+  { color: '#f59e0b', label: 'Cobertura 40–74%' },
+  { color: '#ef4444', label: 'Cobertura < 40%' },
+  { color: '#94a3b8', label: 'Sin registro' },
+];
+
 const NIVELES_EDUCATIVOS = ['Todos', 'Inicial', 'Primaria', 'Secundaria'];
 
 interface LampaMapProps {
@@ -99,7 +108,6 @@ interface LampaMapProps {
   /** IE seleccionada actualmente (para resaltar su marcador). */
   selectedInstitucionId?: string | null;
 }
-
 export const LampaMap = ({
   coberturaPorDistrito,
   instituciones,
@@ -108,6 +116,12 @@ export const LampaMap = ({
   onSelectInstitucion,
   selectedInstitucionId,
 }: LampaMapProps) => {
+  const { user } = useUser();
+  const isDirectorUgel = user?.role === 'director_ugel';
+
+  // El Director UGEL supervisa a nivel distrital (coroplético de cobertura); el
+  // resto de roles (Jefe de Gestión/Área, Especialista) trabaja el detalle por IE.
+  const viewMode: 'distrital' | 'institucional' = isDirectorUgel ? 'distrital' : 'institucional';
   const [nivelFilter, setNivelFilter] = useState<string>('Todos');
   const [estadoFilter, setEstadoFilter] = useState<string>('todos');
 
@@ -126,11 +140,36 @@ export const LampaMap = ({
     return true;
   });
 
+  // Los puntos de las IE se muestran siempre (ubicación). Al hacer clic abren el
+  // detalle de la IE en el panel lateral —informativo también para el Director
+  // UGEL—, siempre que el contenedor provea `onSelectInstitucion`.
+  const marcadoresSeleccionables = !!onSelectInstitucion;
+
   const styleFeature = (feature?: DistritoFeature): PathOptions => {
-    const isSel = selNorm === normDistrito(String(feature?.properties?.distrito ?? ''));
+    const nombreRaw = String(feature?.properties?.distrito ?? '');
+    const nombre = normDistrito(nombreRaw);
+    const data = porDistrito.get(nombre);
+    const isSel = selNorm === nombre;
+
+    if (viewMode === 'distrital') {
+      let fillColor = '#94a3b8'; // Sin registro / por defecto
+      if (data) {
+        const cob = data.porcentajeCobertura;
+        if (cob >= 75) fillColor = '#22c55e'; // Verde - Logro previsto
+        else if (cob >= 40) fillColor = '#f59e0b'; // Amarillo - En proceso
+        else fillColor = '#ef4444'; // Rojo - Crítico
+      }
+      return {
+        fillColor,
+        fillOpacity: isSel ? 0.75 : 0.45,
+        color: isSel ? '#1e1b4b' : '#334155',
+        weight: isSel ? 2.5 : 1,
+      };
+    }
+
     return {
       fillColor: isSel ? '#6366f1' : '#cbd5e1',
-      fillOpacity: isSel ? 0.25 : 0.15,
+      fillOpacity: isSel ? 0.35 : 0.15,
       color: isSel ? '#4338ca' : '#94a3b8',
       weight: isSel ? 2.5 : 1,
     };
@@ -141,7 +180,7 @@ export const LampaMap = ({
     const nombre = normDistrito(nombreRaw);
     const data = porDistrito.get(nombre);
     const cob = data
-      ? `${data.porcentajeCobertura}% (${data.monitoreadas}/${data.totalInstituciones})`
+      ? `${data.porcentajeCobertura}% (${data.monitoreadas}/${data.totalInstituciones} II.EE.)`
       : 'sin datos';
     layer.bindTooltip(`<b>${nombreRaw}</b><br/>Cobertura: ${cob}`, { sticky: true });
     layer.on('click', () => onSelectDistrito?.(selNorm === nombre ? null : nombreRaw));
@@ -154,37 +193,42 @@ export const LampaMap = ({
         <div>
           <h3 className="text-lg font-bold">Mapa Georreferencial - Lampa</h3>
           <p className="text-xs text-text-muted">
-            Mostrando {marcadores.length} de {instituciones.length} II.EE.
+            {viewMode === 'distrital'
+              ? `Vista Distrital Coroplética · ${coberturaPorDistrito.length} Distritos`
+              : `Mostrando ${marcadores.length} de ${instituciones.length} II.EE.`}
             {selected && ` · Distrito: ${selected}`}
           </p>
         </div>
 
-        {/* Filtros rápidos: Nivel Educativo (solo si la data tiene varios niveles) */}
-        {mostrarFiltroNivel && (
-          <div className="flex items-center gap-1.5 bg-muted/50 p-1 rounded-lg border border-border">
-            {NIVELES_EDUCATIVOS.map((n) => (
-              <button
-                key={n}
-                onClick={() => setNivelFilter(n)}
-                className={`text-xs px-2.5 py-1 rounded-md font-medium transition-colors ${nivelFilter === n
-                    ? 'bg-background text-foreground shadow-xs'
-                    : 'text-text-muted hover:text-foreground'
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Filtros rápidos: Nivel Educativo */}
+          {viewMode === 'institucional' && mostrarFiltroNivel && (
+            <div className="flex items-center gap-1.5 bg-muted/50 p-1 rounded-lg border border-border">
+              {NIVELES_EDUCATIVOS.map((n) => (
+                <button
+                  key={n}
+                  onClick={() => setNivelFilter(n)}
+                  className={`text-xs px-2.5 py-1 rounded-md font-medium transition-colors cursor-pointer ${
+                    nivelFilter === n
+                      ? 'bg-background text-foreground shadow-xs'
+                      : 'text-text-muted hover:text-foreground'
                   }`}
-              >
-                {n}
-              </button>
-            ))}
-          </div>
-        )}
+                >
+                  {n}
+                </button>
+              ))}
+            </div>
+          )}
 
-        {selected && (
-          <button
-            className="text-xs font-bold text-primary hover:underline cursor-pointer"
-            onClick={() => onSelectDistrito?.(null)}
-          >
-            Limpiar distrito ✕
-          </button>
-        )}
+          {selected && (
+            <button
+              className="text-xs font-bold text-primary hover:underline cursor-pointer"
+              onClick={() => onSelectDistrito?.(null)}
+            >
+              Limpiar distrito ✕
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="flex-1 w-full bg-muted/20 relative z-0 h-[420px] md:h-auto">
@@ -206,87 +250,106 @@ export const LampaMap = ({
             pathOptions={{ fillColor: '#eef1f5', fillOpacity: 1, stroke: false, interactive: false }}
           />
           <GeoJSON
-            key={selNorm ?? 'none'}
+            key={`${selNorm ?? 'none'}-${viewMode}`}
             data={lampaDistritos as never}
             style={styleFeature as never}
             onEachFeature={onEach}
           />
-          {/* Los marcadores viven en un pane con z-index alto para que sigan siendo
-              clicables por encima del polígono del distrito (que se re-agrega al
-              seleccionarlo y, si no, taparía los círculos). */}
-          <Pane name="focos-markers" style={{ zIndex: 450 }}>
-            {marcadores.map((ie) => {
-              const ui = ESTADO_UI[ie.estado] ?? ESTADO_UI.sinRegistro;
-              const isSelectedIe = selectedInstitucionId === ie.institucionId;
-              return (
-                <CircleMarker
-                  key={ie.institucionId}
-                  center={[ie.latitud, ie.longitud]}
-                  radius={isSelectedIe ? 8 : 5}
-                  pathOptions={{
-                    fillColor: ui.color,
-                    fillOpacity: 0.95,
-                    color: isSelectedIe ? '#4338ca' : 'white',
-                    weight: isSelectedIe ? 3 : 1.5,
-                  }}
-                  eventHandlers={
-                    onSelectInstitucion
-                      ? { click: () => onSelectInstitucion(ie.institucionId) }
-                      : undefined
-                  }
-                >
-                  {!onSelectInstitucion && (
-                    <Popup>
-                      <div className="text-xs space-y-1">
-                        <div className="font-bold text-foreground">{ie.nombre}</div>
-                        <div className="flex items-center gap-2 text-text-muted">
-                          <span>{ie.distrito}</span>
-                          <span>·</span>
-                          <span className="font-medium text-foreground">{ie.nivelEducativo}</span>
+          {/* Marcadores de IE: siempre visibles para ubicar los colegios. */}
+          {marcadores.length > 0 && (
+            <Pane name="focos-markers" style={{ zIndex: 450 }}>
+              {marcadores.map((ie) => {
+                const ui = ESTADO_UI[ie.estado] ?? ESTADO_UI.sinRegistro;
+                const isSelectedIe = selectedInstitucionId === ie.institucionId;
+                return (
+                  <CircleMarker
+                    key={ie.institucionId}
+                    center={[ie.latitud, ie.longitud]}
+                    radius={isSelectedIe ? 8 : 5}
+                    pathOptions={{
+                      fillColor: ui.color,
+                      fillOpacity: 0.95,
+                      color: isSelectedIe ? '#4338ca' : 'white',
+                      weight: isSelectedIe ? 3 : 1.5,
+                    }}
+                    eventHandlers={
+                      marcadoresSeleccionables && onSelectInstitucion
+                        ? { click: () => onSelectInstitucion(ie.institucionId) }
+                        : undefined
+                    }
+                  >
+                    {!marcadoresSeleccionables && (
+                      <Popup>
+                        <div className="text-xs space-y-1">
+                          <div className="font-bold text-foreground">{ie.nombre}</div>
+                          <div className="flex items-center gap-2 text-text-muted">
+                            <span>{ie.distrito}</span>
+                            <span>·</span>
+                            <span className="font-medium text-foreground">{ie.nivelEducativo}</span>
+                          </div>
+                          <div style={{ color: ui.color }} className="font-semibold pt-1">
+                            {ui.label}
+                          </div>
                         </div>
-                        <div style={{ color: ui.color }} className="font-semibold pt-1">
-                          {ui.label}
-                        </div>
-                      </div>
-                    </Popup>
-                  )}
-                </CircleMarker>
-              );
-            })}
-          </Pane>
+                      </Popup>
+                    )}
+                  </CircleMarker>
+                );
+              })}
+            </Pane>
+          )}
         </MapContainer>
 
-        {/* Leyenda interactiva por estado de monitoreo */}
+        {/* Leyenda: en distrital es estática (cobertura); en institucional es un
+            filtro interactivo por estado de monitoreo de las IE. */}
         <Card className="absolute bottom-4 left-4 z-[400] p-3 shadow-md bg-card/95 backdrop-blur-sm border-border">
-          <div className="flex justify-between items-center mb-2">
-            <h4 className="text-[10px] font-bold text-text-muted uppercase tracking-wider">
-              Filtrar por Estado
-            </h4>
-            {estadoFilter !== 'todos' && (
-              <button
-                onClick={() => setEstadoFilter('todos')}
-                className="text-[10px] text-primary hover:underline font-bold"
-              >
-                Ver todos
-              </button>
-            )}
-          </div>
-          <div className="space-y-1.5 text-xs font-medium">
-            {Object.values(ESTADO_UI).map((s) => {
-              const active = estadoFilter === s.key;
-              return (
-                <button
-                  key={s.key}
-                  onClick={() => setEstadoFilter(active ? 'todos' : s.key)}
-                  className={`flex items-center gap-2 w-full text-left px-1.5 py-0.5 rounded-md transition-colors ${active ? 'bg-muted font-bold text-foreground' : 'hover:bg-muted/50 text-text-muted'
-                    }`}
-                >
-                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: s.color }} />
-                  {s.label}
-                </button>
-              );
-            })}
-          </div>
+          {viewMode === 'distrital' ? (
+            <>
+              <h4 className="text-[10px] font-bold text-text-muted uppercase tracking-wider mb-2">
+                Cobertura por Distrito
+              </h4>
+              <div className="space-y-1.5 text-xs font-medium">
+                {COBERTURA_LEYENDA.map((s) => (
+                  <div key={s.label} className="flex items-center gap-2 px-1.5 py-0.5 text-text-muted">
+                    <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: s.color }} />
+                    {s.label}
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="flex justify-between items-center mb-2">
+                <h4 className="text-[10px] font-bold text-text-muted uppercase tracking-wider">
+                  Filtrar por Estado
+                </h4>
+                {estadoFilter !== 'todos' && (
+                  <button
+                    onClick={() => setEstadoFilter('todos')}
+                    className="text-[10px] text-primary hover:underline font-bold"
+                  >
+                    Ver todos
+                  </button>
+                )}
+              </div>
+              <div className="space-y-1.5 text-xs font-medium">
+                {Object.values(ESTADO_UI).map((s) => {
+                  const active = estadoFilter === s.key;
+                  return (
+                    <button
+                      key={s.key}
+                      onClick={() => setEstadoFilter(active ? 'todos' : s.key)}
+                      className={`flex items-center gap-2 w-full text-left px-1.5 py-0.5 rounded-md transition-colors ${active ? 'bg-muted font-bold text-foreground' : 'hover:bg-muted/50 text-text-muted'
+                        }`}
+                    >
+                      <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: s.color }} />
+                      {s.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          )}
         </Card>
       </div>
     </Card>

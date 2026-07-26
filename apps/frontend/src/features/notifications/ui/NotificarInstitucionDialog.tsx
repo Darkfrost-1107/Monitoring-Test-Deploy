@@ -18,7 +18,7 @@ import { useEnviarAlerta } from '../api/use-notifications-api';
 
 const OPCIONES: { value: DestinatarioAlerta; label: string }[] = [
   { value: 'director_ie', label: 'Director de la IE' },
-  { value: 'jefe_gestion', label: 'Jefe de Gestión' },
+  { value: 'jefe_area', label: 'Jefe de Área (del nivel)' },
 ];
 
 interface Props {

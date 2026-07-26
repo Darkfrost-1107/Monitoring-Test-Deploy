@@ -8,6 +8,14 @@ const barColor = (pct: number) => {
   return 'bg-green-500';
 };
 
+/** Color del promedio (nivel de logro) según el baremo. */
+const nivelPill = (prom: number) => {
+  if (prom === 0) return 'bg-muted text-text-muted';
+  if (prom <= 1.5) return 'bg-destructive/10 text-destructive';
+  if (prom <= 2.5) return 'bg-amber-500/10 text-amber-600';
+  return 'bg-green-500/10 text-green-600';
+};
+
 interface CoberturaDistritoCardProps {
   items: IUgelDashboardDistrito[];
   selected?: string | null;
@@ -21,7 +29,7 @@ export const CoberturaDistritoCard = ({ items, selected, onSelect }: CoberturaDi
     <Card className="p-5 border-border shadow-xs">
       <div className="flex items-center gap-2 mb-4">
         <MapPin className="w-5 h-5 text-text-muted" />
-        <h3 className="text-lg font-bold">Cobertura por distrito</h3>
+        <h3 className="text-lg font-bold">Cobertura y nivel por distrito</h3>
         <span className="ml-auto text-xs text-text-muted">menor cobertura primero</span>
       </div>
 
@@ -46,6 +54,12 @@ export const CoberturaDistritoCard = ({ items, selected, onSelect }: CoberturaDi
                   style={{ width: `${d.porcentajeCobertura}%` }}
                 />
               </div>
+              <span
+                className={`shrink-0 text-[11px] font-bold px-1.5 py-0.5 rounded-md tabular-nums ${nivelPill(d.nivelPromedio)}`}
+                title="Nivel promedio de logro del distrito"
+              >
+                {d.nivelPromedio > 0 ? d.nivelPromedio.toFixed(1) : '—'}
+              </span>
               <div className="w-24 shrink-0 text-right text-xs text-text-muted tabular-nums">
                 <span className="font-bold text-text">{d.porcentajeCobertura}%</span> ({d.monitoreadas}/
                 {d.totalInstituciones})

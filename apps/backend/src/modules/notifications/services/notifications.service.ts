@@ -44,7 +44,7 @@ export class NotificationsService {
   ): Promise<ICrearAlertaInstitucionResponse> {
     const institucion = await this.prisma.institucionEducativa.findUnique({
       where: { id: dto.institucionId },
-      select: { id: true, nombre: true, distrito: true },
+      select: { id: true, nombre: true, distrito: true, nivelEducativo: true },
     });
     if (!institucion) {
       throw new NotFoundException('Institución no encontrada.');
@@ -54,7 +54,11 @@ export class NotificationsService {
     const resultados: IResultadoNotificacion[] = [];
 
     for (const rol of new Set(dto.destinatarios)) {
-      const destinatarios = await this.resolverDestinatarios(rol, dto.institucionId);
+      const destinatarios = await this.resolverDestinatarios(
+        rol,
+        dto.institucionId,
+        institucion.nivelEducativo,
+      );
       if (destinatarios.length === 0) {
         resultados.push({
           rol,
@@ -64,7 +68,7 @@ export class NotificationsService {
           motivo:
             rol === 'director_ie'
               ? 'La IE no tiene Director registrado.'
-              : 'No hay Jefe de Gestión activo.',
+              : 'No hay Jefe de Área del nivel de la IE.',
         });
         continue;
       }
@@ -485,6 +489,7 @@ export class NotificationsService {
   private async resolverDestinatarios(
     rol: DestinatarioAlerta,
     institucionId: string,
+    nivelEducativo: string | null,
   ): Promise<Destinatario[]> {
     if (rol === 'director_ie') {
       const docente = await this.prisma.docente.findFirst({
@@ -515,17 +520,33 @@ export class NotificationsService {
       ];
     }
 
-    // jefe_gestion
-    const jefes = await this.prisma.usuario.findMany({
-      where: { rol: { codigo: 'jefe_gestion' }, isActive: true },
-      select: { id: true, persona: { select: { nombres: true, apellidos: true, correo: true } } },
+    // jefe_area: Jefe(s) de Área del nivel educativo de la IE.
+    if (!nivelEducativo) return [];
+    const jefesArea = await this.prisma.especialista.findMany({
+      where: { cargo: 'Jefe de Área', nivelEducativo, estado: 'Activo' },
+      select: {
+        persona: {
+          select: {
+            nombres: true,
+            apellidos: true,
+            correo: true,
+            usuario: { select: { id: true } },
+          },
+        },
+      },
     });
-    return jefes.map((j) => ({
-      rol,
-      usuarioId: j.id,
-      nombre: `${j.persona.nombres} ${j.persona.apellidos}`.trim(),
-      correo: j.persona.correo,
-    }));
+    return jefesArea.flatMap((ja) => {
+      const p = ja.persona;
+      if (!p.usuario?.id) return [];
+      return [
+        {
+          rol,
+          usuarioId: p.usuario.id,
+          nombre: `${p.nombres} ${p.apellidos}`.trim(),
+          correo: p.correo,
+        },
+      ];
+    });
   }
 
   private async contextoInstitucion(institucionId: string): Promise<string | null> {

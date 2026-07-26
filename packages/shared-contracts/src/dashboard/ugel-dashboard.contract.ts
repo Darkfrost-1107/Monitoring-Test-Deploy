@@ -108,6 +108,35 @@ export interface IUgelDashboardDistrito {
   totalInstituciones: number;
   monitoreadas: number;
   porcentajeCobertura: number;
+  /** Promedio de la rúbrica de las II.EE. monitoreadas del distrito (0 si ninguna). */
+  nivelPromedio: number;
+}
+
+/** Punto de la evolución mensual de monitoreos finalizados en el año. */
+export interface IUgelDashboardEvolucionMes {
+  /** Mes 1–12. */
+  mes: number;
+  /** Monitoreos (fichas) finalizados ese mes. */
+  monitoreos: number;
+}
+
+/** Fila del ranking de especialistas por actividad de monitoreo. */
+export interface IUgelDashboardEspecialistaRanking {
+  especialistaId: string;
+  nombre: string;
+  /** Monitoreos (fichas) finalizados por el especialista en el año. */
+  monitoreos: number;
+  /** Promedio de la rúbrica de sus monitoreos (0.00 a 4.00). */
+  promedio: number;
+}
+
+/** Distrito cuyo promedio empeoró respecto al año anterior (alerta de deterioro). */
+export interface IUgelDashboardDistritoDeterioro {
+  distrito: string;
+  promedioActual: number;
+  promedioPrevio: number;
+  /** promedioActual - promedioPrevio (negativo = deterioro). */
+  delta: number;
 }
 
 /** Docente/directivo monitoreado en una IE (su última ficha finalizada del año). */
@@ -168,11 +197,19 @@ export interface IUgelDashboardResponse {
   distritosCriticos: IUgelDashboardDistritoCritico[];
   /** II.EE. críticas con sus docentes/directivos en INICIO (módulo Focos de Atención). */
   requierenAtencion: IUgelDashboardCriticaIe[];
-  /** Ranking de cobertura por distrito. */
+  /** Ranking de cobertura por distrito (incluye nivel promedio del distrito). */
   coberturaPorDistrito: IUgelDashboardDistrito[];
   /** II.EE. geolocalizadas para el mapa (marcadores). */
   institucionesMapa: IUgelDashboardIeMapa[];
   /** % de cobertura del año anterior (para la tendencia del héroe); 0 si no hay datos. */
   coberturaAnioPrevio: number;
   monitoreosRecientes: IUgelDashboardMonitoreoReciente[];
+  /** Evolución mensual de monitoreos finalizados en el año (12 meses). */
+  evolucionMensual: IUgelDashboardEvolucionMes[];
+  /** Ranking de especialistas por número de monitoreos (top). */
+  rankingEspecialistas: IUgelDashboardEspecialistaRanking[];
+  /** Distritos que empeoraron su promedio respecto al año anterior. */
+  distritosDeterioro: IUgelDashboardDistritoDeterioro[];
+  /** Años con datos de monitoreo (para el selector de año). Descendente. */
+  aniosDisponibles: number[];
 }

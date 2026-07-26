@@ -174,6 +174,7 @@ export const useCronogramasData = (enabled = true) => {
           : (s.resueltoPorId || undefined),
         aprobadorComentario: s.comentarioResolucion || undefined,
         fechaAprobacion: s.fechaResolucion || undefined,
+        solicitanteRolAlCrear: s.solicitanteRolAlCrear,
       };
     });
     return solMap;

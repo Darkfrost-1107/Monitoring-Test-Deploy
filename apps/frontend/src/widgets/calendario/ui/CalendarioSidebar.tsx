@@ -136,21 +136,29 @@ const {
   const canDecide = useMemo(() => {
     if (!selectedVisit || !user) return false;
     if (isEspecialista) return false;
-    if (user.role === 'jefe_gestion') return true;
+    const isIERequest =
+      activeRequest?.solicitanteRolAlCrear === 'coordinador_pedagogico' ||
+      activeRequest?.solicitanteRolAlCrear === 'jefe_taller';
+
+    if (user.role === 'jefe_gestion') {
+      return !isIERequest;
+    }
     if (user.role === 'jefe_area') {
+      if (isIERequest) return false;
       if (user.especialistaNivel && selectedVisit.nivel !== user.especialistaNivel) return false;
       return true;
     }
     if (user.role === 'director_institucion') {
       if (selectedVisit.nivel !== 'Secundaria') return false;
       const isSameSchool = !!(
-        user.institucionNombre &&
-        selectedVisit.institucion.toLowerCase() === user.institucionNombre.toLowerCase()
+        (user.institucion && selectedVisit.institucionId === user.institucion) ||
+        (user.institucionNombre &&
+          selectedVisit.institucion.toLowerCase() === user.institucionNombre.toLowerCase())
       );
-      return isSameSchool;
+      return !!(isSameSchool && isIERequest);
     }
     return false;
-  }, [selectedVisit, user, isEspecialista]);
+  }, [selectedVisit, user, isEspecialista, activeRequest]);
 
   const visitsOnSelectedDate = useMemo(() => {
     return filteredVisits.filter((v) => v.fechaHora.substring(0, 10) === selectedDateStr);

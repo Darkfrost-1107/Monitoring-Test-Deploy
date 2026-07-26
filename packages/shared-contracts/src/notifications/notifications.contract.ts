@@ -7,8 +7,12 @@
 
 export type NotificacionTipo = 'ALERTA_INSTITUCION';
 
-/** Destinatarios posibles de una alerta de institución. */
-export type DestinatarioAlerta = 'director_ie' | 'jefe_gestion';
+/**
+ * Destinatarios posibles de una alerta de institución.
+ * - `director_ie`: el Director de la propia IE.
+ * - `jefe_area`: el/los Jefe(s) de Área del nivel educativo de la IE.
+ */
+export type DestinatarioAlerta = 'director_ie' | 'jefe_area';
 
 export interface INotificacion {
   id: string;

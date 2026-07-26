@@ -324,15 +324,16 @@ export const DecidirReprogramacionForm = ({
               </div>
             )}
 
-            {/* Notificación para el Especialista si está pendiente */}
+            {/* Notificación cuando está pendiente y el usuario no es quien decide */}
             {request.estado === 'PENDIENTE' && !canDecide && (
               <div className="mt-6 p-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-600 text-xs font-medium leading-relaxed flex items-start gap-2.5 shadow-inner">
                 <AlertCircle className="h-5 w-5 text-slate-400 mt-0.5 shrink-0" />
                 <span>
-                  <strong>Solicitud en Revisión:</strong> Tu solicitud de cambio de fecha ha sido enviada con éxito. Actualmente se encuentra pendiente de revisión y firma digital por parte{' '}
-                  {visit.especialistaCargo && visit.especialistaCargo !== 'Especialista'
-                    ? 'del Director de la Institución Educativa.'
-                    : 'de la Jefatura de Gestión Pedagógica.'}
+                  <strong>Solicitud en Revisión:</strong>{' '}
+                  {request.solicitanteRolAlCrear === 'coordinador_pedagogico' ||
+                  request.solicitanteRolAlCrear === 'jefe_taller'
+                    ? 'Esta solicitud a nivel institucional (IE) fue creada por el Coordinador Pedagógico o Jefe de Taller y está pendiente de revisión y resolución por parte del Director de la Institución Educativa.'
+                    : 'Esta solicitud a nivel UGEL fue enviada por un Especialista de Educación y se encuentra pendiente de revisión por parte de la Jefatura de Gestión Pedagógica / Jefatura de Área.'}
                 </span>
               </div>
             )}

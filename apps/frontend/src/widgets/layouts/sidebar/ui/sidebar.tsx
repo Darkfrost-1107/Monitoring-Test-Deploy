@@ -6,6 +6,7 @@ import type { MenuItem } from '@shared/constants/roles';
 import { HelpCircle, LogOut, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@shared/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@shared/ui/collapsible';
+import { useSolicitudesPendientesCount } from '@features/visit-requests';
 
 // Importamos la configuración pura
 import { SIDEBAR_CONFIG } from '../config/config';
@@ -22,6 +23,12 @@ export const Sidebar = () => {
   // 2. Lógica de Permisos (Intacta de tu código original)
   const permissions = (user && ROLE_PERMISSIONS[user.role]) ?? [];
   const has = (id: string) => permissions.includes(id as MenuItem);
+
+  // Badge de solicitudes de visita "por atender" (solo para el Jefe de Gestión,
+  // que es quien las gestiona; el Jefe de Área solo hace seguimiento de las suyas).
+  const { data: solicitudesPendientes = 0 } = useSolicitudesPendientesCount(
+    user?.role === 'jefe_gestion',
+  );
 
   const toggleMenu = (id: string) =>
     setOpenMenus((p) => (p.includes(id) ? p.filter((m) => m !== id) : [...p, id]));
@@ -142,10 +149,22 @@ export const Sidebar = () => {
             }
           `;
 
+          const badgeCount = item.id === 'solicitudes_visita' ? solicitudesPendientes : 0;
+
           const TriggerContent = (
             <>
-              <span className="flex-shrink-0 flex">{item.icon}</span>
+              <span className="relative flex-shrink-0 flex">
+                {item.icon}
+                {collapsed && badgeCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-primary border border-surface" />
+                )}
+              </span>
               {!collapsed && <span className="flex-1 truncate">{displayLabel}</span>}
+              {!collapsed && badgeCount > 0 && (
+                <span className="ml-auto min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+                  {badgeCount > 9 ? '9+' : badgeCount}
+                </span>
+              )}
               {!collapsed && visibleChildren.length > 0 && (
                 <span
                   className={`text-text-dim flex transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}

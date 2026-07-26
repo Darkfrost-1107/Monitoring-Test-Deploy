@@ -38,3 +38,25 @@ export interface ISolicitudesVisitaResponse {
   items: ISolicitudVisita[];
   pendientes: number;
 }
+
+/**
+ * Detalle de trazabilidad de una solicitud de visita: quién la pidió y su
+ * motivo, quién la resolvió y cuándo, y —si fue atendida— el cronograma
+ * agendado con el especialista designado.
+ */
+export interface ISolicitudVisitaDetalle extends ISolicitudVisita {
+  /** Comentario del resolutor al atender/rechazar (p. ej. motivo del rechazo). */
+  comentario: string | null;
+  /** Nombre de quien resolvió (atendió o rechazó) la solicitud. */
+  atendidaPorNombre: string | null;
+  /** Cronograma agendado al atender la solicitud (si aplica). */
+  cronograma: {
+    id: string;
+    /** Fecha programada de la visita (ISO 8601). */
+    fechaProgramada: string;
+    /** Hora de inicio (HH:mm:ss). */
+    horaInicio: string | null;
+    /** Especialista designado (monitor) para la visita. */
+    especialistaNombre: string | null;
+  } | null;
+}

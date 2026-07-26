@@ -39,20 +39,27 @@ export const BandejaReprogramaciones = () => {
     user?.role === 'coordinador_pedagogico' ||
     user?.role === 'jefe_taller';
 
-  const canDecideRequest = (visit: Cronograma) => {
+  const canDecideRequest = (visit: Cronograma, req?: SolicitudReprogramacion) => {
     if (isEspecialista) return false;
-    if (user?.role === 'jefe_gestion') return true;
+    const isIERequest =
+      req?.solicitanteRolAlCrear === 'coordinador_pedagogico' ||
+      req?.solicitanteRolAlCrear === 'jefe_taller';
+
+    if (user?.role === 'jefe_gestion') {
+      return !isIERequest;
+    }
     if (user?.role === 'jefe_area') {
+      if (isIERequest) return false;
       if (user.especialistaNivel && visit.nivel !== user.especialistaNivel) return false;
       return true;
     }
     if (user?.role === 'director_institucion') {
       if (visit.nivel !== 'Secundaria') return false;
-      const isSameSchool = !!(
-        user.institucionNombre &&
-        visit.institucion.toLowerCase() === user.institucionNombre.toLowerCase()
-      );
-      return isSameSchool;
+      const isSameSchool =
+        (user.institucion && visit.institucionId === user.institucion) ||
+        (user.institucionNombre &&
+          visit.institucion.toLowerCase() === user.institucionNombre.toLowerCase());
+      return !!(isSameSchool && isIERequest);
     }
     return false;
   };
@@ -106,25 +113,26 @@ export const BandejaReprogramaciones = () => {
       if (!isEspecialista) {
         const isDirector = user?.role === 'director_institucion';
         if (isDirector) {
-          // Director only sees requests from their own school
+          // Director only sees requests from their own school AND created at IE level (CP or JT)
           const isSameSchool =
-            user.institucionNombre &&
-            req.visit.institucion.toLowerCase() === user.institucionNombre.toLowerCase();
+            (user.institucion && req.visit.institucionId === user.institucion) ||
+            (user.institucionNombre &&
+              req.visit.institucion.toLowerCase() === user.institucionNombre.toLowerCase());
           
-          // And the requester must be CP or JT (not UGEL specialist)
-          const isCPorJT = req.visit.especialistaCargo !== 'Especialista';
+          const isIERequest =
+            req.solicitanteRolAlCrear === 'coordinador_pedagogico' ||
+            req.solicitanteRolAlCrear === 'jefe_taller';
 
-          if (!isSameSchool || !isCPorJT) {
+          if (!isSameSchool || !isIERequest) {
             return false;
           }
         } else {
           // Jefe de Gestión / Admin / Jefe de Área only see requests from Specialists (UGEL)
-          const isSpecialistEvaluator =
-            req.visit.especialistaCargo === 'Especialista' ||
-            req.visit.especialistaCargo === 'Jefe de Área' ||
-            req.visit.especialistaCargo === 'Jefe de Gestión';
+          const isIERequest =
+            req.solicitanteRolAlCrear === 'coordinador_pedagogico' ||
+            req.solicitanteRolAlCrear === 'jefe_taller';
 
-          if (!isSpecialistEvaluator) {
+          if (isIERequest) {
             return false;
           }
 
@@ -304,7 +312,7 @@ export const BandejaReprogramaciones = () => {
                   Solicitado el: {req.fechaRegistro}
                 </span>
 
-                {req.estado === 'PENDIENTE' && canDecideRequest(req.visit) ? (
+                {req.estado === 'PENDIENTE' && canDecideRequest(req.visit, req) ? (
                   <Button
                     onClick={() => handleOpenReview(req.visit.id)}
                     className="bg-primary hover:bg-primary-hover text-white text-[11px] font-black h-8 px-4 rounded-lg flex items-center gap-1 shadow-sm cursor-pointer"
@@ -359,7 +367,7 @@ export const BandejaReprogramaciones = () => {
           onClose={() => setShowReprogramarModal(false)}
           visit={selectedVisit}
           request={activeRequest}
-          canDecide={canDecideRequest(selectedVisit)}
+          canDecide={canDecideRequest(selectedVisit, activeRequest)}
           onApprove={(visitId, comment) => {
             approveRescheduleRequest(visitId, user ? `${user.nombres} ${user.apellidos}` : 'Carlos Mendoza', comment);
             setShowReprogramarModal(false);

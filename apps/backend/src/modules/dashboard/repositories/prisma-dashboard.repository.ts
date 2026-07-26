@@ -10,6 +10,9 @@ import type {
   IUgelDashboardInstitucionDetalle,
   IUgelDashboardMonitoreoReciente,
   IUgelDashboardResponse,
+  IUgelDashboardEvolucionMes,
+  IUgelDashboardEspecialistaRanking,
+  IUgelDashboardDistritoDeterioro,
   NivelLogro,
 } from '@sistema-monitoreo/shared-contracts';
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
@@ -18,6 +21,9 @@ import { DashboardRepository, SessionScope } from './dashboard.repository.js';
 
 /** Cuántos monitoreos recientes devuelve el dashboard. */
 const RECIENTES_LIMIT = 5;
+
+/** Cuántos especialistas devuelve el ranking del dashboard. */
+const RANKING_ESPECIALISTAS_LIMIT = 8;
 
 /**
  * Clasifica un promedio institucional (0.00–4.00) en una categoría de semáforo,
@@ -217,7 +223,9 @@ export class PrismaDashboardRepository implements DashboardRepository {
                 nivelEducativo: true,
               },
             },
-            monitor: { select: { persona: { select: { nombres: true, apellidos: true } } } },
+            monitor: {
+              select: { id: true, persona: { select: { nombres: true, apellidos: true } } },
+            },
           },
         },
       },
@@ -396,12 +404,18 @@ export class PrismaDashboardRepository implements DashboardRepository {
       if (monitoreadaIds.has(ie.id)) acc.monitoreadas += 1;
       distritoMap.set(ie.distrito, acc);
     }
+    // Promedio (nivel de logro) por distrito, derivado de las IE monitoreadas.
+    const promedioPorDistrito = new Map<string, number>();
+    for (const [distrito, d] of distritoAcc.entries()) {
+      promedioPorDistrito.set(distrito, d.nIe > 0 ? d.sumaProm / d.nIe : 0);
+    }
     const coberturaPorDistrito: IUgelDashboardDistrito[] = [...distritoMap.entries()]
       .map(([distrito, { total, monitoreadas: m }]) => ({
         distrito,
         totalInstituciones: total,
         monitoreadas: m,
         porcentajeCobertura: total > 0 ? Math.round((m / total) * 100) : 0,
+        nivelPromedio: Number((promedioPorDistrito.get(distrito) ?? 0).toFixed(2)),
       }))
       .sort((a, b) => a.porcentajeCobertura - b.porcentajeCobertura);
 
@@ -442,6 +456,97 @@ export class PrismaDashboardRepository implements DashboardRepository {
         };
       });
 
+    // 6. Evolución mensual: fichas finalizadas por mes (12 meses del año).
+    const evolucionMensual: IUgelDashboardEvolucionMes[] = Array.from({ length: 12 }, (_, i) => ({
+      mes: i + 1,
+      monitoreos: 0,
+    }));
+    for (const ficha of fichas) {
+      const ref = ficha.finalizadaAt ?? ficha.createdAt;
+      const mesIdx = ref.getUTCMonth(); // 0–11
+      if (mesIdx >= 0 && mesIdx < 12) evolucionMensual[mesIdx].monitoreos += 1;
+    }
+
+    // 7. Ranking de especialistas por número de monitoreos (con su promedio).
+    type EspAcc = { nombre: string; n: number; suma: number };
+    const espAcc = new Map<string, EspAcc>();
+    for (const ficha of fichas) {
+      const m = ficha.cronograma.monitor;
+      const acc = espAcc.get(m.id) ?? {
+        nombre: `${m.persona.nombres} ${m.persona.apellidos}`.trim(),
+        n: 0,
+        suma: 0,
+      };
+      acc.n += 1;
+      acc.suma += Number(ficha.promedio);
+      espAcc.set(m.id, acc);
+    }
+    const rankingEspecialistas: IUgelDashboardEspecialistaRanking[] = [...espAcc.entries()]
+      .map(([especialistaId, a]) => ({
+        especialistaId,
+        nombre: a.nombre,
+        monitoreos: a.n,
+        promedio: Number((a.suma / a.n).toFixed(2)),
+      }))
+      .sort((a, b) => b.monitoreos - a.monitoreos || b.promedio - a.promedio)
+      .slice(0, RANKING_ESPECIALISTAS_LIMIT);
+
+    // 8. Deterioro por distrito: promedio del año vs. el del año anterior.
+    const fichasPrevias = await this.prisma.fichaMonitoreo.findMany({
+      where: {
+        estado: 'FINALIZADO',
+        anioAcademico: anio - 1,
+        ...this.scopeFilter.forFicha(ctx),
+      },
+      select: {
+        promedio: true,
+        cronograma: {
+          select: { institucionId: true, institucion: { select: { distrito: true } } },
+        },
+      },
+    });
+    // Promedio previo por distrito (media de promedios institucionales del año anterior).
+    const ieePrevia = new Map<string, { distrito: string; suma: number; n: number }>();
+    for (const f of fichasPrevias) {
+      const ieId = f.cronograma.institucionId;
+      const acc = ieePrevia.get(ieId) ?? {
+        distrito: f.cronograma.institucion.distrito,
+        suma: 0,
+        n: 0,
+      };
+      acc.suma += Number(f.promedio);
+      acc.n += 1;
+      ieePrevia.set(ieId, acc);
+    }
+    const distritoPrevio = new Map<string, { suma: number; n: number }>();
+    for (const acc of ieePrevia.values()) {
+      const d = distritoPrevio.get(acc.distrito) ?? { suma: 0, n: 0 };
+      d.suma += acc.suma / acc.n;
+      d.n += 1;
+      distritoPrevio.set(acc.distrito, d);
+    }
+    const distritosDeterioro: IUgelDashboardDistritoDeterioro[] = [];
+    for (const [distrito, prev] of distritoPrevio.entries()) {
+      const actual = promedioPorDistrito.get(distrito);
+      if (actual === undefined || actual === 0) continue; // sin dato actual comparable
+      const promedioPrevio = Number((prev.suma / prev.n).toFixed(2));
+      const promedioActual = Number(actual.toFixed(2));
+      const delta = Number((promedioActual - promedioPrevio).toFixed(2));
+      if (delta < 0) distritosDeterioro.push({ distrito, promedioActual, promedioPrevio, delta });
+    }
+    distritosDeterioro.sort((a, b) => a.delta - b.delta);
+
+    // 9. Años con datos de monitoreo (para el selector de año).
+    const aniosRows = await this.prisma.fichaMonitoreo.findMany({
+      where: { estado: 'FINALIZADO', ...this.scopeFilter.forFicha(ctx) },
+      distinct: ['anioAcademico'],
+      select: { anioAcademico: true },
+      orderBy: { anioAcademico: 'desc' },
+    });
+    const aniosSet = new Set<number>(aniosRows.map((r) => r.anioAcademico));
+    aniosSet.add(anio); // el año consultado siempre debe estar disponible
+    const aniosDisponibles = [...aniosSet].sort((a, b) => b - a);
+
     return {
       anio,
       kpis: {
@@ -458,6 +563,10 @@ export class PrismaDashboardRepository implements DashboardRepository {
       institucionesMapa,
       coberturaAnioPrevio,
       monitoreosRecientes,
+      evolucionMensual,
+      rankingEspecialistas,
+      distritosDeterioro,
+      aniosDisponibles,
     };
   }
 

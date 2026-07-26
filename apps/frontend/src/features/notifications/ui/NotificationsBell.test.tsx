@@ -129,7 +129,7 @@ describe('NotificationsBell', () => {
       expect(h.mutateLeida).toHaveBeenCalledWith('abc');
     });
 
-    it('expande la notificación y navega a la ruta de acción según su tipo', async () => {
+    it('muestra el botón de acción rápida y navega a la ruta de acción según su tipo', async () => {
       const user = userEvent.setup();
       setData([
         notif({
@@ -140,11 +140,29 @@ describe('NotificationsBell', () => {
       ]);
       render(<NotificationsBell />);
       await abrirPanel(user);
-      await user.click(screen.getByText('Reprogramación solicitada'));
 
       const accion = await screen.findByRole('button', { name: /Ver Reprogramaciones/ });
       await user.click(accion);
       expect(h.navigate).toHaveBeenCalledWith('/monitoreo/calendario?tab=solicitudes');
+    });
+
+    it('navega a /monitoreo/solicitudes-visita para notificaciones de SOLICITUD_RESUELTA', async () => {
+      const user = userEvent.setup();
+      setData([
+        notif({
+          id: 's1',
+          tipo: 'SOLICITUD_RESUELTA',
+          titulo: 'Solicitud rechazada: INAI CABANILLA',
+          leida: false,
+        }),
+      ]);
+      render(<NotificationsBell />);
+      await abrirPanel(user);
+
+      const accion = await screen.findByRole('button', { name: /Ver Solicitudes de visita/ });
+      await user.click(accion);
+      expect(h.mutateLeida).toHaveBeenCalledWith('s1');
+      expect(h.navigate).toHaveBeenCalledWith('/monitoreo/solicitudes-visita');
     });
   });
 });

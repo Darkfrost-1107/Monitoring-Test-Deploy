@@ -1,27 +1,36 @@
 import { useState } from 'react';
 import { useUgelDashboard } from '@features/dashboard';
+import { useUser } from '@entities/model-user';
 import { PageHeader } from '@shared/ui/pageHeader';
 import { Spinner } from '@shared/ui/Spinner';
 import { LampaMap } from '@/pages/directorUgel/components/LampaMap';
+import { RequierenAtencionCard } from '@/pages/directorUgel/components/RequierenAtencionCard';
 import { RequierenAtencionInstitucionalCard } from './components/RequierenAtencionInstitucionalCard';
 import { InstitucionDetalleCard } from './components/InstitucionDetalleCard';
 import { normDistrito } from '@/pages/directorUgel/utils/norm-distrito';
 
 /**
  * Vista de "Focos de Atención": reutiliza el mapa georreferencial del dashboard
- * UGEL y muestra las II.EE. con docentes/directivos en nivel crítico (versión
- * detallada por institución), disponible para Jefe de Gestión, Jefe de Área y
- * Especialistas. La data llega escopada por rol.
+ * UGEL y muestra las II.EE. con docentes/directivos en nivel crítico.
+ * Para Director UGEL muestra el resumen distrital con colegios y promedios distritales.
+ * Para Jefe de Gestión y otros muestra el detalle institucional/docente.
  */
 export const FocosAtencionPage = () => {
+  const { user } = useUser();
+  const isDirectorUgel = user?.role === 'director_ugel';
+
   const { data, isLoading, isError, error } = useUgelDashboard();
   const [distrito, setDistrito] = useState<string | null>(null);
   const [institucionSel, setInstitucionSel] = useState<string | null>(null);
 
   const sel = distrito ? normDistrito(distrito) : null;
-  const atencion = sel
+  const atencionDocente = sel
     ? (data?.requierenAtencion ?? []).filter((ie) => normDistrito(ie.distrito) === sel)
     : (data?.requierenAtencion ?? []);
+
+  const atencionDistrito = sel
+    ? (data?.distritosCriticos ?? []).filter((d) => normDistrito(d.distrito) === sel)
+    : (data?.distritosCriticos ?? []);
 
   return (
     <div className="flex flex-col gap-6 lg:h-full">
@@ -57,8 +66,10 @@ export const FocosAtencionPage = () => {
                 institucionId={institucionSel}
                 onBack={() => setInstitucionSel(null)}
               />
+            ) : isDirectorUgel ? (
+              <RequierenAtencionCard items={atencionDistrito} />
             ) : (
-              <RequierenAtencionInstitucionalCard items={atencion} />
+              <RequierenAtencionInstitucionalCard items={atencionDocente} />
             )}
           </div>
         </div>

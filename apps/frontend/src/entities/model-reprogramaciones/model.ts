@@ -9,4 +9,5 @@ export interface SolicitudReprogramacion {
   aprobador?: string;
   aprobadorComentario?: string;
   fechaAprobacion?: string;
+  solicitanteRolAlCrear?: string;
 }

@@ -3,6 +3,7 @@ import type {
   IResolverSolicitudVisitaRequest,
   ISolicitudesVisitaResponse,
   ISolicitudVisita,
+  ISolicitudVisitaDetalle,
 } from '@sistema-monitoreo/shared-contracts';
 import { request } from '../config/api.js';
 
@@ -16,6 +17,12 @@ export const visitsApi = {
     request<ISolicitudesVisitaResponse>(
       `/api/solicitudes-visita${estado ? `?estado=${estado}` : ''}`,
     ),
+  misSolicitudes: (estado?: string) =>
+    request<ISolicitudesVisitaResponse>(
+      `/api/solicitudes-visita/mias${estado ? `?estado=${estado}` : ''}`,
+    ),
+  detalle: (id: string) =>
+    request<ISolicitudVisitaDetalle>(`/api/solicitudes-visita/${id}`),
   atender: (id: string, body?: IResolverSolicitudVisitaRequest) =>
     request<{ success: true }>(`/api/solicitudes-visita/${id}/atender`, {
       method: 'PATCH',
