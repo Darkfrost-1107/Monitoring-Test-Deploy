@@ -13,6 +13,8 @@ export * from './institutions/update-institucion.contract.js';
 export * from './institutions/dashboard-stats.contract.js';
 export * from './especialistas/especialistas.contract.js';
 export * from './constants/domain.constants.js';
+export * from './constants/roles.constants.js';
+export * from './constants/capabilities.constants.js';
 export * from './jefes-area/jefes-area.contract.js';
 export * from './monitoring/monitoring-plan.contract.js';
 export * from './scheduling/index.js';

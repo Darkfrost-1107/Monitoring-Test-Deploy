@@ -16,6 +16,7 @@ import {
   twoCols,
 } from '@shared/ui/form-controls';
 import { useUser } from '@entities/model-user';
+import { RoleCode } from '@sistema-monitoreo/shared-contracts';
 
 export interface InstitutionRawInput {
   codigoModular: string;
@@ -50,7 +51,7 @@ const INITIAL_FORM: InstitutionRawInput = {
 
 export const InstitutionFormBase = ({ onCancel, onSubmit, isLoading, initialData }: Props) => {
   const { user } = useUser();
-  const isJefeArea = user?.role === 'jefe_area';
+  const isJefeArea = user?.role === RoleCode.JEFE_AREA;
   const jefeNivel = user?.especialistaNivel;
 
   // Filtrar modalidades permitidas

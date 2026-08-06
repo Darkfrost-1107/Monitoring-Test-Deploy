@@ -22,6 +22,23 @@ import { useReactToPrint } from 'react-to-print';
 import { FichaPrintable } from '@/widgets/reportes/ui/FichaPrintable';
 import { useRef } from 'react';
 import { safeSetLocalStorage } from '@/shared/lib/utils';
+import {
+  NIVEL_LOGRO_LABELS,
+  calcularResultadoBaremo,
+  romanoANivel,
+  type NivelLogro,
+} from '@sistema-monitoreo/shared-contracts';
+
+/**
+ * Color y fondo de cada nivel de logro. Es decisión de presentación y por eso
+ * vive aquí y no en el contrato, que sólo define la regla de cálculo.
+ */
+const COLORES_NIVEL: Record<NivelLogro, { nivelColor: string; nivelBg: string }> = {
+  INICIO: { nivelColor: '#ef4444', nivelBg: '#fef2f2' },
+  EN_PROCESO: { nivelColor: '#f59e0b', nivelBg: '#fffbeb' },
+  LOGRO_ESPERADO: { nivelColor: '#10b981', nivelBg: '#ecfdf5' },
+  LOGRO_DESTACADO: { nivelColor: '#6366f1', nivelBg: '#eef2ff' },
+};
 import { fetchDocenteById } from '@features/docentes/docente-service';
 import type { Docente, SeccionDocente } from '@entities/model-docentes';
 
@@ -462,62 +479,30 @@ export const LlenarFichaForm = ({
     });
   };
 
-  // Calificación consolidada
-  const romanToNum = (r: string) => ({ I: 1, II: 2, III: 3, IV: 4 }[r] ?? 0);
-
+  /**
+   * Calificación consolidada que se muestra al cerrar la ficha.
+   *
+   * Usa el baremo del contrato compartido, que es el mismo que aplica el
+   * backend al persistir. Antes esta pantalla tenía su propia tabla sobre el
+   * puntaje total: coincidía con el backend sólo para plantillas de cinco
+   * desempeños y discrepaba en cualquier otra, de modo que el evaluador podía
+   * ver un nivel de logro y guardarse otro distinto. Ver H-28 de
+   * PLAN_REMEDIACION.md.
+   */
   const calcularCalificacion = () => {
-    const numDesempenos = template.desempenos.length;
-    const puntajeMax = numDesempenos * 4;
-    const puntajeMin = numDesempenos * 1;
-    const puntajeTotal = template.desempenos.reduce(
-      (acc, d) => acc + romanToNum(selectedLevels[d.id] || ''),
-      0
-    );
-    const porcentaje = puntajeMax > 0 ? Math.round((puntajeTotal / puntajeMax) * 100) : 0;
+    const niveles = template.desempenos
+      .map((d) => romanoANivel(selectedLevels[d.id] || ''))
+      .filter((n) => n > 0);
 
-    let nivel: string;
-    let nivelColor: string;
-    let nivelBg: string;
+    const resultado = calcularResultadoBaremo(niveles);
 
-    if (numDesempenos === 5) {
-      if (puntajeTotal >= 5 && puntajeTotal <= 7) {
-        nivel = 'INICIO';
-        nivelColor = '#ef4444';
-        nivelBg = '#fef2f2';
-      } else if (puntajeTotal >= 8 && puntajeTotal <= 12) {
-        nivel = 'EN_PROCESO';
-        nivelColor = '#f59e0b';
-        nivelBg = '#fffbeb';
-      } else if (puntajeTotal >= 13 && puntajeTotal <= 17) {
-        nivel = 'LOGRO ESPERADO';
-        nivelColor = '#10b981';
-        nivelBg = '#ecfdf5';
-      } else {
-        nivel = 'LOGRO DESTACADO';
-        nivelColor = '#6366f1';
-        nivelBg = '#eef2ff';
-      }
-    } else {
-      if (puntajeTotal <= puntajeMin + Math.floor((puntajeMax - puntajeMin) * 0.25)) {
-        nivel = 'INICIO';
-        nivelColor = '#ef4444';
-        nivelBg = '#fef2f2';
-      } else if (puntajeTotal <= puntajeMin + Math.floor((puntajeMax - puntajeMin) * 0.50)) {
-        nivel = 'EN_PROCESO';
-        nivelColor = '#f59e0b';
-        nivelBg = '#fffbeb';
-      } else if (puntajeTotal <= puntajeMin + Math.floor((puntajeMax - puntajeMin) * 0.75)) {
-        nivel = 'LOGRO ESPERADO';
-        nivelColor = '#10b981';
-        nivelBg = '#ecfdf5';
-      } else {
-        nivel = 'LOGRO DESTACADO';
-        nivelColor = '#6366f1';
-        nivelBg = '#eef2ff';
-      }
-    }
-
-    return { puntajeTotal, puntajeMax, porcentaje, nivel, nivelColor, nivelBg };
+    return {
+      ...resultado,
+      // Se conserva el nombre `puntajeMax` que consume el marcado de abajo.
+      puntajeMax: template.desempenos.length * 4,
+      nivel: NIVEL_LOGRO_LABELS[resultado.nivelLogro],
+      ...COLORES_NIVEL[resultado.nivelLogro],
+    };
   };
 
   const calificacion = isCompleted ? calcularCalificacion() : null;
@@ -952,7 +937,7 @@ export const LlenarFichaForm = ({
                     </span>
                     <div className="flex items-center gap-2">
                       {['I', 'II', 'III', 'IV'].map((nivel) => {
-                        const numVal = romanToNum(nivel);
+                        const numVal = romanoANivel(nivel);
                         const levelConfig = template.niveles.find((n) => n.nivel === nivel);
                         const color = levelConfig?.color || '#3b82f6';
                         const isSelected = respuestasEjeItem[item.id] === numVal;
@@ -1154,7 +1139,7 @@ export const LlenarFichaForm = ({
                 <tbody>
                   {template.desempenos.map((des, idx) => {
                     const nivel = selectedLevels[des.id];
-                    const pts = romanToNum(nivel || '');
+                    const pts = romanoANivel(nivel || '');
                     const nivelObj = template.niveles.find((n) => n.nivel === nivel);
                     return (
                       <tr key={des.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}>

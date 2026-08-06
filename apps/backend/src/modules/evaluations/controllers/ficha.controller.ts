@@ -1,7 +1,5 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unused-vars */
 /// <reference types="multer" />
 import {
-  BadRequestException,
   Body,
   Controller,
   Get,
@@ -10,7 +8,6 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
-  Query,
   Req,
   UseGuards,
   UseInterceptors,
@@ -34,6 +31,7 @@ import {
 import { AuthGuard } from '../../auth/guards/auth.guard.js';
 import { PermissionsGuard } from '../../auth/guards/permissions.guard.js';
 import { RequirePermissions } from '../../auth/decorators/permissions.decorator.js';
+import type { AuthenticatedRequest } from '../../../shared/types/authenticated-request.js';
 
 @Controller('fichas')
 @UseGuards(AuthGuard, PermissionsGuard)
@@ -43,7 +41,10 @@ export class FichaController {
   @Post()
   @RequirePermissions('monitoreo:execute')
   @HttpCode(HttpStatus.CREATED)
-  async crear(@Body() dto: CreateFichaDto, @Req() req: any): Promise<IFichaMonitoreo> {
+  async crear(
+    @Body() dto: CreateFichaDto,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<IFichaMonitoreo> {
     return this.service.crear(dto, this.toSession(req));
   }
 
@@ -51,7 +52,7 @@ export class FichaController {
   @RequirePermissions('monitoreo:read')
   async porVisita(
     @Param('cronogramaId', new ParseUUIDPipe()) cronogramaId: string,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ): Promise<IFichaMonitoreo | null> {
     return this.service.findByVisitaId(cronogramaId, this.toSession(req));
   }
@@ -60,7 +61,7 @@ export class FichaController {
   @RequirePermissions('monitoreo:read')
   async historial(
     @Param('evaluadoId', new ParseUUIDPipe()) evaluadoId: string,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ): Promise<IHistorialPedagogicoResponse> {
     return this.service.getHistorial(evaluadoId, this.toSession(req));
   }
@@ -69,7 +70,7 @@ export class FichaController {
   @RequirePermissions('monitoreo:read')
   async porId(
     @Param('id', new ParseUUIDPipe()) id: string,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ): Promise<IFichaMonitoreo> {
     return this.service.findById(id, this.toSession(req));
   }
@@ -79,7 +80,7 @@ export class FichaController {
   async guardarRespuesta(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() dto: SaveRespuestaDesempenoDto,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ): Promise<IFichaMonitoreo> {
     return this.service.guardarRespuesta(id, dto, this.toSession(req));
   }
@@ -90,7 +91,7 @@ export class FichaController {
     @Param('id', new ParseUUIDPipe()) id: string,
     @Param('aspectoId', new ParseUUIDPipe()) aspectoId: string,
     @Body() body: { marcado: boolean },
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ): Promise<IFichaMonitoreo> {
     return this.service.guardarRespuestaAspecto(id, aspectoId, body.marcado, this.toSession(req));
   }
@@ -100,7 +101,7 @@ export class FichaController {
   async finalizar(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() dto: FinalizarFichaDto,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ): Promise<IFichaMonitoreo> {
     return this.service.finalizar(id, dto, this.toSession(req));
   }
@@ -110,7 +111,7 @@ export class FichaController {
   async guardarRespuestaEjeItem(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() dto: SaveRespuestaEjeItemDto,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ): Promise<IFichaMonitoreo> {
     return this.service.guardarRespuestaEjeItem(id, dto, this.toSession(req));
   }
@@ -123,7 +124,7 @@ export class FichaController {
     @Param('id', new ParseUUIDPipe()) id: string,
     @Param('ejeItemId', new ParseUUIDPipe()) ejeItemId: string,
     @UploadedFile() file: Express.Multer.File,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ): Promise<{ evidenciaUrl: string }> {
     const url = await this.service.subirEvidencia(id, ejeItemId, file, this.toSession(req));
     return { evidenciaUrl: url };
@@ -135,12 +136,12 @@ export class FichaController {
   async migrarPlantilla(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() body: { plantillaId: string },
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ): Promise<IFichaMonitoreo> {
     return this.service.migrarPlantilla(id, body.plantillaId, this.toSession(req));
   }
 
-  private toSession(req: any): SessionUser {
+  private toSession(req: AuthenticatedRequest): SessionUser {
     if (!req.user) {
       throw new ForbiddenException('Sesion no encontrada.');
     }

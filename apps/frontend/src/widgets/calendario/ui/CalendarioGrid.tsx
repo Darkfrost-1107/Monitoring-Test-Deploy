@@ -17,6 +17,14 @@ import { Badge } from '@/shared/ui/badge';
 import { SelectField } from '@/shared/ui/form-controls';
 import type { Cronograma } from '@/entities/model-cronogramas';
 import { useUser } from '@/entities/model-user';
+import { useScope } from '@shared/auth';
+import {
+  WEEK_DAYS,
+  claveDeHoy,
+  construirCuadriculaMensual,
+  construirSemana,
+} from '@shared/lib/calendario/grid';
+import { RoleCode } from '@sistema-monitoreo/shared-contracts';
 
 interface CalendarioGridProps {
   currentDate: Date;
@@ -54,7 +62,6 @@ const MONTH_NAMES = [
   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
 ];
 
-const WEEK_DAYS = ['DOM', 'LUN', 'MAR', 'MIE', 'JUE', 'VIE', 'SAB'];
 
 
 const formatVisitTime = (fechaHoraStr: string) => {
@@ -196,11 +203,11 @@ export const CalendarioGrid = ({
   handleClearFilters,
 }: CalendarioGridProps) => {
   const { user } = useUser();
-  const isEspecialista =
-    user?.role === 'especialista' ||
-    user?.role === 'coordinador_pedagogico' ||
-    user?.role === 'jefe_taller';
-  const isDirector = user?.role === 'director_institucion';
+  // `isEspecialista` incluía también al coordinador pedagógico y al jefe de
+  // taller: quienes levantan la ficha en el aula, no un cargo concreto.
+  const { isMonitorCampo } = useScope();
+  const isEspecialista = isMonitorCampo;
+  const isDirector = user?.role === RoleCode.DIRECTOR_INSTITUCION;
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -314,95 +321,13 @@ export const CalendarioGrid = ({
     setShowDetailsPanel(true);
   };
 
-  // Construcción de la Cuadrícula Mensual
-  const calendarCells = useMemo(() => {
-    const cells = [];
-    const firstDayOfMonth = new Date(year, month, 1);
-    const startDayOfWeek = firstDayOfMonth.getDay();
-    const totalDaysInMonth = new Date(year, month + 1, 0).getDate();
-    const totalDaysInPrevMonth = new Date(year, month, 0).getDate();
+  // Las tres construcciones viven en `shared/lib/calendario`: son aritmética de
+  // fechas sin dependencia de React, y allí sí pueden probarse.
+  const calendarCells = useMemo(() => construirCuadriculaMensual(year, month), [year, month]);
 
-    // 1. Días del mes anterior
-    for (let i = startDayOfWeek; i > 0; i--) {
-      const dayNum = totalDaysInPrevMonth - i + 1;
-      const prevMonthYear = month === 0 ? year - 1 : year;
-      const prevMonthIdx = month === 0 ? 11 : month - 1;
-      const dateStr = `${prevMonthYear}-${String(prevMonthIdx + 1).padStart(2, '0')}-${String(
-        dayNum
-      ).padStart(2, '0')}`;
-      
-      cells.push({
-        dayNumber: dayNum,
-        dateStr,
-        isCurrentMonth: false,
-        date: new Date(prevMonthYear, prevMonthIdx, dayNum, 12),
-      });
-    }
+  const weekDays = useMemo(() => construirSemana(currentDate), [currentDate]);
 
-    // 2. Días del mes actual
-    for (let i = 1; i <= totalDaysInMonth; i++) {
-      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
-      
-      cells.push({
-        dayNumber: i,
-        dateStr,
-        isCurrentMonth: true,
-        date: new Date(year, month, i, 12),
-      });
-    }
-
-    // 3. Días del mes siguiente
-    const remainingCells = 42 - cells.length;
-    for (let i = 1; i <= remainingCells; i++) {
-      const nextMonthYear = month === 11 ? year + 1 : year;
-      const nextMonthIdx = month === 11 ? 0 : month + 1;
-      const dateStr = `${nextMonthYear}-${String(nextMonthIdx + 1).padStart(2, '0')}-${String(
-        i
-      ).padStart(2, '0')}`;
-      
-      cells.push({
-        dayNumber: i,
-        dateStr,
-        isCurrentMonth: false,
-        date: new Date(nextMonthYear, nextMonthIdx, i, 12),
-      });
-    }
-
-    return cells;
-  }, [year, month]);
-
-  // Construcción de la Cuadrícula Semanal
-  const weekDays = useMemo(() => {
-    const baseDate = new Date(currentDate);
-    const dayOfWeek = baseDate.getDay();
-    const diff = baseDate.getDate() - dayOfWeek;
-    const startOfWeek = new Date(baseDate.setDate(diff));
-
-    const days = [];
-    for (let i = 0; i < 7; i++) {
-      const day = new Date(startOfWeek);
-      day.setDate(startOfWeek.getDate() + i);
-      const y = day.getFullYear();
-      const m = day.getMonth();
-      const dNum = day.getDate();
-      const dateStr = `${y}-${String(m + 1).padStart(2, '0')}-${String(dNum).padStart(2, '0')}`;
-      days.push({
-        name: WEEK_DAYS[i],
-        dayNumber: dNum,
-        dateStr,
-        date: day,
-      });
-    }
-    return days;
-  }, [currentDate]);
-
-  // Día de hoy del sistema
-  const systemTodayStr = useMemo(() => {
-    const today = new Date();
-    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(
-      today.getDate()
-    ).padStart(2, '0')}`;
-  }, []);
+  const systemTodayStr = useMemo(() => claveDeHoy(), []);
 
   const visitsOnSelectedDate = useMemo(() => {
     return filteredVisits.filter((v) => v.fechaHora.substring(0, 10) === selectedDateStr);

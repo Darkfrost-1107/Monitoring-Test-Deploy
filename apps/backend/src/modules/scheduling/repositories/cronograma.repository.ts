@@ -1,10 +1,8 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import type {
   IVisita,
   ISolicitudReprogramacion,
   TipoMonitoreo,
   EstadoVisita,
-  EstadoSolicitudReprogramacion,
 } from '@sistema-monitoreo/shared-contracts';
 
 export interface CreateVisitaData {
@@ -46,8 +44,31 @@ export interface ResolverSolicitudData {
   comentarioResolucion: string;
 }
 
+/**
+ * Filtros admitidos al listar visitas.
+ *
+ * Se declaran explícitamente porque el parámetro era `any`: con él, un filtro
+ * mal escrito compilaba y la consulta devolvía todo sin acotar, sin aviso.
+ */
+export interface QueryVisitasFilters {
+  estado?: string;
+  monitorId?: string;
+  institucionId?: string;
+  tipoMonitoreo?: string;
+  fechaDesde?: string | Date;
+  fechaHasta?: string | Date;
+  monitorEspecialidades?: string[];
+}
+
+/** Filtros admitidos al listar solicitudes de reprogramación. */
+export interface QuerySolicitudesFilters {
+  cronogramaId?: string;
+  solicitanteId?: string;
+  estado?: string;
+}
+
 export abstract class CronogramaRepository {
-  abstract findAll(filters?: any): Promise<IVisita[]>;
+  abstract findAll(filters?: QueryVisitasFilters): Promise<IVisita[]>;
   abstract findById(id: string): Promise<IVisita | null>;
   abstract findPlanVigentePara(institucionId: string, anio: number): Promise<string | null>;
   abstract findPlantillaVigentePara(
@@ -80,7 +101,7 @@ export abstract class CronogramaRepository {
 }
 
 export abstract class SolicitudReprogramacionRepository {
-  abstract findAll(filters?: any): Promise<ISolicitudReprogramacion[]>;
+  abstract findAll(filters?: QuerySolicitudesFilters): Promise<ISolicitudReprogramacion[]>;
   abstract findById(id: string): Promise<ISolicitudReprogramacion | null>;
   abstract findPendienteByCronograma(
     cronogramaId: string,

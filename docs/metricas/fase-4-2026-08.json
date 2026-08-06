@@ -1,0 +1,34 @@
+{
+  "generado": "2026-08-06T16:43:47Z",
+  "rama": "fix/env-secrets-metricas-baseline",
+  "commit": "4f022ae",
+  "metricas": {
+    "archivos_fuente": 573,
+    "archivos_prueba": 45,
+    "ratio_pruebas": 0.0785,
+    "declaraciones_userrole": 1,
+    "archivos_rol_literal": 0,
+    "comparaciones_rol_literal": 0,
+    "comparaciones_rol_tipada": 47,
+    "supresiones_lint_archivo": 10,
+    "ocurrencias_any": 63,
+    "componentes_sobre_300_lineas": 19,
+    "componentes_sobre_700_lineas": 6,
+    "componente_mayor_lineas": 1446,
+    "lineas_formbase": 1926,
+    "cobertura_sentencias_frontend": 3.95,
+    "cobertura_sentencias_backend": 24.32
+  },
+  "objetivos": {
+    "declaraciones_userrole": 1,
+    "archivos_rol_literal": 0,
+    "supresiones_lint_archivo": 0,
+    "ocurrencias_any": 20,
+    "componentes_sobre_300_lineas": 0,
+    "componente_mayor_lineas": 300,
+    "lineas_formbase": 700,
+    "ratio_pruebas": 0.20,
+    "cobertura_sentencias_frontend": 45,
+    "cobertura_sentencias_backend": 60
+  }
+}

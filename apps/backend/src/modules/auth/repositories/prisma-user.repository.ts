@@ -1,8 +1,11 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-return */
+import type { Prisma } from '../../../generated/prisma/client.js';
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
-import { UserRepository } from './user.repository.js';
-import { Usuario } from '../entities/user.entity.js';
+import {
+  UserRepository,
+  type AuthUserBasico,
+  type AuthUserWithRelations,
+} from './user.repository.js';
 
 @Injectable()
 export class PrismaUserRepository implements UserRepository {
@@ -10,13 +13,9 @@ export class PrismaUserRepository implements UserRepository {
 
   private buildInclude() {
     return {
-      rol: {
-        include: {
-          rolPermisos: {
-            include: { permiso: true },
-          },
-        },
-      },
+      // Sólo se necesita `rol.codigo`: las capabilities las computa el mapa de
+      // capacidades, no la tabla `rol_permisos`. Ver H-25 de PLAN_REMEDIACION.md.
+      rol: true,
       persona: {
         include: {
           docente: {
@@ -41,10 +40,10 @@ export class PrismaUserRepository implements UserRepository {
           },
         },
       },
-    } as any;
+    } satisfies Prisma.UsuarioInclude;
   }
 
-  async findUserByDni(dni: string): Promise<Usuario | null> {
+  async findUserByDni(dni: string): Promise<AuthUserWithRelations | null> {
     const result = await this.prisma.usuario.findFirst({
       where: { persona: { dni } },
       include: this.buildInclude(),
@@ -52,7 +51,7 @@ export class PrismaUserRepository implements UserRepository {
     return result;
   }
 
-  async findUserById(id: string): Promise<Usuario | null> {
+  async findUserById(id: string): Promise<AuthUserWithRelations | null> {
     const result = await this.prisma.usuario.findUnique({
       where: { id },
       include: this.buildInclude(),
@@ -60,7 +59,7 @@ export class PrismaUserRepository implements UserRepository {
     return result;
   }
 
-  async findUserByDniAndEmail(dni: string, email: string): Promise<Usuario | null> {
+  async findUserByDniAndEmail(dni: string, email: string): Promise<AuthUserBasico | null> {
     return this.prisma.usuario.findFirst({
       where: { persona: { dni, correo: email } },
       include: { rol: true, persona: true },

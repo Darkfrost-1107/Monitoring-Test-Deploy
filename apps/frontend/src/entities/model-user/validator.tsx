@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ALL_ROLE_CODES } from '@sistema-monitoreo/shared-contracts';
 import { ADMIN_ROLES, READ_ONLY_ROLES } from './constants';
 import type { User } from './model';
 
@@ -10,19 +11,10 @@ export const userSchema = z.object({
     .regex(/^\d+$/, 'El DNI solo debe contener números'),
   nombres: z.string().min(2, 'Los nombres son muy cortos'),
   apellidos: z.string().min(2, 'Los apellidos son muy cortos'),
-  role: z.enum([
-    'director_ugel',
-    'jefe_area',
-    'jefe_gestion',
-    'coordinador_pedagogico',
-    'jefe_taller',
-    'especialista',
-    'director_institucion',
-    'docente',
-    'invitado',
-    'admin',
-    'superusuario',
-  ]),
+  // Los valores admitidos se derivan del contrato compartido: enumerarlos aquí
+  // creaba una cuarta lista de roles que podía divergir en silencio. Antes
+  // incluía 'admin', que el backend nunca emite.
+  role: z.enum(ALL_ROLE_CODES as [string, ...string[]]),
   institucion: z.string().optional(),
   distrito: z.string().optional(),
   firstLogin: z.boolean(),

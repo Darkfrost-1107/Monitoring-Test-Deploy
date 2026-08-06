@@ -8,6 +8,8 @@ import { TextField, SelectField } from '@shared/ui/form-controls';
 import { Card, CardContent } from '@shared/ui/card';
 import { Badge } from '@shared/ui/badge';
 import { useUser } from '@entities/model-user';
+import { useScope } from '@shared/auth';
+import { RoleCode } from '@sistema-monitoreo/shared-contracts';
 
 // Años académicos generados dinámicamente desde el año actual en adelante,
 // para no depender de una lista fija que quede desactualizada cada año nuevo.
@@ -28,11 +30,11 @@ const labelCargoAutor = (rol?: string): string | null => (rol ? (CARGO_AUTOR[rol
 
 export const PlanMonitoreoAnualPage = () => {
   const { user } = useUser();
-  const isSchoolStaffUser =
-    user?.role === 'director_institucion' ||
-    user?.role === 'coordinador_pedagogico' ||
-    user?.role === 'jefe_taller';
-  const isJefeGestion = user?.role === 'jefe_gestion';
+  // Personal del lado de la institución educativa: su plan por defecto es el de
+  // la I.E., no el de la UGEL.
+  const { isInstitution } = useScope();
+  const isSchoolStaffUser = isInstitution;
+  const isJefeGestion = user?.role === RoleCode.JEFE_GESTION;
   const defaultEntity = isSchoolStaffUser ? 'IE' : 'UGEL';
 
   const canEditPlan = (plan: { tipoEntidad: string }) => {

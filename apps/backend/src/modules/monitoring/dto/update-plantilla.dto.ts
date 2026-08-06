@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { Type } from 'class-transformer';
 import {
   ArrayMinSize,
@@ -7,17 +6,9 @@ import {
   IsInt,
   IsOptional,
   IsString,
-  IsUUID,
-  MaxLength,
-  Min,
   ValidateNested,
 } from 'class-validator';
-import {
-  AspectoInput,
-  DesempenoInput,
-  NivelCalificacionInput,
-  EjeItemInput,
-} from './create-plantilla.dto.js';
+import { DesempenoInput, NivelCalificacionInput, EjeItemInput } from './create-plantilla.dto.js';
 
 export class UpdatePlantillaDto {
   @IsOptional()

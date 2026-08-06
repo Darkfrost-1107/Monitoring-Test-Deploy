@@ -3,6 +3,7 @@ import { NIVELES, ESTADOS, MODALIDAD_NIVEL_MAP } from '@entities/model-instituci
 import { FilterSelect } from '@shared/ui/Filter-Select';
 import { Card } from '@shared/ui/card';
 import { useUser } from '@entities/model-user';
+import { RoleCode } from '@sistema-monitoreo/shared-contracts';
 
 interface FilterInstitutionsProps {
   distritosOptions: string[];
@@ -12,7 +13,7 @@ export const FilterInstitutions = ({ distritosOptions }: FilterInstitutionsProps
   const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useUser();
 
-  const isJefeArea = user?.role === 'jefe_area';
+  const isJefeArea = user?.role === RoleCode.JEFE_AREA;
   const jefeNivel = user?.especialistaNivel;
 
   const allowedNiveles = (() => {

@@ -39,6 +39,23 @@ const PERMISOS = [
   { codigo: 'superadmin:access', nombre: 'Acceso de Superusuario', descripcion: 'Permite asignar altos cargos (Jefe Gestión, Director UGEL)' },
 ];
 
+/**
+ * ATENCIÓN — esta matriz ya no gobierna la autorización. H-25 de
+ * PLAN_REMEDIACION.md.
+ *
+ * Los permisos efectivos los calcula `computeEffectivePermissions`
+ * (apps/backend/src/shared/auth/capability-map.ts) componiendo rol, cargo de
+ * especialista y cargos docentes. La tabla `rol_permisos` que se siembra aquí
+ * ya no se lee en tiempo de ejecución, y de hecho **ya divergió**: para
+ * `director_ugel` esta matriz concede dos permisos y el mapa de capacidades
+ * concede otros cuatro, distintos.
+ *
+ * Se conserva el sembrado porque la tabla sigue existiendo en el esquema y
+ * vaciarla excede el alcance de la Fase 2, pero **no debe usarse como
+ * referencia de qué puede hacer un rol**. La fuente es `capability-map.ts`.
+ *
+ * Retirar la tabla, sus migraciones y este bloque corresponde a la Fase 7.
+ */
 const ROL_PERMISOS = {
   director_ugel: ['dashboard:read', 'reports:read'],
   jefe_gestion: [

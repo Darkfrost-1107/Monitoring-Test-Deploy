@@ -12,6 +12,7 @@ import { Spinner } from '@shared/ui/Spinner';
 import { Badge } from '@shared/ui/badge';
 import { ConfirmModal } from '@shared/ui/ConfirmModal';
 import { EntityStats } from '@shared/ui/EntityStats';
+import { RoleCode } from '@sistema-monitoreo/shared-contracts';
 import {
   Table,
   TableHeader,
@@ -38,12 +39,12 @@ export const SuperadminPanel = ({ targetRole }: SuperadminPanelProps) => {
   const pendingId = asignarRolMutation.isPending ? asignarRolMutation.variables?.usuarioId : null;
 
   useEffect(() => {
-    if (!isAuthenticated || user?.role !== 'superusuario') {
+    if (!isAuthenticated || user?.role !== RoleCode.SUPERUSUARIO) {
       navigate('/login', { replace: true });
     }
   }, [isAuthenticated, user, navigate]);
 
-  if (!isAuthenticated || user?.role !== 'superusuario') return null;
+  if (!isAuthenticated || user?.role !== RoleCode.SUPERUSUARIO) return null;
 
   const filteredCandidatos = candidatos?.filter((c) => 
     c.dni.includes(searchTerm) || 

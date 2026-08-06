@@ -77,8 +77,8 @@ export class AuthPasswordService {
     });
 
     await this.mailerService.sendPasswordResetEmail(
-      user.persona!.correo!,
-      user.persona!.nombres,
+      user.persona.correo!,
+      user.persona.nombres,
       rawToken,
     );
     await this.auditRepository.logAuthEvent({

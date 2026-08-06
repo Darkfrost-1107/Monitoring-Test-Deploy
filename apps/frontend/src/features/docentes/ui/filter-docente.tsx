@@ -6,6 +6,7 @@ import { Input } from '@shared/ui/input';
 import { Search } from 'lucide-react';
 import { useUser } from '@entities/model-user';
 import type { Docente } from '@entities/model-docentes';
+import { RoleCode } from '@sistema-monitoreo/shared-contracts';
 
 interface FilterDocentesProps {
   docentes: Docente[];
@@ -32,7 +33,7 @@ export const FilterDocentes = ({ docentes }: FilterDocentesProps) => {
     setSearchParams(newParams);
   };
 
-  const isDirectorIe = user?.role === 'director_institucion';
+  const isDirectorIe = user?.role === RoleCode.DIRECTOR_INSTITUCION;
   const currentNivel =
     isDirectorIe && user?.institucionNivel
       ? user.institucionNivel.toUpperCase()

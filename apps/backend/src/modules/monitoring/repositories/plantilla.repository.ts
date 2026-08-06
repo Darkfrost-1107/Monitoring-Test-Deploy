@@ -1,10 +1,5 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import type { IPlantilla } from '@sistema-monitoreo/shared-contracts';
-import type {
-  CreatePlantillaDto,
-  DesempenoInput,
-  NivelCalificacionInput,
-} from '../dto/create-plantilla.dto.js';
+import type { CreatePlantillaDto } from '../dto/create-plantilla.dto.js';
 import type { UpdatePlantillaDto } from '../dto/update-plantilla.dto.js';
 
 export interface CreatePlantillaData {

@@ -52,6 +52,25 @@ const config: Config = {
     '!**/main.ts', // bootstrap de NestJS, no testeable unitariamente
   ],
   coverageDirectory: '../coverage',
+
+  // Mismos formatos que el frontend, para que ambos informes sean comparables.
+  coverageReporters: ['text-summary', 'json-summary', 'lcov'],
+
+  // Umbral fijado al cierre de la Fase 3, en el nivel alcanzado y no en el
+  // objetivo. Su función aquí es impedir el RETROCESO: que nadie borre pruebas
+  // ni agregue código sin cubrir por debajo de lo ya conseguido.
+  //
+  // El objetivo del 60 % sigue en pie y se persigue en las fases siguientes;
+  // ponerlo hoy dejaría la barrera en rojo permanente, y una barrera siempre
+  // roja se ignora a los tres días.
+  coverageThreshold: {
+    global: {
+      statements: 24,
+      branches: 20,
+      functions: 20,
+      lines: 23,
+    },
+  },
 };
 
 export default config;

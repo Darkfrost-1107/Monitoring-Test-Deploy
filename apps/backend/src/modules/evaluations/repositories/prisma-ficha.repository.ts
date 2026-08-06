@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
@@ -304,7 +303,7 @@ export class PrismaFichaRepository implements FichaRepository {
   async updateCronogramaEstado(id: string, estado: string): Promise<void> {
     await this.prisma.cronograma.update({
       where: { id },
-      data: { estado } as any,
+      data: { estado },
     });
   }
 
@@ -377,7 +376,7 @@ export class PrismaFichaRepository implements FichaRepository {
 
   async existsWithScope(id: string, scopeWhere: Record<string, unknown>): Promise<boolean> {
     const result = await this.prisma.fichaMonitoreo.findFirst({
-      where: { id, ...scopeWhere } as any,
+      where: { id, ...scopeWhere },
       select: { id: true },
     });
     return result !== null;

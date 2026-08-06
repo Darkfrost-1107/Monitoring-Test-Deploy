@@ -6,12 +6,13 @@ import { Card } from '@shared/ui/card';
 import { Input } from '@shared/ui/input';
 import { Search } from 'lucide-react';
 import { useUser } from '@entities/model-user';
+import { RoleCode } from '@sistema-monitoreo/shared-contracts';
 
 export const FilterDirectores = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useUser();
 
-  const isJefeArea = user?.role === 'jefe_area';
+  const isJefeArea = user?.role === RoleCode.JEFE_AREA;
   const jefeNivel = user?.especialistaNivel;
 
   const allowedNiveles = (() => {

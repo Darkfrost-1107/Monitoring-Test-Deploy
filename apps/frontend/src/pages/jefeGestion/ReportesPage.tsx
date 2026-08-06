@@ -6,8 +6,9 @@ import { usePlantillasList } from '@entities/model-plantillas/use-plantillas-api
 import { useFichasCompletadas } from '@entities/model-reportes';
 import { PageHeader } from '@shared/ui/pageHeader';
 import { ReportesStats, ReportesGrid, type BackendReportVisit } from '@widgets/reportes';
-import { MODALIDAD_NIVEL_MAP } from '@sistema-monitoreo/shared-contracts';
+import { MODALIDAD_NIVEL_MAP, RoleCode } from '@sistema-monitoreo/shared-contracts';
 import { useUser } from '@entities/model-user';
+import { useScope } from '@shared/auth';
 
 const getFichaState = (visitId: string) => {
   const saved = localStorage.getItem(`sistema-monitoreo:ficha-state:${visitId}`);
@@ -54,12 +55,18 @@ export const ReportesPage = () => {
   const location = useLocation();
   const isMyReportsPath = location.pathname === '/reportes';
   const { user } = useUser();
-  const isEvaluatedView =
-    isMyReportsPath &&
-    (user?.role === 'docente' ||
-      user?.role === 'director_institucion' ||
-      user?.role === 'coordinador_pedagogico' ||
-      user?.role === 'jefe_taller');
+  const { isInstitution, isMonitorCampo } = useScope();
+  // Vista «mis reportes»: los monitoreos hechos A esta persona. Aplica a todo el
+  // personal del lado de la institución, que es a quien se evalúa.
+  const isEvaluatedView = isMyReportsPath && isInstitution;
+
+  // Quienes figuran como AUTOR de una ficha, y por tanto ven «completadas por
+  // usted» en lugar de «completadas por los especialistas».
+  //
+  // No coincide con `isMonitorCampo`: el director de institución también firma
+  // fichas, aunque no comparta con los monitores de campo el resto de reglas
+  // (por ejemplo, sí decide sobre reprogramaciones y ellos no).
+  const esAutorDeFichas = isMonitorCampo || user?.role === RoleCode.DIRECTOR_INSTITUCION;
 
   const { cronogramas } = useCronogramasData();
   const { data: plantillas = [] } = usePlantillasList();
@@ -156,21 +163,24 @@ export const ReportesPage = () => {
         );
       });
 
-      if (
-        user?.role === 'especialista' ||
-        user?.role === 'jefe_area' ||
-        user?.role === 'coordinador_pedagogico' ||
-        user?.role === 'jefe_taller'
-      ) {
+      // Quien puede figurar como evaluador asignado de una visita filtra por sí
+      // mismo; el director de institución filtra por su colegio (rama de abajo).
+      // El jefe de área se suma a los monitores de campo porque su cargo de
+      // especialista le concede `monitoreo:execute` y puede quedar asignado.
+      // El `user &&` no es defensivo de más: antes, la comparación `user?.role`
+      // estrechaba el tipo a no nulo dentro de la rama, y `isMonitorCampo` no lo
+      // hace. Sin él, el acceso a `user.nombres` de abajo queda sin garantía.
+      if (user && (isMonitorCampo || user.role === RoleCode.JEFE_AREA)) {
+        const nombrePila = user.nombres.toLowerCase();
         list = list.filter((v) => {
           const visitEspecialista = v.especialista.toLowerCase();
           return (
             userFullName.includes(visitEspecialista) ||
             visitEspecialista.includes(userFullName) ||
-            visitEspecialista.includes(user.nombres.toLowerCase())
+            visitEspecialista.includes(nombrePila)
           );
         });
-      } else if (user?.role === 'director_institucion') {
+      } else if (user?.role === RoleCode.DIRECTOR_INSTITUCION) {
         list = list.filter((v) => {
           const userSchool = (user.institucionNombre || '').toLowerCase();
           const visitSchool = v.institucion.toLowerCase();
@@ -179,7 +189,7 @@ export const ReportesPage = () => {
       }
     }
     return list;
-  }, [fichasCompletadasData, cronogramas, user, isEvaluatedView]);
+  }, [fichasCompletadasData, cronogramas, user, isEvaluatedView, isMonitorCampo]);
 
   const añosDisponibles = useMemo(() => {
     const yearsSet = new Set<string>();
@@ -315,14 +325,14 @@ export const ReportesPage = () => {
             title={
               isMyReportsPath
                 ? 'Mis Reportes de Monitoreo'
-                : user?.role === 'especialista' || user?.role === 'coordinador_pedagogico' || user?.role === 'jefe_taller' || user?.role === 'director_institucion'
+                : esAutorDeFichas
                   ? 'Fichas de Monitoreo Completadas'
                   : 'Fichas Completadas en Cuadrícula'
             }
             description={
               isMyReportsPath
                 ? 'Bandeja para visualizar y descargar las fichas técnicas de los monitoreos realizados a su persona.'
-                : user?.role === 'especialista' || user?.role === 'coordinador_pedagogico' || user?.role === 'jefe_taller' || user?.role === 'director_institucion'
+                : esAutorDeFichas
                   ? 'Bandeja consolidada para auditar y descargar las fichas técnicas de monitoreo completadas por usted.'
                   : 'Bandeja consolidada para auditar y descargar las fichas técnicas de monitoreo completadas por los especialistas.'
             }

@@ -10,6 +10,7 @@ import { ConfirmModal } from '@shared/ui/ConfirmModal';
 import { Button } from '@shared/ui/button';
 import { useUser } from '@entities/model-user';
 import { usePersonForm, extractErrors } from '@shared/hooks/usePersonForm';
+import { RoleCode } from '@sistema-monitoreo/shared-contracts';
 
 interface Props {
   onCancel: () => void;
@@ -83,7 +84,7 @@ export const DocenteFormBase = ({
 }: Props) => {
   const { user } = useUser();
   console.log('User context in DocenteFormBase:', user);
-  const isDirectorIe = user?.role === 'director_institucion';
+  const isDirectorIe = user?.role === RoleCode.DIRECTOR_INSTITUCION;
 
   const [form, setForm] = useState<DocenteFormData>(() => {
     if (initialData) return initialData;

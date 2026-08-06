@@ -2,6 +2,7 @@ import { Users, GraduationCap, ShieldAlert } from 'lucide-react';
 import type { Docente } from '@entities/model-docentes';
 import { EntityStats } from '@shared/ui/EntityStats';
 import { useUser } from '@entities/model-user';
+import { RoleCode } from '@sistema-monitoreo/shared-contracts';
 
 interface Props {
   docentes: Docente[];
@@ -9,7 +10,7 @@ interface Props {
 
 export const DocentesStatsWidget = ({ docentes }: Props) => {
   const { user } = useUser();
-  const isDirectorIe = user?.role === 'director_institucion';
+  const isDirectorIe = user?.role === RoleCode.DIRECTOR_INSTITUCION;
 
   const total = docentes.length || 1;
   const nombrados = docentes.filter((d) => d.condicion === 'Nombrado').length;

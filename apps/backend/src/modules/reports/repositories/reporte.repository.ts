@@ -1,10 +1,8 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import type {
   IReporteFicha,
   IReporteResumenIE,
   NivelLogro,
   TipoMonitoreo,
-  EstadoFicha,
 } from '@sistema-monitoreo/shared-contracts';
 import type { SessionUser } from '../../../shared/types/session-user.js';
 

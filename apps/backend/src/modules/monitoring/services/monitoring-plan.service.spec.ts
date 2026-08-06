@@ -1,13 +1,7 @@
 import { RoleCode } from '../../../common/enums/role.enum.js';
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { Test } from '@nestjs/testing';
 import { jest } from '@jest/globals';
-import {
-  BadRequestException,
-  ConflictException,
-  ForbiddenException,
-  NotFoundException,
-} from '@nestjs/common';
+import { ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { MonitoringPlanService } from './monitoring-plan.service.js';
 import type { SessionUser } from '../../../shared/types/session-user.js';
 import { MonitoringPlanRepository } from '../repositories/monitoring-plan.repository.js';
@@ -102,7 +96,7 @@ describe('MonitoringPlanService', () => {
     it('Jefe Gestion crea plan UGEL sin institucionId', async () => {
       const dto = { titulo: 'Plan', anioAcademico: 2026, archivoUrl: '/x.pdf' } as any;
       repo.create.mockResolvedValue({ ...planBase });
-      const p = await service.create(dto, sesionJefe);
+      await service.create(dto, sesionJefe);
       expect(repo.create).toHaveBeenCalledWith(
         expect.objectContaining({ tipoEntidad: 'UGEL', institucionId: null }),
       );
@@ -111,7 +105,7 @@ describe('MonitoringPlanService', () => {
     it('Director IE crea plan IE con institucionId de sesion', async () => {
       const dto = { titulo: 'Plan', anioAcademico: 2026, archivoUrl: '/x.pdf' } as any;
       repo.create.mockResolvedValue({ ...planBase, tipoEntidad: 'IE' });
-      const p = await service.create(dto, sesionDirector);
+      await service.create(dto, sesionDirector);
       expect(repo.create).toHaveBeenCalledWith(
         expect.objectContaining({ tipoEntidad: 'IE', institucionId: 'ie-1' }),
       );

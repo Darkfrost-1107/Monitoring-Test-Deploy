@@ -1,5 +1,11 @@
-/** User roles matching the Prisma UserRole enum. */
-export type UserRole = 'ADMIN' | 'SPECIALIST' | 'DIRECTOR' | 'TEACHER';
+// El tipo `UserRole` vivía aquí declarando 'ADMIN' | 'SPECIALIST' | 'DIRECTOR' |
+// 'TEACHER' y documentándose como "matching the Prisma UserRole enum". Ese enum
+// existió en la migración inicial (20260530062223_init) y fue retirado por la
+// normalización posterior, que modeló los roles como tabla `Role` con columna
+// `codigo` en snake_case. El tipo quedó describiendo un modelo de datos que ya no
+// existe, y ningún consumidor del frontend llegó a importarlo.
+//
+// La declaración canónica vive ahora en `./roles.constants.js`.
 
 export const ModalidadEducativa = {
   EBR: 'EBR',

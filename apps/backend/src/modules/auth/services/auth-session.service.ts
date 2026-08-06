@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { UserRepository } from '../repositories/user.repository.js';
 import { SessionRepository } from '../repositories/session.repository.js';
 import { AuditRepository } from '../repositories/audit.repository.js';
-import { AuthTokenService, AuthUserWithRelations } from './auth-token.service.js';
+import { AuthTokenService } from './auth-token.service.js';
 import { LoginDto } from '../dto/login.dto.js';
 import { RefreshTokenDto } from '../dto/refresh-token.dto.js';
 import {
@@ -89,7 +89,7 @@ export class AuthSessionService {
 
     await this.userRepository.resetFailedAttempts(user.id);
     const sessionJti = randomUUID();
-    const payload = this.tokenService.buildJwtPayload(user as unknown as AuthUserWithRelations);
+    const payload = this.tokenService.buildJwtPayload(user);
     const tokens = this.tokenService.generateTokens(payload, sessionJti);
 
     await this.sessionRepository.createSession({
@@ -113,6 +113,10 @@ export class AuthSessionService {
       nombres: payload.nombres,
       apellidos: payload.apellidos,
       role: payload.role,
+      // Las capabilities ya viajaban en el JWT pero se descartaban al armar esta
+      // respuesta, de modo que el frontend nunca las recibía y decidía por
+      // comparación literal de rol. Fase 2 de PLAN_REMEDIACION.md.
+      permissions: payload.permissions ?? [],
       institucion: payload.institucion_id || payload.colegio_id,
       institucionNombre: payload.colegio_nombre,
       institucionNivel: payload.colegio_nivel,
@@ -165,9 +169,7 @@ export class AuthSessionService {
       throw new UnauthorizedException('Usuario inactivo o no encontrado');
     }
 
-    const newJwtPayload = this.tokenService.buildJwtPayload(
-      user as unknown as AuthUserWithRelations,
-    );
+    const newJwtPayload = this.tokenService.buildJwtPayload(user);
     const newTokens = this.tokenService.generateTokens(newJwtPayload, payload.jti);
 
     await this.auditRepository.logAuthEvent({

@@ -11,6 +11,7 @@ import { fetchDocentes } from '@features/docentes/docente-service';
 import type { Docente } from '@entities/model-docentes';
 import type { Institucion } from '@entities/model-instituciones';
 import { useUser } from '@entities/model-user';
+import { RoleCode } from '@sistema-monitoreo/shared-contracts';
 
 interface DocenteListPageBaseProps {
   title: string;
@@ -48,7 +49,7 @@ export const DocenteListPageBase = ({
     try {
       let docentesMapped = await fetchDocentes();
       if (filterCargoOut) {
-        const isDirectorIe = user?.role === 'director_institucion';
+        const isDirectorIe = user?.role === RoleCode.DIRECTOR_INSTITUCION;
         if (isDirectorIe) {
           docentesMapped = docentesMapped.filter((d) => d.cargo !== filterCargoOut);
         }

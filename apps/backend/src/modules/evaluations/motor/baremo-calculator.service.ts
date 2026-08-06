@@ -1,68 +1,48 @@
 import { Injectable } from '@nestjs/common';
-import type { NivelLogro } from '@sistema-monitoreo/shared-contracts';
+import {
+  calcularNivelLogro,
+  calcularPromedio,
+  calcularResultadoBaremo,
+  nivelARomano,
+  type NivelLogro,
+} from '@sistema-monitoreo/shared-contracts';
 
+/**
+ * Baremo institucional de monitoreo (EDU-0009).
+ *
+ * Fase 3 de PLAN_REMEDIACION.md, hallazgo H-28: el cálculo pasa a
+ * `@sistema-monitoreo/shared-contracts` para que la pantalla de llenado use
+ * exactamente la misma regla. Antes tenía su propia implementación sobre el
+ * puntaje total y ambas discrepaban en toda plantilla que no tuviera cinco
+ * desempeños.
+ *
+ * Este servicio se conserva como fachada inyectable: es lo que consumen los
+ * helpers de finalización de ficha.
+ */
 @Injectable()
 export class BaremoCalculatorService {
-  /**
-   * Convierte nivel numerico (1-4) a romano.
-   */
+  /** Convierte nivel numerico (1-4) a romano. */
   nivelARomano(nivel: number): 'I' | 'II' | 'III' | 'IV' {
-    switch (nivel) {
-      case 1:
-        return 'I';
-      case 2:
-        return 'II';
-      case 3:
-        return 'III';
-      case 4:
-        return 'IV';
-      default:
-        throw new Error(`Nivel invalido: ${nivel}. Debe estar entre 1 y 4.`);
-    }
+    return nivelARomano(nivel);
   }
 
-  /**
-   * Calcula el promedio a partir de una lista de niveles (1-4).
-   */
+  /** Calcula el promedio a partir de una lista de niveles (1-4). */
   calcularPromedio(niveles: number[]): number {
-    if (niveles.length === 0) return 0;
-    const suma = niveles.reduce((acc, n) => acc + n, 0);
-    return Number((suma / niveles.length).toFixed(2));
+    return calcularPromedio(niveles);
   }
 
-  /**
-   * Calcula el nivel de logro segun el baremo institucional (EDU-0009).
-   * Rangos con limite superior inclusivo (sin gaps, para no romper la
-   * finalizacion ante promedios frecuentes como 1.5, 2.5 o 3.5):
-   *   Inicio:           1.0 - 1.5
-   *   En Proceso:       >1.5 - 2.5
-   *   Logro Esperado:   >2.5 - 3.5
-   *   Logro Destacado:  >3.5 - 4.0
-   */
+  /** Calcula el nivel de logro segun el baremo institucional. */
   calcularNivelLogro(promedio: number): NivelLogro {
-    if (promedio < 1.0 || promedio > 4.0) {
-      throw new Error(`Promedio fuera de rango: ${promedio}. Debe estar entre 1.0 y 4.0.`);
-    }
-    if (promedio <= 1.5) return 'INICIO';
-    if (promedio <= 2.5) return 'EN_PROCESO';
-    if (promedio <= 3.5) return 'LOGRO_ESPERADO';
-    return 'LOGRO_DESTACADO';
+    return calcularNivelLogro(promedio);
   }
 
-  /**
-   * Calcula el resultado completo del baremo: puntaje, promedio, nivel.
-   */
+  /** Calcula el resultado completo del baremo: puntaje, promedio, nivel. */
   calcularResultadoCompleto(niveles: number[]): {
     puntajeTotal: number;
     promedio: number;
     nivelLogro: NivelLogro;
   } {
-    if (niveles.length === 0) {
-      return { puntajeTotal: 0, promedio: 1, nivelLogro: 'INICIO' };
-    }
-    const puntajeTotal = niveles.reduce((acc, n) => acc + n, 0);
-    const promedio = this.calcularPromedio(niveles);
-    const nivelLogro = this.calcularNivelLogro(promedio);
+    const { puntajeTotal, promedio, nivelLogro } = calcularResultadoBaremo(niveles);
     return { puntajeTotal, promedio, nivelLogro };
   }
 }

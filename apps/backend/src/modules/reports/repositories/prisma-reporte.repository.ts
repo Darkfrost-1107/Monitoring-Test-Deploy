@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access */
+import type { Prisma } from '../../../generated/prisma/client.js';
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import { ScopeFilter, ScopeContext } from '../../../shared/auth/scope-filter.js';
@@ -35,15 +35,19 @@ export class PrismaReporteRepository implements ReporteRepository {
     const limit = Number(filters.limit ?? 20);
     const skip = (page - 1) * limit;
 
-    const where: any = {
+    const where: Prisma.FichaMonitoreoWhereInput = {
       estado: 'FINALIZADO',
       ...this.scopeFilter.forFicha(this.toScopeContext(session)),
     };
     if (filters.anioAcademico !== undefined) where.anioAcademico = filters.anioAcademico;
-    if (filters.institucionId) where.institucionId = filters.institucionId;
-    if (filters.tipoMonitoreo) {
-      where.cronograma = { ...(where.cronograma ?? {}), tipoMonitoreo: filters.tipoMonitoreo };
-    }
+
+    // Ambos filtros apuntan a Cronograma, no a FichaMonitoreo. `institucionId`
+    // se escribía en la raíz del `where`, campo que FichaMonitoreo no tiene: con
+    // el objeto declarado como `any` nadie lo advertía. Ver H-29 del plan.
+    const porCronograma: Prisma.CronogramaWhereInput = {};
+    if (filters.institucionId) porCronograma.institucionId = filters.institucionId;
+    if (filters.tipoMonitoreo) porCronograma.tipoMonitoreo = filters.tipoMonitoreo;
+    if (Object.keys(porCronograma).length > 0) where.cronograma = porCronograma;
     if (filters.nivelLogro) where.nivelLogro = filters.nivelLogro;
     if (filters.fechaDesde || filters.fechaHasta) {
       where.createdAt = {};
@@ -89,7 +93,7 @@ export class PrismaReporteRepository implements ReporteRepository {
     anioAcademico: number,
     session: SessionScope,
   ): Promise<IReporteResumenIE[]> {
-    const whereBase: any = {
+    const whereBase: Prisma.FichaMonitoreoWhereInput = {
       estado: 'FINALIZADO',
       anioAcademico,
     };
@@ -109,7 +113,8 @@ export class PrismaReporteRepository implements ReporteRepository {
       },
     });
 
-    const porIe = new Map<string, { institucion: any; fichas: typeof fichas }>();
+    type InstitucionDeFicha = (typeof fichas)[number]['cronograma']['institucion'];
+    const porIe = new Map<string, { institucion: InstitucionDeFicha; fichas: typeof fichas }>();
     for (const f of fichas) {
       const key = f.cronograma.institucion.id;
       if (!porIe.has(key)) {

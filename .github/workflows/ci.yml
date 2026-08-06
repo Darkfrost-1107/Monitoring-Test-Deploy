@@ -64,3 +64,150 @@ jobs:
 
       - name: Test (backend)
         run: pnpm --filter backend test
+
+      # ── Instrumentación de deuda técnica ───────────────────────────────────
+      # Fase 0 de PLAN_REMEDIACION.md. Estos pasos MIDEN, no bloquean: su
+      # propósito es producir una serie temporal comparable desde el primer día.
+      # Cada barrera pasa a bloqueante al cierre de la fase que la resuelve:
+      #   cobertura            -> Fase 3
+      #   rol literal          -> Fase 2
+      #   any / supresiones    -> Fase 4
+      #   tamaño de componente -> Fase 5
+      - name: Coverage (frontend + backend)
+        continue-on-error: true
+        run: pnpm test:cov
+
+      - name: Métricas de deuda técnica
+        continue-on-error: true
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq ripgrep fd-find
+          ln -sf "$(command -v fdfind)" /usr/local/bin/fd
+          ./scripts/metricas.sh | tee metricas-actual.json
+
+      # ── Barrera bloqueante: comparaciones literales de rol ──────────────────
+      # Activada al cierre de la migración de la Fase 2, con el contador en cero.
+      # Impide que vuelvan a aparecer: una comparación contra una cadena suelta
+      # no la verifica el compilador y se escribe mal sin que nadie lo note.
+      #
+      # Comparar contra `RoleCode` sigue permitido. El objetivo no es eliminar
+      # toda comparación de rol —hay decisiones que son legítimamente sobre la
+      # posición organizativa de alguien— sino que estén tipadas.
+      # Cubre las dos formas de comparar contra un rol: la comparación directa y
+      # la rama de `switch`. Sólo se vigilaba la primera, y siete literales en
+      # forma de `case` pasaban sin contarse.
+      #
+      # `roleValidation.ts` queda excluido: su switch opera sobre `RolObjetivo`,
+      # una clasificación distinta cuyos valores se solapan por coincidencia.
+      - name: Gate — sin comparaciones literales de rol
+        run: |
+          CODIGOS="director_ugel|jefe_area|jefe_gestion|especialista|director_institucion|coordinador_pedagogico|jefe_taller|docente|invitado|superusuario"
+          ENCONTRADAS=$(rg -n --no-heading -g'!**/roleValidation.ts' \
+            "role\s*[!=]==\s*'|case\s+'($CODIGOS)'" apps/frontend/src || true)
+          if [ -n "$ENCONTRADAS" ]; then
+            echo "::error::Comparación literal de rol detectada. Usar RoleCode del contrato compartido."
+            echo "$ENCONTRADAS"
+            exit 1
+          fi
+          echo "Sin comparaciones literales de rol."
+
+      - name: Publicar informes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: metricas-y-cobertura
+          path: |
+            metricas-actual.json
+            apps/frontend/coverage/
+            apps/backend/coverage/
+          if-no-files-found: warn
+          retention-days: 30
+
+  # ── Recorridos de extremo a extremo ──────────────────────────────────────────
+  # En un trabajo aparte y con base de datos propia, creada y destruida con la
+  # ejecución.
+  #
+  # Existe por un incidente: una primera versión de la suite se ejecutó contra la
+  # base de desarrollo y dejó bloqueada la cuenta del Director de UGEL al
+  # comprobar el rechazo de credenciales incorrectas. Un recorrido de extremo a
+  # extremo nunca es de sólo lectura —iniciar sesión registra la conexión y crea
+  # la fila de sesión, y fallar al iniciarla bloquea la cuenta—, de modo que la
+  # base tiene que ser desechable.
+  #
+  # `bootstrap-e2e.ts` se niega a arrancar si `DATABASE_URL` no apunta a una base
+  # reconocible como efímera.
+  e2e:
+    name: Recorridos e2e
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: e2e
+          POSTGRES_PASSWORD: e2e
+          POSTGRES_DB: monitoring_e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://e2e:e2e@localhost:5432/monitoring_e2e?schema=public
+      JWT_SECRET: e2e-only-insecure-secret-replace-before-deploying-to-production
+      JWT_REFRESH_SECRET: e2e-only-insecure-refresh-secret-replace-before-deploying-to-production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.9.0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build shared-contracts
+        run: pnpm --filter @sistema-monitoreo/shared-contracts build
+
+      - name: Generate Prisma client
+        run: pnpm --filter backend exec prisma generate
+
+      # Cada suite se ejecuta contra una base recién sembrada.
+      #
+      # `migrate reset` se acompaña de `db seed` explícito: en este proyecto el
+      # reset aplica las migraciones pero deja la base vacía, de modo que sin la
+      # siembra las suites no tienen usuarios con los que autenticarse.
+      # `--skip-generate` NO es válido para `reset`; pasarlo hace que el comando
+      # imprima la ayuda y no ejecute nada, fallo silencioso que costó una tarde.
+      #
+      # `auth.e2e-spec.ts` necesita cuentas con su contraseña temporal intacta;
+      # `autorizacion.e2e-spec.ts` necesita cuentas ya preparadas, y al
+      # prepararlas deja la base en un estado donde la primera no puede iniciar
+      # sesión. Son dos estados distintos del mismo sistema y ambos merecen
+      # verificarse, de modo que no se encadenan sobre la misma base.
+      - name: Arranque y autenticación
+        run: |
+          pnpm --filter backend exec prisma migrate reset --force
+          pnpm --filter backend exec prisma db seed
+          pnpm --filter backend exec cross-env NODE_OPTIONS=--experimental-vm-modules \
+            jest --config ./test/jest-e2e.json --runInBand app.e2e auth.e2e
+        working-directory: .
+
+      - name: Autorización por capacidades
+        run: |
+          pnpm --filter backend exec prisma migrate reset --force
+          pnpm --filter backend exec prisma db seed
+          pnpm --filter backend exec cross-env NODE_OPTIONS=--experimental-vm-modules \
+            jest --config ./test/jest-e2e.json --runInBand autorizacion.e2e
+        working-directory: .

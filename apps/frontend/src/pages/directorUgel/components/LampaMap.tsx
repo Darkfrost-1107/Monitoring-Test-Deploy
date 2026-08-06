@@ -19,6 +19,7 @@ import type {
   IUgelDashboardIeMapa,
 } from '@sistema-monitoreo/shared-contracts';
 import { normDistrito } from '../utils/norm-distrito';
+import { RoleCode } from '@sistema-monitoreo/shared-contracts';
 
 /** Forma mínima de una feature del GeoJSON de distritos. */
 interface DistritoFeature {
@@ -117,7 +118,7 @@ export const LampaMap = ({
   selectedInstitucionId,
 }: LampaMapProps) => {
   const { user } = useUser();
-  const isDirectorUgel = user?.role === 'director_ugel';
+  const isDirectorUgel = user?.role === RoleCode.DIRECTOR_UGEL;
 
   // El Director UGEL supervisa a nivel distrital (coroplético de cobertura); el
   // resto de roles (Jefe de Gestión/Área, Especialista) trabaja el detalle por IE.

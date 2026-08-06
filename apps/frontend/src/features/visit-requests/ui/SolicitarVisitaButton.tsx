@@ -16,6 +16,7 @@ import {
 import { Button } from '@shared/ui/button';
 import { Textarea } from '@shared/ui/textarea';
 import { useSolicitarVisita } from '../api/use-visits-api';
+import { RoleCode } from '@sistema-monitoreo/shared-contracts';
 
 interface Props {
   institucionId: string;
@@ -43,7 +44,7 @@ export const SolicitarVisitaButton = ({
 
   // El Jefe de Gestión agenda la visita directamente (abre el Registro de
   // Cronograma precargado); no crea una solicitud.
-  const esJefeGestion = user?.role === 'jefe_gestion';
+  const esJefeGestion = user?.role === RoleCode.JEFE_GESTION;
 
   if (esJefeGestion) {
     return (

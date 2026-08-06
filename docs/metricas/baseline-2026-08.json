@@ -1,0 +1,33 @@
+{
+  "generado": "2026-08-06T01:17:14Z",
+  "rama": "develop",
+  "commit": "ca38f45",
+  "metricas": {
+    "archivos_fuente": 544,
+    "archivos_prueba": 27,
+    "ratio_pruebas": 0.0496,
+    "declaraciones_userrole": 4,
+    "archivos_rol_literal": 25,
+    "comparaciones_rol_literal": 104,
+    "supresiones_lint_archivo": 26,
+    "ocurrencias_any": 121,
+    "componentes_sobre_300_lineas": 19,
+    "componentes_sobre_700_lineas": 6,
+    "componente_mayor_lineas": 1443,
+    "lineas_formbase": 1924,
+    "cobertura_sentencias_frontend": 1.55,
+    "cobertura_sentencias_backend": 19.51
+  },
+  "objetivos": {
+    "declaraciones_userrole": 1,
+    "archivos_rol_literal": 0,
+    "supresiones_lint_archivo": 0,
+    "ocurrencias_any": 20,
+    "componentes_sobre_300_lineas": 0,
+    "componente_mayor_lineas": 300,
+    "lineas_formbase": 700,
+    "ratio_pruebas": 0.20,
+    "cobertura_sentencias_frontend": 45,
+    "cobertura_sentencias_backend": 60
+  }
+}

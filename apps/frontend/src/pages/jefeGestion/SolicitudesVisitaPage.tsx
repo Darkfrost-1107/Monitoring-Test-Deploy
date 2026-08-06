@@ -16,6 +16,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@shared/ui/alert-dialog';
+import { RoleCode } from '@sistema-monitoreo/shared-contracts';
 import {
   useSolicitudesVisita,
   useMisSolicitudesVisita,
@@ -56,7 +57,7 @@ export const SolicitudesVisitaPage = () => {
   const { user } = useUser();
   // El Jefe de Gestión gestiona (atiende/rechaza) todas las solicitudes; el
   // resto (Jefe de Área, Especialista) solo hace seguimiento de las suyas.
-  const esGestor = user?.role === 'jefe_gestion';
+  const esGestor = user?.role === RoleCode.JEFE_GESTION;
 
   const [estado, setEstado] = useState<string>('PENDIENTE');
   const gestorQ = useSolicitudesVisita(estado, esGestor);

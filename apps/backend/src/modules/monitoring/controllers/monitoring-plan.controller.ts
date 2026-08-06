@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument */
 import {
   BadRequestException,
   Body,
@@ -35,6 +34,7 @@ import { STORAGE_SERVICE } from '../../../shared/storage/storage.constants.js';
 import type { StorageService } from '../../../shared/storage/storage.constants.js';
 import { Inject } from '@nestjs/common';
 import { RoleCode } from '../../../common/enums/role.enum.js';
+import type { AuthenticatedRequest } from '../../../shared/types/authenticated-request.js';
 
 @Controller('planes-monitoreo')
 @UseGuards(AuthGuard, PermissionsGuard)
@@ -63,8 +63,8 @@ export class MonitoringPlanController {
   @HttpCode(HttpStatus.CREATED)
   async create(
     @Body() dto: CreatePlanDto,
-    @UploadedFile() file: any,
-    @Req() req: any,
+    @UploadedFile() file: Express.Multer.File,
+    @Req() req: AuthenticatedRequest,
   ): Promise<IMonitoringPlanResponse> {
     if (!file) {
       throw new BadRequestException('El archivo PDF es obligatorio.');
@@ -77,7 +77,10 @@ export class MonitoringPlanController {
 
   @Get()
   @RequirePermissions('monitoreo:execute')
-  async findAll(@Query() query: QueryPlanDto, @Req() req: any): Promise<IMonitoringPlanResponse[]> {
+  async findAll(
+    @Query() query: QueryPlanDto,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<IMonitoringPlanResponse[]> {
     const session: SessionUser = this.toSession(req);
     const adjusted: QueryPlanDto = { ...query };
     if (session.role === RoleCode.DIRECTOR_INSTITUCION) {
@@ -90,7 +93,7 @@ export class MonitoringPlanController {
   @RequirePermissions('monitoreo:execute')
   async findById(
     @Param('id', new ParseUUIDPipe()) id: string,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ): Promise<IMonitoringPlanResponse> {
     return this.service.findById(id, this.toSession(req));
   }
@@ -99,7 +102,7 @@ export class MonitoringPlanController {
   @RequirePermissions('monitoreo:execute')
   async descargarArchivo(
     @Param('id', new ParseUUIDPipe()) id: string,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Res() res: Response,
   ): Promise<void> {
     const plan = await this.service.findById(id, this.toSession(req));
@@ -119,7 +122,7 @@ export class MonitoringPlanController {
   @RequirePermissions('monitoreo:execute')
   async toggle(
     @Param('id', new ParseUUIDPipe()) id: string,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ): Promise<IMonitoringPlanResponse> {
     return this.service.toggleEstado(id, this.toSession(req));
   }
@@ -128,7 +131,7 @@ export class MonitoringPlanController {
   @RequirePermissions('monitoreo:execute')
   async hardDelete(
     @Param('id', new ParseUUIDPipe()) id: string,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ): Promise<{ success: boolean; message: string }> {
     return this.service.hardDelete(id, this.toSession(req));
   }
@@ -137,7 +140,7 @@ export class MonitoringPlanController {
   @RequirePermissions('monitoreo:execute')
   async findCobertura(
     @Param('id', new ParseUUIDPipe()) id: string,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ): Promise<IPlanInstitucionCubierta[]> {
     return this.service.findCobertura(id, this.toSession(req));
   }
@@ -148,7 +151,7 @@ export class MonitoringPlanController {
   async addCobertura(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Param('institucionId', new ParseUUIDPipe()) institucionId: string,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ): Promise<IPlanInstitucionCubierta[]> {
     return this.service.addCobertura(id, institucionId, this.toSession(req));
   }
@@ -158,12 +161,12 @@ export class MonitoringPlanController {
   async removeCobertura(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Param('institucionId', new ParseUUIDPipe()) institucionId: string,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ): Promise<IPlanInstitucionCubierta[]> {
     return this.service.removeCobertura(id, institucionId, this.toSession(req));
   }
 
-  private toSession(req: any): SessionUser {
+  private toSession(req: AuthenticatedRequest): SessionUser {
     if (!req.user) {
       throw new ForbiddenException('Sesion no encontrada.');
     }

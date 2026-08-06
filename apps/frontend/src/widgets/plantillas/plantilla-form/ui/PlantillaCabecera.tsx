@@ -3,6 +3,7 @@ import { SectionCard, SelectField, TextField } from '@shared/ui/form-controls';
 import type { Baremo, NivelCalificacion } from '@entities/model-plantillas';
 import { TIPOS_MONITOREO, BAREMOS } from '@entities/model-plantillas';
 import { useUser } from '@entities/model-user';
+import { RoleCode } from '@sistema-monitoreo/shared-contracts';
 
 interface Props {
   tipoMonitoreo: string;
@@ -27,7 +28,7 @@ export const PlantillaCabecera = ({
   isEditMode = false,
 }: Props) => {
   const { user } = useUser();
-  const isDirector = user?.role === 'director_institucion';
+  const isDirector = user?.role === RoleCode.DIRECTOR_INSTITUCION;
   const setNivel = (i: number, p: Partial<NivelCalificacion>) =>
     onChange({ niveles: niveles.map((n, idx) => (idx === i ? { ...n, ...p } : n)) });
 

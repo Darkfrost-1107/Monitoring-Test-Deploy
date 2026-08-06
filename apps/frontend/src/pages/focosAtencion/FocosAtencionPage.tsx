@@ -8,6 +8,7 @@ import { RequierenAtencionCard } from '@/pages/directorUgel/components/Requieren
 import { RequierenAtencionInstitucionalCard } from './components/RequierenAtencionInstitucionalCard';
 import { InstitucionDetalleCard } from './components/InstitucionDetalleCard';
 import { normDistrito } from '@/pages/directorUgel/utils/norm-distrito';
+import { RoleCode } from '@sistema-monitoreo/shared-contracts';
 
 /**
  * Vista de "Focos de Atención": reutiliza el mapa georreferencial del dashboard
@@ -17,7 +18,7 @@ import { normDistrito } from '@/pages/directorUgel/utils/norm-distrito';
  */
 export const FocosAtencionPage = () => {
   const { user } = useUser();
-  const isDirectorUgel = user?.role === 'director_ugel';
+  const isDirectorUgel = user?.role === RoleCode.DIRECTOR_UGEL;
 
   const { data, isLoading, isError, error } = useUgelDashboard();
   const [distrito, setDistrito] = useState<string | null>(null);

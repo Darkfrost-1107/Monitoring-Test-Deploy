@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument */
+import type { Prisma } from '../../../generated/prisma/client.js';
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import type {
@@ -13,19 +13,26 @@ import {
   SolicitudReprogramacionRepository,
   CreateSolicitudData,
   ResolverSolicitudData,
+  type QueryVisitasFilters,
+  type QuerySolicitudesFilters,
 } from './cronograma.repository.js';
-import { fromPrismaVisita, fromPrismaSolicitud } from './cronograma.mapper.js';
+import {
+  fromPrismaVisita,
+  fromPrismaSolicitud,
+  type VisitaPayload,
+  type SolicitudPayload,
+} from './cronograma.mapper.js';
 
 @Injectable()
 export class PrismaCronogramaRepository implements CronogramaRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  private mapVisita(v: any): IVisita {
+  private mapVisita(v: VisitaPayload): IVisita {
     return fromPrismaVisita(v);
   }
 
-  async findAll(filters?: any): Promise<IVisita[]> {
-    const where: any = {};
+  async findAll(filters?: QueryVisitasFilters): Promise<IVisita[]> {
+    const where: Prisma.CronogramaWhereInput = {};
     if (filters?.estado) {
       where.estado = filters.estado;
     }
@@ -187,7 +194,7 @@ export class PrismaCronogramaRepository implements CronogramaRepository {
   }
 
   async update(id: string, data: UpdateVisitaData): Promise<IVisita> {
-    const updateData: any = {};
+    const updateData: Prisma.CronogramaUpdateInput = {};
     if (data.fechaProgramada) updateData.fechaProgramada = new Date(data.fechaProgramada);
     if (data.horaInicio) updateData.horaInicio = data.horaInicio;
     if (data.detalles !== undefined) updateData.detalles = data.detalles;
@@ -235,12 +242,12 @@ export class PrismaCronogramaRepository implements CronogramaRepository {
 export class PrismaSolicitudReprogramacionRepository implements SolicitudReprogramacionRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  private mapSolicitud(s: any): ISolicitudReprogramacion {
+  private mapSolicitud(s: SolicitudPayload): ISolicitudReprogramacion {
     return fromPrismaSolicitud(s);
   }
 
-  async findAll(filters?: any): Promise<ISolicitudReprogramacion[]> {
-    const where: any = {};
+  async findAll(filters?: QuerySolicitudesFilters): Promise<ISolicitudReprogramacion[]> {
+    const where: Prisma.SolicitudReprogramacionWhereInput = {};
     if (filters) {
       if (filters.cronogramaId) where.cronogramaId = filters.cronogramaId;
       if (filters.solicitanteId) where.solicitanteId = filters.solicitanteId;

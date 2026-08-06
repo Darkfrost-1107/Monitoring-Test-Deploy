@@ -2,13 +2,15 @@ import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService, JwtSignOptions } from '@nestjs/jwt';
 import { randomBytes, createHash } from 'node:crypto';
-import { Prisma } from '../../../generated/prisma/client.js';
-import { RoleCode } from '../../../common/enums/role.enum.js';
+import { RoleCode, isRoleCode } from '../../../common/enums/role.enum.js';
+import type { AuthUserWithRelations } from '../repositories/user.repository.js';
 import {
   computeEffectivePermissions,
   CargoNombre,
   EspecialistaCargoEnum,
 } from '../../../shared/auth/capability-map.js';
+
+export type { AuthUserWithRelations };
 
 export interface JwtPayload {
   sub: string;
@@ -27,44 +29,6 @@ export interface JwtPayload {
   especialista_especialidades?: string[];
   firstLogin: boolean;
 }
-
-export type AuthUserWithRelations = Prisma.UsuarioGetPayload<{
-  include: {
-    rol: {
-      include: {
-        rolPermisos: {
-          include: {
-            permiso: true;
-          };
-        };
-      };
-    };
-    persona: {
-      include: {
-        docente: {
-          include: {
-            institucion: { include: { nivelEducativoRel: true } };
-            docenteCargos: {
-              where: { fechaFin: null };
-              include: { cargo: true };
-            };
-            docenteEspecialidades: { include: { especialidad: true } };
-          };
-        };
-        especialista: {
-          include: {
-            especialidades: { include: { especialidad: true } };
-            cargos: {
-              where: { fechaFin: null; esPrincipal: true };
-              orderBy: { fechaInicio: 'desc' };
-              take: 1;
-            };
-          };
-        };
-      };
-    };
-  };
-}>;
 
 @Injectable()
 export class AuthTokenService {
@@ -155,7 +119,7 @@ export class AuthTokenService {
     return {
       sub: user.id,
       dni: user.persona.dni,
-      role: user.rol.codigo as RoleCode,
+      role: this.resolveRoleCode(user),
       permissions,
       nombres: user.persona.nombres,
       apellidos: user.persona.apellidos,
@@ -180,8 +144,27 @@ export class AuthTokenService {
    * Reemplaza la lectura directa de `rol_permisos` por el modelo
    * capability-based (Fase 1.6). El resultado es la UNION de las 3 fuentes.
    */
+  /**
+   * Convierte `Role.codigo` —columna de texto libre— en un `RoleCode` conocido.
+   *
+   * Antes se resolvía con una asercion de tipo sin comprobar. Un codigo ausente
+   * del contrato producia un usuario con cero capabilities y una carga util que
+   * el esquema del frontend rechazaba al parsear: dos fallos tardios y opacos en
+   * lugar de uno inmediato y legible. Un codigo desconocido es un defecto de
+   * integridad de datos y debe manifestarse como tal.
+   */
+  private resolveRoleCode(user: AuthUserWithRelations): RoleCode {
+    const codigo = user.rol.codigo;
+    if (!isRoleCode(codigo)) {
+      throw new UnauthorizedException(
+        `El rol '${codigo}' no pertenece al contrato de roles del sistema.`,
+      );
+    }
+    return codigo;
+  }
+
   private computeUserPermissions(user: AuthUserWithRelations): string[] {
-    const rolCodigo = user.rol.codigo as RoleCode;
+    const rolCodigo = this.resolveRoleCode(user);
 
     // Fase 2: el cargo del Especialista ahora vive en la tabla `especialista_cargos`.
     // El `buildInclude()` ya hace `take: 1` con orderBy por fechaInicio desc

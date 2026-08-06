@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import type {
   IFichaMonitoreo,
   IFichaContexto,
@@ -6,7 +5,6 @@ import type {
   IFichaRespuestaAspecto,
   IFichaRespuestaEjeItem,
   NivelLogro,
-  EstadoFicha,
   IHistorialPedagogicoResponse,
 } from '@sistema-monitoreo/shared-contracts';
 

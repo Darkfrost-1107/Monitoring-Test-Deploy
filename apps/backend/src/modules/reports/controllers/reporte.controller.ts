@@ -1,12 +1,9 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unused-vars */
 import {
-  Body,
   Controller,
   Get,
   Header,
   Param,
   ParseUUIDPipe,
-  Post,
   Query,
   Req,
   Res,
@@ -22,6 +19,7 @@ import type {
   IPaginatedReportesFichas,
   IReporteResumenIE,
 } from '@sistema-monitoreo/shared-contracts';
+import type { AuthenticatedRequest } from '../../../shared/types/authenticated-request.js';
 
 @Controller('reportes')
 @UseGuards(AuthGuard, PermissionsGuard)
@@ -30,13 +28,19 @@ export class ReporteController {
 
   @Get('fichas-completadas')
   @RequirePermissions('reports:read')
-  async fichasCompletadas(@Query() query: any, @Req() req: any): Promise<IPaginatedReportesFichas> {
+  async fichasCompletadas(
+    @Query() query: any,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<IPaginatedReportesFichas> {
     return this.service.listFichasCompletadas(query, this.toSession(req));
   }
 
   @Get('resumen-ie')
   @RequirePermissions('reports:read')
-  async resumenIE(@Query('anio') anio: string, @Req() req: any): Promise<IReporteResumenIE[]> {
+  async resumenIE(
+    @Query('anio') anio: string,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<IReporteResumenIE[]> {
     const anioNumber = anio ? parseInt(anio, 10) : new Date().getFullYear();
     return this.service.resumenPorIE(anioNumber, this.toSession(req));
   }
@@ -46,7 +50,7 @@ export class ReporteController {
   @Header('Content-Type', 'text/html; charset=utf-8')
   async exportarFichaHTML(
     @Param('id', new ParseUUIDPipe()) id: string,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Res() res: Response,
   ): Promise<void> {
     const html = await this.service.exportarFichaHTML(id, this.toSession(req));
@@ -58,7 +62,7 @@ export class ReporteController {
   @Header('Content-Type', 'application/pdf')
   async exportarFichaPDF(
     @Param('id', new ParseUUIDPipe()) id: string,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Res() res: Response,
   ): Promise<void> {
     const pdfBuffer = await this.service.exportarFichaPDF(id, this.toSession(req));
@@ -66,7 +70,7 @@ export class ReporteController {
     res.send(pdfBuffer);
   }
 
-  private toSession(req: any): any {
+  private toSession(req: AuthenticatedRequest): any {
     if (!req.user) {
       throw new ForbiddenException('Sesion no encontrada.');
     }

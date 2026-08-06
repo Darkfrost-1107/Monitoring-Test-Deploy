@@ -23,6 +23,7 @@
  */
 
 import { RoleCode } from '../../common/enums/role.enum.js';
+import { Capability } from '@sistema-monitoreo/shared-contracts';
 
 export const CargoNombre = {
   DIRECTOR: 'Director',
@@ -43,101 +44,109 @@ export type EspecialistaCargoEnum =
   (typeof EspecialistaCargoEnum)[keyof typeof EspecialistaCargoEnum];
 
 /** Permisos base que toda persona tiene, independientemente de rol o cargo. */
-export const BASE_CAPABILITIES: readonly string[] = ['reports:read', 'monitoreo:read'] as const;
+export const BASE_CAPABILITIES: readonly Capability[] = [
+  Capability.REPORTS_READ,
+  Capability.MONITOREO_READ,
+] as const;
 
 /** Permisos derivados del ROL (identidad de autenticación del Usuario). */
-export const ROL_CAPABILITIES: Record<RoleCode, readonly string[]> = {
+export const ROL_CAPABILITIES: Record<RoleCode, readonly Capability[]> = {
   [RoleCode.DIRECTOR_UGEL]: [
-    'dashboard:read',
-    'instituciones:read',
-    'notificaciones:send',
-    'visitas:solicitar',
+    Capability.DASHBOARD_READ,
+    Capability.INSTITUCIONES_READ,
+    Capability.NOTIFICACIONES_SEND,
+    Capability.VISITAS_SOLICITAR,
   ],
   [RoleCode.JEFE_GESTION]: [
-    'especialistas:read',
-    'especialistas:write',
-    'instituciones:read',
-    'instituciones:write',
-    'docentes:read',
-    'docentes:write',
-    'monitoreo:execute',
-    'dashboard:read',
-    'notificaciones:send',
-    'visitas:gestionar',
-    'visitas:solicitar',
+    Capability.ESPECIALISTAS_READ,
+    Capability.ESPECIALISTAS_WRITE,
+    Capability.INSTITUCIONES_READ,
+    Capability.INSTITUCIONES_WRITE,
+    Capability.DOCENTES_READ,
+    Capability.DOCENTES_WRITE,
+    Capability.MONITOREO_EXECUTE,
+    Capability.DASHBOARD_READ,
+    Capability.NOTIFICACIONES_SEND,
+    Capability.VISITAS_GESTIONAR,
+    Capability.VISITAS_SOLICITAR,
   ],
   [RoleCode.JEFE_AREA]: [
-    'especialistas:read',
-    'instituciones:read',
-    'instituciones:write',
-    'docentes:read',
-    'docentes:write',
-    'dashboard:read',
-    'notificaciones:send',
-    'visitas:solicitar',
+    Capability.ESPECIALISTAS_READ,
+    Capability.INSTITUCIONES_READ,
+    Capability.INSTITUCIONES_WRITE,
+    Capability.DOCENTES_READ,
+    Capability.DOCENTES_WRITE,
+    Capability.DASHBOARD_READ,
+    Capability.NOTIFICACIONES_SEND,
+    Capability.VISITAS_SOLICITAR,
   ],
   [RoleCode.ESPECIALISTA]: [
-    'monitoreo:execute',
-    'especialistas:read',
-    'instituciones:read',
-    'docentes:read',
-    'dashboard:read',
-    'notificaciones:send',
-    'visitas:solicitar',
+    Capability.MONITOREO_EXECUTE,
+    Capability.ESPECIALISTAS_READ,
+    Capability.INSTITUCIONES_READ,
+    Capability.DOCENTES_READ,
+    Capability.DASHBOARD_READ,
+    Capability.NOTIFICACIONES_SEND,
+    Capability.VISITAS_SOLICITAR,
   ],
   [RoleCode.DIRECTOR_INSTITUCION]: [
-    'dashboard:read',
-    'docentes:read',
-    'docentes:write',
-    'monitoreo:execute',
-    'especialistas:read',
-    'instituciones:read',
+    Capability.DASHBOARD_READ,
+    Capability.DOCENTES_READ,
+    Capability.DOCENTES_WRITE,
+    Capability.MONITOREO_EXECUTE,
+    Capability.ESPECIALISTAS_READ,
+    Capability.INSTITUCIONES_READ,
   ],
   [RoleCode.COORDINADOR_PEDAGOGICO]: [
-    'monitoreo:execute',
-    'docentes:read',
-    'especialistas:read',
-    'instituciones:read',
+    Capability.MONITOREO_EXECUTE,
+    Capability.DOCENTES_READ,
+    Capability.ESPECIALISTAS_READ,
+    Capability.INSTITUCIONES_READ,
   ],
   [RoleCode.JEFE_TALLER]: [
-    'monitoreo:execute',
-    'docentes:read',
-    'especialistas:read',
-    'instituciones:read',
+    Capability.MONITOREO_EXECUTE,
+    Capability.DOCENTES_READ,
+    Capability.ESPECIALISTAS_READ,
+    Capability.INSTITUCIONES_READ,
   ],
   [RoleCode.DOCENTE]: [],
-  [RoleCode.INVITADO]: ['dashboard:read'],
-  [RoleCode.SUPERUSUARIO]: ['superadmin:access', 'especialistas:read', 'especialistas:write'],
+  [RoleCode.INVITADO]: [Capability.DASHBOARD_READ],
+  [RoleCode.SUPERUSUARIO]: [
+    Capability.SUPERADMIN_ACCESS,
+    Capability.ESPECIALISTAS_READ,
+    Capability.ESPECIALISTAS_WRITE,
+  ],
 };
 
 /** Permisos derivados del cargo ACTIVO del Especialista (campo Especialista.cargo). */
-export const ESPECIALISTA_CARGO_CAPABILITIES: Record<EspecialistaCargoEnum, readonly string[]> = {
-  [EspecialistaCargoEnum.ESPECIALISTA]: ['monitoreo:execute'],
-  [EspecialistaCargoEnum.JEFE_AREA]: [
-    'especialistas:read',
-    'monitoreo:execute',
-    'instituciones:write',
-    'docentes:write',
-  ],
-  [EspecialistaCargoEnum.JEFE_GESTION]: [
-    'especialistas:write',
-    'instituciones:write',
-    'docentes:write',
-    'visitas:gestionar',
-  ],
-};
+export const ESPECIALISTA_CARGO_CAPABILITIES: Record<EspecialistaCargoEnum, readonly Capability[]> =
+  {
+    [EspecialistaCargoEnum.ESPECIALISTA]: [Capability.MONITOREO_EXECUTE],
+    [EspecialistaCargoEnum.JEFE_AREA]: [
+      Capability.ESPECIALISTAS_READ,
+      Capability.MONITOREO_EXECUTE,
+      Capability.INSTITUCIONES_WRITE,
+      Capability.DOCENTES_WRITE,
+    ],
+    [EspecialistaCargoEnum.JEFE_GESTION]: [
+      Capability.ESPECIALISTAS_WRITE,
+      Capability.INSTITUCIONES_WRITE,
+      Capability.DOCENTES_WRITE,
+      Capability.VISITAS_GESTIONAR,
+    ],
+  };
 
 /** Permisos derivados de los cargos ACTIVOS del docente (tabla docente_cargos). */
-export const DOCENTE_CARGO_CAPABILITIES: Record<CargoNombre, readonly string[]> = {
+export const DOCENTE_CARGO_CAPABILITIES: Record<CargoNombre, readonly Capability[]> = {
   [CargoNombre.DIRECTOR]: [
-    'dashboard:read',
-    'instituciones:write',
-    'docentes:write',
-    'monitoreo:execute',
+    Capability.DASHBOARD_READ,
+    Capability.INSTITUCIONES_WRITE,
+    Capability.DOCENTES_WRITE,
+    Capability.MONITOREO_EXECUTE,
   ],
-  [CargoNombre.SUBDIRECTOR]: ['docentes:write', 'monitoreo:execute'],
-  [CargoNombre.COORDINADOR_PEDAGOGICO]: ['monitoreo:execute'],
-  [CargoNombre.JEFE_DE_TALLER]: ['monitoreo:execute'],
+  [CargoNombre.SUBDIRECTOR]: [Capability.DOCENTES_WRITE, Capability.MONITOREO_EXECUTE],
+  [CargoNombre.COORDINADOR_PEDAGOGICO]: [Capability.MONITOREO_EXECUTE],
+  [CargoNombre.JEFE_DE_TALLER]: [Capability.MONITOREO_EXECUTE],
   [CargoNombre.DOCENTE_DE_AULA]: [],
   [CargoNombre.PIP]: [],
 };
@@ -204,7 +213,7 @@ export function computeEffectivePermissions(
   rol: RoleCode,
   especialistaCargo: EspecialistaCargoEnum | null,
   activeDocenteCargos: CargoNombre[],
-): string[] {
+): Capability[] {
   const fromRol = ROL_CAPABILITIES[rol] ?? [];
   const fromEsp = especialistaCargo
     ? (ESPECIALISTA_CARGO_CAPABILITIES[especialistaCargo] ?? [])

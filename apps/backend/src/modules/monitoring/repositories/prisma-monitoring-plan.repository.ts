@@ -1,9 +1,9 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access */
 import { Injectable, NotFoundException } from '@nestjs/common';
 import type {
   IMonitoringPlanResponse,
   IPlanInstitucionCubierta,
 } from '@sistema-monitoreo/shared-contracts';
+import type { Prisma } from '../../../generated/prisma/client.js';
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import { CreatePlanData, MonitoringPlanRepository } from './monitoring-plan.repository.js';
 import type { QueryPlanDto } from '../dto/query-plan.dto.js';
@@ -18,7 +18,7 @@ export class PrismaMonitoringPlanRepository implements MonitoringPlanRepository 
   }
 
   async findAll(filters?: QueryPlanDto): Promise<IMonitoringPlanResponse[]> {
-    const where: any = { deleted: false };
+    const where: Prisma.PlanMonitoreoWhereInput = { deleted: false };
     if (filters) {
       if (filters.search) {
         where.titulo = { contains: filters.search, mode: 'insensitive' };

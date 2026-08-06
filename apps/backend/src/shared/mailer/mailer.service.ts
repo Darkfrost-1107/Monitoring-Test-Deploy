@@ -75,7 +75,7 @@ export class MailerService {
   }
 
   async sendPasswordResetEmail(to: string, dni: string, token: string): Promise<void> {
-    const frontendUrl = this.configService.get<string>('FRONTEND_URL') ?? 'http://localhost:5173';
+    const frontendUrl = this.configService.getOrThrow<string>('FRONTEND_URL');
     const resetUrl = `${frontendUrl}/restablecer-password?token=${token}`;
 
     const subject = 'Recuperación de Contraseña - UGEL Lampa';
@@ -121,7 +121,7 @@ export class MailerService {
     institucion: string,
     docente: string,
   ): Promise<void> {
-    const frontendUrl = this.configService.get<string>('FRONTEND_URL') ?? 'http://localhost:5173';
+    const frontendUrl = this.configService.getOrThrow<string>('FRONTEND_URL');
     const loginUrl = `${frontendUrl}/login`;
 
     const subject = 'Recordatorio de Visita Pendiente - UGEL Lampa';

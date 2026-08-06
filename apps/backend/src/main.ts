@@ -17,10 +17,13 @@ async function bootstrap() {
     bufferLogs: true,
   });
 
+  // `validate()` (config/env.validation.ts) garantiza que estas claves existen:
+  // aplica los valores por defecto o aborta el arranque. Un `??` aquí sería un
+  // segundo valor por defecto, capaz de divergir del declarado en la validación.
   const configService = app.get(ConfigService);
-  const frontendUrl = configService.get<string>('FRONTEND_URL') ?? 'http://localhost:5173';
-  const port = configService.get<number>('PORT') ?? 3000;
-  const host = configService.get<string>('HOST') ?? '0.0.0.0';
+  const frontendUrl = configService.getOrThrow<string>('FRONTEND_URL');
+  const port = configService.getOrThrow<number>('PORT');
+  const host = configService.getOrThrow<string>('HOST');
 
   app.enableCors({
     origin: frontendUrl,

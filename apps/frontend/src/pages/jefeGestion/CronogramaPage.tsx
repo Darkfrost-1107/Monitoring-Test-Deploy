@@ -17,10 +17,12 @@ import type { Cronograma } from '@entities/model-cronogramas';
 import {
   ModalidadEducativa,
   MODALIDAD_NIVEL_MAP,
+  RoleCode,
   type EstadoVisita,
   type IUpdateVisitaRequest,
   type Modalidad,
 } from '@sistema-monitoreo/shared-contracts';
+import { useScope } from '@shared/auth';
 
 // ── Constantes de modalidades ──
 const MODALIDADES = Object.values(ModalidadEducativa);
@@ -65,14 +67,15 @@ export const CronogramaPage = () => {
   const location = useLocation();
   const atenderSolicitud = useAtenderSolicitud();
   const [pendingSolicitudId, setPendingSolicitudId] = useState<string | null>(null);
-  const isDirector =
-    user?.role === 'director_institucion' ||
-    user?.role === 'coordinador_pedagogico' ||
-    user?.role === 'jefe_taller';
+  const { isInstitution, isMonitorCampo } = useScope();
 
-  const isCoordOrTaller =
-    user?.role === 'coordinador_pedagogico' ||
-    user?.role === 'jefe_taller';
+  // Se llamaba `isDirector`, pero incluía al coordinador pedagógico y al jefe de
+  // taller: es todo el personal del lado de la institución educativa. Se conserva
+  // el identificador para no tocar sus 32 usos en este archivo; el nombre honesto
+  // es el de la derecha.
+  const isDirector = isInstitution;
+
+  const isCoordOrTaller = isMonitorCampo && isInstitution;
 
   const {
     cronogramas,
@@ -264,7 +267,7 @@ export const CronogramaPage = () => {
   }, [formDocente, formTipo, editCronogramaId, docentes, cronogramas]);
 
   const allowedModalidades = useMemo(() => {
-    if (user?.role !== 'jefe_area' || !user?.especialistaNivel) {
+    if (user?.role !== RoleCode.JEFE_AREA || !user?.especialistaNivel) {
       return MODALIDADES;
     }
     const list = [];
@@ -282,7 +285,7 @@ export const CronogramaPage = () => {
   const nivelesDisponibles = useMemo(() => {
     if (!formModalidad) return [];
     const allNiveles = MODALIDAD_NIVEL_MAP[formModalidad] || [];
-    if (user?.role === 'jefe_area' && user?.especialistaNivel) {
+    if (user?.role === RoleCode.JEFE_AREA && user?.especialistaNivel) {
       if (formModalidad === 'EBR') {
         return allNiveles.filter((n) => n === user.especialistaNivel);
       }
@@ -359,7 +362,7 @@ export const CronogramaPage = () => {
   // --- Lógica de Filtro ---
   const filteredBaseCronogramas = useMemo(() => {
     if (!user) return cronogramas;
-    if (!isDirector && user.role !== 'jefe_area') return cronogramas;
+    if (!isDirector && user.role !== RoleCode.JEFE_AREA) return cronogramas;
 
     return cronogramas.filter((item) => {
       if (isDirector) {
@@ -377,7 +380,7 @@ export const CronogramaPage = () => {
         if (!isSameSchool && !isDirectedToMe) return false;
       }
 
-      if (user?.role === 'jefe_area' && user.especialistaNivel) {
+      if (user?.role === RoleCode.JEFE_AREA && user.especialistaNivel) {
         const nivel = user.especialistaNivel;
         if (nivel === 'Inicial') {
           if (item.modalidad !== 'EBE' && item.nivel !== 'Inicial') return false;

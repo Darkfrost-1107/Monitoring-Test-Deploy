@@ -6,7 +6,14 @@ import tseslint from 'typescript-eslint';
 import { defineConfig, globalIgnores } from 'eslint/config';
 
 export default defineConfig([
-  globalIgnores(['dist', 'refactor_aliases.ts', 'refactor_aliases.cjs', 'update_useauth.cjs']),
+  globalIgnores([
+    'dist',
+    // Informe HTML que genera `vitest run --coverage`: artefacto, no código fuente.
+    'coverage',
+    'refactor_aliases.ts',
+    'refactor_aliases.cjs',
+    'update_useauth.cjs',
+  ]),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [

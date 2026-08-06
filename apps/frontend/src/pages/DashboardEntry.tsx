@@ -1,6 +1,7 @@
 import { useUser } from '@entities/model-user';
 import { DashboardPage } from './directorUgel/DashboardPage';
 import { DashboardDirectorPage } from './director/DashboardDirectorPage';
+import { RoleCode } from '@sistema-monitoreo/shared-contracts';
 
 /**
  * Punto de entrada de `/dashboard`. Selecciona el dashboard según el rol:
@@ -10,7 +11,7 @@ import { DashboardDirectorPage } from './director/DashboardDirectorPage';
 export const DashboardEntry = () => {
   const { user } = useUser();
 
-  if (user?.role === 'director_institucion') {
+  if (user?.role === RoleCode.DIRECTOR_INSTITUCION) {
     return <DashboardDirectorPage />;
   }
 

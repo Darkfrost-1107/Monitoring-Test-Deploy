@@ -1,5 +1,27 @@
 import { plainToInstance } from 'class-transformer';
-import { IsString, IsNumber, IsOptional, Min, Max, validateSync } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  IsOptional,
+  IsNotEmpty,
+  Min,
+  Max,
+  MinLength,
+  validateSync,
+} from 'class-validator';
+
+/** Longitud mínima exigida a los secretos de firma de tokens. */
+const JWT_SECRET_MIN_LENGTH = 64;
+
+/**
+ * Fragmentos que delatan un secreto de ejemplo copiado de `.env.example`.
+ * Se rechazan en producción para impedir que un despliegue arranque con un
+ * valor conocido públicamente.
+ */
+const INSECURE_SECRET_MARKERS = ['CHANGE_ME', 'dev-only', 'insecure', 'example'];
+
+/** Variables que nunca deben contener un valor de ejemplo en producción. */
+const PRODUCTION_SENSITIVE_KEYS = ['DATABASE_URL', 'JWT_SECRET', 'JWT_REFRESH_SECRET'] as const;
 
 export class EnvironmentVariables {
   @IsNumber()
@@ -10,14 +32,25 @@ export class EnvironmentVariables {
   @IsString()
   FRONTEND_URL: string = 'http://localhost:5173';
 
-  @IsString()
-  DATABASE_URL: string = 'postgresql://admin:admin@localhost:5432/monitoring?schema=public';
+  // ── Secretos de infraestructura ─────────────────────────────────────────
+  // Deliberadamente sin valor por defecto. Un valor por defecto convierte una
+  // variable ausente en un arranque silencioso contra credenciales conocidas,
+  // en lugar de un fallo visible. Además, los inicializadores de propiedad
+  // anulan `skipMissingProperties: false`: `plainToInstance` rellena el valor
+  // por defecto cuando la variable falta, de modo que la validación nunca
+  // podría fallar para estas claves.
 
   @IsString()
-  JWT_SECRET: string = 'CHANGE_ME_USE_A_LONG_RANDOM_SECRET_AT_LEAST_64_CHARS';
+  @IsNotEmpty()
+  DATABASE_URL!: string;
 
   @IsString()
-  JWT_REFRESH_SECRET: string = 'CHANGE_ME_USE_A_LONG_RANDOM_SECRET_AT_LEAST_64_CHARS';
+  @MinLength(JWT_SECRET_MIN_LENGTH)
+  JWT_SECRET!: string;
+
+  @IsString()
+  @MinLength(JWT_SECRET_MIN_LENGTH)
+  JWT_REFRESH_SECRET!: string;
 
   @IsString()
   JWT_EXPIRES_IN: string = '15m';
@@ -79,6 +112,29 @@ export class EnvironmentVariables {
   UPLOAD_FILE_SIZE_LIMIT_BYTES?: number = 10 * 1024 * 1024;
 }
 
+/**
+ * Rechaza secretos de ejemplo en producción.
+ *
+ * La validación estructural no distingue un secreto real de uno copiado de
+ * `.env.example`: ambos son cadenas de longitud suficiente. Esta comprobación
+ * cubre ese hueco sin impedir que el entorno de desarrollo arranque.
+ */
+function assertProductionSecrets(env: EnvironmentVariables): void {
+  if (env.NODE_ENV !== 'production') return;
+
+  const offenders = PRODUCTION_SENSITIVE_KEYS.filter((key) => {
+    const value = env[key].toLowerCase();
+    return INSECURE_SECRET_MARKERS.some((marker) => value.includes(marker.toLowerCase()));
+  });
+
+  if (offenders.length > 0) {
+    throw new Error(
+      `Environment validation failed: ${offenders.join(', ')} contiene un valor de ejemplo. ` +
+        'Genere secretos propios antes de desplegar en producción.',
+    );
+  }
+}
+
 export function validate(config: Record<string, unknown>): EnvironmentVariables {
   const validatedConfig = plainToInstance(EnvironmentVariables, config, {
     enableImplicitConversion: true,
@@ -92,5 +148,6 @@ export function validate(config: Record<string, unknown>): EnvironmentVariables 
         .join('; ')}`,
     );
   }
+  assertProductionSecrets(validatedConfig);
   return validatedConfig;
 }

@@ -15,7 +15,7 @@ function toDateOnly(value: Date | string): string {
   return String(value).slice(0, 10);
 }
 
-type VisitaPayload = Prisma.CronogramaGetPayload<Record<string, never>>;
+export type VisitaPayload = Prisma.CronogramaGetPayload<Record<string, never>>;
 
 export function fromPrismaVisita(v: VisitaPayload): IVisita {
   return {
@@ -38,16 +38,33 @@ export function fromPrismaVisita(v: VisitaPayload): IVisita {
   };
 }
 
-type SolicitudPayload = Prisma.SolicitudReprogramacionGetPayload<{
-  include: {
-    resueltoPor: {
-      include: {
-        persona: true;
-        rol: true;
+/**
+ * Solicitud de reprogramación tal como la lee el repositorio.
+ *
+ * `resueltoPor` es **opcional**, no sólo nulo: una solicitud recién creada
+ * todavía no tiene resolutor, y su consulta de creación no lo incluye. Exigir la
+ * relación obligaría a un `include` inútil en cada alta.
+ *
+ * La distinción la destapó la Fase 4: mientras el repositorio declaraba sus
+ * parámetros como `any`, pasar una fila sin esa relación compilaba sin más.
+ */
+export type SolicitudPayload = Omit<
+  Prisma.SolicitudReprogramacionGetPayload<{
+    include: {
+      resueltoPor: {
+        include: {
+          persona: true;
+          rol: true;
+        };
       };
     };
-  };
-}>;
+  }>,
+  'resueltoPor'
+> & {
+  resueltoPor?: Prisma.SolicitudReprogramacionGetPayload<{
+    include: { resueltoPor: { include: { persona: true; rol: true } } };
+  }>['resueltoPor'];
+};
 
 export function fromPrismaSolicitud(s: SolicitudPayload): ISolicitudReprogramacion {
   const aprobadorNombre = s.resueltoPor?.persona

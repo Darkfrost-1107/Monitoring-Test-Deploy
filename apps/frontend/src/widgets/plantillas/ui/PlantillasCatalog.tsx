@@ -21,6 +21,8 @@ import { Spinner } from '@shared/ui/Spinner';
 import { SelectField } from '@shared/ui/form-controls';
 import { type Plantilla } from '@entities/model-plantillas';
 import { useUser } from '@entities/model-user';
+import { useScope } from '@shared/auth';
+import { RoleCode } from '@sistema-monitoreo/shared-contracts';
 import {
   usePlantillasList,
   useCambiarEstadoPlantilla,
@@ -50,7 +52,8 @@ interface PlantillasCatalogProps {
 export const PlantillasCatalog = ({ institucionId }: PlantillasCatalogProps = {}) => {
   const navigate = useNavigate();
   const { user } = useUser();
-  const isDirector = user?.role === 'director_institucion';
+  const { isInstitution, isMonitorCampo } = useScope();
+  const isDirector = user?.role === RoleCode.DIRECTOR_INSTITUCION;
 
   const { data: plantillas = [], isLoading, isError, error, refetch } = usePlantillasList({ institucionId });
   const cambiarEstado = useCambiarEstadoPlantilla();
@@ -72,9 +75,11 @@ export const PlantillasCatalog = ({ institucionId }: PlantillasCatalogProps = {}
           p.creadoPorRole === 'jefe_gestion' ||
           (p.creadoPorRole === 'director_ie' && p.ieId === user?.institucion),
       );
-    } else if (user?.role === 'jefe_gestion') {
+    } else if (user?.role === RoleCode.JEFE_GESTION) {
       result = plantillas;
-    } else if (user?.role === 'coordinador_pedagogico' || user?.role === 'jefe_taller') {
+      // Monitores de campo del lado de la institución: sólo ven la plantilla
+      // de su propia I.E.
+    } else if (isMonitorCampo && isInstitution) {
       result = result.filter(
         (p) => p.creadoPorRole === 'director_ie' && p.ieId === user?.institucion,
       );
@@ -89,7 +94,7 @@ export const PlantillasCatalog = ({ institucionId }: PlantillasCatalogProps = {}
     }
 
     return result;
-  }, [plantillas, isDirector, user, institucionId, filtroUrl]);
+  }, [plantillas, isDirector, isInstitution, isMonitorCampo, user, institucionId, filtroUrl]);
 
   const [searchText, setSearchText] = useState('');
   const [filterTipo, setFilterTipo] = useState('Todos');
@@ -428,18 +433,17 @@ export const PlantillasCatalog = ({ institucionId }: PlantillasCatalogProps = {}
             const isDocente = plantilla.tipoMonitoreo === 'Monitoreo Docente';
             const isGeneral = !plantilla.creadoPorRole || plantilla.creadoPorRole === 'jefe_gestion';
 
-            const isSchoolStaffUser =
-              user?.role === 'director_institucion' ||
-              user?.role === 'coordinador_pedagogico' ||
-              user?.role === 'jefe_taller';
+            // Personal del lado de la institución educativa.
+            const isSchoolStaffUser = isInstitution;
 
             const canManage = isSchoolStaffUser
-              ? (user?.role === 'director_institucion' && plantilla.creadoPorRole === 'director_ie' && plantilla.ieId === user?.institucion) ||
+              ? (user?.role === RoleCode.DIRECTOR_INSTITUCION && plantilla.creadoPorRole === 'director_ie' && plantilla.ieId === user?.institucion) ||
                 (plantilla.creadoPorId === user?.id && plantilla.ieId === user?.institucion)
               : isGeneral;
 
             const canCloneDirector =
-              (user?.role === 'coordinador_pedagogico' || user?.role === 'jefe_taller') &&
+              isMonitorCampo &&
+              isInstitution &&
               plantilla.creadoPorRole === 'director_ie' &&
               plantilla.ieId === user?.institucion &&
               plantilla.creadoPorId !== user?.id;

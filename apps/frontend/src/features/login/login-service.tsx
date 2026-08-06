@@ -104,6 +104,7 @@ export const useLoginService = () => {
       nombres: data.user.nombres,
       apellidos: data.user.apellidos,
       role: data.user.role as User['role'],
+      permissions: data.user.permissions ?? [],
       firstLogin: data.user.firstLogin,
       institucion: data.user.institucion,
       institucionNombre: data.user.institucionNombre,

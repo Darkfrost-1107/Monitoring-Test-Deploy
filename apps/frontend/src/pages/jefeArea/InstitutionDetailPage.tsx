@@ -7,6 +7,7 @@ import { fetchInstitucionById } from '@features/institutions/institution-service
 
 import { InstitutionProfileWidget } from '@widgets/institutions/ViewInstitution';
 import { PlantillasCatalog } from '@widgets/plantillas';
+import { RoleCode } from '@sistema-monitoreo/shared-contracts';
 
 export const InstitutionDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -19,7 +20,7 @@ export const InstitutionDetailPage = () => {
   const [institucion, setInstitucion] = useState<Institucion | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const isReadOnly = user?.role === 'especialista';
+  const isReadOnly = user?.role === RoleCode.ESPECIALISTA;
 
   useEffect(() => {
     const fetchDetail = async () => {

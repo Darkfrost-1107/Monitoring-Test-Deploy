@@ -1,6 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unused-vars */
 import {
-  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -30,6 +28,7 @@ import { QueryPlantillaDto } from '../dto/query-plantilla.dto.js';
 import { AuthGuard } from '../../auth/guards/auth.guard.js';
 import { PermissionsGuard } from '../../auth/guards/permissions.guard.js';
 import { RequirePermissions } from '../../auth/decorators/permissions.decorator.js';
+import type { AuthenticatedRequest } from '../../../shared/types/authenticated-request.js';
 
 @Controller('plantillas')
 @UseGuards(AuthGuard, PermissionsGuard)
@@ -39,13 +38,19 @@ export class PlantillaController {
   @Post()
   @RequirePermissions('monitoreo:execute')
   @HttpCode(HttpStatus.CREATED)
-  async create(@Body() dto: CreatePlantillaDto, @Req() req: any): Promise<IPlantilla> {
+  async create(
+    @Body() dto: CreatePlantillaDto,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<IPlantilla> {
     return this.service.create(dto, this.toSession(req));
   }
 
   @Get()
   @RequirePermissions('monitoreo:execute')
-  async findAll(@Query() query: QueryPlantillaDto, @Req() req: any): Promise<IPlantilla[]> {
+  async findAll(
+    @Query() query: QueryPlantillaDto,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<IPlantilla[]> {
     return this.service.findAll(query, this.toSession(req));
   }
 
@@ -53,7 +58,7 @@ export class PlantillaController {
   @RequirePermissions('monitoreo:read')
   async findById(
     @Param('id', new ParseUUIDPipe()) id: string,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ): Promise<IPlantilla> {
     return this.service.findById(id, this.toSession(req));
   }
@@ -63,7 +68,7 @@ export class PlantillaController {
   async update(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() dto: UpdatePlantillaDto,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ): Promise<IUpdatePlantillaResponse> {
     return this.service.update(id, dto, this.toSession(req));
   }
@@ -73,7 +78,7 @@ export class PlantillaController {
   async cambiarEstado(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() dto: PatchEstadoPlantillaDto,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ): Promise<IPlantilla> {
     return this.service.cambiarEstado(id, dto, this.toSession(req));
   }
@@ -84,7 +89,7 @@ export class PlantillaController {
   async duplicar(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() body: DuplicarPlantillaDto,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ): Promise<IPlantilla> {
     return this.service.duplicar(id, this.toSession(req), body?.descripcion, body?.anioAcademico);
   }
@@ -94,7 +99,7 @@ export class PlantillaController {
   @HttpCode(HttpStatus.OK)
   async eliminar(
     @Param('id', new ParseUUIDPipe()) id: string,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ): Promise<{ id: string; deletedFichas: number; deletedEvidencias: number }> {
     return this.service.eliminar(id, this.toSession(req));
   }
@@ -103,12 +108,12 @@ export class PlantillaController {
   @RequirePermissions('monitoreo:read')
   async countFichas(
     @Param('id', new ParseUUIDPipe()) id: string,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ): Promise<{ count: number; estado: 'Borrador' | 'Vigente' | 'Historico' }> {
     return this.service.countFichas(id, this.toSession(req));
   }
 
-  private toSession(req: any): SessionUser {
+  private toSession(req: AuthenticatedRequest): SessionUser {
     if (!req.user) {
       throw new ForbiddenException('Sesion no encontrada.');
     }

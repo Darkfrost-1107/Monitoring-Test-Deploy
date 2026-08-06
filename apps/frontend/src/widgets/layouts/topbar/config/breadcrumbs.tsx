@@ -1,4 +1,5 @@
 import type { UserRole } from '@shared/constants/roles';
+import { RoleCode } from '@sistema-monitoreo/shared-contracts';
 
 export const BREADCRUMBS_MAP: Record<string, string> = {
   '/dashboard': 'Panel de Control',
@@ -27,7 +28,7 @@ export const getPageTitle = (pathname: string, role?: UserRole): string => {
   // El padrón de /instituciones/docentes cambia de etiqueta según el rol:
   // el Jefe de Área gestiona Directores; el Director de IE gestiona Docentes.
   if (pathname.startsWith('/instituciones/docentes')) {
-    return role === 'jefe_area' || role === 'jefe_gestion'
+    return role === RoleCode.JEFE_AREA || role === RoleCode.JEFE_GESTION
       ? 'Padrón de Directores'
       : 'Padrón de Docentes';
   }

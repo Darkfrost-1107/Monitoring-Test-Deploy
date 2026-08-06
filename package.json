@@ -11,7 +11,10 @@
     "start": "pnpm --filter backend start:prod",
     "lint": "pnpm -r lint",
     "format": "prettier . --write",
-    "typecheck": "pnpm --filter frontend exec tsc -b && pnpm --filter backend exec tsc --noEmit"
+    "typecheck": "pnpm --filter frontend exec tsc -b && pnpm --filter backend exec tsc --noEmit",
+    "test": "pnpm --filter frontend test && pnpm --filter backend test",
+    "test:cov": "pnpm --filter frontend test:cov && pnpm --filter backend test:cov",
+    "metricas": "./scripts/metricas.sh"
   },
   "engines": {
     "node": ">=22.0.0",

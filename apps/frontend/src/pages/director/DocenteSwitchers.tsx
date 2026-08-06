@@ -1,3 +1,4 @@
+import { RoleCode } from '@sistema-monitoreo/shared-contracts';
 import { useUser } from '@entities/model-user';
 import { DirectoresPage } from '../jefeArea/DirectoresPage';
 import { DocentesPage } from './DocentesPage';
@@ -12,38 +13,38 @@ import { JefesAreaPage } from '../jefeGestion/JefesAreaPage';
 import { CoordinadorAssignPage } from './CoordinadorAssignPage';
 import { JefeAreaCreatePage } from '../jefeGestion/JefeAreaCreatePage';
 
-export const DocenteListSwitcher = () => {
+/**
+ * Cada ruta del padrón tiene dos versiones: la que ve un director desde su
+ * institución y la que ve la UGEL. Estos componentes eligen entre ambas.
+ *
+ * La condición se comprueba contra el rol y no contra `useScope().isInstitution`
+ * a propósito: `isInstitution` abarca también al coordinador pedagógico, al jefe
+ * de taller y al docente, que hoy no alcanzan estas rutas —`ROLE_PERMISSIONS` no
+ * les concede los ítems correspondientes— pero que si algún día las alcanzaran
+ * recibirían la vista de director, que no les corresponde. La comprobación
+ * estrecha no depende de esa garantía externa.
+ *
+ * Estaba repetida seis veces, una por switcher.
+ */
+const useEsDirectorDeInstitucion = (): boolean => {
   const { user } = useUser();
-  const isDirector = user?.role === 'director_institucion';
-  return isDirector ? <DocentesPage /> : <DirectoresPage />;
+  return user?.role === RoleCode.DIRECTOR_INSTITUCION;
 };
 
-export const DocenteCreateSwitcher = () => {
-  const { user } = useUser();
-  const isDirector = user?.role === 'director_institucion';
-  return isDirector ? <DirectorDocenteCreatePage /> : <JefeDocenteCreatePage />;
-};
+export const DocenteListSwitcher = () =>
+  useEsDirectorDeInstitucion() ? <DocentesPage /> : <DirectoresPage />;
 
-export const DocenteEditSwitcher = () => {
-  const { user } = useUser();
-  const isDirector = user?.role === 'director_institucion';
-  return isDirector ? <DirectorDocenteEditPage /> : <JefeDocenteEditPage />;
-};
+export const DocenteCreateSwitcher = () =>
+  useEsDirectorDeInstitucion() ? <DirectorDocenteCreatePage /> : <JefeDocenteCreatePage />;
 
-export const DocenteDetailSwitcher = () => {
-  const { user } = useUser();
-  const isDirector = user?.role === 'director_institucion';
-  return isDirector ? <DirectorDocenteDetailPage /> : <JefeDocenteDetailPage />;
-};
+export const DocenteEditSwitcher = () =>
+  useEsDirectorDeInstitucion() ? <DirectorDocenteEditPage /> : <JefeDocenteEditPage />;
 
-export const CoordinadorSwitcher = () => {
-  const { user } = useUser();
-  const isDirector = user?.role === 'director_institucion';
-  return isDirector ? <CoordinadoresPage /> : <JefesAreaPage />;
-};
+export const DocenteDetailSwitcher = () =>
+  useEsDirectorDeInstitucion() ? <DirectorDocenteDetailPage /> : <JefeDocenteDetailPage />;
 
-export const CoordinadorCreateSwitcher = () => {
-  const { user } = useUser();
-  const isDirector = user?.role === 'director_institucion';
-  return isDirector ? <CoordinadorAssignPage /> : <JefeAreaCreatePage />;
-};
+export const CoordinadorSwitcher = () =>
+  useEsDirectorDeInstitucion() ? <CoordinadoresPage /> : <JefesAreaPage />;
+
+export const CoordinadorCreateSwitcher = () =>
+  useEsDirectorDeInstitucion() ? <CoordinadorAssignPage /> : <JefeAreaCreatePage />;

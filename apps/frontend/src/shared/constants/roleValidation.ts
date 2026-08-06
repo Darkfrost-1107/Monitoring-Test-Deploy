@@ -1,5 +1,18 @@
 import type { PersonaAutocompleteData, PersonaRoles } from '@features/docentes/hooks/useDniAutocomplete';
 
+/**
+ * Rol DESTINO de un formulario de alta — no es el rol de un usuario autenticado.
+ *
+ * Modela un eje distinto de `RoleCode` y por eso se declara por separado en
+ * lugar de derivarse del contrato compartido: aquí `director` significa "la
+ * persona que se está dando de alta como director de I.E.", mientras que
+ * `RoleCode.DIRECTOR_INSTITUCION` es la identidad con la que alguien inicia
+ * sesión. Los valores se solapan parcialmente por coincidencia del dominio, no
+ * porque sean el mismo concepto.
+ *
+ * Distinción registrada en la Fase 1 de PLAN_REMEDIACION.md para que no se
+ * confunda con `RoleCode` ni se intente unificar sin analizar el dominio.
+ */
 export type RolObjetivo = 'director' | 'docente' | 'especialista' | 'jefe_area' | 'jefe_gestion';
 
 export interface RoleCheckResult {

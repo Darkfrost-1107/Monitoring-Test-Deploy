@@ -3,6 +3,8 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Calendar, RefreshCw } from 'lucide-react';
 import { PageHeader } from '@shared/ui/pageHeader';
 import { useUser } from '@entities/model-user';
+import { useScope } from '@shared/auth';
+import { RoleCode } from '@sistema-monitoreo/shared-contracts';
 import { useCronogramasData } from '@features/cronogramas/hooks/use-cronogramas-data';
 import { CalendarioGrid, CalendarioSidebar } from '@widgets/calendario';
 import { BandejaReprogramaciones } from '@widgets/reprogramaciones';
@@ -11,10 +13,10 @@ export const CalendarioPage = () => {
   const { user } = useUser();
   const location = useLocation();
   const navigate = useNavigate();
-  const isEspecialista =
-    user?.role === 'especialista' ||
-    user?.role === 'coordinador_pedagogico' ||
-    user?.role === 'jefe_taller';
+  // Quien levanta la ficha en el aula. El nombre anterior, `isEspecialista`,
+  // incluía además al coordinador pedagógico y al jefe de taller.
+  const { isMonitorCampo } = useScope();
+  const isEspecialista = isMonitorCampo;
   const { cronogramas, reprogramaciones } = useCronogramasData();
 
   // ── Estados de Navegación ──
@@ -65,7 +67,7 @@ export const CalendarioPage = () => {
   const [filterNroVisita, setFilterNroVisita] = useState('Todos');
   const [filterEstado, setFilterEstado] = useState('Todos');
 
-  const isDirector = user?.role === 'director_institucion';
+  const isDirector = user?.role === RoleCode.DIRECTOR_INSTITUCION;
 
   const showBandeja = useMemo(() => {
     if (isDirector) {
@@ -185,7 +187,7 @@ export const CalendarioPage = () => {
         }
       }
 
-      if (user?.role === 'jefe_area' && user.especialistaNivel) {
+      if (user?.role === RoleCode.JEFE_AREA && user.especialistaNivel) {
         const nivel = user.especialistaNivel;
         if (nivel === 'Inicial') {
           if (visit.modalidad !== 'EBE' && visit.nivel !== 'Inicial') return false;

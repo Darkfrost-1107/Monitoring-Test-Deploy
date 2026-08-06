@@ -1,29 +1,19 @@
-export type UserRole =
-  | 'director_ugel'
-  | 'jefe_area'
-  | 'jefe_gestion'
-  | 'coordinador_pedagogico'
-  | 'jefe_taller'
-  | 'especialista'
-  | 'director_institucion'
-  | 'docente'
-  | 'invitado'
-  | 'admin'
-  | 'superusuario';
+/**
+ * Permisos de navegación por rol.
+ *
+ * Fase 1 de PLAN_REMEDIACION.md: el tipo `UserRole` y el diccionario
+ * `ROLE_LABELS` que este archivo declaraba se trasladaron al contrato
+ * compartido. Se reexportan desde aquí por compatibilidad; el punto de
+ * importación se retira en la Fase 7.
+ *
+ * `ROLE_PERMISSIONS` sigue siendo una matriz estática mantenida a mano y
+ * paralela al mapa de capacidades del backend (`shared/auth/capability-map.ts`).
+ * Unificar ambas es trabajo de la Fase 2, no de esta.
+ */
 
-export const ROLE_LABELS: Record<UserRole, string> = {
-  director_ugel: 'Director UGEL',
-  jefe_area: 'Jefe de Área',
-  coordinador_pedagogico: 'Coordinador Pedagógico',
-  jefe_taller: 'Jefe de Taller',
-  jefe_gestion: 'Jefe de Gestión',
-  especialista: 'Especialista',
-  director_institucion: 'Director de Institución',
-  docente: 'Docente',
-  invitado: 'Invitado',
-  admin: 'Administrador del Sistema',
-  superusuario: 'Super Administrador',
-};
+export { ROLE_LABELS, type UserRole } from '@sistema-monitoreo/shared-contracts';
+
+import { RoleCode, type UserRole } from '@sistema-monitoreo/shared-contracts';
 
 export type MenuItem =
   | 'dashboard'
@@ -56,15 +46,11 @@ export type MenuItem =
 
 const BASE_PERMISSIONS: MenuItem[] = ['reportes'];
 
+// La entrada `admin` se retiró aquí: concedía 22 de los 28 ítems de menú —el
+// conjunto más amplio del sistema— a un rol que el backend nunca podía emitir.
+// No figura en `RoleCode`, no lo siembra `database/seeders/auth.js` y ni
+// `ADMIN_ROLES` lo incluía. El rol que gestiona altos cargos es `superusuario`.
 export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
-  admin: [
-    'dashboard', 'monitoreo', 'monitoreo_plan', 'monitoreo_gestion', 'monitoreo_reportes',
-    'monitoreo_plan_anual', 'monitoreo_cronograma', 'monitoreo_calendario', 'plantillas',
-    'plantillas_ugel', 'plantillas_ies',
-    'instituciones', 'instituciones_padron', 'instituciones_padron_lista', 'instituciones_padron_personal', 'instituciones_docentes', 'instituciones_coordinadores',
-    'instituciones_jefes_taller', 'especialistas', 'jefes_area', 'reportes', 'configuracion'
-  ],
-
   director_ugel: [
     'dashboard',
     'focos_atencion',
@@ -171,7 +157,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
   superusuario: ['superadmin', 'superadmin_director', 'superadmin_jefe'],
 };
 
-const READ_ONLY_ROLES: UserRole[] = ['invitado'];
+import { READ_ONLY_ROLES } from '@sistema-monitoreo/shared-contracts';
 
 // ── FUNCIONES DE VERIFICACIÓN Y UTILS ──
 
@@ -180,24 +166,34 @@ export const hasPermission = (role: UserRole, item: MenuItem): boolean =>
 
 export const isReadOnlyRole = (role: UserRole): boolean => READ_ONLY_ROLES.includes(role);
 
+/**
+ * Pantalla a la que llega cada rol tras iniciar sesión.
+ *
+ * Distingue por rol **a propósito** y no se deriva del menú. Cada destino es una
+ * decisión deliberada sobre cuál es la tarea principal de esa persona: el jefe
+ * de gestión llega a Especialistas porque gestionarlos es su trabajo, no porque
+ * sea el primer ítem que le corresponda. Calcularlo como «el primer ítem
+ * disponible» sustituiría intención por un accidente del orden de declaración.
+ *
+ * Lo que sí debe garantizarse es que el destino sea alcanzable para el rol, y
+ * eso lo cubre `getDefaultLandingPage.test.ts` en lugar de un refactor.
+ */
 export const getDefaultLandingPage = (role: UserRole): string => {
   switch (role) {
-    case 'admin':
-      return '/dashboard';
-    case 'superusuario':
+    case RoleCode.SUPERUSUARIO:
       return '/superadmin';
-    case 'jefe_area':
+    case RoleCode.JEFE_AREA:
       return '/instituciones/padron';
-    case 'jefe_gestion':
+    case RoleCode.JEFE_GESTION:
       return '/especialistas';
-    case 'especialista':
+    case RoleCode.ESPECIALISTA:
       return '/monitoreo/calendario';
-    case 'director_institucion':
+    case RoleCode.DIRECTOR_INSTITUCION:
       return '/dashboard';
-    case 'coordinador_pedagogico':
-    case 'jefe_taller':
+    case RoleCode.COORDINADOR_PEDAGOGICO:
+    case RoleCode.JEFE_TALLER:
       return '/monitoreo/calendario';
-    case 'docente':
+    case RoleCode.DOCENTE:
       return '/reportes';
     default:
       return '/dashboard';
