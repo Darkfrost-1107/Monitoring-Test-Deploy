@@ -21,6 +21,15 @@ export interface JwtPayload {
   apellidos: string;
   institucion_id?: string;
   colegio_id?: string;
+  /**
+   * Identificador del registro de Docente de esta persona, si lo tiene.
+   *
+   * Permite que el cliente reconozca sus propias evaluaciones comparando
+   * identificadores en lugar de nombres. Sin esto, el frontend comparaba
+   * `nombres + apellidos` por inclusión de subcadenas, de modo que un nombre de
+   * pila corto coincidía con el de otra persona. Fase 6 de PLAN_REMEDIACION.md.
+   */
+  docente_id?: string;
   colegio_nombre?: string;
   colegio_nivel?: string;
   especialista_id?: string;
@@ -87,11 +96,13 @@ export class AuthTokenService {
 
   buildJwtPayload(user: AuthUserWithRelations): JwtPayload {
     let institucion_id: string | undefined;
+    let docente_id: string | undefined;
     let colegio_id: string | undefined;
     let colegio_nombre: string | undefined;
     let colegio_nivel: string | undefined;
 
     if (user.persona?.docente) {
+      docente_id = user.persona.docente.id;
       colegio_id = user.persona.docente.institucionId || undefined;
       institucion_id = user.persona.docente.institucionId || undefined;
       colegio_nombre = user.persona.docente.institucion?.nombre;
@@ -124,6 +135,7 @@ export class AuthTokenService {
       nombres: user.persona.nombres,
       apellidos: user.persona.apellidos,
       institucion_id,
+      docente_id,
       colegio_id,
       colegio_nombre,
       colegio_nivel,

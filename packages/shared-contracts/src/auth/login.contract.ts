@@ -24,6 +24,13 @@ export interface ILoginResponse {
     institucion?: string;
     institucionNombre?: string;
     institucionNivel?: string;
+    /**
+     * Registro de Docente de esta persona, si lo tiene.
+     *
+     * Permite reconocer las evaluaciones propias comparando identificadores en
+     * lugar de nombres.
+     */
+    docenteId?: string;
     especialistaId?: string;
     especialistaNivel?: string;
     especialistaModalidad?: string;

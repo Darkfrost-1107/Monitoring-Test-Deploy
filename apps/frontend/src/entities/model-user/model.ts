@@ -18,6 +18,8 @@ export interface User {
   institucion?: string;
   institucionNombre?: string;
   institucionNivel?: string;
+  /** Registro de Docente, si lo tiene. Identifica a la persona como evaluada. */
+  docenteId?: string;
   especialistaId?: string;
   especialistaNivel?: string;
   especialistaEspecialidades?: string[];

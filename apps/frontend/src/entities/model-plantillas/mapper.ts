@@ -1,6 +1,6 @@
 import type { IPlantilla, INivelCalificacion, IDesempeno, IAspecto, IRubricaNivel, IEjeItem, TipoPlantilla, EstadoPlantilla, RolAutorPlantilla, NivelRomano, Baremo } from '@sistema-monitoreo/shared-contracts';
 import type { Plantilla, NivelCalificacion, Desempeno, AspectoEvaluado, RubricaNivel, EjeItem } from './model';
-import { hoyISO } from '@shared/lib/fecha/fecha';
+import { aFechaISOLocal } from '@shared/lib/fecha/fecha';
 
 const TIPO_MONITOREO_LABEL: Record<TipoPlantilla, string> = {
   DOCENTE: 'Monitoreo Docente',
@@ -41,14 +41,18 @@ const mapDesempeno = (d: IDesempeno): Desempeno => ({
   rubrica: (d.rubrica ?? []).map(mapRubrica),
 });
 
-const formatFechaCreacion = (iso: string): string => {
-  if (!iso) return hoyISO();
-  try {
-    return iso.split('T')[0];
-  } catch {
-    return hoyISO();
-  }
-};
+/**
+ * La fecha de creación de la plantilla, en el día que corresponde en Perú.
+ *
+ * `createdAt` es un **instante**, no una fecha de calendario. Cortarlo por la
+ * «T» devolvía el día en UTC: una plantilla creada un martes a las 20:00 en
+ * Lima —miércoles 01:00 UTC— aparecía como del miércoles.
+ *
+ * Sin `createdAt` devuelve cadena vacía. Antes devolvía `hoyISO()`, de modo que
+ * una plantilla sin fecha se mostraba como creada hoy; el catálogo ya sabe
+ * mostrar «—» cuando no hay fecha.
+ */
+const formatFechaCreacion = (iso: string): string => (iso ? aFechaISOLocal(iso) : '');
 
 /**
  * Convierte IPlantilla (backend) a Plantilla (modelo frontend).

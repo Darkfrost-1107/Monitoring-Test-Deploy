@@ -177,6 +177,25 @@ const NOMBRES_DE_MES = [
 ];
 
 /**
+ * Día, mes abreviado y año: `09 Mar 2026`.
+ *
+ * Es el formato del catálogo de plantillas, donde estaba escrito a mano
+ * partiendo la cadena por los guiones, con su propia lista de meses y un
+ * `try/catch` que devolvía la cadena original. Si el valor traía hora, el
+ * último segmento salía sin cortar: `09T00:00:00.000Z Mar 2026`.
+ */
+export function formatearFechaAbreviada(
+  valor: string | null | undefined,
+  siNoEsFecha = FECHA_INVALIDA,
+): string {
+  const fecha = aFechaLocal(valor);
+  if (!fecha) return siNoEsFecha;
+
+  const mes = NOMBRES_DE_MES[fecha.getMonth()].slice(0, 3);
+  return `${DOS_DIGITOS(fecha.getDate())} ${mes} ${fecha.getFullYear()}`;
+}
+
+/**
  * Día, mes en palabras y hora en 24 horas: `9 de Marzo, 14:30 hrs`.
  *
  * Es el formato de las tarjetas de reprogramación. Su versión anterior tenía un

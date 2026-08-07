@@ -107,6 +107,8 @@ export interface FichaPersistida {
     desempenoId: string;
     nivel: number;
     observaciones?: string | null;
+    /** Respuesta a la pregunta adicional del desempeño, si el instrumento la tiene. */
+    preguntaExtraRespuesta?: boolean | null;
   }[];
   respuestasEjeItem?: readonly {
     ejeItemId: string;
@@ -161,9 +163,14 @@ export function fichaAEstadoFormulario(ficha: FichaPersistida): DatosFicha {
 
   const selectedLevels: Record<string, string> = {};
   const rubricComments: Record<string, string> = {};
+  const preguntaExtraAnswers: Record<string, boolean> = {};
   for (const r of ficha.respuestasDesempeno) {
     selectedLevels[r.desempenoId] = aNivelRomano(r.nivel);
     if (r.observaciones) rubricComments[r.desempenoId] = r.observaciones;
+    // Se compara contra nulo y no por veracidad: un «no» es una respuesta.
+    if (r.preguntaExtraRespuesta != null) {
+      preguntaExtraAnswers[r.desempenoId] = r.preguntaExtraRespuesta;
+    }
   }
 
   const respuestasEjeItem: Record<string, number> = {};
@@ -186,6 +193,7 @@ export function fichaAEstadoFormulario(ficha: FichaPersistida): DatosFicha {
     sugerencias: ficha.sugerencias ?? '',
     compromisos: ficha.compromisos ?? '',
     rubricComments,
+    preguntaExtraAnswers,
     respuestasEjeItem,
     evidenciaUrls,
     observacionesEjeItem,

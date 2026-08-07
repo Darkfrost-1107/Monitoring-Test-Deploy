@@ -598,9 +598,20 @@ export const FichaPrintable = forwardRef<HTMLDivElement, FichaPrintableProps>(
           </div>
         )}
 
-        {/* Sugerencias y Compromisos */}
+        {/* Observaciones generales, sugerencias y compromisos */}
         <div className="space-y-3 mt-6 break-inside-avoid">
           <div className="pdf-major-title">III. SUGERENCIAS Y COMPROMISOS</div>
+
+          {/* El campo se persistia desde siempre pero no se imprimia ni tenia
+              control en el formulario, de modo que llegaba vacio. Fase 6. */}
+          {fichaState.generalComments && (
+            <div className="pdf-block">
+              <h3 className="font-bold text-sm mb-2 text-slate-800">Observaciones Generales</h3>
+              <p className="text-xs text-slate-700 whitespace-pre-wrap">
+                {fichaState.generalComments}
+              </p>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-4">
             <div className="pdf-block">

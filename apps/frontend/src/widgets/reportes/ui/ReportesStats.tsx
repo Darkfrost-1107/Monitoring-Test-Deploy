@@ -13,10 +13,11 @@ interface ReportesStatsProps {
     total: number;
     docentes: number;
     directivos: number;
-    satisfactionPercent: number;
+    /** `null` cuando ninguna ficha trae nivel de logro: no hay qué informar. */
+    satisfactionPercent: number | null;
     uniqueIEs: number;
     /** Solo para vista evaluado (docente) */
-    promedioGeneral?: number;
+    promedioGeneral?: number | null;
     nivelLogroMasFrecuente?: string;
     uniqueEspecialistas?: number;
   };
@@ -58,7 +59,7 @@ export const ReportesStats = ({ stats, isEvaluatedView = false }: ReportesStatsP
               Mi Promedio General
             </span>
             <span className="text-xl font-black text-slate-800 block mt-0.5 leading-none">
-              {stats.promedioGeneral !== undefined ? stats.promedioGeneral.toFixed(2) : '—'}
+              {stats.promedioGeneral != null ? stats.promedioGeneral.toFixed(2) : '—'}
             </span>
             <span className="text-[10px] text-slate-400 font-semibold">sobre 4.00 pts</span>
           </div>
@@ -129,7 +130,8 @@ export const ReportesStats = ({ stats, isEvaluatedView = false }: ReportesStatsP
             Nivel Satisfactorio
           </span>
           <span className="text-xl font-black text-slate-800 block mt-0.5 leading-none">
-            {stats.satisfactionPercent}%
+            {/* Sin fichas con nivel de logro no hay porcentaje que informar. */}
+            {stats.satisfactionPercent !== null ? `${stats.satisfactionPercent}%` : '—'}
           </span>
         </div>
         <ArrowUpRight className="absolute top-3 right-3 h-4.5 w-4.5 text-slate-300 group-hover:text-slate-400 transition-colors" />

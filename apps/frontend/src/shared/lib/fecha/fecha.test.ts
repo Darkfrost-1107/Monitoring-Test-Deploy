@@ -5,6 +5,7 @@ import {
   hoyISO,
   aFechaLocal,
   formatearFechaConMes,
+  formatearFechaAbreviada,
   formatearFechaEnPalabras,
   esFechaValida,
   formatearFechaCorta,
@@ -253,6 +254,33 @@ describe('formatearFechaEnPalabras', () => {
 
   it('avisa en lugar de devolver la cadena original', () => {
     expect(formatearFechaEnPalabras('cualquier-cosa')).toBe('Fecha inválida');
+  });
+});
+
+describe('formatearFechaAbreviada', () => {
+  it('escribe día con dos dígitos, mes abreviado y año', () => {
+    expect(formatearFechaAbreviada('2026-03-09')).toBe('09 Mar 2026');
+  });
+
+  /**
+   * La versión escrita a mano en el catálogo partía la cadena por los guiones,
+   * así que el último segmento salía con la hora pegada:
+   * `09T00:00:00.000Z Mar 2026`.
+   */
+  it('no arrastra la hora cuando el valor la trae', () => {
+    expect(formatearFechaAbreviada('2026-03-09T14:30:00')).toBe('09 Mar 2026');
+  });
+
+  it('no se corre de día con la forma corta', () => {
+    expect(formatearFechaAbreviada('2026-01-01')).toBe('01 Ene 2026');
+  });
+
+  it('avisa en lugar de devolver la cadena original', () => {
+    expect(formatearFechaAbreviada('cualquier-cosa')).toBe('Fecha inválida');
+  });
+
+  it('admite un reemplazo propio para el valor vacío', () => {
+    expect(formatearFechaAbreviada('', '—')).toBe('—');
   });
 });
 

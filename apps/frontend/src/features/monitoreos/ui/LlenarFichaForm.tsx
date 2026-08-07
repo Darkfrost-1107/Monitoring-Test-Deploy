@@ -62,6 +62,7 @@ export const LlenarFichaForm = ({
     estado,
     hidratar,
     setSelectedLevels,
+    setGeneralComments,
     setSugerencias,
     setCompromisos,
     setRubricComments,
@@ -74,6 +75,7 @@ export const LlenarFichaForm = ({
 
   const {
     selectedLevels,
+    generalComments,
     sugerencias,
     compromisos,
     rubricComments,
@@ -241,6 +243,8 @@ export const LlenarFichaForm = ({
         )}
 
         <CierreNarrativoSeccion
+          observaciones={generalComments}
+          onObservaciones={setGeneralComments}
           sugerencias={sugerencias}
           compromisos={compromisos}
           onSugerencias={setSugerencias}

@@ -147,6 +147,40 @@ describe('fichaAEstadoFormulario', () => {
     expect(estado.rubricComments).toEqual({ d2: 'Requiere acompañamiento' });
   });
 
+  /**
+   * DEFECTO CORREGIDO. La función no leía `preguntaExtraRespuesta`, aunque la
+   * columna existe en la base, el contrato la declara y `DatosFicha` la espera.
+   * Al reabrir una ficha guardada, las preguntas adicionales de cada desempeño
+   * aparecían en blanco: el evaluador las había respondido y no se veían.
+   */
+  it('reconstruye las respuestas de las preguntas adicionales', () => {
+    const estado = fichaAEstadoFormulario(
+      ficha({
+        respuestasDesempeno: [
+          { desempenoId: 'd1', nivel: 3, preguntaExtraRespuesta: true },
+          { desempenoId: 'd2', nivel: 3, preguntaExtraRespuesta: false },
+        ],
+      }),
+    );
+
+    expect(estado.preguntaExtraAnswers).toEqual({ d1: true, d2: false });
+  });
+
+  /** Un «no» es una respuesta; sin respuesta es otra cosa. */
+  it('distingue el desempeño sin responder del respondido con «no»', () => {
+    const estado = fichaAEstadoFormulario(
+      ficha({
+        respuestasDesempeno: [
+          { desempenoId: 'd1', nivel: 3, preguntaExtraRespuesta: null },
+          { desempenoId: 'd2', nivel: 3 },
+          { desempenoId: 'd3', nivel: 3, preguntaExtraRespuesta: false },
+        ],
+      }),
+    );
+
+    expect(estado.preguntaExtraAnswers).toEqual({ d3: false });
+  });
+
   it('omite las observaciones vacías en lugar de guardar cadenas vacías', () => {
     const estado = fichaAEstadoFormulario(
       ficha({ respuestasDesempeno: [{ desempenoId: 'd1', nivel: 2, observaciones: '' }] }),
