@@ -4,6 +4,7 @@ import type { JefeArea } from '@entities/model-jefes-area';
 import type { JefeAreaFormData } from '@entities/model-jefes-area/validator';
 import { jefesAreaApi } from '@shared/api/jefes-area.api';
 import type { IEspecialistaResponse as IJefeAreaResponse, IQueryEspecialistaRequest } from '@sistema-monitoreo/shared-contracts';
+import { aFechaISOLocal, hoyISO } from '@shared/lib/fecha/fecha';
 
 export const fetchJefesArea = async (query?: IQueryEspecialistaRequest): Promise<JefeArea[]> => {
   const res = await jefesAreaApi.findAll(query);
@@ -42,8 +43,8 @@ export const mapApiJefeAreaToFrontend = (apiJefe: IJefeAreaResponse): JefeArea =
     nivelEducativo: normalizeNivel(apiJefe.nivelEducativo),
     activo: apiJefe.estado === 'Activo',
     fechaCreacion: apiJefe.createdAt
-      ? new Date(apiJefe.createdAt).toISOString().split('T')[0]
-      : new Date().toISOString().split('T')[0],
+      ? aFechaISOLocal(apiJefe.createdAt)
+      : hoyISO(),
     cargo: apiJefe.cargo || 'Jefe de Área',
     especialidades: apiJefe.especialidades || [],
     especialidad: apiJefe.especialidad || null,

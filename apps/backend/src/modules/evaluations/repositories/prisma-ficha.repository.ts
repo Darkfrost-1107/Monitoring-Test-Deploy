@@ -19,6 +19,7 @@ import {
   PlantillaBasic,
 } from './ficha.repository.js';
 import { fromPrismaFicha } from './ficha.mapper.js';
+import { aFechaDeCalendario } from '../../../common/utils/fecha-calendario.js';
 
 @Injectable()
 export class PrismaFichaRepository implements FichaRepository {
@@ -407,7 +408,8 @@ export class PrismaFichaRepository implements FichaRepository {
       promedio: Number(f.promedio),
       nivelLogro: f.nivelLogro,
       observaciones: f.observaciones,
-      fecha: f.cronograma.fechaProgramada.toISOString(),
+      // Columna @db.Date: viaja como fecha de calendario, sin hora ni zona.
+      fecha: aFechaDeCalendario(f.cronograma.fechaProgramada),
     }));
   }
 }

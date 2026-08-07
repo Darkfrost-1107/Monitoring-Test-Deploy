@@ -278,7 +278,10 @@ describe('VisitRequestsService', () => {
 
       expect(d.cronograma).toEqual({
         id: 'c-1',
-        fechaProgramada: '2026-04-10T00:00:00.000Z',
+        // Fecha de CALENDARIO, sin hora ni zona: la columna es @db.Date y no
+        // guarda un instante. Antes viajaba como ISO completo y el cliente,
+        // en UTC-5, la mostraba un día antes.
+        fechaProgramada: '2026-04-10',
         horaInicio: '09:00',
         especialistaNombre: 'Luis Pérez',
       });

@@ -18,6 +18,7 @@ import type { Plantilla } from '@/entities/model-plantillas';
 import { usePlantilla } from '@/entities/model-plantillas/use-plantillas-api';
 import { LlenarFichaForm } from '@/features/monitoreos';
 import { fichasApi } from '@/features/monitoreos/api/fichas.api';
+import { formatearFechaEnPalabras } from '@shared/lib/fecha/fecha';
 
 interface IFichaRespuestaDesempenoConPreguntaExtra {
   id: string;
@@ -55,11 +56,6 @@ interface ReportesGridProps {
 }
 
 const MODALIDADES = ['EBR', 'EBA', 'EBE', 'CEPTRO'];
-const MONTH_NAMES = [
-  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-];
-
 const getFichaState = (visitId: string) => {
   const saved = localStorage.getItem(`sistema-monitoreo:ficha-state:${visitId}`);
   if (saved) {
@@ -101,17 +97,6 @@ const getFichaState = (visitId: string) => {
   };
 };
 
-const formatVisitDate = (fechaHoraStr: string) => {
-  try {
-    const d = new Date(fechaHoraStr);
-    if (!isNaN(d.getTime())) {
-      return `${d.getDate()} de ${MONTH_NAMES[d.getMonth()]}, ${d.getFullYear()}`;
-    }
-    return fechaHoraStr.split('T')[0];
-  } catch {
-    return fechaHoraStr;
-  }
-};
 
 export const ReportesGrid = ({
   filteredVisits,
@@ -553,7 +538,7 @@ export const ReportesGrid = ({
                           </td>
                           <td className="py-3.5 px-4 text-slate-500">{visit.especialista}</td>
                           <td className="py-3.5 px-4 text-slate-500 font-semibold">
-                            {formatVisitDate(visit.fechaHora)}
+                            {formatearFechaEnPalabras(visit.fechaHora)}
                           </td>
                           <td className="py-3.5 px-4 font-bold text-slate-600">
                             {hasBackendData

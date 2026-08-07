@@ -23,16 +23,17 @@ describe('formatearFechaVisita', () => {
     expect(formatearFechaVisita('2026-03-09T14:30:00.000Z')).toMatch(/^\d{2}\/\d{2}\/\d{4}$/);
   });
 
-  it('cae a la parte de fecha cuando el valor no es una fecha válida', () => {
-    expect(formatearFechaVisita('no-es-fecha T sobrante')).toBe('no-es-fecha ');
-  });
-
-  it('devuelve el valor original cuando no hay separador ni fecha válida', () => {
-    expect(formatearFechaVisita('cualquier-cosa')).toBe('cualquier-cosa');
-  });
-
-  it('devuelve la cadena vacía tal cual', () => {
-    expect(formatearFechaVisita('')).toBe('');
+  /**
+   * CAMBIO DE COMPORTAMIENTO, deliberado. Estas tres pruebas fijaban el
+   * repliegue silencioso: ante una fecha ilegible la función devolvía la cadena
+   * original —o un trozo de ella— y el usuario veía un dato incorrecto sin
+   * ninguna señal. Al consolidar en `shared/lib/fecha`, una fecha que no se
+   * puede interpretar se informa como tal.
+   */
+  it('avisa cuando el valor no es una fecha, en lugar de devolver un trozo', () => {
+    expect(formatearFechaVisita('no-es-fecha T sobrante')).toBe('Fecha inválida');
+    expect(formatearFechaVisita('cualquier-cosa')).toBe('Fecha inválida');
+    expect(formatearFechaVisita('')).toBe('Fecha inválida');
   });
 });
 
@@ -103,8 +104,8 @@ describe('formatearHoraVisita', () => {
     expect(formatearHoraVisita('2026-03-09T23:59:00')).toBe('11:59 PM');
   });
 
-  it('devuelve el valor original cuando no hay hora que leer', () => {
-    expect(formatearHoraVisita('no-es-fecha')).toBe('no-es-fecha');
+  it('avisa cuando no hay hora que leer, en lugar de devolver el valor crudo', () => {
+    expect(formatearHoraVisita('no-es-fecha')).toBe('Fecha inválida');
   });
 });
 
@@ -127,8 +128,8 @@ describe('formatearFechaLarga', () => {
     expect(formatearFechaLarga('2026-03-01')).toContain('marzo');
   });
 
-  it('devuelve el valor original cuando no es una fecha', () => {
-    expect(formatearFechaLarga('cualquier-cosa')).toBe('cualquier-cosa');
+  it('avisa cuando no es una fecha, en lugar de devolver el valor crudo', () => {
+    expect(formatearFechaLarga('cualquier-cosa')).toBe('Fecha inválida');
   });
 });
 

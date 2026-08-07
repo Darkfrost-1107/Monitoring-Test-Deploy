@@ -24,19 +24,8 @@ import {
   SolicitarReprogramacionForm,
   DecidirReprogramacionForm
 } from '@/features/reprogramaciones';
+import { formatearFechaCorta } from '@shared/lib/fecha/fecha';
 
-const formatVisitDate = (fechaHoraStr: string) => {
-  try {
-    const d = new Date(fechaHoraStr);
-    if (!isNaN(d.getTime())) {
-      return d.toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' });
-    }
-    const parts = fechaHoraStr.split('T');
-    return parts[0];
-  } catch {
-    return fechaHoraStr;
-  }
-};
 
 export const BandejaReprogramaciones = () => {
   const { user } = useUser();
@@ -254,7 +243,7 @@ export const BandejaReprogramaciones = () => {
                       Original
                     </span>
                     <span className="font-semibold text-slate-500 line-through truncate block">
-                      {formatVisitDate(req.fechaOriginal)}
+                      {formatearFechaCorta(req.fechaOriginal)}
                     </span>
                   </div>
                   <div className="col-span-1 flex justify-center text-slate-400">
@@ -265,7 +254,7 @@ export const BandejaReprogramaciones = () => {
                       Propuesta
                     </span>
                     <span className="font-extrabold text-slate-800 truncate block">
-                      {formatVisitDate(req.fechaNueva)}
+                      {formatearFechaCorta(req.fechaNueva)}
                     </span>
                   </div>
                 </div>

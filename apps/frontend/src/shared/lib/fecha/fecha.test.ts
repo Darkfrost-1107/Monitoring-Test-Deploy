@@ -1,7 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import {
+  aFechaISOLocal,
+  formatearFecha,
+  hoyISO,
   aFechaLocal,
   formatearFechaConMes,
+  formatearFechaEnPalabras,
   esFechaValida,
   formatearFechaCorta,
   formatearFechaHora,
@@ -51,6 +55,34 @@ describe('aFechaLocal', () => {
 
     expect(fecha?.getHours()).toBe(14);
     expect(fecha?.getMinutes()).toBe(30);
+  });
+
+  /**
+   * DEFECTO CORREGIDO. La primera versión de esta función, escrita en la Fase 6,
+   * ignoraba la zona: aplicaba la construcción local a cualquier cadena que
+   * empezara con `YYYY-MM-DDTHH:MM`, incluida la que termina en `Z`. Un instante
+   * UTC quedaba desplazado cinco horas y podía cambiar de día.
+   */
+  it('convierte a hora local una cadena con zona explícita', () => {
+    // 2026-03-10 01:30 UTC son las 20:30 del 9 de marzo en Lima.
+    const fecha = aFechaLocal('2026-03-10T01:30:00.000Z');
+
+    expect(fecha?.getDate()).toBe(9);
+    expect(fecha?.getHours()).toBe(20);
+  });
+
+  it('respeta también un desplazamiento explícito', () => {
+    const fecha = aFechaLocal('2026-03-09T20:30:00-05:00');
+
+    expect(fecha?.getDate()).toBe(9);
+    expect(fecha?.getHours()).toBe(20);
+  });
+
+  it('trata como local la cadena SIN zona, que es la del formulario', () => {
+    const fecha = aFechaLocal('2026-03-09T20:30');
+
+    expect(fecha?.getDate()).toBe(9);
+    expect(fecha?.getHours()).toBe(20);
   });
 
   it('devuelve null ante un valor que no es fecha', () => {
@@ -162,5 +194,82 @@ describe('formatearFechaConMes', () => {
     expect(resultado).toBe('Fecha inválida');
     expect(resultado).not.toContain('Oct');
     expect(resultado).not.toContain('2023');
+  });
+});
+
+describe('aFechaISOLocal', () => {
+  it('devuelve la fecha en formato ISO corto', () => {
+    expect(aFechaISOLocal('2026-03-09T14:30:00')).toBe('2026-03-09');
+  });
+
+  /**
+   * Éste es el caso que estaba mal. `toISOString()` devuelve UTC: en Perú
+   * (UTC-5), todo lo registrado después de las 19:00 caía en el día siguiente.
+   * Un cargo asignado un martes a las 20:00 se mostraba como del miércoles.
+   */
+  it('no adelanta el día en un registro de la noche', () => {
+    expect(aFechaISOLocal('2026-03-09T20:30:00')).toBe('2026-03-09');
+    expect(aFechaISOLocal('2026-03-09T23:59:00')).toBe('2026-03-09');
+  });
+
+  it('acepta un objeto Date además de una cadena', () => {
+    expect(aFechaISOLocal(new Date(2026, 2, 9, 20, 30))).toBe('2026-03-09');
+  });
+
+  it('antepone ceros a mes y día', () => {
+    expect(aFechaISOLocal('2026-01-05T10:00:00')).toBe('2026-01-05');
+  });
+
+  it('devuelve cadena vacía ante un valor que no es fecha', () => {
+    expect(aFechaISOLocal('cualquier-cosa')).toBe('');
+    expect(aFechaISOLocal(null)).toBe('');
+    expect(aFechaISOLocal(undefined)).toBe('');
+  });
+});
+
+describe('hoyISO', () => {
+  it('devuelve el día local en formato ISO corto', () => {
+    expect(hoyISO(new Date(2026, 2, 9, 10, 0))).toBe('2026-03-09');
+  });
+
+  /**
+   * El caso que estaba mal: `new Date().toISOString()` da el día en UTC, de
+   * modo que en Perú, después de las 19:00, devolvía el día siguiente.
+   */
+  it('no adelanta el día por la noche', () => {
+    expect(hoyISO(new Date(2026, 2, 9, 20, 30))).toBe('2026-03-09');
+    expect(hoyISO(new Date(2026, 2, 9, 23, 59))).toBe('2026-03-09');
+  });
+});
+
+describe('formatearFechaEnPalabras', () => {
+  it('escribe día, mes en palabras y año', () => {
+    expect(formatearFechaEnPalabras('2026-03-09T14:30:00')).toBe('9 de Marzo, 2026');
+  });
+
+  it('funciona con una fecha sin hora, sin correrse de día', () => {
+    expect(formatearFechaEnPalabras('2026-03-01')).toBe('1 de Marzo, 2026');
+  });
+
+  it('avisa en lugar de devolver la cadena original', () => {
+    expect(formatearFechaEnPalabras('cualquier-cosa')).toBe('Fecha inválida');
+  });
+});
+
+describe('formatearFecha', () => {
+  it('aplica las opciones que le pasan', () => {
+    const resultado = formatearFecha('2026-03-09', { day: '2-digit', month: 'short', year: 'numeric' });
+
+    expect(resultado).toContain('09');
+    expect(resultado).toContain('2026');
+  });
+
+  /** El mismo beneficio que el resto del módulo: no se corre de día. */
+  it('no adelanta ni atrasa el día', () => {
+    expect(formatearFecha('2026-03-01', { day: '2-digit' })).toBe('01');
+  });
+
+  it('avisa cuando no es una fecha', () => {
+    expect(formatearFecha('cualquier-cosa', { day: '2-digit' })).toBe('Fecha inválida');
   });
 });

@@ -23,6 +23,7 @@ import {
   useRechazarSolicitud,
   TrazabilidadSolicitudDialog,
 } from '@features/visit-requests';
+import { formatearFechaCorta } from '@shared/lib/fecha/fecha';
 
 const ESTADOS = [
   { value: 'PENDIENTE', label: 'Pendientes' },
@@ -192,7 +193,7 @@ export const SolicitudesVisitaPage = () => {
 
                     <p className="text-[11px] text-text-muted mt-2 flex items-center gap-1">
                       <CalendarClock className="w-3 h-3" />
-                      {s.solicitanteNombre} · {new Date(s.createdAt).toLocaleDateString('es-PE')}
+                      {s.solicitanteNombre} · {formatearFechaCorta(s.createdAt)}
                     </p>
                   </div>
                 </div>

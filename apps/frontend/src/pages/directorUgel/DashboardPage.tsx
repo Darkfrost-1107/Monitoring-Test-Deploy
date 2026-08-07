@@ -8,6 +8,7 @@ import { SemaforoDonutCard } from './components/SemaforoDonutCard';
 import { EvolucionMensualCard } from './components/EvolucionMensualCard';
 import { RankingEspecialistasCard } from './components/RankingEspecialistasCard';
 import { RecentMonitoringsTable, type MonitoringRow } from './components/RecentMonitoringsTable';
+import { formatearFechaCorta } from '@shared/lib/fecha/fecha';
 
 /** Umbral de nivel aceptable (inicio de LOGRO_ESPERADO en el baremo). */
 const META_NIVEL = 2.6;
@@ -65,7 +66,7 @@ export const DashboardPage = () => {
       district: m.distrito,
       specialist: m.especialistaNombre,
       specialistInitials: iniciales(m.especialistaNombre),
-      date: new Date(m.fecha).toLocaleDateString('es-PE'),
+      date: formatearFechaCorta(m.fecha),
       status: ui.label,
       score: Number(m.promedio.toFixed(1)),
       statusVariant: ui.variant as MonitoringRow['statusVariant'],

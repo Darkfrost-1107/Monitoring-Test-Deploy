@@ -2,7 +2,7 @@ import { Sparkles, FileText, Download, X, Activity } from 'lucide-react';
 import { Button } from '@/shared/ui/button';
 import type { Cronograma } from '@/entities/model-cronogramas';
 import type { Plantilla } from '@/entities/model-plantillas';
-import { formatearFechaVisita, formatearHoraVisita } from '@/shared/lib/fecha-visita';
+import { formatearFechaCorta, formatearHora } from '@/shared/lib/fecha/fecha';
 
 export type PestanaFicha = 'FICHA' | 'HISTORIAL';
 
@@ -79,7 +79,7 @@ export const CabeceraFicha = ({
       <div>
         Fecha Programada:{' '}
         <span className="text-slate-800">
-          {formatearFechaVisita(visit.fechaHora)} - {formatearHoraVisita(visit.fechaHora)}
+          {formatearFechaCorta(visit.fechaHora)} - {formatearHora(visit.fechaHora)}
         </span>
       </div>
     </div>

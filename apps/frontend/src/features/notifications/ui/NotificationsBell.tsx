@@ -18,6 +18,7 @@ import {
 } from '@shared/ui/dropdown-menu';
 import { Button } from '@shared/ui/button';
 import { useNotificaciones, useMarcarLeida, useMarcarTodasLeidas } from '../api/use-notifications-api';
+import { formatearFechaCorta } from '@shared/lib/fecha/fecha';
 
 const tiempoRelativo = (iso: string): string => {
   const diffMin = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
@@ -25,7 +26,7 @@ const tiempoRelativo = (iso: string): string => {
   if (diffMin < 60) return `hace ${diffMin} min`;
   const h = Math.round(diffMin / 60);
   if (h < 24) return `hace ${h} h`;
-  return new Date(iso).toLocaleDateString('es-PE');
+  return formatearFechaCorta(iso);
 };
 
 const getNotificationBadge = (tipo: string) => {

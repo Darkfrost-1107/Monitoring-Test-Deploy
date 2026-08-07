@@ -9,14 +9,16 @@ import type { EstadoVisita } from '@sistema-monitoreo/shared-contracts';
  */
 
 import {
+  formatearFechaCorta,
   formatearFechaLarga,
-  formatearFechaVisita,
-  formatearHoraVisita,
-} from '@/shared/lib/fecha-visita';
+  formatearHora,
+} from '@/shared/lib/fecha/fecha';
 
-// Reexportadas para que las vistas del calendario tengan un solo punto de
-// entrada de presentacion.
-export { formatearFechaLarga, formatearFechaVisita, formatearHoraVisita };
+// Reexportadas con los nombres que usan las vistas del calendario, para que
+// tengan un solo punto de entrada de presentación.
+export const formatearFechaVisita = formatearFechaCorta;
+export const formatearHoraVisita = formatearHora;
+export { formatearFechaLarga };
 
 /**
  * Paleta por estado, para el distintivo y para el punto de color.

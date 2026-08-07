@@ -12,6 +12,7 @@ import { Card } from '@shared/ui/card';
 import { Badge } from '@shared/ui/badge';
 import { Spinner } from '@shared/ui/Spinner';
 import { useSolicitudDetalle } from '../api/use-visits-api';
+import { FECHA_INVALIDA, formatearFecha, formatearHora } from '@shared/lib/fecha/fecha';
 
 interface Props {
   solicitudId: string | null;
@@ -19,22 +20,12 @@ interface Props {
 }
 
 const fmtFechaHora = (iso: string): string => {
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return iso;
-  return d.toLocaleString('es-PE', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  const fecha = formatearFecha(iso, { day: '2-digit', month: 'short', year: 'numeric' });
+  return fecha === FECHA_INVALIDA ? fecha : `${fecha}, ${formatearHora(iso)}`;
 };
 
 const fmtVisita = (fechaIso: string, hora: string | null): string => {
-  const d = new Date(fechaIso);
-  const fecha = isNaN(d.getTime())
-    ? fechaIso
-    : d.toLocaleDateString('es-PE', { day: '2-digit', month: 'long', year: 'numeric' });
+  const fecha = formatearFecha(fechaIso, { day: '2-digit', month: 'long', year: 'numeric' });
   return hora ? `${fecha}, ${hora.slice(0, 5)} hrs` : fecha;
 };
 

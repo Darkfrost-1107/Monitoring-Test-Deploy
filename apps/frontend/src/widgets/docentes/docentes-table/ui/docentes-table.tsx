@@ -13,6 +13,7 @@ import { AsignacionEvaluadorWidget } from '@features/docentes/ui/AsignacionEvalu
 import { X } from 'lucide-react';
 
 import { teachersApi } from '@shared/api/teachers.api';
+import { hoyISO } from '@shared/lib/fecha/fecha';
 
 interface DocentesTableWidgetProps {
   docentes: Docente[];
@@ -94,7 +95,7 @@ export const DocentesTableWidget = ({
     try {
       const res = await teachersApi.finalizeCargo(finalizingDoc.id, targetCargoObj.id);
       if (res.ok) {
-        const nowStr = new Date().toISOString().split('T')[0];
+        const nowStr = hoyISO();
         setDocentes((prev) =>
           prev.map((d) => {
             if (d.id === finalizingDoc.id) {

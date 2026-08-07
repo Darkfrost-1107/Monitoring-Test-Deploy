@@ -38,6 +38,7 @@ const ESTILO_POR_TIPO: Record<Cronograma['tipo'], string> = {
 };
 
 export const estiloDeTipo = (tipo: Cronograma['tipo']): string => ESTILO_POR_TIPO[tipo];
+import { formatearFecha, formatearHora } from '@shared/lib/fecha/fecha';
 
 const ESTILO_POR_ESTADO: Record<Cronograma['estado'], string> = {
   PROGRAMADO:
@@ -59,19 +60,8 @@ export const estiloDeEstado = (estado: Cronograma['estado']): string =>
 
 /** Fecha y hora de la visita, separadas para apilarlas en la celda. */
 export function fechaYHoraDeTabla(iso: string): { datePart: string; timePart: string } {
-  const fecha = new Date(iso);
-  if (isNaN(fecha.getTime())) return { datePart: iso, timePart: '' };
-
   return {
-    datePart: fecha.toLocaleDateString('es-PE', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-    }),
-    timePart: fecha.toLocaleTimeString('es-PE', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true,
-    }),
+    datePart: formatearFecha(iso, { day: '2-digit', month: 'short', year: 'numeric' }),
+    timePart: formatearHora(iso, ''),
   };
 }

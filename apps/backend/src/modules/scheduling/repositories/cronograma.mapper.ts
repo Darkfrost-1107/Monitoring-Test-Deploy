@@ -1,4 +1,5 @@
 import type { Prisma } from '../../../generated/prisma/client.js';
+import { aFechaDeCalendario } from '../../../common/utils/fecha-calendario.js';
 import type {
   IVisita,
   ISolicitudReprogramacion,
@@ -7,13 +8,6 @@ import type {
   TipoMonitoreo,
   Modalidad,
 } from '@sistema-monitoreo/shared-contracts';
-
-function toDateOnly(value: Date | string): string {
-  if (value instanceof Date) {
-    return value.toISOString().slice(0, 10);
-  }
-  return String(value).slice(0, 10);
-}
 
 export type VisitaPayload = Prisma.CronogramaGetPayload<Record<string, never>>;
 
@@ -26,7 +20,7 @@ export function fromPrismaVisita(v: VisitaPayload): IVisita {
     planId: v.planId,
     tipoMonitoreo: v.tipoMonitoreo as TipoMonitoreo,
     numeroVisita: v.numeroVisita,
-    fechaProgramada: toDateOnly(v.fechaProgramada),
+    fechaProgramada: aFechaDeCalendario(v.fechaProgramada),
     horaInicio: v.horaInicio,
     detalles: v.detalles,
     estado: v.estado as EstadoVisita,
@@ -77,9 +71,9 @@ export function fromPrismaSolicitud(s: SolicitudPayload): ISolicitudReprogramaci
     cronogramaId: s.cronogramaId,
     solicitanteId: s.solicitanteId,
     solicitanteRolAlCrear: s.solicitanteRolAlCrear,
-    fechaOriginal: toDateOnly(s.fechaOriginal),
+    fechaOriginal: aFechaDeCalendario(s.fechaOriginal),
     horaOriginal: s.horaOriginal,
-    fechaPropuesta: toDateOnly(s.fechaPropuesta),
+    fechaPropuesta: aFechaDeCalendario(s.fechaPropuesta),
     horaPropuesta: s.horaPropuesta,
     justificacion: s.justificacion,
     archivoSustentoUrl: s.archivoSustentoUrl,

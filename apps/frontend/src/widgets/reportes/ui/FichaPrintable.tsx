@@ -4,6 +4,11 @@ import type { Plantilla } from '@/entities/model-plantillas';
 import { useCronogramasData } from '@/features/cronogramas/hooks/use-cronogramas-data';
 import { useQuery } from '@tanstack/react-query';
 import { fichasApi } from '@/features/monitoreos/api/fichas.api';
+import {
+  formatearFechaCorta,
+  formatearFechaEnPalabras,
+  formatearHora,
+} from '@shared/lib/fecha/fecha';
 
 interface FichaPrintableProps {
   visit: Cronograma;
@@ -29,21 +34,6 @@ interface FichaPrintableProps {
   };
 }
 
-const formatVisitDate = (fechaHoraStr: string) => {
-  try {
-    const d = new Date(fechaHoraStr);
-    if (!isNaN(d.getTime())) {
-      const MONTH_NAMES = [
-        'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-      ];
-      return `${d.getDate()} de ${MONTH_NAMES[d.getMonth()]}, ${d.getFullYear()}`;
-    }
-    return fechaHoraStr.split('T')[0];
-  } catch {
-    return fechaHoraStr;
-  }
-};
 
 const getLevelStyle = (level: string) => {
   switch (level) {
@@ -114,7 +104,7 @@ export const FichaPrintable = forwardRef<HTMLDivElement, FichaPrintableProps>(
 
     // Get Hora Final
     const horaFinalVal = backendFicha?.finalizadaAt
-      ? new Date(backendFicha.finalizadaAt).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', hour12: true })
+      ? formatearHora(backendFicha.finalizadaAt)
       : '';
 
     return (
@@ -498,11 +488,11 @@ export const FichaPrintable = forwardRef<HTMLDivElement, FichaPrintableProps>(
           <tbody>
             <tr>
               <td className="bg-gray">FECHA:</td>
-              <td>{formatVisitDate(visit.fechaHora)}</td>
+              <td>{formatearFechaEnPalabras(visit.fechaHora)}</td>
               <td className="bg-gray">HORA INICIO:</td>
               <td>{
                 !isNaN(new Date(visit.fechaHora).getTime()) 
-                  ? new Date(visit.fechaHora).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', hour12: true }) 
+                  ? formatearHora(visit.fechaHora) 
                   : ''
               }</td>
               <td className="bg-gray">HORA FINAL:</td>
@@ -754,7 +744,7 @@ export const FichaPrintable = forwardRef<HTMLDivElement, FichaPrintableProps>(
         {/* Pie de Página Oficial con Registro */}
         <div className="mt-10 pt-3 text-center text-[8.5px] text-slate-500 border-t border-slate-300 flex justify-between items-center px-2">
           <span>Documento Oficial Generado por el Sistema de Monitoreo Pedagógico - UGEL LAMPA</span>
-          <span className="font-mono text-[8px] text-slate-400">REG: {visit.id.slice(0, 8).toUpperCase()} | {new Date().toLocaleDateString('es-PE')}</span>
+          <span className="font-mono text-[8px] text-slate-400">REG: {visit.id.slice(0, 8).toUpperCase()} | {formatearFechaCorta(new Date().toISOString())}</span>
         </div>
       </div>
     );

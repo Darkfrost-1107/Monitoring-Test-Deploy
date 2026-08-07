@@ -1,5 +1,6 @@
 import type { IPlantilla, INivelCalificacion, IDesempeno, IAspecto, IRubricaNivel, IEjeItem, TipoPlantilla, EstadoPlantilla, RolAutorPlantilla, NivelRomano, Baremo } from '@sistema-monitoreo/shared-contracts';
 import type { Plantilla, NivelCalificacion, Desempeno, AspectoEvaluado, RubricaNivel, EjeItem } from './model';
+import { hoyISO } from '@shared/lib/fecha/fecha';
 
 const TIPO_MONITOREO_LABEL: Record<TipoPlantilla, string> = {
   DOCENTE: 'Monitoreo Docente',
@@ -41,11 +42,11 @@ const mapDesempeno = (d: IDesempeno): Desempeno => ({
 });
 
 const formatFechaCreacion = (iso: string): string => {
-  if (!iso) return new Date().toISOString().split('T')[0];
+  if (!iso) return hoyISO();
   try {
     return iso.split('T')[0];
   } catch {
-    return new Date().toISOString().split('T')[0];
+    return hoyISO();
   }
 };
 

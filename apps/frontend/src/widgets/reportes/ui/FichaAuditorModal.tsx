@@ -12,6 +12,7 @@ import { Button } from '@/shared/ui/button';
 import { Card } from '@/shared/ui/card';
 import type { Cronograma } from '@/entities/model-cronogramas';
 import type { Plantilla } from '@/entities/model-plantillas';
+import { formatearFechaEnPalabras } from '@shared/lib/fecha/fecha';
 
 interface FichaAuditorModalProps {
   isOpen: boolean;
@@ -33,22 +34,6 @@ interface FichaAuditorModalProps {
   onDownloadPDF: (visit: Cronograma, e: React.MouseEvent) => void;
 }
 
-const MONTH_NAMES = [
-  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-];
-
-const formatVisitDate = (fechaHoraStr: string) => {
-  try {
-    const d = new Date(fechaHoraStr);
-    if (!isNaN(d.getTime())) {
-      return `${d.getDate()} de ${MONTH_NAMES[d.getMonth()]}, ${d.getFullYear()}`;
-    }
-    return fechaHoraStr.split('T')[0];
-  } catch {
-    return fechaHoraStr;
-  }
-};
 
 export const FichaAuditorModal = ({
   isOpen,
@@ -101,7 +86,7 @@ export const FichaAuditorModal = ({
           <div>I.E. Monitoreada: <span className="text-slate-800">{visit.institucion}</span></div>
           <div>Evaluado: <span className="text-slate-800">{visit.docenteDirectivo}</span></div>
           <div>Especialista: <span className="text-slate-800">{visit.especialista}</span></div>
-          <div>Fecha Ejecución: <span className="text-slate-800">{formatVisitDate(visit.fechaHora)}</span></div>
+          <div>Fecha Ejecución: <span className="text-slate-800">{formatearFechaEnPalabras(visit.fechaHora)}</span></div>
         </div>
 
         {/* Split layout */}

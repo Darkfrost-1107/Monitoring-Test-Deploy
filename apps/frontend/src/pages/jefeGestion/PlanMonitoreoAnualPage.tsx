@@ -10,6 +10,7 @@ import { Badge } from '@shared/ui/badge';
 import { useUser } from '@entities/model-user';
 import { useScope } from '@shared/auth';
 import { RoleCode } from '@sistema-monitoreo/shared-contracts';
+import { formatearFecha } from '@shared/lib/fecha/fecha';
 
 // Años académicos generados dinámicamente desde el año actual en adelante,
 // para no depender de una lista fija que quede desactualizada cada año nuevo.
@@ -194,18 +195,12 @@ export const PlanMonitoreoAnualPage = () => {
   };
 
   // --- Formateador de Fecha ---
-  const formatDate = (dateString: string) => {
-    try {
-      const date = new Date(dateString);
-      return date.toLocaleDateString('es-PE', {
+  const formatDate = (dateString: string) =>
+    formatearFecha(dateString, {
         day: '2-digit',
         month: 'short',
         year: 'numeric',
       });
-    } catch {
-      return dateString;
-    }
-  };
 
   return (
     <div className="flex flex-col w-full gap-6 animate-in fade-in-0 duration-300">

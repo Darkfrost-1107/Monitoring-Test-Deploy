@@ -4,6 +4,7 @@ import type { Docente, NivelEducativo } from '@entities/model-docentes';
 import type { DocenteFormData } from '@entities/model-docentes/validator';
 import { teachersApi } from '@shared/api/teachers.api';
 import type { IDocenteResponse } from '@sistema-monitoreo/shared-contracts';
+import { aFechaISOLocal, hoyISO } from '@shared/lib/fecha/fecha';
 
 export const fetchDocentes = async (): Promise<Docente[]> => {
   const res = await teachersApi.findAll();
@@ -66,8 +67,8 @@ export const mapApiDocenteToFrontend = (apiDoc: IDocenteResponse): Docente => {
   const cargosList = apiDoc.docenteCargos?.map((dc) => ({
     id: dc.id,
     nombre: dc.cargo?.nombre || 'Docente de Aula',
-    fechaInicio: dc.fechaInicio ? new Date(dc.fechaInicio).toISOString().split('T')[0] : '',
-    fechaFin: dc.fechaFin ? new Date(dc.fechaFin).toISOString().split('T')[0] : null,
+    fechaInicio: dc.fechaInicio ? aFechaISOLocal(dc.fechaInicio) : '',
+    fechaFin: dc.fechaFin ? aFechaISOLocal(dc.fechaFin) : null,
     esPrincipal: dc.esPrincipal || false,
   })) || [];
 
@@ -100,8 +101,8 @@ export const mapApiDocenteToFrontend = (apiDoc: IDocenteResponse): Docente => {
     institucionId: apiDoc.institucionId,
     activo: apiDoc.estado === 'Activo',
     fechaCreacion: apiDoc.createdAt
-      ? new Date(apiDoc.createdAt).toISOString().split('T')[0]
-      : new Date().toISOString().split('T')[0],
+      ? aFechaISOLocal(apiDoc.createdAt)
+      : hoyISO(),
     cargo: cargoName as Docente['cargo'],
     cargosList,
     evaluadorActual: apiDoc.evaluadorActual || null,

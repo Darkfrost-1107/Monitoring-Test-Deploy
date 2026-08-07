@@ -6,6 +6,7 @@ import { PlantillaForm, type PlantillaFormState } from '@widgets/plantillas';
 import { plantillasApi } from '@entities/model-plantillas/api/plantillas.api';
 import { useQueryClient } from '@tanstack/react-query';
 import { ConfirmModal } from '@shared/ui/ConfirmModal';
+import { formatearFechaCorta } from '@shared/lib/fecha/fecha';
 
 const toBackendTipo = (tipo: string): 'DOCENTE' | 'DIRECTIVO' =>
   tipo.toUpperCase().includes('DIRECTIVO') ? 'DIRECTIVO' : 'DOCENTE';
@@ -67,7 +68,7 @@ export const PlantillaCreatePage = () => {
         tipoMonitoreo: backendTipo,
         anioAcademico: Number(data.anioAcademico),
         baremo: data.baremo,
-        descripcion: `Plantilla registrada el ${new Date().toLocaleDateString('es-ES')}. Contiene ${data.desempenos.length} desempeños de evaluación.`,
+        descripcion: `Plantilla registrada el ${formatearFechaCorta(new Date().toISOString())}. Contiene ${data.desempenos.length} desempeños de evaluación.`,
         niveles: data.niveles.map((n, i) => ({
           nivelRomano: n.nivel,
           denominacion: n.denominacion,

@@ -23,7 +23,8 @@
 export const FECHA_INVALIDA = 'Fecha inválida';
 
 const ISO_CORTA = /^(\d{4})-(\d{2})-(\d{2})$/;
-const ISO_CON_HORA = /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?/;
+/** Sin zona al final: la cadena describe un horario local, no un instante. */
+const ISO_SIN_ZONA = /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?$/;
 
 /**
  * Construye la fecha en horario local, sin pasar por el análisis de cadenas del
@@ -63,7 +64,7 @@ export function aFechaLocal(valor: string | null | undefined): Date | null {
     return construir(Number(corta[1]), Number(corta[2]), Number(corta[3]));
   }
 
-  const conHora = ISO_CON_HORA.exec(valor);
+  const conHora = ISO_SIN_ZONA.exec(valor);
   if (conHora) {
     return construir(
       Number(conHora[1]),
@@ -75,8 +76,9 @@ export function aFechaLocal(valor: string | null | undefined): Date | null {
     );
   }
 
-  // Formatos que no reconocemos —incluido el ISO con zona explícita— se dejan
-  // al constructor, que sí sabe leerlos.
+  // Con zona explícita —`Z` o `±HH:MM`— la cadena describe un INSTANTE, no un
+  // horario local: convertirlo es justamente el trabajo del constructor.
+  // Tratarlo como local desplazaría la fecha en cinco horas.
   const fecha = new Date(valor);
   return isNaN(fecha.getTime()) ? null : fecha;
 }
@@ -98,6 +100,23 @@ export function partesDeFechaHora(valor: string): { dia: string; hora: string } 
 
 const DOS_DIGITOS = (n: number) => String(n).padStart(2, '0');
 
+/**
+ * Formato libre, con interpretación segura de la fecha.
+ *
+ * Para los formatos de una sola pantalla, que no justifican una función con
+ * nombre propio. Lo que aporta sobre llamar a `toLocaleDateString` directo es
+ * lo mismo que el resto del módulo: la fecha se interpreta sin corrimiento de
+ * zona, y una que no se puede leer se informa en lugar de mostrarse mal.
+ */
+export function formatearFecha(
+  valor: string | null | undefined,
+  opciones: Intl.DateTimeFormatOptions,
+  siNoEsFecha = FECHA_INVALIDA,
+): string {
+  const fecha = aFechaLocal(valor);
+  return fecha ? fecha.toLocaleDateString('es-PE', opciones) : siNoEsFecha;
+}
+
 /** Fecha en formato peruano: `09/03/2026`. */
 export function formatearFechaCorta(
   valor: string | null | undefined,
@@ -109,8 +128,32 @@ export function formatearFechaCorta(
   return `${DOS_DIGITOS(fecha.getDate())}/${DOS_DIGITOS(fecha.getMonth() + 1)}/${fecha.getFullYear()}`;
 }
 
-/** Hora en formato de 12 horas: `2:30 PM`. */
-function formatearHora(fecha: Date): string {
+/**
+ * Fecha en formato `YYYY-MM-DD`, en horario **local**.
+ *
+ * Reemplaza a `new Date(x).toISOString().split('T')[0]`, que estaba en tres
+ * servicios y devolvía la fecha en UTC: en Perú (UTC-5), todo lo registrado
+ * después de las 19:00 aparecía con la fecha del día siguiente. Un cargo
+ * asignado un martes a las 20:00 se mostraba como del miércoles.
+ */
+export function aFechaISOLocal(valor: string | Date | null | undefined): string {
+  const fecha = valor instanceof Date ? valor : aFechaLocal(valor);
+  if (!fecha || isNaN(fecha.getTime())) return '';
+
+  return `${fecha.getFullYear()}-${DOS_DIGITOS(fecha.getMonth() + 1)}-${DOS_DIGITOS(fecha.getDate())}`;
+}
+
+/**
+ * Hoy, en formato `YYYY-MM-DD` y en horario local.
+ *
+ * Reemplaza a `new Date().toISOString().split('T')[0]`, que devuelve el día en
+ * UTC: en Perú, después de las 19:00 daba el día siguiente. Finalizar un cargo
+ * a las 20:00 lo registraba con la fecha de mañana.
+ */
+export const hoyISO = (ahora: Date = new Date()): string => aFechaISOLocal(ahora);
+
+/** Hora en formato de 12 horas a partir de una `Date` ya resuelta. */
+function formatearSoloHora(fecha: Date): string {
   const hora = fecha.getHours();
   const meridiano = hora >= 12 ? 'PM' : 'AM';
   // El resto de 12 da 0 tanto a medianoche como al mediodía; ambas se muestran
@@ -151,6 +194,51 @@ export function formatearFechaConMes(
   return `${fecha.getDate()} de ${mes}, ${fecha.getHours()}:${DOS_DIGITOS(fecha.getMinutes())} hrs`;
 }
 
+/**
+ * Día, mes en palabras y año: `9 de Marzo, 2026`.
+ *
+ * Es el formato de los reportes y de la ficha imprimible. Estaba escrito tres
+ * veces —una de ellas con su propia copia de los nombres de mes dentro de la
+ * función— y las tres con un `try/catch` que devolvía la cadena original.
+ */
+export function formatearFechaEnPalabras(
+  valor: string | null | undefined,
+  siNoEsFecha = FECHA_INVALIDA,
+): string {
+  const fecha = aFechaLocal(valor);
+  if (!fecha) return siNoEsFecha;
+
+  return `${fecha.getDate()} de ${NOMBRES_DE_MES[fecha.getMonth()]}, ${fecha.getFullYear()}`;
+}
+
+/**
+ * Fecha en palabras con el día de la semana: `Lunes, 9 de marzo de 2026`.
+ *
+ * Venía de `shared/lib/fecha-visita.ts`, que la Fase 5 creó y la Fase 6
+ * duplicó sin querer con este módulo. Se consolidan acá.
+ */
+export function formatearFechaLarga(
+  valor: string | null | undefined,
+  siNoEsFecha = FECHA_INVALIDA,
+): string {
+  const fecha = aFechaLocal(valor);
+  if (!fecha) return siNoEsFecha;
+
+  const texto = fecha.toLocaleDateString('es-ES', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+  return texto.charAt(0).toUpperCase() + texto.slice(1);
+}
+
+/** Hora sola, en formato de 12 horas: `2:30 PM`. */
+export function formatearHora(valor: string | null | undefined, siNoEsFecha = FECHA_INVALIDA): string {
+  const fecha = aFechaLocal(valor);
+  return fecha ? formatearSoloHora(fecha) : siNoEsFecha;
+}
+
 /** Fecha y hora juntas: `09/03/2026, 2:30 PM`. */
 export function formatearFechaHora(
   valor: string | null | undefined,
@@ -159,5 +247,5 @@ export function formatearFechaHora(
   const fecha = aFechaLocal(valor);
   if (!fecha) return siNoEsFecha;
 
-  return `${formatearFechaCorta(valor, siNoEsFecha)}, ${formatearHora(fecha)}`;
+  return `${formatearFechaCorta(valor, siNoEsFecha)}, ${formatearSoloHora(fecha)}`;
 }

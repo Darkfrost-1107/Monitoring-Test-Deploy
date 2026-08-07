@@ -1058,7 +1058,7 @@ sistema; consolidarlas sería inventarlas.
 | Tarea | Estado |
 | --- | --- |
 | 1 — Registro de estados de visita | ✅ `ESTADOS_VISITA` en el contrato; tablas `Record<EstadoVisita, …>` exhaustivas; catálogos derivados. Sin transiciones (no existen) |
-| 2 — Fechas | ⚠️ Parcial: `shared/lib/fecha` con 23 pruebas y huso fijado; migrados los dos peores casos. Quedan 27 archivos |
+| 2 — Fechas | ✅ Cerrada. Cero formateo manual en el frontend; `shared/lib/fecha` con 39 pruebas y huso fijado. Se corrigieron **tres** corrimientos de día distintos (ver nota) |
 | 3 — Abstracción de formularios | ✅ Con criterio revisado: traspaso desde el padrón, escala magisterial, atribución de error y regla de visualización, cada una una sola vez y con cobertura |
 | 4 — `shared-validation` | ⚠️ Parcial: paquete creado con las primitivas de campo, consumido por el frontend. El backend valida con `class-validator` y no tiene Zod: unificar ambos lados es una decisión de arquitectura pendiente |
 | 5 — Catálogos de dominio | ⚠️ Parcial: estados derivados del contrato. Tipos de monitoreo y números de visita siguen escritos a mano |
@@ -1072,6 +1072,32 @@ sistema; consolidarlas sería inventarlas.
 | Fecha mostrada un día antes por interpretación UTC | todo formateo con `new Date` sobre fecha sin hora |
 | Fecha ilegible mostrada como «Oct 2023» | los dos formularios de reprogramación |
 | Escala magisterial con respaldos divergentes | `DocenteFormBase` caía a `''`, `DirectorFormBase` a `'I'` |
+
+**Cierre de H-17 (2026-08-07).** Se encontraron y corrigieron **tres**
+corrimientos de día distintos, no uno:
+
+1. **`new Date('2026-03-09')`** interpreta la forma corta como medianoche UTC:
+   en Perú mostraba el día anterior. Corregido con construcción por componentes.
+2. **`new Date(x).toISOString().split('T')[0]`**, en seis archivos, devuelve la
+   fecha en UTC: todo lo registrado después de las 19:00 mostraba el día
+   siguiente. Afectaba a las fechas de cargo docente, al registro de
+   solicitudes y a la fecha que se escribe al finalizar un cargo.
+3. **Columnas `@db.Date` serializadas con `toISOString()`** en el backend: una
+   fecha de calendario viajaba como instante a medianoche UTC y el cliente la
+   mostraba un día antes. Afectaba al historial pedagógico completo de cada
+   docente. El proyecto ya tenía el helper correcto en `cronograma.mapper.ts` y
+   dos puntos lo esquivaban; ahora vive en `common/utils` con cobertura.
+
+Un cuarto defecto fue **introducido y corregido dentro de la propia fase**:
+`aFechaLocal` no anclaba su expresión regular y trataba como horario local
+cualquier cadena con zona explícita, desplazando instantes cinco horas.
+
+**Sobre adoptar una biblioteca de fechas**, que la tarea 2 sugiere: se decidió
+no hacerlo. El problema no es aritmética sino **semántica** —confundir fecha de
+calendario con instante— y la prueba está en el propio repositorio: ya existía
+el helper correcto y el error se coló igual en dos lugares. Lo que evitaría la
+confusión es un tipo que las distinga, como `Temporal.PlainDate`, que todavía
+requiere polyfill.
 
 ---
 

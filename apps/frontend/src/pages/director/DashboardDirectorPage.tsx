@@ -6,6 +6,7 @@ import {
   RecentMonitoringsTable,
   type MonitoringRow,
 } from '../directorUgel/components/RecentMonitoringsTable';
+import { formatearFechaCorta } from '@shared/lib/fecha/fecha';
 
 export const DashboardDirectorPage = () => {
   const { data, isLoading, isError, error } = useDirectorDashboard();
@@ -37,7 +38,7 @@ export const DashboardDirectorPage = () => {
       level: m.nivelEducativo,
       specialist: m.especialistaNombre,
       specialistInitials: iniciales(m.especialistaNombre),
-      date: new Date(m.fecha).toLocaleDateString('es-PE'),
+      date: formatearFechaCorta(m.fecha),
       status: ui.label,
       score: Number(m.promedio.toFixed(1)),
       statusVariant: ui.variant as MonitoringRow['statusVariant'],

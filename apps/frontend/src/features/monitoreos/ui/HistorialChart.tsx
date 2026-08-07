@@ -1,5 +1,6 @@
 import { useGetHistorialPedagogico } from '../hooks/use-ficha-monitoreo';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { formatearFecha } from '@shared/lib/fecha/fecha';
 
 interface HistorialChartProps {
   evaluadoId: string;
@@ -24,7 +25,7 @@ export function HistorialChart({ evaluadoId }: HistorialChartProps) {
 
   // Preparamos los datos para Recharts
   const chartData = promediosHistoricos.map((item, index) => {
-    const fecha = new Date(item.fecha).toLocaleDateString('es-PE', {
+    const fecha = formatearFecha(item.fecha, {
       day: '2-digit',
       month: 'short',
       year: 'numeric',

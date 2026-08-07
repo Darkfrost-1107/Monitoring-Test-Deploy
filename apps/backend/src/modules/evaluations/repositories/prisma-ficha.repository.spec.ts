@@ -322,7 +322,11 @@ describe('PrismaFichaRepository', () => {
       const h = await repo.getHistorial('d-1');
 
       expect(h[0].promedio).toBe(15.5);
-      expect(h[0].fecha).toBe('2026-03-01T00:00:00.000Z');
+      // Fecha de CALENDARIO, sin hora ni zona. La aserción anterior fijaba el
+      // defecto: `fechaProgramada` es una columna @db.Date y viajaba como
+      // instante a medianoche UTC, de modo que el cliente en Perú (UTC-5) la
+      // mostraba como el 28 de febrero.
+      expect(h[0].fecha).toBe('2026-03-01');
     });
 
     it('devuelve lista vacía para un docente sin monitoreos finalizados', async () => {

@@ -9,6 +9,7 @@ import { ConfirmModal } from '@shared/ui/ConfirmModal';
 import { Avatar, AvatarFallback } from '@shared/ui/avatar';
 import { Badge } from '@shared/ui/badge';
 import { TableCell, TableHead, TableRow } from '@shared/ui/table';
+import { hoyISO } from '@shared/lib/fecha/fecha';
 
 // Escala magisterial romana → número con cero (V → "05"), como en el mockup.
 const ESCALA_NUM: Record<string, string> = {
@@ -78,7 +79,7 @@ export const DirectoresTableWidget = ({
     try {
       const res = await teachersApi.finalizeCargo(finalizing.id, targetCargo.id);
       if (res.ok) {
-        const nowStr = new Date().toISOString().split('T')[0];
+        const nowStr = hoyISO();
         setDirectores((prev) =>
           prev.map((d) => {
             if (d.id === finalizing.id) {

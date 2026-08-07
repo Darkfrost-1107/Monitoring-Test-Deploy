@@ -10,6 +10,7 @@ import {
   CrearSolicitudVisitaDto,
   ResolverSolicitudVisitaDto,
 } from '../dto/crear-solicitud-visita.dto.js';
+import { aFechaDeCalendario } from '../../../common/utils/fecha-calendario.js';
 
 type SolicitudRow = {
   id: string;
@@ -188,7 +189,8 @@ export class VisitRequestsService {
       if (c) {
         cronograma = {
           id: c.id,
-          fechaProgramada: c.fechaProgramada.toISOString(),
+          // Columna @db.Date: viaja como fecha de calendario, sin hora ni zona.
+          fechaProgramada: aFechaDeCalendario(c.fechaProgramada),
           horaInicio: c.horaInicio ?? null,
           especialistaNombre: c.monitor
             ? `${c.monitor.persona.nombres} ${c.monitor.persona.apellidos}`.trim()

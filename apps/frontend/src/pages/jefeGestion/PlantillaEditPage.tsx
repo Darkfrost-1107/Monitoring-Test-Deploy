@@ -7,6 +7,7 @@ import { EditarPlantillaForm } from '@widgets/plantillas';
 import type { PlantillaFormState } from '@widgets/plantillas';
 import { usePlantilla, useActualizarPlantilla } from '@entities/model-plantillas/use-plantillas-api';
 import { NIVELES_ROMANOS } from '@entities/model-plantillas';
+import { formatearFechaCorta } from '@shared/lib/fecha/fecha';
 
 export const PlantillaEditPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -46,7 +47,7 @@ export const PlantillaEditPage = () => {
         id,
         data: {
           baremo: data.baremo,
-          descripcion: `Plantilla modificada el ${new Date().toLocaleDateString('es-ES')}. Contiene ${data.desempenos.length} desempeños de evaluación.`,
+          descripcion: `Plantilla modificada el ${formatearFechaCorta(new Date().toISOString())}. Contiene ${data.desempenos.length} desempeños de evaluación.`,
           niveles: data.niveles.map((n, i) => ({
             nivelRomano: n.nivel,
             denominacion: n.denominacion,
