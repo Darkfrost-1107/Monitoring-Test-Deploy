@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { formatearFechaConMes } from '@shared/lib/fecha/fecha';
+import { formatearFechaConMes, formatearFechaCorta } from '@shared/lib/fecha/fecha';
 import {
   X,
   RefreshCw,
@@ -188,7 +188,9 @@ export const DecidirReprogramacionForm = ({
                       }`}>
                         {request.estado === 'APROBADO' ? 'CAMBIO APLICADO' : 'SOLICITUD RECHAZADA'}
                       </Badge>
-                      <span className="text-[10px] text-slate-400 font-semibold">{request.fechaAprobacion}</span>
+                      <span className="text-[10px] text-slate-400 font-semibold">
+                        {formatearFechaCorta(request.fechaAprobacion)}
+                      </span>
                     </div>
                     <h4 className="text-xs font-black text-slate-800">
                       {request.estado === 'APROBADO' ? 'Cronograma Actualizado' : 'Flujo de Reprogramación Concluido'}
@@ -212,13 +214,19 @@ export const DecidirReprogramacionForm = ({
                       <Badge variant="outline" className="border-slate-200 text-slate-600 bg-slate-50 font-bold text-[9px] tracking-wider py-0.5 px-2">
                         REVISIÓN JEFATURA
                       </Badge>
-                      <span className="text-[10px] text-slate-400 font-semibold">{request.fechaAprobacion}</span>
+                      <span className="text-[10px] text-slate-400 font-semibold">
+                        {formatearFechaCorta(request.fechaAprobacion)}
+                      </span>
                     </div>
                     <h4 className="text-xs font-black text-slate-800">
                       {request.estado === 'APROBADO' ? 'Solicitud Aprobada' : 'Revisión Concluida'}
                     </h4>
                     <div className="text-[11px] text-slate-600 font-medium">
-                      Por: <strong>{request.aprobador || 'Carlos Mendoza'}</strong>
+                      {/* Un registro de trazabilidad sin nombre se declara sin nombre.
+                          Antes decía «Carlos Mendoza»: una persona real puesta
+                          como respaldo, en el panel que sirve justamente para
+                          saber quién resolvió. */}
+                      Por: <strong>{request.aprobador || 'No registrado'}</strong>
                     </div>
                     
                     <div className="text-[11px] text-primary bg-primary-light/60 border border-primary/10 rounded-xl p-3.5 shadow-inner italic leading-relaxed">

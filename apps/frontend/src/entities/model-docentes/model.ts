@@ -25,7 +25,8 @@ export interface Docente {
   especialidad: string;
   cargaHoraria: number; // horas por semana
   secciones: SeccionDocente[];
-  escala: EscalaMagisterial;
+  /** Nula cuando el docente no tiene escala magisterial declarada. */
+  escala: EscalaMagisterial | null;
   institucionId: string; // Relación con I.E.
   activo: boolean;
   fechaCreacion: string;

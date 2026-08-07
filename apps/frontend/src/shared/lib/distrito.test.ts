@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { normDistrito } from './norm-distrito';
+import { normDistrito } from './distrito';
 
 describe('normDistrito', () => {
   it('pasa a mayúsculas', () => {

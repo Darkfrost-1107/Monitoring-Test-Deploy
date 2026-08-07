@@ -8,29 +8,26 @@ import {
 } from './evaluador';
 
 /**
- * Pruebas de caracterización de «quién puede levantar la ficha de esta visita».
+ * Pruebas de «quién puede levantar la ficha de esta visita».
  *
  * Fase 5 de PLAN_REMEDIACION.md. Esta regla vivía como un `useMemo` de 27 líneas
  * dentro de `CalendarioSidebar`, un componente de 917 líneas: no podía probarse
  * sin montar el widget entero con su cliente de consultas.
  *
- * Lo que se fija acá es el comportamiento **de hoy**, defectos incluidos y
- * marcados como tales. Esa es la condición para poder descomponer el componente
- * sin cambiar lo que el usuario ve. La corrección del respaldo por nombre es un
- * cambio de comportamiento y se decide aparte, no de contrabando dentro de un
- * refactor.
+ * La primera versión de este archivo fijó el comportamiento de entonces, con su
+ * respaldo por inclusión de nombres y el falso positivo que ese respaldo admite.
+ * Ese respaldo ya no existe: la asignación se decide sólo por identificador de
+ * especialista. Lo que sigue describe la regla vigente.
  */
 
 const usuario = (over: Partial<UsuarioEvaluador> = {}): UsuarioEvaluador => ({
   role: RoleCode.ESPECIALISTA,
-  nombres: 'Carlos',
-  apellidos: 'Mendoza',
+  especialistaId: 'esp-1',
   ...over,
 });
 
 const visita = (over: Partial<VisitaEvaluable> = {}): VisitaEvaluable => ({
   monitorId: 'esp-1',
-  especialista: 'Carlos Mendoza',
   ...over,
 });
 
@@ -89,78 +86,42 @@ describe('puedeEvaluarVisita — identificación por especialista', () => {
     expect(puedeEvaluarVisita(actor, visita({ monitorId: 'esp-7' }))).toBe(true);
   });
 
-  it('niega cuando el identificador no coincide, aunque el nombre sí', () => {
-    const actor = usuario({ especialistaId: 'esp-7', nombres: 'Carlos', apellidos: 'Mendoza' });
-    const objetivo = visita({ monitorId: 'esp-9', especialista: 'Carlos Mendoza' });
-    expect(puedeEvaluarVisita(actor, objetivo)).toBe(false);
+  it('niega cuando el identificador no coincide', () => {
+    const actor = usuario({ especialistaId: 'esp-7' });
+    expect(puedeEvaluarVisita(actor, visita({ monitorId: 'esp-9' }))).toBe(false);
   });
 
-  it('el identificador tiene prioridad sobre el nombre: es la vía exacta', () => {
-    const actor = usuario({ especialistaId: 'esp-7', nombres: 'Otro', apellidos: 'Nombre' });
-    expect(puedeEvaluarVisita(actor, visita({ monitorId: 'esp-7' }))).toBe(true);
+  it('distingue mayúsculas: el identificador se compara literal', () => {
+    const actor = usuario({ especialistaId: 'ESP-7' });
+    expect(puedeEvaluarVisita(actor, visita({ monitorId: 'esp-7' }))).toBe(false);
   });
 });
 
-describe('puedeEvaluarVisita — respaldo por nombre (legado)', () => {
-  it('cae al respaldo cuando el usuario no tiene especialista vinculado', () => {
-    const actor = usuario({ especialistaId: undefined });
-    expect(puedeEvaluarVisita(actor, visita({ especialista: 'Carlos Mendoza' }))).toBe(true);
+/**
+ * Antes existía un respaldo que comparaba nombres por inclusión de subcadenas y
+ * decidía la asignación cuando faltaba alguno de los dos identificadores. Ese
+ * respaldo autorizaba de más —«Ana Torres» quedaba habilitada sobre una visita
+ * de «Juana Pérez», porque «Juana» contiene «Ana»— y se retiró tras comprobar
+ * en `evaluadores-sin-especialista.sql` que nadie dependía de él: los 65
+ * usuarios con rol evaluador tienen registro de especialista y `monitor_id` es
+ * una clave foránea no nula.
+ *
+ * Sin identificador no hay asignación demostrable, así que se niega.
+ */
+describe('puedeEvaluarVisita — sin identificador no hay asignación', () => {
+  it('niega cuando el usuario no tiene especialista vinculado', () => {
+    expect(puedeEvaluarVisita(usuario({ especialistaId: undefined }), visita())).toBe(false);
   });
 
-  it('cae al respaldo cuando la visita no tiene monitor asignado', () => {
-    const actor = usuario({ especialistaId: 'esp-7' });
-    expect(puedeEvaluarVisita(actor, visita({ monitorId: '', especialista: 'Carlos Mendoza' }))).toBe(
-      true,
+  it('niega cuando el usuario tiene el identificador vacío', () => {
+    expect(puedeEvaluarVisita(usuario({ especialistaId: '' }), visita({ monitorId: '' }))).toBe(
+      false,
     );
   });
 
-  it('admite cuando el nombre de la visita contiene el nombre completo', () => {
-    const actor = usuario({ especialistaId: undefined, nombres: 'Carlos', apellidos: 'Mendoza' });
-    const objetivo = visita({ especialista: 'Prof. Carlos Mendoza Ríos' });
-    expect(puedeEvaluarVisita(actor, objetivo)).toBe(true);
-  });
-
-  it('admite cuando el nombre completo contiene el nombre de la visita', () => {
-    const actor = usuario({
-      especialistaId: undefined,
-      nombres: 'Carlos Alberto',
-      apellidos: 'Mendoza',
-    });
-    const objetivo = visita({ especialista: 'Alberto Mendoza' });
-    expect(puedeEvaluarVisita(actor, objetivo)).toBe(true);
-  });
-
-  it('admite cuando la visita menciona sólo el nombre de pila', () => {
-    const actor = usuario({ especialistaId: undefined, nombres: 'Carlos', apellidos: 'Mendoza' });
-    const objetivo = visita({ especialista: 'Carlos Quispe' });
-    expect(puedeEvaluarVisita(actor, objetivo)).toBe(true);
-  });
-
-  it('ignora diferencias de mayúsculas', () => {
-    const actor = usuario({ especialistaId: undefined, nombres: 'CARLOS', apellidos: 'MENDOZA' });
-    expect(puedeEvaluarVisita(actor, visita({ especialista: 'carlos mendoza' }))).toBe(true);
-  });
-
-  it('niega cuando no hay ninguna coincidencia', () => {
-    const actor = usuario({ especialistaId: undefined, nombres: 'Lucía', apellidos: 'Fernández' });
-    expect(puedeEvaluarVisita(actor, visita({ especialista: 'Carlos Mendoza' }))).toBe(false);
-  });
-
-  /**
-   * DEFECTO CONOCIDO, fijado a propósito.
-   *
-   * El respaldo compara por inclusión de cadenas, de modo que un nombre de pila
-   * corto autoriza sobre cualquier visita cuyo evaluador lo contenga como
-   * subcadena. «Ana» queda habilitada sobre una visita de «Juana Pérez».
-   *
-   * No es un caso rebuscado: los nombres de pila cortos son comunes y el
-   * respaldo se activa siempre que falte el vínculo con especialista, que es el
-   * estado de los datos migrados. Se fija acá para que la corrección sea un
-   * cambio visible y medible, no un efecto colateral del refactor.
-   */
-  it('DEFECTO: un nombre de pila corto autoriza por subcadena', () => {
-    const actor = usuario({ especialistaId: undefined, nombres: 'Ana', apellidos: 'Torres' });
-    const objetivo = visita({ especialista: 'Juana Pérez' });
-    expect(puedeEvaluarVisita(actor, objetivo)).toBe(true);
+  it('niega cuando la visita no tiene monitor asignado', () => {
+    expect(puedeEvaluarVisita(usuario({ especialistaId: 'esp-7' }), visita({ monitorId: '' }))).toBe(
+      false,
+    );
   });
 });

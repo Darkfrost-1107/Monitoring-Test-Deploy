@@ -13,15 +13,16 @@ import {
 import {
   twoCols,
 } from '@shared/ui/form-controls.types';
-import { ConfirmModal } from '@shared/ui/ConfirmModal';
 import { usePersonForm } from '@shared/hooks/usePersonForm';
 import {
   DATOS_BASICOS_VACIOS,
   datosBasicosDePersona,
   escalaMagisterialARomano,
   especialidadDeDocente,
+  opcionesDeInstitucion,
   soloDefinidos,
 } from '@shared/lib/persona-formulario';
+import { ConfirmarRolAdicional } from '@features/personas/ui/ConfirmarRolAdicional';
 
 /** Condiciones laborales que corresponden a un cargo directivo. */
 const CONDICIONES_DE_DIRECTOR: readonly string[] = ['Designado', 'Encargado', 'Por Función'];
@@ -130,16 +131,10 @@ export const DirectorFormBase = ({
 
 
 
-  const opcionesIE = useMemo(() => {
-    const list = instituciones.map((i) => ({ value: i.id, label: i.nombre }));
-    if (persona?.docente?.institucion) {
-      const exists = list.some(i => i.value === persona.docente!.institucion!.id);
-      if (!exists) {
-        list.push({ value: persona.docente!.institucion!.id, label: persona.docente!.institucion!.nombre });
-      }
-    }
-    return list;
-  }, [instituciones, persona]);
+  const opcionesIE = useMemo(
+    () => opcionesDeInstitucion(instituciones, persona?.docente?.institucion),
+    [instituciones, persona],
+  );
 
   return (
     <div className="bg-bg p-0 flex flex-col gap-5 text-text animate-in fade-in-0 duration-300">
@@ -250,32 +245,11 @@ export const DirectorFormBase = ({
       </div>
 
       {showRoleConfirm && persona && (
-        <ConfirmModal
-          title="Confirmar creación con rol adicional"
-          message={
-            <div className="text-xs text-slate-600 leading-relaxed space-y-2">
-              <p>
-                La persona <strong>{persona.nombres} {persona.apellidos}</strong> (DNI {persona.dni}) ya está registrada en el sistema.
-              </p>
-              <div className="bg-amber-50 border border-amber-200 rounded-md p-2.5 text-amber-800">
-                <p className="font-semibold">Roles actuales:</p>
-                <ul className="list-disc list-inside mt-1 text-[0.72rem]">
-                  {persona.roles.esDirector && <li>Director de I.E.</li>}
-                  {persona.roles.esCoordinadorPedagogico && <li>Coordinador Pedagógico</li>}
-                  {persona.roles.esJefeTaller && <li>Jefe de Taller</li>}
-                  {persona.roles.esDocenteAula && <li>Docente de Aula</li>}
-                  {persona.roles.esEspecialista && <li>{persona.roles.especialistaCargoActivo} ({persona.roles.especialistaNivelEducativo})</li>}
-                </ul>
-              </div>
-              <p>
-                Se creará un nuevo registro como <strong>Director de I.E.</strong> además de los roles existentes. ¿Desea continuar?
-              </p>
-            </div>
-          }
-          confirmLabel="Sí, crear con rol adicional"
-          cancelLabel="Cancelar"
-          onConfirm={handleConfirmRole}
-          onCancel={() => setShowRoleConfirm(false)}
+        <ConfirmarRolAdicional
+          persona={persona}
+          nuevoRol="Director de I.E."
+          onConfirmar={handleConfirmRole}
+          onCancelar={() => setShowRoleConfirm(false)}
         />
       )}
     </div>

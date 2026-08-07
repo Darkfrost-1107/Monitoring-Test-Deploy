@@ -155,8 +155,6 @@ export const CalendarioSidebar = ({
     setShowFichaModal(false);
   };
 
-  const nombreUsuario = user ? `${user.nombres} ${user.apellidos}` : 'Carlos Mendoza';
-
   return (
     <div className="lg:col-span-4 bg-surface border border-border rounded-xl p-5 shadow-sm relative transition-all duration-300 animate-in fade-in slide-in-from-right-5">
       <div className="flex items-center justify-between border-b border-border pb-3 mb-4">
@@ -241,11 +239,11 @@ export const CalendarioSidebar = ({
           request={activeRequest}
           canDecide={canDecide}
           onApprove={(visitId, comment) => {
-            approveRescheduleRequest(visitId, nombreUsuario, comment);
+            approveRescheduleRequest(visitId, comment);
             setShowReprogramarModal(false);
           }}
           onReject={(visitId, comment) => {
-            rejectRescheduleRequest(visitId, nombreUsuario, comment);
+            rejectRescheduleRequest(visitId, comment);
             setShowReprogramarModal(false);
           }}
         />

@@ -1,4 +1,4 @@
-import { RoleCode } from '@sistema-monitoreo/shared-contracts';
+import { RoleCode, MONITOR_CAMPO_ROLES } from '@sistema-monitoreo/shared-contracts';
 
 /**
  * Qué cronogramas ve cada usuario en pantalla.
@@ -38,6 +38,10 @@ export interface UsuarioObservador {
   institucionNombre?: string;
   /** Nivel educativo que atiende, cuando el rol lo acota. */
   especialistaNivel?: string;
+  /** Identificador del especialista vinculado; reconoce las visitas que monitorea. */
+  especialistaId?: string;
+  /** Identificador del docente vinculado; reconoce las visitas en las que lo evalúan. */
+  docenteId?: string;
 }
 
 export interface CronogramaVisible {
@@ -47,6 +51,10 @@ export interface CronogramaVisible {
   tipo: 'DOCENTE' | 'DIRECTIVO';
   modalidad?: string;
   nivel: string;
+  /** Especialista asignado a la visita. */
+  monitorId: string;
+  /** Persona a la que la visita evalúa. */
+  evaluadoId?: string;
 }
 
 /** ¿El cronograma pertenece a la institución del usuario? */
@@ -61,23 +69,16 @@ const esDeSuInstitucion = (cronograma: CronogramaVisible, usuario: UsuarioObserv
  * ¿La visita evalúa al propio usuario?
  *
  * Un director también es evaluado, y esa visita le corresponde ver aunque esté
- * registrada en otra institución. La comparación por inclusión de nombres es
- * histórica y comparte el defecto documentado en
- * `entities/model-cronogramas/evaluador.ts`: un nombre de pila corto puede
- * coincidir de más.
+ * registrada en otra institución. Se reconoce por `evaluado_id`, columna no
+ * nula con clave foránea, contra el `docente_id` que el token ya trae. Antes se
+ * comparaban los nombres por inclusión de subcadenas, con el mismo falso
+ * positivo que se retiró de `puedeEvaluarVisita`: «Ana Torres» quedaba
+ * incluida en una visita a «Juana Pérez».
  */
-const evaluaAlUsuario = (cronograma: CronogramaVisible, usuario: UsuarioObservador): boolean => {
-  if (cronograma.tipo !== 'DIRECTIVO') return false;
-
-  const nombreCompleto = `${usuario.nombres} ${usuario.apellidos}`.toLowerCase();
-  const evaluado = cronograma.docenteDirectivo.toLowerCase();
-
-  return (
-    evaluado.includes(nombreCompleto) ||
-    nombreCompleto.includes(evaluado) ||
-    evaluado.includes(usuario.nombres.toLowerCase())
-  );
-};
+const evaluaAlUsuario = (cronograma: CronogramaVisible, usuario: UsuarioObservador): boolean =>
+  cronograma.tipo === 'DIRECTIVO' &&
+  !!usuario.docenteId &&
+  cronograma.evaluadoId === usuario.docenteId;
 
 /** ¿El cronograma cae dentro del nivel que atiende un jefe de área? */
 const caeEnSuNivel = (cronograma: CronogramaVisible, nivel: string): boolean => {
@@ -93,6 +94,15 @@ export function cronogramasVisibles<T extends CronogramaVisible>(
   usuario: UsuarioObservador | null | undefined,
 ): T[] {
   if (!usuario) return [...cronogramas];
+
+  // Quien levanta la ficha en el aula ve sólo lo que tiene asignado. Se
+  // reconoce por identificador de especialista; sin él no hay asignación
+  // demostrable y no se muestra nada, en vez de mostrarlo todo.
+  if ((MONITOR_CAMPO_ROLES as readonly string[]).includes(usuario.role)) {
+    return cronogramas.filter(
+      (c) => !!usuario.especialistaId && c.monitorId === usuario.especialistaId,
+    );
+  }
 
   const esDirector = usuario.role === RoleCode.DIRECTOR_INSTITUCION;
   const esJefeDeArea = usuario.role === RoleCode.JEFE_AREA;

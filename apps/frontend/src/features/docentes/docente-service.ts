@@ -4,7 +4,8 @@ import type { Docente, NivelEducativo } from '@entities/model-docentes';
 import type { DocenteFormData } from '@entities/model-docentes/validator';
 import { teachersApi } from '@shared/api/teachers.api';
 import type { IDocenteResponse } from '@sistema-monitoreo/shared-contracts';
-import { aFechaISOLocal, hoyISO } from '@shared/lib/fecha/fecha';
+import { aFechaISOLocal } from '@shared/lib/fecha/fecha';
+import { escalaARomano, escalaANumero } from '@entities/model-docentes/escala';
 
 export const fetchDocentes = async (): Promise<Docente[]> => {
   const res = await teachersApi.findAll();
@@ -34,28 +35,6 @@ export const fetchDocenteByDni = async (dni: string): Promise<Docente | null> =>
 export const fetchDocenteById = async (id: string): Promise<Docente | null> => {
   const docentes = await fetchDocentes();
   return docentes.find((d) => d.id === id) ?? null;
-};
-
-const MAP_ROMAN_TO_INT: Record<string, number> = {
-  I: 1,
-  II: 2,
-  III: 3,
-  IV: 4,
-  V: 5,
-  VI: 6,
-  VII: 7,
-  VIII: 8,
-};
-
-const MAP_INT_TO_ROMAN: Record<number, string> = {
-  1: 'I',
-  2: 'II',
-  3: 'III',
-  4: 'IV',
-  5: 'V',
-  6: 'VI',
-  7: 'VII',
-  8: 'VIII',
 };
 
 const toTitleCase = (str: string): string => {
@@ -95,14 +74,15 @@ export const mapApiDocenteToFrontend = (apiDoc: IDocenteResponse): Docente => {
         grado: ds.grado,
         seccion: ds.seccion,
       })) || [],
-    escala: (apiDoc.escalaMagisterial
-      ? MAP_INT_TO_ROMAN[apiDoc.escalaMagisterial]
-      : 'I') as Docente['escala'],
+    // Nula cuando el docente no tiene escala declarada, que hoy es el caso de
+    // los 869 registros. Antes se devolvía 'I': una escala inventada que la
+    // pantalla de asignación reenviaba a la base como un 1 real.
+    escala: escalaARomano(apiDoc.escalaMagisterial),
     institucionId: apiDoc.institucionId,
     activo: apiDoc.estado === 'Activo',
-    fechaCreacion: apiDoc.createdAt
-      ? aFechaISOLocal(apiDoc.createdAt)
-      : hoyISO(),
+    // Vacía si el registro no la trae; poner la de hoy sería afirmar una fecha
+    // de alta que nadie registró.
+    fechaCreacion: apiDoc.createdAt ? aFechaISOLocal(apiDoc.createdAt) : '',
     cargo: cargoName as Docente['cargo'],
     cargosList,
     evaluadorActual: apiDoc.evaluadorActual || null,
@@ -140,7 +120,7 @@ export const useDocenteService = () => {
         cursoAsignado: formData.especialidad?.trim() || 'General',
         cargoId: dbCargo.id,
         condicionLaboral: formData.condicion,
-        escalaMagisterial: MAP_ROMAN_TO_INT[formData.escala] || 1,
+        escalaMagisterial: escalaANumero(formData.escala) ?? undefined,
         secciones: formData.secciones?.map((s) => ({
           grado: s.grado,
           seccion: s.seccion.toUpperCase().trim(),
@@ -191,7 +171,7 @@ export const useDocenteService = () => {
         cursoAsignado: formData.especialidad?.trim() || 'General',
         cargoId: dbCargo.id,
         condicionLaboral: formData.condicion,
-        escalaMagisterial: MAP_ROMAN_TO_INT[formData.escala] || 1,
+        escalaMagisterial: escalaANumero(formData.escala) ?? undefined,
         institucionId: formData.institucionId,
         secciones: formData.secciones?.map((s) => ({
           grado: s.grado,

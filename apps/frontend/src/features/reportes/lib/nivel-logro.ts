@@ -32,5 +32,5 @@ const ROMANOS = ['I', 'II', 'III', 'IV'];
  * valor inesperado se mostraba como una calificación de inicio en lugar de
  * como lo que era: un dato que no se pudo leer.
  */
-export const nivelNumericoARomano = (nivel: number): string | null =>
-  ROMANOS[nivel - 1] ?? null;
+export const nivelNumericoARomano = (nivel: number | null | undefined): string | null =>
+  nivel == null ? null : (ROMANOS[nivel - 1] ?? null);

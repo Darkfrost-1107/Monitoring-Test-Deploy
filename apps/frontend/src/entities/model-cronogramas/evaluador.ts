@@ -14,6 +14,15 @@ import { RoleCode } from '@sistema-monitoreo/shared-contracts';
  * los endpoints de ficha. Lo que se resuelve acá es la **asignación**: de todas
  * las personas habilitadas para evaluar, cuál es la que tiene asignada *esta*
  * visita. Por eso no alcanza con una capacidad y hace falta comparar identidad.
+ *
+ * ── Por qué sólo por identificador ──
+ * Hubo un respaldo que comparaba nombres por inclusión de subcadenas cuando
+ * faltaba alguno de los dos identificadores. Autorizaba de más: un nombre de
+ * pila contenido en otro bastaba. `evaluadores-sin-especialista.sql` no
+ * devolvió filas —los usuarios con rol evaluador tienen registro de
+ * especialista— y `monitor_id` es una clave foránea no nula, así que el
+ * respaldo no cubría ningún caso real y se retiró. Es el mismo criterio que ya
+ * aplicaba `visibilidad-reportes.ts`.
  */
 
 /**
@@ -36,39 +45,15 @@ export const ROLES_EVALUADORES: readonly RoleCode[] = [
 /** Datos del usuario que la asignación necesita. */
 export interface UsuarioEvaluador {
   role: string;
-  nombres: string;
-  apellidos: string;
-  /** Identificador del especialista vinculado, si lo tiene. */
+  /** Identificador del especialista vinculado. Sin él no hay asignación. */
   especialistaId?: string;
 }
 
 /** Datos de la visita sobre la que se evalúa la asignación. */
 export interface VisitaEvaluable {
-  /** Identificador del especialista asignado. Vacío en registros migrados. */
+  /** Identificador del especialista asignado, clave foránea a `especialistas`. */
   monitorId: string;
-  /** Nombre del especialista asignado, tal como se muestra. */
-  especialista: string;
 }
-
-/**
- * Respaldo histórico: comparación de nombres por inclusión de subcadenas.
- *
- * Se aplica sólo cuando falta el vínculo por identificador, que es el estado de
- * los registros migrados. Es deliberadamente laxo y por eso admite falsos
- * positivos —un nombre de pila corto contenido en otro nombre basta—; el caso
- * está fijado en `evaluador.test.ts` y su corrección es un cambio de
- * comportamiento pendiente de decidir, no parte de este refactor.
- */
-const coincidePorNombre = (usuario: UsuarioEvaluador, visita: VisitaEvaluable): boolean => {
-  const nombreCompleto = `${usuario.nombres} ${usuario.apellidos}`.toLowerCase();
-  const asignado = visita.especialista.toLowerCase();
-
-  return (
-    nombreCompleto.includes(asignado) ||
-    asignado.includes(nombreCompleto) ||
-    asignado.includes(usuario.nombres.toLowerCase())
-  );
-};
 
 export function puedeEvaluarVisita(
   usuario: UsuarioEvaluador | null | undefined,
@@ -78,10 +63,9 @@ export function puedeEvaluarVisita(
 
   if (!(ROLES_EVALUADORES as readonly string[]).includes(usuario.role)) return false;
 
-  // Vía exacta: ambos extremos tienen identificador de especialista.
-  if (usuario.especialistaId && visita.monitorId) {
-    return usuario.especialistaId === visita.monitorId;
-  }
+  // Sin alguno de los dos identificadores no hay asignación demostrable, y la
+  // ausencia nunca autoriza.
+  if (!usuario.especialistaId || !visita.monitorId) return false;
 
-  return coincidePorNombre(usuario, visita);
+  return usuario.especialistaId === visita.monitorId;
 }

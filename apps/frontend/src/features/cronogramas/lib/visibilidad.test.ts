@@ -33,6 +33,8 @@ const cronograma = (over: Partial<CronogramaVisible> = {}): CronogramaVisible =>
   tipo: 'DOCENTE',
   modalidad: 'EBR',
   nivel: 'Primaria',
+  monitorId: 'esp-1',
+  evaluadoId: 'doc-1',
   ...over,
 });
 
@@ -78,28 +80,71 @@ describe('cronogramasVisibles — director de institución', () => {
 
   /**
    * Un director también es evaluado: ve la visita dirigida a él aunque esté
-   * registrada en otra institución.
+   * registrada en otra institución. Se reconoce por `evaluadoId`, columna no
+   * nula con clave foránea; antes se comparaban los nombres por inclusión de
+   * subcadenas, con el mismo falso positivo que se retiró de
+   * `puedeEvaluarVisita`.
    */
   it('ve la visita directiva dirigida a él aunque sea de otra institución', () => {
-    const actor = director({ institucion: 'ie-9', nombres: 'Carlos', apellidos: 'Mendoza' });
-    const propia = cronograma({
-      institucionId: 'otra',
-      tipo: 'DIRECTIVO',
-      docenteDirectivo: 'Carlos Mendoza',
-    });
+    const actor = director({ institucion: 'ie-9', docenteId: 'doc-7' });
+    const propia = cronograma({ institucionId: 'otra', tipo: 'DIRECTIVO', evaluadoId: 'doc-7' });
 
     expect(idsVisibles([propia], actor)).toEqual(['c0']);
   });
 
   it('no toma como propia una visita a docente con su mismo nombre', () => {
-    const actor = director({ institucion: 'ie-9' });
+    const actor = director({ institucion: 'ie-9', docenteId: 'doc-7' });
     const ajena = cronograma({
       institucionId: 'otra',
       tipo: 'DOCENTE',
+      evaluadoId: 'doc-7',
       docenteDirectivo: 'Carlos Mendoza',
     });
 
     expect(idsVisibles([ajena], actor)).toEqual([]);
+  });
+
+  it('no toma como propia la visita directiva de otro con nombre parecido', () => {
+    const actor = director({ institucion: 'ie-9', docenteId: 'doc-7', nombres: 'Ana', apellidos: 'Torres' });
+    const ajena = cronograma({
+      institucionId: 'otra',
+      tipo: 'DIRECTIVO',
+      evaluadoId: 'doc-9',
+      docenteDirectivo: 'Juana Pérez',
+    });
+
+    expect(idsVisibles([ajena], actor)).toEqual([]);
+  });
+
+  it('sin identificador de docente no reclama ninguna visita como propia', () => {
+    const actor = director({ institucion: 'ie-9', docenteId: undefined });
+    const otra = cronograma({ institucionId: 'otra', tipo: 'DIRECTIVO' });
+
+    expect(idsVisibles([otra], actor)).toEqual([]);
+  });
+});
+
+/**
+ * Quien levanta la ficha en el aula ve sólo sus propias visitas. La regla
+ * estaba fuera de acá, bolteada encima en `CalendarioPage`, y comparaba
+ * `visit.especialista` con «nombres apellidos» del usuario.
+ */
+describe('cronogramasVisibles — monitores de campo', () => {
+  it.each([
+    [RoleCode.ESPECIALISTA],
+    [RoleCode.COORDINADOR_PEDAGOGICO],
+    [RoleCode.JEFE_TALLER],
+  ])('%s ve sólo las visitas que tiene asignadas', (rol) => {
+    const actor = usuario({ role: rol, especialistaId: 'esp-7' });
+    const propia = cronograma({ monitorId: 'esp-7' });
+    const ajena = cronograma({ monitorId: 'esp-9' });
+
+    expect(idsVisibles([propia, ajena], actor)).toEqual(['c0']);
+  });
+
+  it('sin identificador de especialista no ve ninguna, en vez de verlas todas', () => {
+    const actor = usuario({ role: RoleCode.ESPECIALISTA, especialistaId: undefined });
+    expect(idsVisibles([cronograma()], actor)).toEqual([]);
   });
 });
 

@@ -5,6 +5,7 @@ import {
   datosBasicosDePersona,
   escalaMagisterialARomano,
   especialidadDeDocente,
+  opcionesDeInstitucion,
 } from './persona-formulario';
 
 /**
@@ -144,5 +145,36 @@ describe('soloDefinidos', () => {
 
   it('devuelve un objeto vacío si nada tiene valor', () => {
     expect(soloDefinidos({ a: undefined, b: null })).toEqual({});
+  });
+});
+
+describe('opcionesDeInstitucion', () => {
+  const ie = (id: string, nombre: string) => ({ id, nombre });
+
+  it('convierte la lista disponible en opciones del selector', () => {
+    expect(opcionesDeInstitucion([ie('a', 'IE 1'), ie('b', 'IE 2')])).toEqual([
+      { value: 'a', label: 'IE 1' },
+      { value: 'b', label: 'IE 2' },
+    ]);
+  });
+
+  /**
+   * El autocompletado por DNI puede traer a alguien cuya I.E. no está en la
+   * lista recibida. Sin agregarla el selector se abre vacío sobre un valor que
+   * sí está puesto, y guardar le borra la institución que ya tenía.
+   */
+  it('agrega la institución de la persona cuando no figura', () => {
+    const opciones = opcionesDeInstitucion([ie('a', 'IE 1')], ie('z', 'IE Lejana'));
+    expect(opciones).toContainEqual({ value: 'z', label: 'IE Lejana' });
+  });
+
+  it('no la duplica cuando ya figura', () => {
+    const opciones = opcionesDeInstitucion([ie('a', 'IE 1')], ie('a', 'IE 1'));
+    expect(opciones).toHaveLength(1);
+  });
+
+  it('sin persona devuelve sólo las disponibles', () => {
+    expect(opcionesDeInstitucion([ie('a', 'IE 1')], null)).toHaveLength(1);
+    expect(opcionesDeInstitucion([], undefined)).toEqual([]);
   });
 });

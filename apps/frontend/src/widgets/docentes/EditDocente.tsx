@@ -81,7 +81,11 @@ export const EditDocenteCard = ({
     especialidad: docente.especialidad,
     cargaHoraria: docente.cargaHoraria,
     secciones: docente.secciones || [],
-    escala: docente.escala,
+    // El formulario exige escala: es un campo obligatorio y visible, así que
+    // sembrarlo con la primera es proponer un valor que el usuario confirma,
+    // no afirmarlo por él. Distinto del caso de la asignación de cargo, donde
+    // se escribía sin que nadie lo viera.
+    escala: docente.escala ?? 'I',
     institucionId: docente.institucionId,
     activo: docente.activo,
     cargo: docente.cargo,

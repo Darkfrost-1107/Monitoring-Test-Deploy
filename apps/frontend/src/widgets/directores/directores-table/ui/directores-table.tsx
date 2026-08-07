@@ -170,7 +170,7 @@ export const DirectoresTableWidget = ({
             </TableCell>
             <TableCell>
               <Badge variant="secondary" className="text-xs font-bold px-2.5">
-                {ESCALA_NUM[dir.escala] ?? dir.escala}
+                {dir.escala ? (ESCALA_NUM[dir.escala] ?? dir.escala) : '—'}
               </Badge>
             </TableCell>
             <TableCell>

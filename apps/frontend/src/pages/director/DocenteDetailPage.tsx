@@ -197,7 +197,7 @@ export const DocenteDetailPage = () => {
                   <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block">
                     Escala Magisterial
                   </span>
-                  <span className="text-xs font-bold text-text">Escala {docente.escala}</span>
+                  <span className="text-xs font-bold text-text">Escala {docente.escala ?? "no registrada"}</span>
                 </div>
               </div>
 

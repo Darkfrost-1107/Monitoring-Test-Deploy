@@ -3,11 +3,11 @@ import { useUgelDashboard } from '@features/dashboard';
 import { useUser } from '@entities/model-user';
 import { PageHeader } from '@shared/ui/pageHeader';
 import { Spinner } from '@shared/ui/Spinner';
-import { LampaMap } from '@/pages/directorUgel/components/LampaMap';
+import { LampaMap } from '@widgets/mapa-lampa';
 import { RequierenAtencionCard } from '@/pages/directorUgel/components/RequierenAtencionCard';
 import { RequierenAtencionInstitucionalCard } from './components/RequierenAtencionInstitucionalCard';
 import { InstitucionDetalleCard } from './components/InstitucionDetalleCard';
-import { normDistrito } from '@/pages/directorUgel/utils/norm-distrito';
+import { normDistrito } from '@shared/lib/distrito';
 import { RoleCode } from '@sistema-monitoreo/shared-contracts';
 
 /**

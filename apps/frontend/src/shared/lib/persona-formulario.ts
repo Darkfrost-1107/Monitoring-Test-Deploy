@@ -1,3 +1,5 @@
+import { escalaARomano } from '@entities/model-docentes/escala';
+
 /**
  * Traspaso de una persona ya registrada a un formulario.
  *
@@ -6,9 +8,6 @@
  * de `setPersonaFields`. Se ejecutan al autocompletar por DNI y deciden con qué
  * datos queda cargada una persona que ya existe en el padrón.
  */
-
-/** Escala magisterial, de I a VIII, indexada por su número. */
-const ESCALA_EN_ROMANOS = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII'];
 
 /** Los cuatro campos que todo formulario de persona comparte. */
 export interface DatosBasicosDePersona {
@@ -53,7 +52,7 @@ export const datosBasicosDePersona = (persona: PersonaDelPadron): DatosBasicosDe
  * a la vista en la llamada.
  */
 export const escalaMagisterialARomano = (escala: number | undefined, respaldo: string): string =>
-  (escala ? ESCALA_EN_ROMANOS[escala - 1] : undefined) ?? respaldo;
+  escalaARomano(escala) ?? respaldo;
 
 /**
  * Descarta las claves sin valor.
@@ -86,3 +85,31 @@ interface DocenteDelPadron {
 export const especialidadDeDocente = (
   docente: DocenteDelPadron | null | undefined,
 ): string | undefined => docente?.especialidad || docente?.cursoAsignado || undefined;
+
+/** Institución que un formulario puede ofrecer en su selector. */
+interface InstitucionElegible {
+  id: string;
+  nombre: string;
+}
+
+/**
+ * Instituciones del selector, con la de la persona encontrada incluida.
+ *
+ * El autocompletado por DNI puede traer a alguien cuya I.E. no está en la lista
+ * que el formulario recibió —porque el ámbito de quien registra no la
+ * alcanza—. Sin agregarla, el selector se abre vacío sobre un valor que sí
+ * está puesto, y guardar borra la institución que la persona ya tenía. Estaba
+ * escrito igual en los formularios de docente y de director.
+ */
+export function opcionesDeInstitucion(
+  disponibles: readonly InstitucionElegible[],
+  laDeLaPersona?: InstitucionElegible | null,
+): { value: string; label: string }[] {
+  const opciones = disponibles.map((i) => ({ value: i.id, label: i.nombre }));
+
+  if (laDeLaPersona && !opciones.some((o) => o.value === laDeLaPersona.id)) {
+    opciones.push({ value: laDeLaPersona.id, label: laDeLaPersona.nombre });
+  }
+
+  return opciones;
+}

@@ -1,19 +1,39 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FastActions } from '@shared/ui/FastActions';
+import { AlertCircle } from 'lucide-react';
 import type { Docente } from '@entities/model-docentes';
-
 import { useEntityTable } from '@shared/hooks/useEntityTable';
 import { EntityTable } from '@shared/ui/EntityTable';
 import { ConfirmModal } from '@shared/ui/ConfirmModal';
-import { TableCell, TableHead, TableRow } from '@shared/ui/table';
-import { Badge } from '@shared/ui/badge';
-import { AlertDialog, AlertDialogContent } from '@shared/ui/alert-dialog';
-import { AsignacionEvaluadorWidget } from '@features/docentes/ui/AsignacionEvaluadorWidget';
-import { X } from 'lucide-react';
-
+import { TableHead } from '@shared/ui/table';
 import { teachersApi } from '@shared/api/teachers.api';
 import { hoyISO } from '@shared/lib/fecha/fecha';
+import {
+  cargoFinalizado,
+  cargoVigente,
+  esCargoDeMonitoreo,
+  filtroDelPadron,
+} from '@features/docentes/lib/padron-docentes';
+import { FilaDeDocente } from './FilaDeDocente';
+import { ModalAsignarEvaluados } from './ModalAsignarEvaluados';
+
+/**
+ * Padrón de docentes, reutilizado por las seis pantallas de personal.
+ *
+ * Eran 303 líneas con el filtro adentro y sin cobertura, tres `alert()` del
+ * navegador para los errores del servidor y el diálogo de asignación desnudo al
+ * final del archivo.
+ */
+
+const COLUMNAS = [
+  'DNI',
+  'Apellidos y Nombres',
+  'Correo',
+  'Teléfono',
+  'Condición / Escala',
+  'Grado y Sección a cargo',
+  'Estado',
+];
 
 interface DocentesTableWidgetProps {
   docentes: Docente[];
@@ -26,40 +46,6 @@ interface DocentesTableWidgetProps {
   itemName?: string;
 }
 
-const docenteFilter = (targetCargo: DocentesTableWidgetProps['targetCargo']) =>
-  (doc: Docente, params: URLSearchParams) => {
-    const searchQuery = params.get('search') || '';
-    const condicionFilter = params.get('condicion') || '';
-    const seccionFilter = params.get('seccion') || '';
-    const nivelFilter = params.get('nivelEducativo') || '';
-
-    let hasCargo: boolean;
-    if (targetCargo === 'Docente de Aula') {
-      const hasActiveMonitor = doc.cargosList?.some(
-        (c) => c.fechaFin === null && ['Director', 'Coordinador Pedagógico', 'Jefe de Taller'].includes(c.nombre),
-      );
-      hasCargo = hasActiveMonitor !== undefined ? !hasActiveMonitor : doc.cargo === 'Docente de Aula';
-    } else {
-      hasCargo = doc.cargosList?.some((c) => c.nombre === targetCargo && c.fechaFin === null) ?? (doc.cargo === targetCargo);
-    }
-    if (!hasCargo) return false;
-
-    const matchSearch =
-      !searchQuery ||
-      doc.nombres.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      doc.apellidos.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      doc.dni.includes(searchQuery);
-
-    const matchCondicion = !condicionFilter || doc.condicion === condicionFilter;
-    const matchSeccion =
-      !seccionFilter ||
-      (doc.secciones || []).some((s) => `${s.grado} ${s.seccion}` === seccionFilter);
-    const matchNivel =
-      !nivelFilter || doc.nivelEducativo?.toUpperCase() === nivelFilter.toUpperCase();
-
-    return matchSearch && matchCondicion && matchSeccion && matchNivel;
-  };
-
 export const DocentesTableWidget = ({
   docentes,
   setDocentes,
@@ -70,233 +56,220 @@ export const DocentesTableWidget = ({
   itemName = 'directores/docentes',
 }: DocentesTableWidgetProps) => {
   const navigate = useNavigate();
-  const [deletingDoc, setDeletingDoc] = useState<Docente | null>(null);
-  const [restoringDoc, setRestoringDoc] = useState<Docente | null>(null);
-  const [finalizingDoc, setFinalizingDoc] = useState<Docente | null>(null);
-  const [assigningDoc, setAssigningDoc] = useState<Docente | null>(null);
 
-  const pagination = useEntityTable({ data: docentes, filterFn: docenteFilter(targetCargo) });
+  const [aDesactivar, setADesactivar] = useState<Docente | null>(null);
+  const [aReactivar, setAReactivar] = useState<Docente | null>(null);
+  const [aFinalizar, setAFinalizar] = useState<Docente | null>(null);
+  const [aAsignar, setAAsignar] = useState<Docente | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleFinalizeClick = (doc: Docente) => {
-    const { isMonitorCargo } = getCargoStatus(doc);
-    if (isMonitorCargo) {
-      setFinalizingDoc(doc);
-    } else {
-      setDeletingDoc(doc);
+  const filtro = useMemo(() => filtroDelPadron(targetCargo), [targetCargo]);
+  const pagination = useEntityTable({ data: docentes, filterFn: filtro });
+
+  // El cargo se finaliza o el docente se desactiva según de qué listado se
+  // trate; no depende de la fila.
+  const esDesignacion = esCargoDeMonitoreo(targetCargo);
+
+  /** Ejecuta la acción y deja el mensaje del servidor a la vista si falla. */
+  const ejecutar = async (
+    accion: () => Promise<{ ok: boolean; error?: unknown }>,
+    alFallar: string,
+    alTerminar: () => void,
+  ) => {
+    setError(null);
+    try {
+      const respuesta = await accion();
+      if (respuesta.ok) return true;
+      setError((respuesta.error as { message?: string })?.message || alFallar);
+    } catch (err) {
+      setError('No se pudo conectar con el servidor. Intente nuevamente en unos momentos.');
+      console.error(alFallar, err);
+    } finally {
+      alTerminar();
     }
+    return false;
   };
 
-  const confirmFinalizeCargo = async () => {
-    if (!finalizingDoc) return;
-    const targetCargoObj = finalizingDoc.cargosList?.find((c) => c.nombre === targetCargo && c.fechaFin === null) ||
-                           finalizingDoc.cargosList?.find((c) => c.nombre === targetCargo);
-    if (!targetCargoObj) return;
+  const confirmarFinalizacion = async () => {
+    if (!aFinalizar) return;
 
-    try {
-      const res = await teachersApi.finalizeCargo(finalizingDoc.id, targetCargoObj.id);
-      if (res.ok) {
-        const nowStr = hoyISO();
-        setDocentes((prev) =>
-          prev.map((d) => {
-            if (d.id === finalizingDoc.id) {
-              const updatedCargos = d.cargosList?.map((c) =>
-                c.id === targetCargoObj.id ? { ...c, fechaFin: nowStr, esPrincipal: false } : c
-              );
-              return {
-                ...d,
-                cargo: 'Docente de Aula',
-                cargosList: updatedCargos,
-              };
+    const designacion = cargoVigente(aFinalizar, targetCargo);
+    if (!designacion) {
+      setError(`No se encontró la designación de ${targetCargo} para este docente.`);
+      setAFinalizar(null);
+      return;
+    }
+
+    const docenteId = aFinalizar.id;
+    const ok = await ejecutar(
+      () => teachersApi.finalizeCargo(docenteId, designacion.id),
+      'Error al finalizar el cargo.',
+      () => setAFinalizar(null),
+    );
+    if (!ok) return;
+
+    const cerradaHoy = hoyISO();
+    setDocentes((previos) =>
+      previos.map((d) =>
+        d.id === docenteId
+          ? {
+              ...d,
+              cargo: 'Docente de Aula',
+              cargosList: d.cargosList?.map((c) =>
+                c.id === designacion.id ? { ...c, fechaFin: cerradaHoy, esPrincipal: false } : c,
+              ),
             }
-            return d;
-          }),
-        );
-      } else {
-        const errMsg =
-          (res.error as { message?: string })?.message || 'Error al finalizar el cargo.';
-        alert(errMsg);
-      }
-    } catch (err) {
-      console.error('Connection error when finalizing cargo:', err);
-    } finally {
-      setFinalizingDoc(null);
-    }
+          : d,
+      ),
+    );
   };
 
-  const confirmDeactivate = async () => {
-    if (!deletingDoc) return;
-    try {
-      const res = await teachersApi.deactivate(deletingDoc.id);
-      if (res.ok) {
-        setDocentes((prev) =>
-          prev.map((d) => (d.id === deletingDoc.id ? { ...d, activo: false } : d)),
-        );
-      } else {
-        const errMsg =
-          (res.error as { message?: string })?.message || 'Error al dar de baja el docente.';
-        alert(errMsg);
-      }
-    } catch (err) {
-      console.error('Connection error when deactivating teacher:', err);
-    } finally {
-      setDeletingDoc(null);
-    }
+  const confirmarDesactivacion = async () => {
+    if (!aDesactivar) return;
+    const id = aDesactivar.id;
+
+    const ok = await ejecutar(
+      () => teachersApi.deactivate(id),
+      'Error al dar de baja el docente.',
+      () => setADesactivar(null),
+    );
+    if (!ok) return;
+
+    setDocentes((previos) => previos.map((d) => (d.id === id ? { ...d, activo: false } : d)));
   };
 
-  const confirmRestore = async () => {
-    if (!restoringDoc) return;
-    try {
-      const res = await teachersApi.activate(restoringDoc.id);
-      if (res.ok) {
-        setDocentes((prev) =>
-          prev.map((d) => (d.id === restoringDoc.id ? { ...d, activo: true } : d)),
-        );
-      } else {
-        const errMsg =
-          (res.error as { message?: string })?.message || 'Error al reactivar el docente.';
-        alert(errMsg);
-      }
-    } catch (err) {
-      console.error('Connection error when activating teacher:', err);
-    } finally {
-      setRestoringDoc(null);
-    }
-  };
+  const confirmarReactivacion = async () => {
+    if (!aReactivar) return;
+    const id = aReactivar.id;
 
-  const getCargoStatus = (doc: Docente) => {
-    const targetCargoObj = doc.cargosList?.find((c) => c.nombre === targetCargo && c.fechaFin === null) ||
-                           doc.cargosList?.find((c) => c.nombre === targetCargo);
-    const isCargoFinalized = targetCargoObj ? targetCargoObj.fechaFin !== null : false;
-    const isMonitorCargo = ['Director', 'Coordinador Pedagógico', 'Jefe de Taller'].includes(targetCargo);
-    return { targetCargoObj, isCargoFinalized, isMonitorCargo };
+    const ok = await ejecutar(
+      () => teachersApi.activate(id),
+      'Error al reactivar el docente.',
+      () => setAReactivar(null),
+    );
+    if (!ok) return;
+
+    setDocentes((previos) => previos.map((d) => (d.id === id ? { ...d, activo: true } : d)));
   };
 
   return (
     <>
+      {/* Antes cada uno de estos errores era un `alert()`: bloqueaba la pestaña
+          y desaparecía sin dejar rastro al aceptarlo. */}
+      {error && (
+        <div className="flex items-start gap-2 bg-destructive/10 border border-destructive/20 rounded-xl p-4 text-destructive text-sm font-medium mb-4">
+          <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+          <span className="flex-1">{error}</span>
+          <button
+            type="button"
+            onClick={() => setError(null)}
+            className="text-xs font-bold underline cursor-pointer shrink-0"
+          >
+            Cerrar
+          </button>
+        </div>
+      )}
+
       <EntityTable
         header={
           <>
-            <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider pl-5">DNI</TableHead>
-            <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider">Apellidos y Nombres</TableHead>
-            <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider">Correo</TableHead>
-            <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider">Teléfono</TableHead>
-            <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider">Condición / Escala</TableHead>
-            <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider">Grado y Sección a cargo</TableHead>
-            <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider">Estado</TableHead>
-            <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider text-right pr-5">Acciones</TableHead>
+            {COLUMNAS.map((columna, indice) => (
+              <TableHead
+                key={columna}
+                className={`font-bold text-[0.7rem] uppercase tracking-wider ${
+                  indice === 0 ? 'pl-5' : ''
+                }`}
+              >
+                {columna}
+              </TableHead>
+            ))}
+            <TableHead className="font-bold text-[0.7rem] uppercase tracking-wider text-right pr-5">
+              Acciones
+            </TableHead>
           </>
         }
         pagination={pagination}
         emptyMessage={`No se encontraron ${itemName} con los filtros seleccionados.`}
         itemName={itemName}
       >
-        {pagination.pageItems.map((doc) => {
-          const { isCargoFinalized, isMonitorCargo } = getCargoStatus(doc);
+        {pagination.pageItems.map((docente) => {
+          const finalizado = cargoFinalizado(docente, targetCargo);
+          const editable = docente.activo && !finalizado;
+
           return (
-            <TableRow key={doc.id} className="hover:bg-muted/30 transition-colors">
-              <TableCell className="font-semibold pl-5 text-text">{doc.dni}</TableCell>
-              <TableCell>
-                <div className="font-bold text-text">{doc.apellidos}, {doc.nombres}</div>
-              </TableCell>
-              <TableCell className="text-text text-sm">{doc.correo}</TableCell>
-              <TableCell className="text-text text-sm">{doc.celular}</TableCell>
-              <TableCell>
-                <div className="text-xs font-medium text-text">{doc.condicion}</div>
-                <div className="text-[0.65rem] text-text-muted mt-0.5">Escala: {doc.escala}</div>
-              </TableCell>
-              <TableCell>
-                <div className="flex flex-wrap gap-1">
-                  {(doc.secciones || []).map((sec) => (
-                    <Badge key={sec.id} variant="outline" className="text-[0.7rem] py-0.5 px-2.5 font-bold bg-muted/40 text-text border-border">
-                      {sec.grado} "{sec.seccion}"
-                    </Badge>
-                  ))}
-                  {(doc.secciones || []).length === 0 && (
-                    <span className="text-xs text-text-muted italic">Sin asignar</span>
-                  )}
-                </div>
-              </TableCell>
-              <TableCell>
-                {isCargoFinalized ? (
-                  <Badge className="bg-slate-100 text-slate-600 border-slate-200">Cargo Finalizado</Badge>
-                ) : (
-                  <Badge className={doc.activo ? 'bg-green-50 text-green-700 border-green-200' : 'bg-slate-100 text-slate-600 border-slate-200'}>
-                    {doc.activo ? 'Activo' : 'Inactivo'}
-                  </Badge>
-                )}
-              </TableCell>
-              <TableCell className="text-right pr-5">
-                <FastActions
-                  onView={() => onView(doc)}
-                  onEdit={doc.activo && !isCargoFinalized ? () => { onEdit?.(doc); navigate(`${routePrefix}/${doc.id}/editar`); } : undefined}
-                  onRestore={!isMonitorCargo && !doc.activo ? () => setRestoringDoc(doc) : undefined}
-                  onFinalize={doc.activo && !isCargoFinalized ? () => handleFinalizeClick(doc) : undefined}
-                  onAssign={(targetCargo === 'Coordinador Pedagógico' || targetCargo === 'Jefe de Taller') && doc.activo && !isCargoFinalized ? () => setAssigningDoc(doc) : undefined}
-                  viewTitle="Ver ficha"
-                  restoreTitle="Reactivar docente"
-                  finalizeTitle={isMonitorCargo ? `Finalizar Cargo de ${targetCargo}` : 'Desactivar docente'}
-                  assignTitle="Asignar Docentes"
-                />
-              </TableCell>
-            </TableRow>
+            <FilaDeDocente
+              key={docente.id}
+              docente={docente}
+              cargoFinalizado={finalizado}
+              acciones={{
+                onVer: () => onView(docente),
+                onEditar: editable
+                  ? () => {
+                      onEdit?.(docente);
+                      navigate(`${routePrefix}/${docente.id}/editar`);
+                    }
+                  : undefined,
+                onReactivar:
+                  !esDesignacion && !docente.activo ? () => setAReactivar(docente) : undefined,
+                onFinalizar: editable
+                  ? () => (esDesignacion ? setAFinalizar(docente) : setADesactivar(docente))
+                  : undefined,
+                onAsignar:
+                  editable &&
+                  (targetCargo === 'Coordinador Pedagógico' || targetCargo === 'Jefe de Taller')
+                    ? () => setAAsignar(docente)
+                    : undefined,
+                rotuloFinalizar: esDesignacion
+                  ? `Finalizar Cargo de ${targetCargo}`
+                  : 'Desactivar docente',
+              }}
+            />
           );
         })}
       </EntityTable>
 
-      {deletingDoc && (
+      {aDesactivar && (
         <ConfirmModal
           danger
           title="¿Desactivar Docente?"
-          message={`Esta acción desactivará el registro de ${deletingDoc.apellidos}, ${deletingDoc.nombres} en el padrón oficial.`}
+          message={`Esta acción desactivará el registro de ${aDesactivar.apellidos}, ${aDesactivar.nombres} en el padrón oficial.`}
           confirmLabel="Desactivar"
           cancelLabel="Cancelar"
-          onConfirm={confirmDeactivate}
-          onCancel={() => setDeletingDoc(null)}
+          onConfirm={confirmarDesactivacion}
+          onCancel={() => setADesactivar(null)}
         />
       )}
 
-      {restoringDoc && (
+      {aReactivar && (
         <ConfirmModal
           title="¿Reactivar Personal?"
-          message={`Esta acción reactivará el registro de ${restoringDoc.apellidos}, ${restoringDoc.nombres} en el padrón oficial.`}
+          message={`Esta acción reactivará el registro de ${aReactivar.apellidos}, ${aReactivar.nombres} en el padrón oficial.`}
           confirmLabel="Reactivar"
           cancelLabel="Cancelar"
-          onConfirm={confirmRestore}
-          onCancel={() => setRestoringDoc(null)}
+          onConfirm={confirmarReactivacion}
+          onCancel={() => setAReactivar(null)}
         />
       )}
 
-      {finalizingDoc && (
+      {aFinalizar && (
         <ConfirmModal
           danger
           title="¿Finalizar Designación de Cargo?"
-          message={`Esta acción finalizará la designación de ${targetCargo} para ${finalizingDoc.apellidos}, ${finalizingDoc.nombres}. El usuario retornará al rol de Docente regular y se cancelarán sus monitoreos pendientes.`}
+          message={`Esta acción finalizará la designación de ${targetCargo} para ${aFinalizar.apellidos}, ${aFinalizar.nombres}. El usuario retornará al rol de Docente regular y se cancelarán sus monitoreos pendientes.`}
           confirmLabel="Finalizar Cargo"
           cancelLabel="Cancelar"
-          onConfirm={confirmFinalizeCargo}
-          onCancel={() => setFinalizingDoc(null)}
+          onConfirm={confirmarFinalizacion}
+          onCancel={() => setAFinalizar(null)}
         />
       )}
 
-      {assigningDoc && (
-        <AlertDialog open={true} onOpenChange={(open) => { if (!open) setAssigningDoc(null); }}>
-          <AlertDialogContent className="!max-w-5xl !w-[90vw] p-0 overflow-hidden bg-transparent border-0 shadow-none">
-             <div className="relative bg-white rounded-xl shadow-xl w-full h-[85vh] flex flex-col overflow-hidden">
-               <div className="absolute top-2 right-2 z-10">
-                 <button onClick={() => setAssigningDoc(null)} className="flex items-center justify-center h-8 w-8 rounded-full bg-slate-100 hover:bg-slate-200 cursor-pointer border-none outline-none">
-                   <X className="h-4 w-4 text-slate-500" />
-                 </button>
-               </div>
-               <div className="p-4 pt-8 flex-1 overflow-hidden flex flex-col">
-                 <AsignacionEvaluadorWidget
-                   evaluadorId={assigningDoc.id}
-                   evaluadorNombre={`${assigningDoc.nombres} ${assigningDoc.apellidos}`}
-                   evaluadorCargo={targetCargo}
-                 />
-               </div>
-             </div>
-          </AlertDialogContent>
-        </AlertDialog>
+      {aAsignar && (
+        <ModalAsignarEvaluados
+          evaluadorId={aAsignar.id}
+          evaluadorNombre={`${aAsignar.nombres} ${aAsignar.apellidos}`}
+          evaluadorCargo={targetCargo}
+          onCerrar={() => setAAsignar(null)}
+        />
       )}
     </>
   );

@@ -78,7 +78,11 @@ export const EditDirectorCard = () => {
     correo: director.correo,
     celular: director.celular,
     condicion: director.condicion as DirectorFormData['condicion'],
-    escala: director.escala,
+    // El formulario exige escala: es un campo obligatorio y visible, así que
+    // sembrarlo con la primera es proponer un valor que el usuario confirma,
+    // no afirmarlo por él. Distinto del caso de la asignación de cargo, donde
+    // se escribía sin que nadie lo viera.
+    escala: director.escala ?? 'I',
     institucionId: director.institucionId,
     nivelEducativo: director.nivelEducativo as DirectorFormData['nivelEducativo'],
     especialidad: director.especialidad,

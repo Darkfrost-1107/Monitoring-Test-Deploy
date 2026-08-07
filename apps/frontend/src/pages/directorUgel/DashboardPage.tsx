@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Target, BarChart4, AlertCircle, Building2, Calendar } from 'lucide-react';
 import { useUgelDashboard, nivelLogroUi, iniciales } from '@features/dashboard';
 import { KpiStat } from './components/KpiStat';
-import { normDistrito } from './utils/norm-distrito';
+import { normDistrito } from '@shared/lib/distrito';
 import { CoberturaDistritoCard } from './components/CoberturaDistritoCard';
 import { SemaforoDonutCard } from './components/SemaforoDonutCard';
 import { EvolucionMensualCard } from './components/EvolucionMensualCard';

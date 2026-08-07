@@ -4,7 +4,8 @@ import { useDniAutocomplete } from '@features/docentes/hooks/useDniAutocomplete'
 import { checkRoleConflict, type RolObjetivo } from '@shared/constants/roleValidation';
 import type { PersonaAutocompleteData } from '@features/docentes/hooks/useDniAutocomplete';
 import type { ZodError } from 'zod';
-import { esErrorDeCelular, mensajeDeError } from '@shared/lib/errores-formulario';
+import { mensajeDeError } from '@shared/lib/errores-formulario';
+import { useFocoEnCelular } from '@shared/hooks/use-foco-en-celular';
 
 export function extractErrors(
   result: { success: boolean; error?: ZodError<unknown> },
@@ -88,7 +89,7 @@ export function usePersonForm({
 }: UsePersonFormOptions): UsePersonFormReturn {
   const [submitted, setSubmitted] = useState(false);
   const [showRoleConfirm, setShowRoleConfirm] = useState(false);
-  const celularRef = useRef<HTMLDivElement | null>(null);
+  const celularRef = useFocoEnCelular(serverError);
 
   const errors = useMemo(
     () => ({ ...extractErrors(schema.safeParse(form)), ...erroresExtra }),
@@ -99,15 +100,6 @@ export function usePersonForm({
     (campo: string) => mensajeDeError(campo, { errores: errors, enviado: submitted, serverError }),
     [errors, submitted, serverError],
   );
-
-  // Llevar la vista al campo que el servidor rechazó, que puede haber quedado
-  // fuera de pantalla en un formulario largo. Se enfoca el input de adentro,
-  // no el contenedor.
-  useEffect(() => {
-    if (!esErrorDeCelular(serverError) || !celularRef.current) return;
-    celularRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    celularRef.current.querySelector('input')?.focus();
-  }, [serverError]);
 
   const { data: persona, isLoading: searchingDni, isLocked: isDniLocked, message: dniMessage } =
     useDniAutocomplete(dni, isNew);

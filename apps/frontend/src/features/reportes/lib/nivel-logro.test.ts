@@ -29,6 +29,11 @@ describe('nivelLogroARomano', () => {
 });
 
 describe('nivelNumericoARomano', () => {
+  it('devuelve nulo cuando no hay nivel registrado', () => {
+    expect(nivelNumericoARomano(undefined)).toBeNull();
+    expect(nivelNumericoARomano(null)).toBeNull();
+  });
+
   it('traduce del 1 al 4', () => {
     expect(nivelNumericoARomano(1)).toBe('I');
     expect(nivelNumericoARomano(2)).toBe('II');

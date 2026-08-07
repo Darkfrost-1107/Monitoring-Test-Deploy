@@ -221,7 +221,9 @@ export const useCronogramasData = (enabled = true) => {
       .catch((err) => console.warn('[cronograma] No se pudo crear solicitud:', err));
   };
 
-  const approveRescheduleRequest = (visitId: string, _aprobador: string, comentario: string) => {
+  // El aprobador no se pasa: el backend lo toma de la sesión al resolver la
+  // solicitud. Recibirlo por parámetro invitaba a inventarlo.
+  const approveRescheduleRequest = (visitId: string, comentario: string) => {
     cronogramasApi.findAllSolicitudes({ cronogramaId: visitId, estado: 'PENDIENTE' })
       .then((solicitudes) => {
         const solicitud = solicitudes[0];
@@ -236,7 +238,7 @@ export const useCronogramasData = (enabled = true) => {
       .catch((err) => console.warn('[cronograma] No se pudo aprobar solicitud:', err));
   };
 
-  const rejectRescheduleRequest = (visitId: string, _aprobador: string, comentario: string) => {
+  const rejectRescheduleRequest = (visitId: string, comentario: string) => {
     cronogramasApi.findAllSolicitudes({ cronogramaId: visitId, estado: 'PENDIENTE' })
       .then((solicitudes) => {
         const solicitud = solicitudes[0];

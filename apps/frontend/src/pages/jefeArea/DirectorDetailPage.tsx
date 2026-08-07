@@ -178,7 +178,7 @@ export const DirectorDetailPage = () => {
                 <span className="text-[0.68rem] text-text-muted uppercase font-bold tracking-wider block">
                   Escala Magisterial
                 </span>
-                <span className="text-xs font-bold text-text">Escala {director.escala}</span>
+                <span className="text-xs font-bold text-text">Escala {director.escala ?? "no registrada"}</span>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
