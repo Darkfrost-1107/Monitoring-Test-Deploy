@@ -963,6 +963,33 @@ Adicionalmente, dos efectos tienen sus dependencias silenciadas (`CronogramaPage
 
 **Riesgo de omitir esta fase.** Los cuatro archivos siguen siendo intocables en la práctica: cualquier cambio en ellos requiere comprender más de mil líneas de contexto, lo que hace que las estimaciones sean poco fiables y las revisiones de código superficiales.
 
+**Resultado (2026-08-06).**
+
+| Archivo | Antes | Después |
+| --- | --- | --- |
+| `CronogramaPage.tsx` | 1.446 | 180 |
+| `LlenarFichaForm.tsx` | 1.294 | 292 |
+| `CalendarioGrid.tsx` | 1.011 | 219 |
+| `CalendarioSidebar.tsx` | 917 | 278 |
+| **Total** | **4.668** | **969** |
+
+`CalendarioPage.tsx` bajó además de 367 a 306 al perder su copia de la
+regla de visibilidad, que estaba duplicada y divergente respecto de
+`CronogramaPage`.
+
+Criterios cumplidos: ningún archivo del alcance supera 300 líneas,
+ninguna interfaz de props supera 8 propiedades, y el proyecto quedó con
+**cero** supresiones de `react-hooks/exhaustive-deps` (eran 3).
+
+**Alcance no cubierto.** El criterio «ningún componente supera 300
+líneas» se cumple para los cuatro archivos que esta fase enumera, no para
+el proyecto entero: quedan 8 componentes por encima de ese umbral
+—`PlanMonitoreoAnualPage` (775), `FichaPrintable` (763),
+`PlantillasCatalog` (695), `ReportesGrid` (631), `DocenteFormBase` (523),
+`EspecialistaFormBase` (499), `ReportesPage` (393) y `JefeAreaFormBase`
+(369)—, unas 4.600 líneas que ninguna tarea de esta fase menciona.
+Cerrarlos requiere una fase propia.
+
 ---
 
 ### Fase 6 — Extracción del dominio fuera de la capa de presentación
@@ -1000,6 +1027,52 @@ Adicionalmente, dos efectos tienen sus dependencias silenciadas (`CronogramaPage
 
 **Riesgo de omitir esta fase.** Cada cambio en las reglas de dominio requiere modificaciones dispersas en la capa de presentación, con omisión parcial como modo de fallo característico y difícil de detectar en revisión.
 
+**Estado (2026-08-06) y correcciones al enunciado.**
+
+Dos premisas de esta fase resultaron falsas al verificarlas:
+
+1. **«`roleValidation` vive del lado del cliente, sin contraparte verificable en
+   el servidor».** Falso para tres de los cuatro casos que bloquea: especialista
+   duplicado (`especialista-create.helper.ts:44`), docente duplicado
+   (`docente-create.helper.ts:58`) e institución con director activo
+   (`docente-shared.helper.ts:27`). Uno de esos archivos lleva un comentario que
+   dice «defense-in-depth». El único hueco real era otro: el cliente bloqueaba a
+   nivel **persona** y el servidor a nivel **institución**, de modo que una
+   persona podía quedar como director de dos colegios llamando a la API sin
+   pasar por el formulario. Cerrado con `checkPersonaYaEsDirector`.
+
+2. **«Los cinco `*FormBase` tienen estructura equivalente».** Falso:
+   `CreateInstitutionFormBase` registra un colegio y `JefeAreaFormBase` asigna
+   un especialista existente; ninguno es formulario de persona. Los tres que sí
+   lo son ya compartían `usePersonForm`. Además, más de la mitad de esos
+   archivos es la declaración de sus propios campos, que es lo que el plan pide
+   que quede. El criterio «≤ 700 líneas en conjunto» medía la cosa equivocada y
+   se sustituyó por: la lógica compartida se escribe una vez y con cobertura.
+
+También quedó sin hacer, por no existir: las **transiciones válidas** entre
+estados de visita que pide la tarea 1. No están declaradas en ninguna parte del
+sistema; consolidarlas sería inventarlas.
+
+**Hecho.**
+
+| Tarea | Estado |
+| --- | --- |
+| 1 — Registro de estados de visita | ✅ `ESTADOS_VISITA` en el contrato; tablas `Record<EstadoVisita, …>` exhaustivas; catálogos derivados. Sin transiciones (no existen) |
+| 2 — Fechas | ⚠️ Parcial: `shared/lib/fecha` con 23 pruebas y huso fijado; migrados los dos peores casos. Quedan 27 archivos |
+| 3 — Abstracción de formularios | ✅ Con criterio revisado: traspaso desde el padrón, escala magisterial, atribución de error y regla de visualización, cada una una sola vez y con cobertura |
+| 4 — `shared-validation` | ⚠️ Parcial: paquete creado con las primitivas de campo, consumido por el frontend. El backend valida con `class-validator` y no tiene Zod: unificar ambos lados es una decisión de arquitectura pendiente |
+| 5 — Catálogos de dominio | ⚠️ Parcial: estados derivados del contrato. Tipos de monitoreo y números de visita siguen escritos a mano |
+
+**Defectos encontrados y corregidos durante la fase.**
+
+| Defecto | Dónde |
+| --- | --- |
+| Datos personales volcados a la consola del navegador | `DocenteFormBase`, `DirectorFormBase` |
+| Una persona podía quedar como director de dos instituciones | backend, sin validación por persona |
+| Fecha mostrada un día antes por interpretación UTC | todo formateo con `new Date` sobre fecha sin hora |
+| Fecha ilegible mostrada como «Oct 2023» | los dos formularios de reprogramación |
+| Escala magisterial con respaldos divergentes | `DocenteFormBase` caía a `''`, `DirectorFormBase` a `'I'` |
+
 ---
 
 ### Fase 7 — Higiene y consolidación
@@ -1025,6 +1098,36 @@ Adicionalmente, dos efectos tienen sus dependencias silenciadas (`CronogramaPage
 - Cero notas `TODO` sin fecha ni responsable.
 - Cero reexportaciones de compatibilidad.
 - Comparación final de métricas documentada.
+
+**Medición final (2026-08-06).**
+
+| Métrica | Objetivo | Línea base | Final |
+| --- | --- | --- | --- |
+| Archivos con comparación literal de rol | 0 | 104 | **0** ✅ |
+| Ocurrencias de `any` en fuente | ≤ 20 | — | **4** ✅ |
+| Supresiones de lint a nivel de archivo | 0 | 16 | **0** ✅ |
+| Supresiones de `react-hooks/exhaustive-deps` | 0 | 3 | **0** ✅ |
+| Notas `TODO` sin fecha | 0 | 2 | **0** ✅ |
+| Datos simulados fuera de pruebas | 0 | 1.080 líneas | **0** ✅ |
+| Reexportaciones de compatibilidad | 0 | 2 | **0** ✅ |
+| Componentes de más de 300 líneas | 0 | 20 | **17** ❌ |
+
+**Sobre el comando de medición de `UserRole`.** El comando del anexo
+(`rg -n "type UserRole"`) cuenta también las **importaciones**, no sólo las
+declaraciones. Reporta 3 cuando la declaración es una sola, en el contrato
+compartido. El comando está mal, no la métrica.
+
+**Sobre los 17 componentes de más de 300 líneas.** La Fase 5 redujo los cuatro
+que enumeraba —de 4.668 a 969 líneas—, pero su criterio de salida estaba escrito
+como si aplicara a todo el proyecto. Los 17 restantes nunca formaron parte del
+alcance de ninguna fase: `PlanMonitoreoAnualPage` (775), `FichaPrintable` (763),
+`PlantillasCatalog` (695), `ReportesGrid` (631) y otros trece. Cerrarlos requiere
+una fase propia con su propio inventario.
+
+**Tarea 5 sin hacer.** La actualización de la documentación de arquitectura en
+`docs/` queda pendiente: el directorio contiene entregables de gestión —actas,
+backlogs, informes— y no documentación técnica que refleje esta estructura.
+Escribirla desde cero es una tarea de redacción, no de consolidación.
 
 ---
 
@@ -1071,9 +1174,9 @@ Si el plan debe recortarse por restricción de tiempo, **las Fases 0, 1 y 2 son 
 | 2 — Autorización centralizada | **En curso** | 2026-08-05 | | | Migración completa (104 → 0 literales), barrera de CI bloqueante, política al 96 %; falta derivar el menú, bloqueado por decisión de producto |
 | 3 — Red de pruebas | **Cerrada con alcance revisado** | 2026-08-06 | 2026-08-06 | | Umbrales activos como guarda de retroceso; el objetivo de cobertura se traslada a la Fase 5 |
 | 4 — Tipado en capa de datos | **Completada** | 2026-08-06 | 2026-08-06 | | 16 → 0 supresiones; destapó dos defectos reales, H-29 entre ellos |
-| 5 — Descomposición de componentes | Pendiente | | | | |
-| 6 — Extracción de dominio | Pendiente | | | | |
-| 7 — Higiene y consolidación | Pendiente | | | | |
+| 5 — Descomposición de componentes | **Completada (alcance del plan)** | 2026-08-06 | 2026-08-06 | | Los 4 archivos objetivo: 4.668 → 969 líneas. Cero supresiones de `exhaustive-deps` en el proyecto. Quedan 8 componentes >300 líneas fuera del alcance de esta fase (ver nota) |
+| 6 — Extracción de dominio | **Parcial** | 2026-08-06 | | | H-16 y H-18 cerrados; H-17 con primitivas y los peores casos migrados, faltan 27 archivos. Dos premisas del plan resultaron falsas (ver nota) |
+| 7 — Higiene y consolidación | **Parcial** | 2026-08-06 | | | 4 de 5 tareas cerradas. Falta la tarea 5 (documentación de arquitectura). El criterio «cero componentes >300 líneas» no se cumple: 17, fuera del alcance de las fases |
 
 ---
 

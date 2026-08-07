@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { formatearFechaConMes } from '@shared/lib/fecha/fecha';
 import {
   X,
   RefreshCw,
@@ -25,25 +26,6 @@ interface DecidirReprogramacionFormProps {
   onReject: (visitId: string, comment: string) => void;
 }
 
-const MONTH_NAMES = [
-  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-];
-
-const formatVisitDateLabel = (fechaStr: string) => {
-  try {
-    const d = new Date(fechaStr);
-    if (isNaN(d.getTime())) {
-      const parts = fechaStr.split('T');
-      const [, , dayNum] = parts[0].split('-');
-      const [h, min] = parts[1].split(':');
-      return `${dayNum} Oct 2023, ${h}:${min} AM`;
-    }
-    return `${d.getDate()} de ${MONTH_NAMES[d.getMonth()]}, ${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')} hrs`;
-  } catch {
-    return fechaStr;
-  }
-};
 
 export const DecidirReprogramacionForm = ({
   isOpen,
@@ -151,7 +133,7 @@ export const DecidirReprogramacionForm = ({
                 <div className="space-y-1">
                   <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Fecha Original</span>
                   <div className="text-xs font-bold text-slate-600 line-through bg-slate-100/60 p-2.5 border border-slate-200/50 rounded-lg">
-                    {formatVisitDateLabel(request.fechaOriginal)}
+                    {formatearFechaConMes(request.fechaOriginal)}
                   </div>
                 </div>
 
@@ -170,7 +152,7 @@ export const DecidirReprogramacionForm = ({
                       ? 'text-emerald-700 bg-emerald-50/50 border-emerald-200 font-black shadow-sm'
                       : 'text-slate-700 bg-slate-50 border-slate-200'
                   }`}>
-                    {formatVisitDateLabel(request.fechaNueva)}
+                    {formatearFechaConMes(request.fechaNueva)}
                   </div>
                 </div>
               </div>

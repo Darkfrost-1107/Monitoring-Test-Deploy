@@ -1,15 +1,31 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { Briefcase, Plus, Trash2, GraduationCap } from 'lucide-react';
 import { CONDICION_LABORAL, ESCALAS_MAGISTERIALES } from '@entities/model-docentes';
 import { NIVELES, NIVEL_LABEL } from '@entities/model-instituciones';
 import type { DocenteFormData } from '@entities/model-docentes/validator';
 import { docenteSchema } from '@entities/model-docentes/validator';
 import { CARGA_HORARIA } from '@shared/config/constants';
-import { FormButton, SectionCard, SelectField, TextField, twoCols, DatosPersonalesSection } from '@shared/ui/form-controls';
+import {
+  FormButton,
+  SectionCard,
+  SelectField,
+  TextField,
+  DatosPersonalesSection,
+} from '@shared/ui/form-controls';
+import {
+  twoCols,
+} from '@shared/ui/form-controls.types';
 import { ConfirmModal } from '@shared/ui/ConfirmModal';
 import { Button } from '@shared/ui/button';
 import { useUser } from '@entities/model-user';
-import { usePersonForm, extractErrors } from '@shared/hooks/usePersonForm';
+import { usePersonForm } from '@shared/hooks/usePersonForm';
+import {
+  DATOS_BASICOS_VACIOS,
+  datosBasicosDePersona,
+  escalaMagisterialARomano,
+  especialidadDeDocente,
+  soloDefinidos,
+} from '@shared/lib/persona-formulario';
 import { RoleCode } from '@sistema-monitoreo/shared-contracts';
 
 interface Props {
@@ -83,7 +99,6 @@ export const DocenteFormBase = ({
   serverError,
 }: Props) => {
   const { user } = useUser();
-  console.log('User context in DocenteFormBase:', user);
   const isDirectorIe = user?.role === RoleCode.DIRECTOR_INSTITUCION;
 
   const [form, setForm] = useState<DocenteFormData>(() => {
@@ -122,10 +137,10 @@ export const DocenteFormBase = ({
   const set = <K extends keyof DocenteFormData>(key: K, value: DocenteFormData[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));
 
-  const errors = useMemo(() => extractErrors(docenteSchema.safeParse(form)), [form]);
 
   const {
-    submitted,
+    showError,
+    celularRef,
     persona,
     searchingDni,
     isDniLocked,
@@ -143,47 +158,38 @@ export const DocenteFormBase = ({
     rolObjetivo: form.cargo === 'Director' ? 'director' : 'docente',
     onValidSubmit: () => onSubmit(form),
     isLoading,
-    errors,
+    schema: docenteSchema,
+    form,
+    serverError,
     setPersonaFields: useCallback((persona) => {
-      setForm((prev) => {
-        const next = { ...prev };
-        next.nombres = persona.nombres;
-        next.apellidos = persona.apellidos;
-        next.correo = persona.correo ?? '';
-        next.celular = persona.telefono ?? '';
-        if (persona.docente) {
-          if (persona.docente.institucionId) {
-            next.institucionId = persona.docente.institucionId;
-          }
-          if (persona.docente.especialidad) {
-            next.especialidad = persona.docente.especialidad;
-          } else if (persona.docente.cursoAsignado) {
-            next.especialidad = persona.docente.cursoAsignado;
-          }
-          if (persona.docente.nivelEducativo) next.nivelEducativo = persona.docente.nivelEducativo.toUpperCase() as DocenteFormData['nivelEducativo'];
-          if (persona.docente.condicionLaboral) next.condicion = persona.docente.condicionLaboral as DocenteFormData['condicion'];
-          if (persona.docente.escalaMagisterial) {
-            const mapIntToRoman: Record<number, string> = { 1: 'I', 2: 'II', 3: 'III', 4: 'IV', 5: 'V', 6: 'VI', 7: 'VII', 8: 'VIII' };
-            next.escala = (mapIntToRoman[persona.docente.escalaMagisterial] || '') as DocenteFormData['escala'];
-          }
-        }
-        return next;
-      });
+      const docente = persona.docente;
+
+      setForm((prev) => ({
+        ...prev,
+        ...datosBasicosDePersona(persona),
+        ...soloDefinidos({
+          institucionId: docente?.institucionId,
+          especialidad: especialidadDeDocente(docente),
+          nivelEducativo: docente?.nivelEducativo?.toUpperCase() as
+            | DocenteFormData['nivelEducativo']
+            | undefined,
+          condicion: docente?.condicionLaboral as DocenteFormData['condicion'] | undefined,
+          escala: (docente?.escalaMagisterial
+            ? escalaMagisterialARomano(docente.escalaMagisterial, '')
+            : undefined) as DocenteFormData['escala'] | undefined,
+        }),
+      }));
     }, []),
     clearPersonaFields: useCallback(() => {
-      set('nombres', '');
-      set('apellidos', '');
-      set('correo', '');
-      set('celular', '');
-      set('especialidad', '');
-      set('institucionId', '');
+      setForm((prev) => ({
+        ...prev,
+        ...DATOS_BASICOS_VACIOS,
+        especialidad: '',
+        institucionId: '',
+      }));
     }, []),
   });
 
-  const showError = (key: keyof DocenteFormData) => {
-    if (key === 'celular' && esErrorCelular) return serverError ?? '';
-    return submitted ? errors[key] : '';
-  };
 
   const opcionesIE = useMemo(() => {
     const list = instituciones.map((i) => ({ value: i.id, label: i.nombre }));
@@ -230,15 +236,7 @@ export const DocenteFormBase = ({
     );
   };
 
-  const celularRef = useRef<HTMLDivElement>(null);
-  const esErrorCelular = serverError?.toLowerCase().includes('celular') || serverError?.toLowerCase().includes('teléfono');
 
-  useEffect(() => {
-    if (esErrorCelular && celularRef.current) {
-      celularRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      celularRef.current.querySelector('input')?.focus();
-    }
-  }, [esErrorCelular]);
 
   const celularOk = /^9\d{8}$/.test(form.celular);
 

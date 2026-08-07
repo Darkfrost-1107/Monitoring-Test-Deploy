@@ -1,4 +1,4 @@
-import type { UserRole } from '@shared/constants/roles';
+import type { UserRole } from '@sistema-monitoreo/shared-contracts';
 
 export interface User {
   id: string;

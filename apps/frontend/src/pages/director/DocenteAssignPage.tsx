@@ -5,7 +5,15 @@ import { CARGA_HORARIA } from '@shared/config/constants';
 import { fetchDocentes, fetchCargos, updateDocenteRaw } from '@features/docentes/docente-service';
 import type { Docente } from '@entities/model-docentes';
 import { Card } from '@shared/ui/card';
-import { FormButton, SectionCard, SelectField, TextField, twoCols } from '@shared/ui/form-controls';
+import {
+  FormButton,
+  SectionCard,
+  SelectField,
+  TextField,
+} from '@shared/ui/form-controls';
+import {
+  twoCols,
+} from '@shared/ui/form-controls.types';
 
 interface Props {
   targetCargo: 'Coordinador Pedagógico' | 'Jefe de Taller';

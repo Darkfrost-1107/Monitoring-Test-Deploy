@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { STALE_TIMES, PAGINATION } from '@shared/config/constants';
@@ -91,7 +90,7 @@ export const useCronogramasData = (enabled = true) => {
 
   const especialistas: EspecialistaLite[] = useMemo(() => {
     if (!espQuery.data?.ok || !espQuery.data?.data) return [];
-    return espQuery.data.data.map((e: any) => ({
+    return espQuery.data.data.map((e) => ({
       id: e.id,
       nombre: `${e.persona.nombres} ${e.persona.apellidos}`,
       initials: getInitials(`${e.persona.nombres} ${e.persona.apellidos}`),
@@ -109,7 +108,7 @@ export const useCronogramasData = (enabled = true) => {
   const instituciones: InstitucionLite[] = useMemo(() => {
     if (!instQuery.data?.ok || !instQuery.data?.data) return [];
     const raw = instQuery.data.data;
-    return (Array.isArray(raw) ? raw : raw.data ?? []).map((i: any) => ({
+    return (Array.isArray(raw) ? raw : raw.data ?? []).map((i) => ({
       id: i.id,
       nombre: i.nombre,
       modalidad: i.modalidad || 'EBR',
@@ -126,12 +125,12 @@ export const useCronogramasData = (enabled = true) => {
 
   const docentes: Docente[] = useMemo(() => {
     if (!docQuery.data?.ok || !docQuery.data?.data) return [];
-    return docQuery.data.data.map((d: any) => mapApiDocenteToFrontend(d));
+    return docQuery.data.data.map((d) => mapApiDocenteToFrontend(d));
   }, [docQuery.data]);
 
   const cronogramas: Cronograma[] = useMemo(() => {
     if (!cronosQuery.data) return [];
-    return cronosQuery.data.map((c: any) => {
+    return cronosQuery.data.map((c) => {
       const esp = especialistas.find(e => e.id === c.monitorId);
       const inst = instituciones.find(i => i.id === c.institucionId);
       const doc = docentes.find(d => d.id === c.evaluadoId);
@@ -160,7 +159,7 @@ export const useCronogramasData = (enabled = true) => {
   const reprogramaciones: Record<string, SolicitudReprogramacion> = useMemo(() => {
     if (!solQuery.data) return {};
     const solMap: Record<string, SolicitudReprogramacion> = {};
-    solQuery.data.forEach((s: any) => {
+    solQuery.data.forEach((s) => {
       solMap[s.cronogramaId] = {
         id: s.id,
         fechaOriginal: `${s.fechaOriginal}T${s.horaOriginal}`,

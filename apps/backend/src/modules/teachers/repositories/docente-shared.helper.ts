@@ -30,6 +30,45 @@ export async function checkDirectorConflict(
   }
 }
 
+/**
+ * Impide que una misma persona quede como director activo de dos instituciones.
+ *
+ * Fase 6 de PLAN_REMEDIACION.md. El formulario bloqueaba esto desde siempre
+ * —`shared/constants/roleValidation.ts`, caso `director`— pero el servidor sólo
+ * verificaba que la institución de destino no tuviera ya un director. Con la
+ * institución de destino vacía, `checkDirectorConflict` no encontraba nada y el
+ * segundo registro se creaba: bastaba con llamar a la API sin pasar por el
+ * formulario.
+ *
+ * Regla confirmada con el área: un director dirige un solo colegio.
+ */
+export async function checkPersonaYaEsDirector(
+  tx: Prisma.TransactionClient,
+  personaId: string,
+  excludeDocenteId?: string,
+): Promise<void> {
+  const where: Prisma.DocenteCargoWhereInput = {
+    docente: { personaId },
+    cargo: { nombre: 'Director' },
+    fechaFin: null,
+  };
+  if (excludeDocenteId) {
+    where.docenteId = { not: excludeDocenteId };
+  }
+
+  const yaDirige = await tx.docenteCargo.findFirst({
+    where,
+    include: { docente: { include: { institucion: true, persona: true } } },
+  });
+
+  if (yaDirige) {
+    const institucion = yaDirige.docente.institucion?.nombre ?? 'otra institución';
+    throw new ConflictException(
+      `Esta persona ya es director activo en "${institucion}". Un director solo puede dirigir una institución educativa.`,
+    );
+  }
+}
+
 export async function upsertCurso(
   tx: Prisma.TransactionClient,
   prisma: PrismaService,

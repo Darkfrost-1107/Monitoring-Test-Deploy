@@ -1,51 +1,22 @@
-/* eslint-disable react-refresh/only-export-components */
-import { lazy } from 'react';
 import type { RouteObject } from 'react-router-dom';
 import { LazyLoader } from '@shared/ui/LazyLoader';
 import { ProtectedRoute } from '@shared/ui/ProtectedRoute';
-
-const PlanMonitoreoPage = lazy(() =>
-  import('./PlanMonitoreoPage').then((m) => ({ default: m.PlanMonitoreoPage })),
-);
-const PlanMonitoreoAnualPage = lazy(() =>
-  import('./PlanMonitoreoAnualPage').then((m) => ({ default: m.PlanMonitoreoAnualPage })),
-);
-const CronogramaPage = lazy(() =>
-  import('./CronogramaPage').then((m) => ({ default: m.CronogramaPage })),
-);
-const CalendarioPage = lazy(() =>
-  import('./CalendarioPage').then((m) => ({ default: m.CalendarioPage })),
-);
-const EspecialistasPage = lazy(() =>
-  import('./EspecialistasPage').then((m) => ({ default: m.EspecialistasPage })),
-);
-const EspecialistaCreatePage = lazy(() =>
-  import('./EspecialistaCreatePage').then((m) => ({ default: m.EspecialistaCreatePage })),
-);
-const EspecialistaEditPage = lazy(() =>
-  import('./EspecialistaEditPage').then((m) => ({ default: m.EspecialistaEditPage })),
-);
-const EspecialistaDetailPage = lazy(() =>
-  import('./EspecialistaDetailPage').then((m) => ({ default: m.EspecialistaDetailPage })),
-);
-const ReportesPage = lazy(() =>
-  import('./ReportesPage').then((m) => ({ default: m.ReportesPage })),
-);
-const SolicitudesVisitaPage = lazy(() =>
-  import('./SolicitudesVisitaPage').then((m) => ({ default: m.SolicitudesVisitaPage })),
-);
-const GestionMonitoreoPage = lazy(() =>
-  import('../director/GestionMonitoreoPage').then((m) => ({ default: m.GestionMonitoreoPage })),
-);
-const PlantillasPage = lazy(() =>
-  import('./PlantillasPage').then((m) => ({ default: m.PlantillasPage })),
-);
-const PlantillaCreatePage = lazy(() =>
-  import('./PlantillaCreatePage').then((m) => ({ default: m.PlantillaCreatePage })),
-);
-const PlantillaEditPage = lazy(() =>
-  import('./PlantillaEditPage').then((m) => ({ default: m.PlantillaEditPage })),
-);
+import {
+  CalendarioPage,
+  CronogramaPage,
+  EspecialistaCreatePage,
+  EspecialistaDetailPage,
+  EspecialistaEditPage,
+  EspecialistasPage,
+  GestionMonitoreoPage,
+  PlanMonitoreoAnualPage,
+  PlanMonitoreoPage,
+  PlantillaCreatePage,
+  PlantillaEditPage,
+  PlantillasPage,
+  ReportesPage,
+  SolicitudesVisitaPage,
+} from './jefeGestion.lazy';
 
 export const jefeGestionRoutes: RouteObject[] = [
   {

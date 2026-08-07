@@ -1,12 +1,40 @@
 export type TipoMonitoreo = 'DOCENTE' | 'DIRECTIVO';
 
-export type EstadoVisita =
-  | 'PROGRAMADO'
-  | 'EN_PROCESO'
-  | 'COMPLETADO'
-  | 'REPROGRAMADO'
-  | 'CANCELADO'
-  | 'ANULADO';
+/**
+ * Estados por los que pasa una visita de monitoreo.
+ *
+ * Fase 6 de PLAN_REMEDIACION.md, H-16. Se declara como arreglo además del tipo
+ * para poder recorrerlos, y para que las tablas que asignan presentación a cada
+ * estado se tipen con `Record<EstadoVisita, …>`: así, agregar un estado nuevo
+ * rompe la compilación en cada tabla que lo omita en lugar de caer en silencio
+ * a un valor por defecto.
+ */
+export const ESTADOS_VISITA = [
+  'PROGRAMADO',
+  'EN_PROCESO',
+  'COMPLETADO',
+  'REPROGRAMADO',
+  'CANCELADO',
+  'ANULADO',
+] as const;
+
+export type EstadoVisita = (typeof ESTADOS_VISITA)[number];
+
+/**
+ * Cómo se nombra cada estado al usuario.
+ *
+ * `ANULADO` es una baja lógica: la visita se retira del cronograma pero su
+ * número queda disponible para reemitirse. No es lo mismo que `CANCELADO`, que
+ * conserva el registro de que estaba prevista y no se hizo.
+ */
+export const ETIQUETAS_ESTADO_VISITA: Record<EstadoVisita, string> = {
+  PROGRAMADO: 'Programado',
+  EN_PROCESO: 'En Proceso',
+  COMPLETADO: 'Realizado',
+  REPROGRAMADO: 'Reprogramado',
+  CANCELADO: 'Cancelado',
+  ANULADO: 'Anulado',
+};
 
 export type EstadoSolicitudReprogramacion = 'PENDIENTE' | 'APROBADO' | 'RECHAZADO';
 

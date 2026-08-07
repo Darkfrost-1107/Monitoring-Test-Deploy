@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { RoleCode, ALL_ROLE_CODES } from '@sistema-monitoreo/shared-contracts';
 import { userSchema, userValidator } from './validator';
-import { ADMIN_ROLES, READ_ONLY_ROLES } from './constants';
+import { READ_ONLY_ROLES } from '@sistema-monitoreo/shared-contracts';
+import { ADMIN_ROLES } from './constants';
 import type { User } from './model';
 
 /**

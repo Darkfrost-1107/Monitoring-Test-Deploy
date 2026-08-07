@@ -1,24 +1,18 @@
 import { z } from 'zod';
 import { CargoEspecialista, ModalidadEducativa } from '@sistema-monitoreo/shared-contracts';
+import {
+  celularOpcional,
+  correoOpcional,
+  dni,
+  nombreDePersona,
+} from '@sistema-monitoreo/shared-validation';
 
 export const especialistaSchema = z.object({
-  nombres: z.string().min(2, 'Los nombres deben tener al menos 2 caracteres'),
-  apellidos: z.string().min(2, 'Los apellidos deben tener al menos 2 caracteres'),
-  dni: z
-    .string()
-    .length(8, 'El DNI debe tener exactamente 8 dígitos')
-    .regex(/^\d+$/, 'El DNI solo debe contener números'),
-  correo: z
-    .string()
-    .email('Debe ingresar un correo electrónico válido')
-    .or(z.literal(''))
-    .optional(),
-  celular: z
-    .string()
-    .length(9, 'El número de celular debe tener exactamente 9 dígitos')
-    .regex(/^9\d+$/, 'El celular debe iniciar con 9')
-    .or(z.literal(''))
-    .optional(),
+  nombres: nombreDePersona('Los nombres deben tener al menos 2 caracteres'),
+  apellidos: nombreDePersona('Los apellidos deben tener al menos 2 caracteres'),
+  dni: dni(),
+  correo: correoOpcional(),
+  celular: celularOpcional(),
   cargo: z.nativeEnum(CargoEspecialista, {
     message: 'Debe seleccionar un cargo válido',
   }),

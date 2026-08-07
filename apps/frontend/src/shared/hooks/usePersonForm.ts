@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { VALIDATION } from '@shared/config/constants';
 import { useDniAutocomplete } from '@features/docentes/hooks/useDniAutocomplete';
 import { checkRoleConflict, type RolObjetivo } from '@shared/constants/roleValidation';
 import type { PersonaAutocompleteData } from '@features/docentes/hooks/useDniAutocomplete';
 import type { ZodError } from 'zod';
+import { esErrorDeCelular, mensajeDeError } from '@shared/lib/errores-formulario';
 
 export function extractErrors(
   result: { success: boolean; error?: ZodError<unknown> },
@@ -20,6 +21,11 @@ export function extractErrors(
   return errors;
 }
 
+/** Esquema que valida el formulario; se acepta cualquiera de Zod. */
+interface EsquemaValidable {
+  safeParse: (valor: unknown) => { success: boolean; error?: ZodError<unknown> };
+}
+
 interface UsePersonFormOptions {
   dni: string;
   isNew: boolean;
@@ -27,12 +33,30 @@ interface UsePersonFormOptions {
   cargoObjetivo?: string;
   onValidSubmit: () => void;
   isLoading?: boolean;
-  errors: Record<string, string>;
+  /** Esquema y valores con los que se calculan los errores de validación. */
+  schema: EsquemaValidable;
+  form: unknown;
+  /**
+   * Errores propios del formulario, que el esquema no expresa. Se aplican
+   * encima de los del esquema.
+   */
+  erroresExtra?: Record<string, string>;
+  /** Mensaje del último intento de guardado, para atribuirlo a su campo. */
+  serverError?: string | null;
   setPersonaFields: (persona: PersonaAutocompleteData) => void;
   clearPersonaFields: () => void;
 }
 
 export interface UsePersonFormReturn {
+  /** Errores de validación, ya combinados con los propios del formulario. */
+  errors: Record<string, string>;
+  /** Mensaje a mostrar en un campo, o cadena vacía. */
+  showError: (campo: string) => string;
+  /**
+   * Envuelve el campo de contacto. Cuando el servidor rechaza por ese dato, la
+   * vista se desplaza hasta él y se enfoca su input.
+   */
+  celularRef: React.RefObject<HTMLDivElement | null>;
   submitted: boolean;
   setSubmitted: React.Dispatch<React.SetStateAction<boolean>>;
   persona: PersonaAutocompleteData | null;
@@ -55,12 +79,35 @@ export function usePersonForm({
   cargoObjetivo,
   onValidSubmit,
   isLoading = false,
-  errors,
+  schema,
+  form,
+  erroresExtra,
+  serverError,
   setPersonaFields,
   clearPersonaFields,
 }: UsePersonFormOptions): UsePersonFormReturn {
   const [submitted, setSubmitted] = useState(false);
   const [showRoleConfirm, setShowRoleConfirm] = useState(false);
+  const celularRef = useRef<HTMLDivElement | null>(null);
+
+  const errors = useMemo(
+    () => ({ ...extractErrors(schema.safeParse(form)), ...erroresExtra }),
+    [schema, form, erroresExtra],
+  );
+
+  const showError = useCallback(
+    (campo: string) => mensajeDeError(campo, { errores: errors, enviado: submitted, serverError }),
+    [errors, submitted, serverError],
+  );
+
+  // Llevar la vista al campo que el servidor rechazó, que puede haber quedado
+  // fuera de pantalla en un formulario largo. Se enfoca el input de adentro,
+  // no el contenedor.
+  useEffect(() => {
+    if (!esErrorDeCelular(serverError) || !celularRef.current) return;
+    celularRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    celularRef.current.querySelector('input')?.focus();
+  }, [serverError]);
 
   const { data: persona, isLoading: searchingDni, isLocked: isDniLocked, message: dniMessage } =
     useDniAutocomplete(dni, isNew);
@@ -108,6 +155,9 @@ export function usePersonForm({
   const dniOk = dni.length === VALIDATION.DNI_LENGTH && /^\d+$/.test(dni);
 
   return {
+    errors,
+    showError,
+    celularRef,
     submitted,
     setSubmitted,
     persona,

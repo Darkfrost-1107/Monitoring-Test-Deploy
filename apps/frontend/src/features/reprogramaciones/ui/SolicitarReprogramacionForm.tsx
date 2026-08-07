@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { formatearFechaConMes } from '@shared/lib/fecha/fecha';
 import {
   X,
   RefreshCw
@@ -20,25 +21,6 @@ interface SolicitarReprogramacionFormProps {
   }) => void;
 }
 
-const MONTH_NAMES = [
-  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-];
-
-const formatVisitDateLabel = (fechaStr: string) => {
-  try {
-    const d = new Date(fechaStr);
-    if (isNaN(d.getTime())) {
-      const parts = fechaStr.split('T');
-      const [, , dayNum] = parts[0].split('-');
-      const [h, min] = parts[1].split(':');
-      return `${dayNum} Oct 2023, ${h}:${min} AM`;
-    }
-    return `${d.getDate()} de ${MONTH_NAMES[d.getMonth()]}, ${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')} hrs`;
-  } catch {
-    return fechaStr;
-  }
-};
 
 export const SolicitarReprogramacionForm = ({
   isOpen,
@@ -109,7 +91,7 @@ export const SolicitarReprogramacionForm = ({
               >
                 {availableVisits.map(v => (
                   <option key={v.id} value={v.id}>
-                    {v.institucion} - {v.docenteDirectivo} ({formatVisitDateLabel(v.fechaHora)})
+                    {v.institucion} - {v.docenteDirectivo} ({formatearFechaConMes(v.fechaHora)})
                   </option>
                 ))}
               </select>
@@ -119,7 +101,7 @@ export const SolicitarReprogramacionForm = ({
           )}
           {!availableVisits && <div>Especialista: <strong className="text-slate-800">{activeVisit.especialista}</strong></div>}
           <div>Evaluado ({activeVisit.tipo}): <strong className="text-slate-800">{activeVisit.docenteDirectivo}</strong></div>
-          <div>Fecha Programada Actual: <strong className="text-slate-800 text-primary">{formatVisitDateLabel(activeVisit.fechaHora)}</strong></div>
+          <div>Fecha Programada Actual: <strong className="text-slate-800 text-primary">{formatearFechaConMes(activeVisit.fechaHora)}</strong></div>
         </div>
 
         {/* Campos de Entrada */}

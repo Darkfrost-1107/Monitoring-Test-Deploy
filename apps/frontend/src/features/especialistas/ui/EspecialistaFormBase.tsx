@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo, useCallback, useEffect } from 'react';
+import { useState, useRef, useMemo, useCallback, } from 'react';
 import { Briefcase, Plus, X } from 'lucide-react';
 import { CARGA_HORARIA } from '@shared/config/constants';
 import type { EspecialistaFormData } from '@entities/model-especialistas/validator';
@@ -6,7 +6,11 @@ import { especialistaSchema } from '@entities/model-especialistas/validator';
 import { FormButton, SectionCard, SelectField, TextField, DatosPersonalesSection } from '@shared/ui/form-controls';
 import { ConfirmModal } from '@shared/ui/ConfirmModal';
 import { MODALIDAD_NIVEL_MAP } from '@sistema-monitoreo/shared-contracts';
-import { usePersonForm, extractErrors } from '@shared/hooks/usePersonForm';
+import { usePersonForm } from '@shared/hooks/usePersonForm';
+import {
+  DATOS_BASICOS_VACIOS,
+  datosBasicosDePersona,
+} from '@shared/lib/persona-formulario';
 
 interface Props {
   onCancel: () => void;
@@ -74,8 +78,10 @@ export const EspecialistaFormBase = ({
   const set = <K extends keyof EspecialistaFormData>(key: K, value: EspecialistaFormData[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));
 
-  const errors = useMemo(() => {
-    const errs = extractErrors(especialistaSchema.safeParse(form));
+  // Reglas propias del cargo, que el esquema no expresa. Se aplican encima de
+  // las del esquema dentro de `usePersonForm`.
+  const erroresExtra = useMemo(() => {
+    const errs: Record<string, string> = {};
     const isSecundaria = form.nivelEducativo === 'Secundaria';
     const isPrimaria = form.nivelEducativo === 'Primaria';
 
@@ -97,7 +103,8 @@ export const EspecialistaFormBase = ({
   const isPrimaria = form.nivelEducativo === 'Primaria';
 
   const {
-    submitted,
+    showError,
+    celularRef,
     persona,
     searchingDni,
     isDniLocked,
@@ -129,25 +136,21 @@ export const EspecialistaFormBase = ({
       onSubmit(finalForm);
     },
     isLoading,
-    errors,
+    schema: especialistaSchema,
+    form,
+    erroresExtra,
+    serverError,
     setPersonaFields: useCallback((persona) => {
-      setForm((prev) => {
-        const next = { ...prev };
-        next.nombres = persona.nombres;
-        next.apellidos = persona.apellidos;
-        next.correo = persona.correo ?? '';
-        next.celular = persona.telefono ?? '';
-        if (persona.docente?.cursoAsignado) {
-          next.especialidad = persona.docente.cursoAsignado;
-        }
-        return next;
-      });
+      setForm((prev) => ({
+        ...prev,
+        ...datosBasicosDePersona(persona),
+        ...(persona.docente?.cursoAsignado
+          ? { especialidad: persona.docente.cursoAsignado }
+          : {}),
+      }));
     }, []),
     clearPersonaFields: useCallback(() => {
-      set('nombres', '');
-      set('apellidos', '');
-      set('correo', '');
-      set('celular', '');
+      setForm((prev) => ({ ...prev, ...DATOS_BASICOS_VACIOS }));
     }, []),
   });
 
@@ -165,20 +168,8 @@ export const EspecialistaFormBase = ({
     set('especialidadesExtras', especialidadesExtras.filter((e) => e !== esp));
   };
 
-  const celularRef = useRef<HTMLDivElement>(null);
-  const esErrorCelular = serverError?.toLowerCase().includes('celular') || serverError?.toLowerCase().includes('teléfono');
 
-  useEffect(() => {
-    if (esErrorCelular && celularRef.current) {
-      celularRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      celularRef.current.querySelector('input')?.focus();
-    }
-  }, [esErrorCelular]);
 
-  const showError = (key: keyof EspecialistaFormData) => {
-    if (key === 'celular' && esErrorCelular) return serverError ?? '';
-    return submitted ? errors[key] : '';
-  };
   const celularOk = form.celular ? /^9\d{8}$/.test(form.celular) : false;
 
   const currentModalidad = form.modalidad || 'EBR';

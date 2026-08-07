@@ -1,4 +1,4 @@
-import type { UserRole } from '@shared/constants/roles';
+import type { UserRole } from '@sistema-monitoreo/shared-contracts';
 import { RoleCode } from '@sistema-monitoreo/shared-contracts';
 
 export const BREADCRUMBS_MAP: Record<string, string> = {

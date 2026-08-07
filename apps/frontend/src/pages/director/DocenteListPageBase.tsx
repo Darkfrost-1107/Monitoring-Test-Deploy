@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { PlusCircle } from 'lucide-react';
 import { Button } from '@shared/ui/button';
 import { PageHeader } from '@shared/ui/pageHeader';
@@ -44,7 +44,7 @@ export const DocenteListPageBase = ({
   const [instituciones, setInstituciones] = useState<Institucion[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchAllData = async () => {
+  const fetchAllData = useCallback(async () => {
     setLoading(true);
     try {
       let docentesMapped = await fetchDocentes();
@@ -91,12 +91,14 @@ export const DocenteListPageBase = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [filterCargoOut, filterEspecialidad, itemName, user]);
 
+  // Se recarga cuando cambian los datos del usuario, no sólo al montar: en el
+  // primer render `user` todavía puede ser nulo, y con la lista de dependencias
+  // vacía la institución nunca llegaba a cargarse.
   useEffect(() => {
-    Promise.resolve().then(() => fetchAllData());
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    void Promise.resolve().then(() => fetchAllData());
+  }, [fetchAllData]);
 
   if (loading) {
     return (

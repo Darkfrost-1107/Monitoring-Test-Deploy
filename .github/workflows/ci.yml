@@ -37,8 +37,11 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       # ── Preparación: artefactos que un checkout limpio no incluye ──────────
-      - name: Build shared-contracts
-        run: pnpm --filter @sistema-monitoreo/shared-contracts build
+      # Se construyen todos los paquetes de packages/, no uno por nombre: al
+      # agregar shared-validation en la Fase 6 este paso quedó desactualizado y
+      # el typecheck del frontend falló por un módulo sin compilar.
+      - name: Build paquetes compartidos
+        run: pnpm --filter "./packages/*" build
 
       - name: Generate Prisma client
         run: pnpm --filter backend exec prisma generate
@@ -156,7 +159,7 @@ jobs:
 
     env:
       DATABASE_URL: postgresql://e2e:e2e@localhost:5432/monitoring_e2e?schema=public
-      JWT_SECRET: e2e-only-insecure-secret-replace-before-deploying-to-production
+      JWT_SECRET: e2e-only-insecure-secret-replace-before-deploying-to-production-0
       JWT_REFRESH_SECRET: e2e-only-insecure-refresh-secret-replace-before-deploying-to-production
 
     steps:
@@ -177,8 +180,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build shared-contracts
-        run: pnpm --filter @sistema-monitoreo/shared-contracts build
+      # Se construyen todos los paquetes de packages/, no uno por nombre: al
+      # agregar shared-validation en la Fase 6 este paso quedó desactualizado y
+      # el typecheck del frontend falló por un módulo sin compilar.
+      - name: Build paquetes compartidos
+        run: pnpm --filter "./packages/*" build
 
       - name: Generate Prisma client
         run: pnpm --filter backend exec prisma generate

@@ -1,3 +1,5 @@
+import type { EstadoVisita } from '@sistema-monitoreo/shared-contracts';
+
 export interface Cronograma {
   id: string;
   fechaHora: string; // ISO datetime
@@ -7,7 +9,8 @@ export interface Cronograma {
   docenteDirectivo: string;
   tipo: 'DOCENTE' | 'DIRECTIVO';
   nroVisita: string;
-  estado: 'PROGRAMADO' | 'EN_PROCESO' | 'COMPLETADO' | 'REPROGRAMADO' | 'CANCELADO' | 'ANULADO';
+  /** Declarado en el contrato compartido; no se redeclara acá. */
+  estado: EstadoVisita;
   modalidad: string;
   nivel: string;
   observaciones?: string;

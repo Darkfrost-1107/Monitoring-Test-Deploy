@@ -4,6 +4,7 @@ import type { DocenteCargo } from '../../../generated/prisma/client.js';
 import { mapDocente } from './docente-mapper.helper.js';
 import {
   checkDirectorConflict,
+  checkPersonaYaEsDirector,
   upsertCurso,
   upsertEspecialidad,
   syncEspecialista,
@@ -34,6 +35,9 @@ export async function updateDocenteWithTransaction(
       if (targetInstitucionId) {
         await checkDirectorConflict(tx, targetInstitucionId, id);
       }
+      // Un director dirige un solo colegio; se excluye el propio registro para
+      // que editarlo no choque consigo mismo.
+      await checkPersonaYaEsDirector(tx, personaId, id);
     }
 
     await tx.persona.update({

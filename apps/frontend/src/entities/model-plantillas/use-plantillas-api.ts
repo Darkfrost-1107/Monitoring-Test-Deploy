@@ -5,12 +5,11 @@ import type { Plantilla } from './model';
 import { mapIPlantillaListToPlantillaList, mapIPlantillaToPlantilla } from './mapper';
 
 /**
- * Hooks granulares para acceder al backend de plantillas via TanStack Query.
- * TODO(sprint4): migrar las paginas (PlantillasCatalog, PlantillaCreate,
- * PlantillaEdit) de useContext local a usePlantillasList + useCrearPlantilla
- * + useActualizarPlantilla. Requiere mapear IPlantilla (backend) a
- * Plantilla (frontend local model) - especialmente la estructura de
- * niveles/desempenos que difieren.
+ * Hooks granulares para acceder al backend de plantillas vía TanStack Query.
+ *
+ * El mapeo entre `IPlantilla` del backend y el modelo local `Plantilla` —que
+ * difieren sobre todo en la estructura de niveles y desempeños— vive en
+ * `./mapper`.
  */
 
 export const usePlantillasList = (filters?: { anioAcademico?: number; estado?: EstadoPlantilla; tipoMonitoreo?: TipoPlantilla; institucionId?: string }) =>

@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useUser } from '@entities/model-user';
-import { ROLE_PERMISSIONS, ROLE_LABELS } from '@shared/constants/roles';
+import { ROLE_LABELS } from '@sistema-monitoreo/shared-contracts';
+import { ROLE_PERMISSIONS } from '@shared/constants/roles';
 import type { MenuItem } from '@shared/constants/roles';
 import { HelpCircle, LogOut, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@shared/ui/button';

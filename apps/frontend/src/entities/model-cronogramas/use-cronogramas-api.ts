@@ -12,12 +12,11 @@ import type {
 } from '@sistema-monitoreo/shared-contracts';
 
 /**
- * Hooks granulares para acceder al backend de cronogramas via TanStack Query.
- * TODO(sprint4): migrar las paginas (CronogramaPage, CalendarioPage,
- * BandejaReprogramaciones) de useContext local a estos hooks. Requiere
- * mapear IVisita (backend, IDs) a Cronograma (frontend local model, nombres
- * denormalizados) - requiere que el backend expanda los datos relacionados
- * en el endpoint de listado.
+ * Hooks granulares para acceder al backend de cronogramas vía TanStack Query.
+ *
+ * Las páginas consumen `features/cronogramas/hooks/use-cronogramas-data`, que
+ * compone estas consultas y denormaliza `IVisita` —que trae identificadores— al
+ * modelo local `Cronograma`, que trae los nombres ya resueltos.
  */
 
 export interface CronogramaFilters {

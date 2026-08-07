@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
+import { esErrorDeCelular, mensajeDeError } from '@shared/lib/errores-formulario';
 import { Briefcase, Search, AlertCircle, Shield, Info } from 'lucide-react';
 import { especialistasApi } from '@shared/api/especialistas.api';
 import type {
@@ -164,19 +165,17 @@ export const JefeAreaFormBase = ({
   }
 
   const celularRef = useRef<HTMLDivElement>(null);
-  const esErrorCelular = serverError?.toLowerCase().includes('celular') || serverError?.toLowerCase().includes('teléfono');
 
+  // Llevar la vista al campo que el servidor rechazó, que puede haber quedado
+  // fuera de pantalla. Se enfoca el input de adentro, no el contenedor.
   useEffect(() => {
-    if (esErrorCelular && celularRef.current) {
-      celularRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      celularRef.current.querySelector('input')?.focus();
-    }
-  }, [esErrorCelular]);
+    if (!esErrorDeCelular(serverError) || !celularRef.current) return;
+    celularRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    celularRef.current.querySelector('input')?.focus();
+  }, [serverError]);
 
-  const showError = (key: string) => {
-    if (key === 'celular' && esErrorCelular) return serverError ?? '';
-    return submitted ? errors[key] : '';
-  };
+  const showError = (key: string) =>
+    mensajeDeError(key, { errores: errors, enviado: submitted, serverError });
 
   // Renderizar modo Edición
   if (isEdit) {

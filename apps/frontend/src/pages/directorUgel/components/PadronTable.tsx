@@ -8,7 +8,7 @@ import { useEntityTable } from '@shared/hooks/useEntityTable';
 
 import type { Institucion } from '@entities/model-instituciones';
 import type { VariantProps } from 'class-variance-authority';
-import type { badgeVariants } from '@shared/ui/badge';
+import type { badgeVariants } from '@shared/ui/badge-variants';
 
 interface PadronTableProps {
   data: Institucion[];

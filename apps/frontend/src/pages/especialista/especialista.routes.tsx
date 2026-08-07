@@ -1,12 +1,7 @@
-/* eslint-disable react-refresh/only-export-components */
-import { lazy } from 'react';
 import type { RouteObject } from 'react-router-dom';
 import { LazyLoader } from '@shared/ui/LazyLoader';
 import { ProtectedRoute } from '@shared/ui/ProtectedRoute';
-
-const ReportesMonitoreoPage = lazy(() =>
-  import('./ReportesMonitoreoPage').then((m) => ({ default: m.ReportesMonitoreoPage })),
-);
+import { ReportesMonitoreoPage } from './especialista.lazy';
 
 export const especialistaRoutes: RouteObject[] = [
   {

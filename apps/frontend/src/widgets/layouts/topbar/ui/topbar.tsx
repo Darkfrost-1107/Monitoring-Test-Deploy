@@ -1,6 +1,6 @@
 import { useLocation } from 'react-router-dom';
 import { useUser } from '@entities/model-user'; // Entidad limpia
-import { ROLE_LABELS } from '@shared/constants/roles';
+import { ROLE_LABELS } from '@sistema-monitoreo/shared-contracts';
 import {
   DropdownMenu,
   DropdownMenuContent,

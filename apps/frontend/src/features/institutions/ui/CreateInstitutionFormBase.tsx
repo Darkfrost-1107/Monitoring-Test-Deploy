@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { mensajeDeError } from '@shared/lib/errores-formulario';
 import { Book, MapPin, Check } from 'lucide-react';
 import {
   DISTRITOS_LAMPA,
@@ -12,9 +13,11 @@ import {
   SelectField,
   TextAreaField,
   TextField,
+} from '@shared/ui/form-controls';
+import {
   toOptions,
   twoCols,
-} from '@shared/ui/form-controls';
+} from '@shared/ui/form-controls.types';
 import { useUser } from '@entities/model-user';
 import { RoleCode } from '@sistema-monitoreo/shared-contracts';
 
@@ -120,7 +123,8 @@ export const InstitutionFormBase = ({ onCancel, onSubmit, isLoading, initialData
     modalidad: !form.modalidad ? 'Seleccione modalidad' : '',
   };
   const hasErrors = Object.values(errors).some(Boolean);
-  const showError = (key: keyof typeof errors) => (submitted ? errors[key] : '');
+  const showError = (key: keyof typeof errors) =>
+    mensajeDeError(String(key), { errores: errors, enviado: submitted });
 
   const handleSubmit = () => {
     setSubmitted(true);

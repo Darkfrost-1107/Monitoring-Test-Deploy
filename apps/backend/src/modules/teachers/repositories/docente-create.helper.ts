@@ -7,6 +7,7 @@ import { EstadoRegistro } from '../../../common/enums/estado.enum.js';
 import { mapDocente } from './docente-mapper.helper.js';
 import {
   checkDirectorConflict,
+  checkPersonaYaEsDirector,
   upsertCurso,
   upsertEspecialidad,
   syncEspecialista,
@@ -29,14 +30,19 @@ export async function createDocenteWithTransaction(
   return prisma.$transaction(async (tx) => {
     const cargo = await tx.cargo.findUnique({ where: { id: dto.cargoId } });
 
-    if (cargo?.nombre === 'Director') {
-      await checkDirectorConflict(tx, dto.institucionId);
-    }
-
     const existingPersona = await tx.persona.findUnique({
       where: { dni: dto.dni },
       include: { docente: true },
     });
+
+    if (cargo?.nombre === 'Director') {
+      await checkDirectorConflict(tx, dto.institucionId);
+      // Un director dirige un solo colegio. Sin esta comprobación, una
+      // institución todavía sin director aceptaba a alguien que ya dirige otra.
+      if (existingPersona) {
+        await checkPersonaYaEsDirector(tx, existingPersona.id);
+      }
+    }
 
     let personaId: string;
     let docente: { id: string; modalidad: string | null } | null = null;

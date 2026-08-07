@@ -1,17 +1,15 @@
 /**
  * Permisos de navegación por rol.
  *
- * Fase 1 de PLAN_REMEDIACION.md: el tipo `UserRole` y el diccionario
- * `ROLE_LABELS` que este archivo declaraba se trasladaron al contrato
- * compartido. Se reexportan desde aquí por compatibilidad; el punto de
- * importación se retira en la Fase 7.
+ * Fase 1 de PLAN_REMEDIACION.md trasladó al contrato compartido el tipo
+ * `UserRole` y el diccionario `ROLE_LABELS` que este archivo declaraba, y los
+ * reexportaba por compatibilidad. Fase 7 retiró esa reexportación: quien los
+ * necesite los toma del contrato.
  *
  * `ROLE_PERMISSIONS` sigue siendo una matriz estática mantenida a mano y
  * paralela al mapa de capacidades del backend (`shared/auth/capability-map.ts`).
  * Unificar ambas es trabajo de la Fase 2, no de esta.
  */
-
-export { ROLE_LABELS, type UserRole } from '@sistema-monitoreo/shared-contracts';
 
 import { RoleCode, type UserRole } from '@sistema-monitoreo/shared-contracts';
 

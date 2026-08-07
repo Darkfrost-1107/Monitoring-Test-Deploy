@@ -1,5 +1,4 @@
-/* eslint-disable react-refresh/only-export-components */
-import type { ReactNode, CSSProperties } from 'react';
+import type { ReactNode } from 'react';
 import { cn } from '@shared/lib/utils';
 import { Input } from './input';
 import { Label } from './label';
@@ -7,34 +6,13 @@ import { Textarea } from './textarea';
 import { Card, CardHeader, CardTitle, CardContent } from './card';
 import { Button } from './button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './select';
+import type { Option } from './form-controls.types';
 
 /* ============================================================
  * Controles de formulario reutilizables y responsivos,
  * integrados y estilizados con componentes de shadcn/ui.
  * Mantiene la misma API para evitar romper compatibilidad.
  * ============================================================ */
-
-export interface Option {
-  value: string;
-  label: string;
-  disabled?: boolean;
-}
-
-export const toOptions = (values: string[]): Option[] =>
-  values.map((v) => ({ value: v, label: v }));
-
-// Estilos de grillas en formato CSSProperties para compatibilidad
-export const twoCols: CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-  gap: 18,
-};
-
-export const threeCols: CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-  gap: 18,
-};
 
 export const SectionCard = ({
   icon,
@@ -214,4 +192,11 @@ export const FormButton = ({
   </Button>
 );
 
-export * from './form-controls/DatosPersonalesSection';
+// Reexportación explícita en lugar de comodín: `react-refresh` no puede
+// verificar un `export *`, y los dos tipos que acompañan al componente son
+// parte de su interfaz pública.
+export { DatosPersonalesSection } from './form-controls/DatosPersonalesSection';
+export type {
+  PersonaFormData,
+  DatosPersonalesSectionProps,
+} from './form-controls/DatosPersonalesSection';

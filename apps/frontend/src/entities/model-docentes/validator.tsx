@@ -1,4 +1,12 @@
 import { z } from 'zod';
+import {
+  cargaHoraria,
+  celularObligatorio,
+  correoObligatorio,
+  dni,
+  escalaMagisterial,
+  nombreDePersona,
+} from '@sistema-monitoreo/shared-validation';
 import type { Docente } from './model';
 
 export const seccionDocenteSchema = z.object({
@@ -12,25 +20,17 @@ export const seccionDocenteSchema = z.object({
 
 export const docenteSchema = z.object({
   id: z.string().optional(),
-  nombres: z.string().min(2, 'El nombre es requerido'),
-  apellidos: z.string().min(2, 'Los apellidos son requeridos'),
-  dni: z
-    .string()
-    .length(8, 'El DNI debe tener exactamente 8 dígitos')
-    .regex(/^\d+$/, 'El DNI solo debe contener números'),
-  correo: z.string().email('Formato de correo electrónico inválido'),
-  celular: z
-    .string()
-    .regex(/^9\d{8}$/, 'Debe ser un número de celular de 9 dígitos (ej. 987654321)'),
+  nombres: nombreDePersona('El nombre es requerido'),
+  apellidos: nombreDePersona('Los apellidos son requeridos'),
+  dni: dni(),
+  correo: correoObligatorio(),
+  celular: celularObligatorio(),
   nivelEducativo: z.string().min(1, 'El nivel educativo es requerido'),
   condicion: z.enum(['Nombrado', 'Contratado', 'Designado', 'Encargado', 'Por Función']),
   especialidad: z.string().optional().or(z.literal('')),
-  cargaHoraria: z
-    .number({ message: 'Debe ser un número' })
-    .min(1, 'Carga horaria mínima es 1 hora')
-    .max(40, 'Carga horaria máxima es 40 horas'),
+  cargaHoraria: cargaHoraria(1, 40),
   secciones: z.array(seccionDocenteSchema).default([]),
-  escala: z.enum(['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII']),
+  escala: escalaMagisterial(),
   institucionId: z.string().min(1, 'La institución de destino es requerida'),
   activo: z.boolean().default(true),
   cargo: z.enum(['Director', 'Coordinador Pedagógico', 'Jefe de Taller', 'Docente de Aula']),
@@ -56,25 +56,17 @@ export const docenteValidator = {
 };
 
 export const directorSchema = z.object({
-  nombres: z.string().min(2, 'El nombre es requerido'),
-  apellidos: z.string().min(2, 'Los apellidos son requeridos'),
-  dni: z
-    .string()
-    .length(8, 'El DNI debe tener exactamente 8 dígitos')
-    .regex(/^\d+$/, 'El DNI solo debe contener números'),
-  correo: z.string().email('Formato de correo electrónico inválido'),
-  celular: z
-    .string()
-    .regex(/^9\d{8}$/, 'Debe ser un número de celular de 9 dígitos (ej. 987654321)'),
+  nombres: nombreDePersona('El nombre es requerido'),
+  apellidos: nombreDePersona('Los apellidos son requeridos'),
+  dni: dni(),
+  correo: correoObligatorio(),
+  celular: celularObligatorio(),
   condicion: z.enum(['Designado', 'Encargado', 'Por Función']),
-  escala: z.enum(['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII']),
+  escala: escalaMagisterial(),
   institucionId: z.string().min(1, 'La institución educativa es requerida'),
   nivelEducativo: z.string().min(1, 'Debe seleccionar un nivel educativo'),
   especialidad: z.string().min(3, 'La especialidad es requerida'),
-  cargaHoraria: z
-    .number({ message: 'Debe ser un número' })
-    .min(1, 'Carga horaria mínima es 1 hora')
-    .max(40, 'Carga horaria máxima es 40 horas'),
+  cargaHoraria: cargaHoraria(1, 40),
 });
 
 export type DirectorFormData = z.infer<typeof directorSchema>;

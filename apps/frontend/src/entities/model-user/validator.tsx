@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { ALL_ROLE_CODES } from '@sistema-monitoreo/shared-contracts';
-import { ADMIN_ROLES, READ_ONLY_ROLES } from './constants';
+import { READ_ONLY_ROLES } from '@sistema-monitoreo/shared-contracts';
+import { ADMIN_ROLES } from './constants';
 import type { User } from './model';
 
 // 1. Esquema de validación base de la entidad Usuario
