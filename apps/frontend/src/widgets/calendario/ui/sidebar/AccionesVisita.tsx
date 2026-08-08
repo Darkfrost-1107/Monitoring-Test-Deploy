@@ -18,6 +18,12 @@ interface AccionesVisitaProps {
   visita: Cronograma;
   solicitud: SolicitudReprogramacion | null;
   evaluador: SituacionEvaluador;
+  /**
+   * Por qué no hay instrumento con el que levantar la ficha, o `null` si lo
+   * hay. La ficha sólo se monta con una plantilla activa: sin ella el botón
+   * quedaba habilitado y la pulsación no hacía nada.
+   */
+  instrumentoNoDisponible: string | null;
   onIniciarFicha: () => void;
   onVerFichaLlena: () => void;
   onSolicitarReprogramacion: () => void;
@@ -34,6 +40,16 @@ const ESTADOS_EN_CURSO: readonly Cronograma['estado'][] = [
 /** Estados en los que la ficha aún no se abrió. */
 const ESTADOS_SIN_INICIAR: readonly Cronograma['estado'][] = ['PROGRAMADO', 'REPROGRAMADO'];
 
+/** Por qué la ficha no se puede abrir todavía. */
+const AvisoSinInstrumento = ({ motivo }: { motivo: string }) => (
+  <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-[11px] font-semibold flex items-start gap-2 shadow-sm">
+    <AlertTriangle className="h-4.5 w-4.5 text-amber-600 mt-0.5 shrink-0" />
+    <span>
+      <strong>Ficha no disponible:</strong> {motivo}
+    </span>
+  </div>
+);
+
 /**
  * Acciones disponibles sobre la visita seleccionada.
  *
@@ -45,6 +61,7 @@ export const AccionesVisita = ({
   visita,
   solicitud,
   evaluador,
+  instrumentoNoDisponible,
   onIniciarFicha,
   onVerFichaLlena,
   onSolicitarReprogramacion,
@@ -53,6 +70,7 @@ export const AccionesVisita = ({
   const enCurso = ESTADOS_EN_CURSO.includes(visita.estado);
   const sinIniciar = ESTADOS_SIN_INICIAR.includes(visita.estado);
   const fueraDeFecha = sinIniciar && !evaluador.esFechaCoincidente;
+  const sinInstrumento = instrumentoNoDisponible !== null;
 
   return (
     <div className="space-y-2 pt-4 border-t border-border mt-6">
@@ -69,10 +87,12 @@ export const AccionesVisita = ({
               </div>
             )}
 
+            {sinInstrumento && <AvisoSinInstrumento motivo={instrumentoNoDisponible} />}
+
             <div className="flex gap-2">
               <Button
                 variant="outline"
-                disabled={fueraDeFecha}
+                disabled={fueraDeFecha || sinInstrumento}
                 onClick={onIniciarFicha}
                 className="flex-1 justify-center border-emerald-600 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 disabled:opacity-50 disabled:bg-slate-50 disabled:border-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed transition-colors font-bold text-xs py-2.5 h-10 flex items-center gap-2 cursor-pointer"
               >
@@ -123,10 +143,13 @@ export const AccionesVisita = ({
             <span>Visita Realizada con Éxito</span>
           </div>
 
+          {sinInstrumento && <AvisoSinInstrumento motivo={instrumentoNoDisponible} />}
+
           <Button
             variant="outline"
+            disabled={sinInstrumento}
             onClick={onVerFichaLlena}
-            className="w-full justify-center border-slate-200 text-slate-600 hover:bg-slate-50 text-xs font-semibold py-2 cursor-pointer"
+            className="w-full justify-center border-slate-200 text-slate-600 hover:bg-slate-50 text-xs font-semibold py-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           >
             Ver Ficha de Monitoreo Llena
           </Button>

@@ -144,28 +144,45 @@ describe('seleccionarPlantillaActiva — filtros de tipo y estado', () => {
   });
 });
 
-describe('seleccionarPlantillaActiva — último recurso', () => {
+describe('seleccionarPlantillaActiva — sin instrumento aplicable', () => {
   /**
-   * COMPORTAMIENTO FIJADO, no recomendado.
+   * La cascada caía a `plantillas[0]` cuando ninguna prioridad acertaba: sin
+   * mirar tipo ni estado. Una visita a docente podía terminar evaluada con el
+   * instrumento directivo, o con un borrador, y nada lo delataba — el propio
+   * encabezado de `seleccion.ts` advierte que una selección equivocada no
+   * produce un error visible, produce una ficha con el instrumento de otro.
    *
-   * Cuando ninguna prioridad acierta, la cascada cae a la primera plantilla del
-   * catálogo — sin importar tipo ni estado. Puede devolver un instrumento de
-   * otro tipo de monitoreo o uno en borrador. Se fija para que el refactor no lo
-   * altere; corregirlo es un cambio de comportamiento aparte.
+   * No es hipotético: hoy hay una sola plantilla vigente por tipo, así que basta
+   * con versionar una a Histórico —cosa que el sistema hace, ILA-0046— para que
+   * las visitas de ese tipo pasen a evaluarse con la del otro.
+   *
+   * Ahora devuelve `null`: quedarse sin poder evaluar es visible y se corrige;
+   * evaluar con el instrumento equivocado no se nota hasta que los datos ya
+   * están mal.
    */
-  it('DEFECTO: cae a la primera del catálogo aunque no coincida en tipo ni estado', () => {
-    const borradorDeOtroTipo = plantilla({
-      id: 'p-cualquiera',
-      tipoMonitoreo: 'Monitoreo Directivo',
-      estado: 'Borrador',
-    });
+  it('no sirve una plantilla de otro tipo de monitoreo', () => {
+    const directiva = plantilla({ id: 'p-directiva', tipoMonitoreo: 'Monitoreo Directivo' });
 
-    const elegida = seleccionarPlantillaActiva([borradorDeOtroTipo], contexto({ tipoVisita: 'DOCENTE' }));
-
-    expect(elegida?.id).toBe('p-cualquiera');
+    expect(seleccionarPlantillaActiva([directiva], contexto({ tipoVisita: 'DOCENTE' }))).toBeNull();
   });
 
-  it('antes del último recurso prueba cualquier vigente del tipo pedido', () => {
+  it('no sirve un borrador del tipo pedido', () => {
+    const borrador = plantilla({ id: 'p-borrador', estado: 'Borrador' });
+
+    expect(seleccionarPlantillaActiva([borrador], contexto({ tipoVisita: 'DOCENTE' }))).toBeNull();
+  });
+
+  it('no sirve una histórica del tipo pedido', () => {
+    const historica = plantilla({ id: 'p-historica', estado: 'Historico' });
+
+    expect(seleccionarPlantillaActiva([historica], contexto({ tipoVisita: 'DOCENTE' }))).toBeNull();
+  });
+
+  it('con el catálogo vacío no inventa una', () => {
+    expect(seleccionarPlantillaActiva([], contexto())).toBeNull();
+  });
+
+  it('sigue eligiendo cualquier vigente del tipo pedido', () => {
     const ajena = plantilla({ id: 'p-ajena', creadoPorRole: 'director_ie', ieId: 'ie-9' });
 
     const elegida = seleccionarPlantillaActiva([ajena], contexto({ tipoVisita: 'DOCENTE' }));

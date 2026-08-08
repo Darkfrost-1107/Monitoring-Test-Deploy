@@ -15,7 +15,10 @@ import type { RolAutorPlantilla } from '@sistema-monitoreo/shared-contracts';
  * 2. La plantilla de su institución educativa.
  * 3. La plantilla general de la UGEL, incluidas las que no tienen autor sellado
  *    por ser anteriores al sello.
- * 4. Último recurso, documentado en `seleccion.test.ts`: la primera del catálogo.
+ * 4. Cualquier vigente del tipo pedido.
+ *
+ * Si ninguna acierta devuelve `null`: no hay instrumento aplicable y la visita
+ * no se puede evaluar. Quien llama debe decirlo, no seguir de largo.
  */
 
 /** Nombre del instrumento según a quién se evalúa. */
@@ -92,6 +95,10 @@ export function seleccionarPlantillaActiva<T extends PlantillaSeleccionable>(
     );
   }
 
-  // Último recurso: cualquier vigente del tipo, y si no, la primera del catálogo.
-  return elegida ?? plantillas.find(esCandidata) ?? plantillas[0] ?? null;
+  // Cualquier vigente del tipo pedido. Si no hay ninguna, no hay instrumento:
+  // antes se caía a `plantillas[0]` sin mirar tipo ni estado, y una visita a
+  // docente podía evaluarse con el instrumento directivo o con un borrador sin
+  // que nada lo delatara. Quedarse sin poder evaluar se ve y se corrige; los
+  // datos levantados con el instrumento equivocado, no.
+  return elegida ?? plantillas.find(esCandidata) ?? null;
 }

@@ -10,7 +10,9 @@ import {
   fichaAEstadoFormulario,
   type DatosFicha,
 } from '../lib/ficha-estado';
-import { sembrarFichaDeDemostracion } from '../lib/ficha-demo';
+
+/** Qué se consiguió al recuperar la ficha cerrada de una visita. */
+export type ResultadoFichaLlena = 'cargada' | 'sin-respaldo' | 'error';
 
 /**
  * Persistencia de la ficha de monitoreo: borrador y cierre.
@@ -204,22 +206,42 @@ export function useFichaPersistence({
    * ficha recurre al relleno de demostración, que no escribe nada en un
    * despliegue real.
    */
-  const prepararFichaLlena = useCallback(async (visitId: string) => {
-    if (localStorage.getItem(claveEstadoLocal(visitId))) return;
+  /**
+   * Deja lista la ficha ya cerrada de una visita, para abrirla en modo lectura.
+   *
+   * Antes, cuando el backend no tenía ficha o la consulta fallaba, se sembraba
+   * un relleno de demostración —doce aspectos marcados, todos los niveles en
+   * III y IV y un párrafo de observaciones redactado— y el evaluador lo abría
+   * creyendo que era el monitoreo que alguien levantó. El guardia era
+   * `FEATURES.apiOnly`, que depende de `VITE_PERSISTENCE_MODE`: esa variable no
+   * está puesta en ningún .env ni en el despliegue, así que el modo cae en
+   * `hybrid` y el guardia nunca llegaba a cerrar.
+   *
+   * Ahora devuelve qué pasó y quien llama decide qué decir. Una ficha que no
+   * está no se inventa.
+   */
+  const prepararFichaLlena = useCallback(
+    async (visitId: string): Promise<ResultadoFichaLlena> => {
+      // Lo que ya está en curso localmente manda: no se pisa con lo del servidor.
+      if (localStorage.getItem(claveEstadoLocal(visitId))) return 'cargada';
 
-    try {
-      const { fichasApi } = await import('@/features/monitoreos/api/fichas.api');
-      const ficha = await fichasApi.findByVisita(visitId);
-      if (ficha) {
-        safeSetLocalStorage(claveEstadoLocal(visitId), JSON.stringify(fichaAEstadoFormulario(ficha)));
-      } else {
-        sembrarFichaDeDemostracion(visitId);
+      try {
+        const { fichasApi } = await import('@/features/monitoreos/api/fichas.api');
+        const ficha = await fichasApi.findByVisita(visitId);
+        if (!ficha) return 'sin-respaldo';
+
+        safeSetLocalStorage(
+          claveEstadoLocal(visitId),
+          JSON.stringify(fichaAEstadoFormulario(ficha)),
+        );
+        return 'cargada';
+      } catch (error) {
+        console.error(error);
+        return 'error';
       }
-    } catch (error) {
-      console.error(error);
-      sembrarFichaDeDemostracion(visitId);
-    }
-  }, []);
+    },
+    [],
+  );
 
   return { guardarBorrador, finalizar, prepararFichaLlena };
 }

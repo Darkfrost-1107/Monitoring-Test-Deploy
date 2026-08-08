@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
+import { toast } from 'sonner';
 import { Sparkles, X, Calendar } from 'lucide-react';
-import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { useCronogramasData } from '@features/cronogramas/hooks/use-cronogramas-data';
 import { puedeEvaluarVisita, type Cronograma } from '@entities/model-cronogramas';
 import { useUser } from '@/entities/model-user';
@@ -9,6 +9,7 @@ import { puedeDecidirReprogramacion } from '@entities/model-reprogramaciones';
 import { seleccionarPlantillaActiva } from '@/entities/model-plantillas';
 import { usePlantillasList } from '@/entities/model-plantillas/use-plantillas-api';
 import { claveDeHoy } from '@/shared/lib/calendario/grid';
+import { motivoSinInstrumento } from '../lib/instrumento';
 import { useFichaPersistence } from '@/features/monitoreos/hooks/use-ficha-persistence';
 import { LlenarFichaForm } from '@/features/monitoreos';
 import {
@@ -55,13 +56,11 @@ export const CalendarioSidebar = ({
     submitRescheduleRequest,
     approveRescheduleRequest,
     rejectRescheduleRequest,
-    deleteCronograma,
   } = useCronogramasData();
 
   const [showFichaModal, setShowFichaModal] = useState(false);
   const [showSolicitarReprogramarModal, setShowSolicitarReprogramarModal] = useState(false);
   const [showReprogramarModal, setShowReprogramarModal] = useState(false);
-  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [showMigracionModal, setShowMigracionModal] = useState(false);
   const [migracionContext, setMigracionContext] = useState<{
     visitId: string;
@@ -70,7 +69,11 @@ export const CalendarioSidebar = ({
   } | null>(null);
 
   // Ya vienen mapeadas al modelo Plantilla del frontend.
-  const { data: plantillas = [] } = usePlantillasList();
+  const {
+    data: plantillas = [],
+    isLoading: cargandoPlantillas,
+    isError: fallaronPlantillas,
+  } = usePlantillasList();
 
   const selectedVisit = useMemo(
     () => (selectedVisitId ? (cronogramas.find((v) => v.id === selectedVisitId) ?? null) : null),
@@ -108,6 +111,11 @@ export const CalendarioSidebar = ({
     });
   }, [selectedVisit, plantillas, user, isInstitution, isMonitorCampo]);
 
+  const instrumentoNoDisponible = motivoSinInstrumento(activeTemplate !== null, {
+    cargando: cargandoPlantillas,
+    fallo: fallaronPlantillas,
+  });
+
   const isEvaluadorAutorizado = useMemo(
     () => puedeEvaluarVisita(user, selectedVisit),
     [selectedVisit, user],
@@ -131,16 +139,25 @@ export const CalendarioSidebar = ({
     },
   });
 
+  /**
+   * Abre la ficha ya cerrada, si existe. Antes se abría siempre: cuando no
+   * había respaldo en el backend se sembraba una ficha de demostración y se
+   * mostraba como si fuera el monitoreo levantado.
+   */
   const abrirFichaLlena = async (visitId: string) => {
-    await prepararFichaLlena(visitId);
-    setShowFichaModal(true);
-  };
+    const resultado = await prepararFichaLlena(visitId);
 
-  const handleDeleteConfirm = () => {
-    if (!deleteConfirmId) return;
-    deleteCronograma(deleteConfirmId);
-    setDeleteConfirmId(null);
-    setSelectedVisitId(null);
+    if (resultado === 'cargada') {
+      setShowFichaModal(true);
+      return;
+    }
+
+    toast.error(
+      resultado === 'sin-respaldo'
+        ? 'La visita figura como completada, pero su ficha no está registrada en el sistema. Comuníquelo a la Jefatura de Gestión Pedagógica.'
+        : 'No se pudo recuperar la ficha de esta visita. Reintente en unos momentos.',
+      { duration: 10_000 },
+    );
   };
 
   /** Descarta la migración: vuelve al formulario de ficha sin cerrarlo. */
@@ -191,6 +208,7 @@ export const CalendarioSidebar = ({
               esMonitorCampo: isMonitorCampo,
               esFechaCoincidente: isFechaCoincidente,
             }}
+            instrumentoNoDisponible={instrumentoNoDisponible}
             onIniciarFicha={() => setShowFichaModal(true)}
             onVerFichaLlena={() => abrirFichaLlena(selectedVisit.id)}
             onSolicitarReprogramacion={() => setShowSolicitarReprogramarModal(true)}
@@ -246,22 +264,6 @@ export const CalendarioSidebar = ({
             rejectRescheduleRequest(visitId, comment);
             setShowReprogramarModal(false);
           }}
-        />
-      )}
-
-      {deleteConfirmId && (
-        <ConfirmModal
-          title="¿Desea eliminar este cronograma?"
-          message={
-            <span>
-              Esta acción eliminará de forma lógica el cronograma de visita programada para esta
-              institución.
-            </span>
-          }
-          confirmLabel="Eliminar Cronograma"
-          onConfirm={handleDeleteConfirm}
-          onCancel={() => setDeleteConfirmId(null)}
-          danger
         />
       )}
 

@@ -1,58 +1,24 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { CalendarClock, Check, X, History, Building2, MapPin, UserRound } from 'lucide-react';
+import { CalendarClock, RefreshCw } from 'lucide-react';
 import { useUser } from '@entities/model-user';
 import { Card } from '@shared/ui/card';
-import { Badge } from '@shared/ui/badge';
 import { Button } from '@shared/ui/button';
-import { Textarea } from '@shared/ui/textarea';
-import {
-  AlertDialog,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@shared/ui/alert-dialog';
-import { RoleCode } from '@sistema-monitoreo/shared-contracts';
+import { RoleCode, type ISolicitudVisita } from '@sistema-monitoreo/shared-contracts';
 import {
   useSolicitudesVisita,
   useMisSolicitudesVisita,
   useRechazarSolicitud,
   TrazabilidadSolicitudDialog,
 } from '@features/visit-requests';
-import { formatearFechaCorta } from '@shared/lib/fecha/fecha';
+import { TarjetaDeSolicitud } from './solicitudes/TarjetaDeSolicitud';
+import { RechazoDialog } from './solicitudes/RechazoDialog';
 
 const ESTADOS = [
   { value: 'PENDIENTE', label: 'Pendientes' },
   { value: '', label: 'Todas' },
 ] as const;
-
-/** Estilos visuales por estado de la solicitud (acento, badge y punto). */
-const ESTADO_STYLE: Record<string, { accent: string; badge: string; dot: string; label: string }> = {
-  PENDIENTE: {
-    accent: 'border-l-amber-400',
-    badge: 'bg-amber-50 text-amber-700 border-amber-200',
-    dot: 'bg-amber-500',
-    label: 'Pendiente',
-  },
-  ATENDIDA: {
-    accent: 'border-l-emerald-500',
-    badge: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    dot: 'bg-emerald-500',
-    label: 'Atendida',
-  },
-  RECHAZADA: {
-    accent: 'border-l-rose-400',
-    badge: 'bg-rose-50 text-rose-700 border-rose-200',
-    dot: 'bg-rose-500',
-    label: 'Rechazada',
-  },
-};
-
-const estadoStyle = (estado: string) => ESTADO_STYLE[estado] ?? ESTADO_STYLE.PENDIENTE;
 
 export const SolicitudesVisitaPage = () => {
   const { user } = useUser();
@@ -63,13 +29,12 @@ export const SolicitudesVisitaPage = () => {
   const [estado, setEstado] = useState<string>('PENDIENTE');
   const gestorQ = useSolicitudesVisita(estado, esGestor);
   const miasQ = useMisSolicitudesVisita(estado, !esGestor);
-  const { data, isLoading } = esGestor ? gestorQ : miasQ;
+  const { data, isLoading, isError, refetch } = esGestor ? gestorQ : miasQ;
   const rechazar = useRechazarSolicitud();
   const navigate = useNavigate();
 
-  // Solicitud seleccionada para rechazar (abre el modal) y su motivo.
+  // Solicitud seleccionada para rechazar (abre el modal).
   const [rechazando, setRechazando] = useState<{ id: string; nombre: string } | null>(null);
-  const [motivo, setMotivo] = useState('');
   // Solicitud cuya trazabilidad se está viendo.
   const [trazabilidadId, setTrazabilidadId] = useState<string | null>(null);
 
@@ -77,7 +42,7 @@ export const SolicitudesVisitaPage = () => {
 
   // "Atender" abre el registro de cronograma precargado; la solicitud se marca
   // ATENDIDA automáticamente al guardar ese cronograma.
-  const handleAtender = (s: (typeof items)[number]) =>
+  const handleAtender = (s: ISolicitudVisita) =>
     navigate('/monitoreo/cronograma', {
       state: {
         prefillSolicitud: {
@@ -88,20 +53,17 @@ export const SolicitudesVisitaPage = () => {
       },
     });
 
-  const abrirRechazo = (s: (typeof items)[number]) => {
-    setMotivo('');
+  const abrirRechazo = (s: ISolicitudVisita) =>
     setRechazando({ id: s.id, nombre: s.docenteNombre ?? s.institucionNombre });
-  };
 
-  const confirmarRechazo = () => {
+  const confirmarRechazo = (motivo: string) => {
     if (!rechazando) return;
     rechazar.mutate(
-      { id: rechazando.id, body: { comentario: motivo.trim() || undefined } },
+      { id: rechazando.id, body: { comentario: motivo } },
       {
         onSuccess: () => {
           toast.success('Solicitud rechazada.');
           setRechazando(null);
-          setMotivo('');
         },
         onError: (e) => toast.error((e as Error)?.message ?? 'No se pudo rechazar.'),
       },
@@ -138,137 +100,52 @@ export const SolicitudesVisitaPage = () => {
 
       {isLoading ? (
         <p className="text-text-muted">Cargando…</p>
+      ) : isError ? (
+        /*
+         * Sin esto la lista quedaba vacía y la pantalla decía «No hay
+         * solicitudes pendientes»: un fallo de red se veía igual que una
+         * bandeja al día, y lo que estaba esperando atención se daba por
+         * inexistente.
+         */
+        <Card
+          role="alert"
+          className="p-8 text-center border-destructive/20 bg-destructive/5 flex flex-col items-center gap-3"
+        >
+          <p className="text-sm text-destructive">
+            No se pudieron cargar las solicitudes. Puede haber pedidos esperando que no se están
+            mostrando.
+          </p>
+          <Button size="sm" variant="outline" onClick={() => void refetch()}>
+            <RefreshCw className="w-4 h-4 mr-1" /> Reintentar
+          </Button>
+        </Card>
       ) : items.length === 0 ? (
         <Card className="p-8 text-center text-text-muted border-border">
-          No hay solicitudes {estado === 'PENDIENTE' ? 'pendientes' : ''}.
+          {estado === 'PENDIENTE' ? 'No hay solicitudes pendientes.' : 'No hay solicitudes.'}
         </Card>
       ) : (
         <div className="flex flex-col gap-3">
-          {items.map((s) => {
-            const est = estadoStyle(s.estado);
-            return (
-              <Card
-                key={s.id}
-                className={`p-4 border-border border-l-4 ${est.accent} shadow-xs hover:shadow-md transition-shadow flex flex-col sm:flex-row sm:items-start justify-between gap-4`}
-              >
-                <div className="min-w-0 flex gap-3">
-                  {/* Ícono de la IE */}
-                  <div className="hidden sm:flex w-10 h-10 shrink-0 rounded-xl bg-primary/10 text-primary items-center justify-center">
-                    <Building2 className="w-5 h-5" />
-                  </div>
-
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-bold text-[0.95rem] truncate">{s.institucionNombre}</span>
-                      <Badge
-                        variant={s.prioridad === 'ALTA' ? 'destructive' : 'secondary'}
-                        className="text-[10px] uppercase font-bold"
-                      >
-                        {s.prioridad}
-                      </Badge>
-                      <Badge
-                        variant="outline"
-                        className={`text-[10px] uppercase font-bold border ${est.badge}`}
-                      >
-                        <span className={`w-1.5 h-1.5 rounded-full mr-1 ${est.dot}`} />
-                        {est.label}
-                      </Badge>
-                    </div>
-
-                    <div className="mt-0.5 flex items-center gap-1 text-[11px] text-text-muted uppercase tracking-wide">
-                      <MapPin className="w-3 h-3" /> {s.distrito}
-                    </div>
-
-                    {s.docenteNombre && (
-                      <p className="text-sm mt-1.5 font-semibold text-foreground flex items-center gap-1.5">
-                        <UserRound className="w-3.5 h-3.5 text-primary" /> {s.docenteNombre}
-                      </p>
-                    )}
-
-                    {s.motivo && (
-                      <p className="text-[13px] mt-1.5 text-text-muted italic border-l-2 border-border pl-2.5">
-                        “{s.motivo}”
-                      </p>
-                    )}
-
-                    <p className="text-[11px] text-text-muted mt-2 flex items-center gap-1">
-                      <CalendarClock className="w-3 h-3" />
-                      {s.solicitanteNombre} · {formatearFechaCorta(s.createdAt)}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex gap-2 shrink-0 self-start">
-                  {esGestor && s.estado === 'PENDIENTE' && (
-                    <>
-                      <Button size="sm" onClick={() => handleAtender(s)}>
-                        <Check className="w-4 h-4 mr-1" /> Atender
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => abrirRechazo(s)}
-                        disabled={rechazar.isPending}
-                      >
-                        <X className="w-4 h-4 mr-1" /> Rechazar
-                      </Button>
-                    </>
-                  )}
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="text-text-muted hover:text-primary"
-                    onClick={() => setTrazabilidadId(s.id)}
-                    title="Ver trazabilidad de la solicitud"
-                  >
-                    <History className="w-4 h-4 mr-1" /> Trazabilidad
-                  </Button>
-                </div>
-              </Card>
-            );
-          })}
+          {items.map((s) => (
+            <TarjetaDeSolicitud
+              key={s.id}
+              solicitud={s}
+              puedeGestionar={esGestor}
+              rechazoEnCurso={rechazar.isPending}
+              onAtender={handleAtender}
+              onRechazar={abrirRechazo}
+              onVerTrazabilidad={setTrazabilidadId}
+            />
+          ))}
         </div>
       )}
 
-      {/* Modal de rechazo: captura el motivo que verá el solicitante. */}
-      <AlertDialog
-        open={rechazando !== null}
-        onOpenChange={(open) => {
-          if (!open && !rechazar.isPending) setRechazando(null);
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Rechazar solicitud de visita</AlertDialogTitle>
-            <AlertDialogDescription>
-              Indica el motivo por el que se rechaza la solicitud
-              {rechazando ? ` de ${rechazando.nombre}` : ''}. Se notificará al solicitante.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
+      <RechazoDialog
+        solicitud={rechazando}
+        enviando={rechazar.isPending}
+        onCancelar={() => setRechazando(null)}
+        onConfirmar={confirmarRechazo}
+      />
 
-          <div className="flex flex-col gap-1.5 py-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-text-muted">
-              Motivo del rechazo (opcional)
-            </span>
-            <Textarea
-              value={motivo}
-              onChange={(e) => setMotivo(e.target.value)}
-              placeholder="Ej: La visita ya está contemplada en el cronograma vigente."
-              maxLength={1000}
-              rows={3}
-            />
-          </div>
-
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={rechazar.isPending}>Cancelar</AlertDialogCancel>
-            <Button variant="destructive" onClick={confirmarRechazo} disabled={rechazar.isPending}>
-              {rechazar.isPending ? 'Rechazando…' : 'Rechazar solicitud'}
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Modal de trazabilidad de la solicitud seleccionada. */}
       <TrazabilidadSolicitudDialog
         solicitudId={trazabilidadId}
         onClose={() => setTrazabilidadId(null)}
