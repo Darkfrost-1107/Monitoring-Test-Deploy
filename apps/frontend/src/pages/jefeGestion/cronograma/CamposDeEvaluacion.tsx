@@ -71,8 +71,11 @@ export const CamposDeEvaluacion = ({ form, onCambiar, opciones, perfil, esEdicio
 
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-bold text-text-muted">Fecha y Hora Programada *</label>
+        <label htmlFor="fecha-programada" className="text-xs font-bold text-text-muted">
+          Fecha y Hora Programada *
+        </label>
         <input
+          id="fecha-programada"
           type="datetime-local"
           value={form.fechaHora}
           onChange={(e) => onCambiar('fechaHora', e.target.value)}

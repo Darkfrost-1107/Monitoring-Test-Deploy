@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useId, type ReactNode } from 'react';
 import { cn } from '@shared/lib/utils';
 import { Input } from './input';
 import { Label } from './label';
@@ -37,8 +37,24 @@ export const SectionCard = ({
   </Card>
 );
 
-export const FieldLabel = ({ label, required }: { label: string; required?: boolean }) => (
-  <Label className="text-xs font-semibold text-text mb-1 block">
+/**
+ * Etiqueta de un campo.
+ *
+ * `htmlFor` no es opcional en la práctica: sin él, la etiqueta es texto suelto
+ * y el control queda anunciado como «combobox» o «campo de texto» a secas por
+ * cualquier lector de pantalla. Se acepta ausente sólo para los usos donde el
+ * rótulo encabeza un grupo y no un control único.
+ */
+export const FieldLabel = ({
+  label,
+  required,
+  htmlFor,
+}: {
+  label: string;
+  required?: boolean;
+  htmlFor?: string;
+}) => (
+  <Label htmlFor={htmlFor} className="text-xs font-semibold text-text mb-1 block">
     {label}
     {required && <span className="text-destructive ml-1">*</span>}
   </Label>
@@ -65,11 +81,15 @@ export const TextField = ({
   error?: string;
   disabled?: boolean;
   adornment?: ReactNode;
-}) => (
+}) => {
+  const id = useId();
+
+  return (
   <div className="flex flex-col gap-1 w-full">
-    <FieldLabel label={label} required={required} />
+    <FieldLabel label={label} required={required} htmlFor={id} />
     <div className="relative">
       <Input
+        id={id}
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -90,7 +110,8 @@ export const TextField = ({
     </div>
     <ErrorText message={error} />
   </div>
-);
+  );
+};
 
 export const SelectField = ({
   label,
@@ -110,11 +131,15 @@ export const SelectField = ({
   required?: boolean;
   error?: string;
   disabled?: boolean;
-}) => (
+}) => {
+  const id = useId();
+
+  return (
   <div className="flex flex-col gap-1 w-full">
-    <FieldLabel label={label} required={required} />
+    <FieldLabel label={label} required={required} htmlFor={id} />
     <Select value={value} onValueChange={onChange} disabled={disabled}>
       <SelectTrigger
+        id={id}
         className={cn(
           'w-full text-left text-sm rounded-lg h-9 border border-input bg-transparent',
           error && 'border-destructive focus-visible:ring-destructive/30',
@@ -133,7 +158,8 @@ export const SelectField = ({
     </Select>
     <ErrorText message={error} />
   </div>
-);
+  );
+};
 
 export const TextAreaField = ({
   label,

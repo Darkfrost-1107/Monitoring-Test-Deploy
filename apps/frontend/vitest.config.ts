@@ -35,15 +35,18 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
 
-      // Umbral fijado al cierre de la Fase 3, en el nivel alcanzado. Impide el
-      // retroceso, no persigue el objetivo: el 45 % exige que la Fase 5 parta
-      // antes los cuatro componentes de más de 900 líneas, donde vive el grueso
-      // del código sin cubrir.
+      // Umbral en el nivel alcanzado, para impedir el retroceso. No persigue el
+      // objetivo del 45 %.
+      //
+      // Subió de 3,9 % al incorporar las primeras pruebas de componente: montar
+      // un formulario ejercita su árbol entero, de modo que veintiocho pruebas
+      // sobre `ModalCronograma` cubren mucho más que su propio archivo. Las
+      // pruebas de `lib/` que había hasta ahora cubren reglas, no pantallas.
       thresholds: {
-        statements: 3.9,
-        branches: 3.5,
-        functions: 2.9,
-        lines: 3.9,
+        statements: 19.8,
+        branches: 22,
+        functions: 16.5,
+        lines: 18.9,
       },
       reporter: ['text-summary', 'json-summary', 'lcov'],
       reportsDirectory: './coverage',
