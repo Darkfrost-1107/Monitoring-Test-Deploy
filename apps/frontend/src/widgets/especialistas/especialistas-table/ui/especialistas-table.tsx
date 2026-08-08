@@ -4,6 +4,8 @@ import { FastActions } from '@shared/ui/FastActions';
 import type { Especialista } from '@entities/model-especialistas';
 import { CARGO_COLORS } from '@entities/model-especialistas';
 import { useEntityTable } from '@shared/hooks/useEntityTable';
+import { useAccionDelPadron } from '@shared/hooks/use-accion-del-padron';
+import { AvisoDeError } from '@shared/ui/AvisoDeError';
 import { EntityTable } from '@shared/ui/EntityTable';
 import { ConfirmModal } from '@shared/ui/ConfirmModal';
 import { TableCell, TableHead, TableRow } from '@shared/ui/table';
@@ -45,50 +47,40 @@ export const EspecialistasTableWidget = ({
 
   const pagination = useEntityTable({ data: especialistas, filterFn: especialistaFilter });
 
+  const { error, setError, ejecutar } = useAccionDelPadron();
+
   const confirmFinalize = async () => {
     if (!finalizingDoc) return;
-    try {
-      const res = await especialistasApi.deactivate(finalizingDoc.id);
-      if (res.ok) {
-        setEspecialistas((prev) =>
-          prev.map((e) => (e.id === finalizingDoc.id ? { ...e, activo: false } : e)),
-        );
-      } else {
-        const errMsg =
-          (res.error as { message?: string })?.message ||
-          'Error al desactivar el registro de especialista.';
-        alert(errMsg);
-      }
-    } catch (err) {
-      console.error('Connection error when deactivating specialist:', err);
-    } finally {
-      setFinalizingDoc(null);
-    }
+    const id = finalizingDoc.id;
+
+    const ok = await ejecutar(
+      () => especialistasApi.deactivate(id),
+      'Error al desactivar el registro de especialista.',
+      () => setFinalizingDoc(null),
+    );
+    if (!ok) return;
+
+    setEspecialistas((prev) => prev.map((e) => (e.id === id ? { ...e, activo: false } : e)));
   };
 
   const confirmRestore = async () => {
     if (!restoringDoc) return;
-    try {
-      const res = await especialistasApi.activate(restoringDoc.id);
-      if (res.ok) {
-        setEspecialistas((prev) =>
-          prev.map((e) => (e.id === restoringDoc.id ? { ...e, activo: true } : e)),
-        );
-      } else {
-        const errMsg =
-          (res.error as { message?: string })?.message ||
-          'Error al reactivar el registro de especialista.';
-        alert(errMsg);
-      }
-    } catch (err) {
-      console.error('Connection error when activating specialist:', err);
-    } finally {
-      setRestoringDoc(null);
-    }
+    const id = restoringDoc.id;
+
+    const ok = await ejecutar(
+      () => especialistasApi.activate(id),
+      'Error al reactivar el registro de especialista.',
+      () => setRestoringDoc(null),
+    );
+    if (!ok) return;
+
+    setEspecialistas((prev) => prev.map((e) => (e.id === id ? { ...e, activo: true } : e)));
   };
 
   return (
     <>
+      <AvisoDeError mensaje={error} onCerrar={() => setError(null)} />
+
       <EntityTable
         header={
           <>

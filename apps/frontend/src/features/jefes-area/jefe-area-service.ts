@@ -4,7 +4,8 @@ import type { JefeArea } from '@entities/model-jefes-area';
 import type { JefeAreaFormData } from '@entities/model-jefes-area/validator';
 import { jefesAreaApi } from '@shared/api/jefes-area.api';
 import type { IEspecialistaResponse as IJefeAreaResponse, IQueryEspecialistaRequest } from '@sistema-monitoreo/shared-contracts';
-import { aFechaISOLocal, hoyISO } from '@shared/lib/fecha/fecha';
+import { aFechaISOLocal } from '@shared/lib/fecha/fecha';
+import { normalizarNivel } from './lib/niveles-jefe-area';
 
 export const fetchJefesArea = async (query?: IQueryEspecialistaRequest): Promise<JefeArea[]> => {
   const res = await jefesAreaApi.findAll(query);
@@ -22,14 +23,6 @@ export const fetchJefeAreaById = async (id: string): Promise<JefeArea | null> =>
   return null;
 };
 
-const normalizeNivel = (nivel?: string | null): 'Inicial' | 'Primaria' | 'Secundaria' => {
-  if (!nivel) return 'Secundaria';
-  const lower = nivel.toLowerCase();
-  if (lower === 'inicial') return 'Inicial';
-  if (lower === 'primaria') return 'Primaria';
-  return 'Secundaria';
-};
-
 export const mapApiJefeAreaToFrontend = (apiJefe: IJefeAreaResponse): JefeArea => {
   return {
     id: apiJefe.id,
@@ -40,11 +33,11 @@ export const mapApiJefeAreaToFrontend = (apiJefe: IJefeAreaResponse): JefeArea =
     correo: apiJefe.persona.correo || '',
     celular: apiJefe.persona.telefono || '',
     cargaHoraria: apiJefe.cargaLaboral || CARGA_HORARIA.JEFE_AREA,
-    nivelEducativo: normalizeNivel(apiJefe.nivelEducativo),
+    nivelEducativo: normalizarNivel(apiJefe.nivelEducativo),
     activo: apiJefe.estado === 'Activo',
-    fechaCreacion: apiJefe.createdAt
-      ? aFechaISOLocal(apiJefe.createdAt)
-      : hoyISO(),
+    // Vacía si el registro no la trae: poner la de hoy sería afirmar una fecha
+    // de alta que nadie registró.
+    fechaCreacion: apiJefe.createdAt ? aFechaISOLocal(apiJefe.createdAt) : '',
     cargo: apiJefe.cargo || 'Jefe de Área',
     especialidades: apiJefe.especialidades || [],
     especialidad: apiJefe.especialidad || null,

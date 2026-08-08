@@ -3,6 +3,8 @@ import { FastActions } from '@shared/ui/FastActions';
 import type { Docente, CondicionDirectiva } from '@entities/model-docentes';
 import { CONDICION_DIRECTIVA_COLOR } from '@entities/model-docentes';
 import { useEntityTable } from '@shared/hooks/useEntityTable';
+import { useAccionDelPadron } from '@shared/hooks/use-accion-del-padron';
+import { AvisoDeError } from '@shared/ui/AvisoDeError';
 import { EntityTable } from '@shared/ui/EntityTable';
 import { teachersApi } from '@shared/api/teachers.api';
 import { ConfirmModal } from '@shared/ui/ConfirmModal';
@@ -71,60 +73,64 @@ export const DirectoresTableWidget = ({
   const getInstName = (id: string) =>
     instituciones.find((i) => i.id === id)?.nombre ?? 'I.E. No Asignada';
 
+  const { error, setError, ejecutar } = useAccionDelPadron();
+
   const confirmFinalize = async () => {
     if (!finalizing) return;
-    const targetCargo = finalizing.cargosList?.find((c) => c.nombre === 'Director' && c.fechaFin === null);
-    if (!targetCargo) return;
+    const id = finalizing.id;
 
-    try {
-      const res = await teachersApi.finalizeCargo(finalizing.id, targetCargo.id);
-      if (res.ok) {
-        const nowStr = hoyISO();
-        setDirectores((prev) =>
-          prev.map((d) => {
-            if (d.id === finalizing.id) {
-              const updatedCargos = d.cargosList?.map((c) =>
-                c.id === targetCargo.id ? { ...c, fechaFin: nowStr, esPrincipal: false } : c
-              );
-              return { ...d, activo: false, cargosList: updatedCargos };
-            }
-            return d;
-          }),
-        );
-      } else {
-        const errMsg =
-          (res.error as { message?: string })?.message || 'Error al finalizar el cargo de director.';
-        alert(errMsg);
-      }
-    } catch (err) {
-      console.error('Connection error when finalizing director:', err);
-    } finally {
+    const designacion = finalizing.cargosList?.find(
+      (c) => c.nombre === 'Director' && c.fechaFin === null,
+    );
+
+    // Antes salía por un `return` mudo: se confirmaba la baja y no pasaba nada.
+    if (!designacion) {
+      setError('No se encontró la designación vigente de Director para este registro.');
       setFinalizing(null);
+      return;
     }
+
+    const ok = await ejecutar(
+      () => teachersApi.finalizeCargo(id, designacion.id),
+      'Error al finalizar el cargo de director.',
+      () => setFinalizing(null),
+    );
+    if (!ok) return;
+
+    const cerradaHoy = hoyISO();
+    setDirectores((prev) =>
+      prev.map((d) =>
+        d.id === id
+          ? {
+              ...d,
+              activo: false,
+              cargosList: d.cargosList?.map((c) =>
+                c.id === designacion.id ? { ...c, fechaFin: cerradaHoy, esPrincipal: false } : c,
+              ),
+            }
+          : d,
+      ),
+    );
   };
 
   const confirmRestore = async () => {
     if (!restoring) return;
-    try {
-      const res = await teachersApi.activate(restoring.id);
-      if (res.ok) {
-        setDirectores((prev) =>
-          prev.map((d) => (d.id === restoring.id ? { ...d, activo: true } : d)),
-        );
-      } else {
-        const errMsg =
-          (res.error as { message?: string })?.message || 'Error al reactivar el director.';
-        alert(errMsg);
-      }
-    } catch (err) {
-      console.error('Connection error when activating director:', err);
-    } finally {
-      setRestoring(null);
-    }
+    const id = restoring.id;
+
+    const ok = await ejecutar(
+      () => teachersApi.activate(id),
+      'Error al reactivar el director.',
+      () => setRestoring(null),
+    );
+    if (!ok) return;
+
+    setDirectores((prev) => prev.map((d) => (d.id === id ? { ...d, activo: true } : d)));
   };
 
   return (
     <>
+      <AvisoDeError mensaje={error} onCerrar={() => setError(null)} />
+
       <EntityTable
         header={
           <>

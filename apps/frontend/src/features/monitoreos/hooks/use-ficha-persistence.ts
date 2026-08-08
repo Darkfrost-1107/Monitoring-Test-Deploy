@@ -1,3 +1,4 @@
+import { toast } from 'sonner';
 import { useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import type { Cronograma } from '@entities/model-cronogramas';
@@ -145,7 +146,11 @@ export function useFichaPersistence({
 
       const mensaje =
         apiErr?.response?.data?.message ?? apiErr?.message ?? `Error desconocido al ${accion}.`;
-      alert(`Error: ${mensaje}`);
+
+      // Antes era un `alert()`: bloqueaba la pestaña sobre una ficha a medio
+      // llenar y desaparecía al aceptarlo. El aviso dura lo suficiente para
+      // leerlo y no tapa el formulario.
+      toast.error(`No se pudo ${accion}`, { description: mensaje, duration: 10_000 });
       console.warn(`No se pudo ${accion} en backend:`, error);
     },
     [onPlantillaVersionada],

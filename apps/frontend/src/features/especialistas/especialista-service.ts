@@ -3,7 +3,7 @@ import type { Especialista } from '@entities/model-especialistas';
 import type { EspecialistaFormData } from '@entities/model-especialistas/validator';
 import { especialistasApi } from '@shared/api/especialistas.api';
 import type { IEspecialistaResponse, IQueryEspecialistaRequest } from '@sistema-monitoreo/shared-contracts';
-import { aFechaISOLocal, hoyISO } from '@shared/lib/fecha/fecha';
+import { aFechaISOLocal } from '@shared/lib/fecha/fecha';
 
 export const fetchEspecialistas = async (query?: IQueryEspecialistaRequest): Promise<Especialista[]> => {
   const res = await especialistasApi.findAll(query);
@@ -37,9 +37,9 @@ export const mapApiEspecialistaToFrontend = (apiEsp: IEspecialistaResponse): Esp
     modalidad: apiEsp.modalidad || 'EBR',
     estado: apiEsp.estado,
     activo: apiEsp.estado === 'Activo',
-    fechaCreacion: apiEsp.createdAt
-      ? aFechaISOLocal(apiEsp.createdAt)
-      : hoyISO(),
+    // Vacía si el registro no la trae: poner la de hoy sería afirmar una fecha
+    // de alta que nadie registró.
+    fechaCreacion: apiEsp.createdAt ? aFechaISOLocal(apiEsp.createdAt) : '',
     condicionLaboral: apiEsp.condicionLaboral || 'Encargado',
     cargaLaboral: apiEsp.cargaLaboral || 40,
     escalaMagisterial: apiEsp.escalaMagisterial ?? undefined,

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { VALIDATION } from '@shared/config/constants';
 import { useDniAutocomplete } from '@features/docentes/hooks/useDniAutocomplete';
 import { checkRoleConflict, type RolObjetivo } from '@shared/constants/roleValidation';
@@ -106,27 +106,26 @@ export function usePersonForm({
 
   const roleCheck = checkRoleConflict(persona, rolObjetivo, cargoObjetivo);
   const dniBloqueadoPorRol = roleCheck.bloquea;
-  const hadPersonaRef = useRef(false);
 
-  useEffect(() => {
-    if (persona) {
-      hadPersonaRef.current = true;
-      const t = setTimeout(() => {
-        setPersonaFields(persona);
-      }, 0);
-      return () => clearTimeout(t);
-    }
-    // Limpiar los campos autocompletados en cuanto la persona deja de existir:
-    // tanto si el DNI completo no coincide como si se borran dígitos (< 8).
-    const shouldClear = !searchingDni && !persona && hadPersonaRef.current;
-    if (shouldClear) {
-      hadPersonaRef.current = false;
-      const t = setTimeout(() => {
-        clearPersonaFields();
-      }, 0);
-      return () => clearTimeout(t);
-    }
-  }, [persona, searchingDni, dni, setPersonaFields, clearPersonaFields]);
+  /**
+   * Traspasar los datos de la persona encontrada al formulario, y limpiarlos
+   * cuando deja de existir —sea porque el DNI completo no coincide o porque se
+   * borraron dígitos—.
+   *
+   * Se ajusta durante el render y no en un efecto: los campos pertenecen al
+   * mismo componente, así que React descarta este render y vuelve a empezar con
+   * los valores nuevos, sin pintar el intermedio. Antes eran dos
+   * `setTimeout(…, 0)` y un `useRef` para recordar si había habido persona.
+   */
+  const [dniAplicado, setDniAplicado] = useState<string | null>(null);
+
+  if (persona && dniAplicado !== persona.dni) {
+    setDniAplicado(persona.dni);
+    setPersonaFields(persona);
+  } else if (!persona && !searchingDni && dniAplicado !== null) {
+    setDniAplicado(null);
+    clearPersonaFields();
+  }
 
   const handleSubmit = useCallback(() => {
     setSubmitted(true);

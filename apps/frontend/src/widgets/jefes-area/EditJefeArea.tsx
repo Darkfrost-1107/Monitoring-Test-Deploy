@@ -64,6 +64,18 @@ export const EditJefeArea = ({ routePrefix = '/jefes-area' }: EditJefeAreaProps 
     );
   }
 
+  // El nivel no se edita acá —se decide al ascender— pero el formulario lo
+  // necesita para su esquema. Un registro cuyo nivel el sistema no reconoce no
+  // se puede editar sin inventarle uno: se dice y se detiene.
+  if (!jefe.nivelEducativo) {
+    return (
+      <div className="p-6 text-center text-text-muted font-medium bg-surface border border-border rounded-2xl">
+        Este Jefe de Área tiene un nivel educativo que el sistema no reconoce. Corrija el dato en el
+        padrón antes de editar el registro.
+      </div>
+    );
+  }
+
   const initialData: JefeAreaFormData = {
     nombres: jefe.nombres,
     apellidos: jefe.apellidos,

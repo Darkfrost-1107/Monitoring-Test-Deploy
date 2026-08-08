@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { formatearFechaConMes } from '@shared/lib/fecha/fecha';
 import {
   X,
@@ -33,12 +33,13 @@ export const SolicitarReprogramacionForm = ({
   const [reprogramarNuevaFecha, setReprogramarNuevaFecha] = useState<string>('');
   const [reprogramarMotivo, setReprogramarMotivo] = useState<string>('');
 
-  useEffect(() => {
-    if (visit && (!availableVisits || !availableVisits.find(v => v.id === selectedVisitId))) {
-      const t = setTimeout(() => setSelectedVisitId(visit.id), 0);
-      return () => clearTimeout(t);
-    }
-  }, [visit, availableVisits, selectedVisitId]);
+  // Si la visita elegida ya no está entre las disponibles, se vuelve a la que
+  // abrió el formulario. Se ajusta durante el render: es estado de este mismo
+  // componente y antes se difería con `setTimeout(…, 0)`.
+  const elegidaSigueDisponible = availableVisits?.some((v) => v.id === selectedVisitId);
+  if (visit && !elegidaSigueDisponible && selectedVisitId !== visit.id) {
+    setSelectedVisitId(visit.id);
+  }
 
   const activeVisit = availableVisits?.find(v => v.id === selectedVisitId) || visit;
 

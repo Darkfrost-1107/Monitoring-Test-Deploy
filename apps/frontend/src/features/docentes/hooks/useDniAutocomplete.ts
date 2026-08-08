@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { VALIDATION } from '@shared/config/constants';
 import { teachersApi } from '@shared/api/teachers.api';
+import { mensajeDeBusquedaPorDni } from '../lib/mensaje-de-dni';
 
 export interface PersonaRoles {
   esDocente: boolean;
@@ -53,63 +54,64 @@ export interface UseDniAutocompleteResult {
   message: string;
 }
 
+/** Lo que devolvió la búsqueda, junto al DNI que la originó. */
+interface Resultado {
+  dni: string;
+  persona: PersonaAutocompleteData | null;
+}
+
 export const useDniAutocomplete = (dni: string, enabled = true): UseDniAutocompleteResult => {
-  const [data, setData] = useState<PersonaAutocompleteData | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isFound, setIsFound] = useState(false);
+  const [resultado, setResultado] = useState<Resultado | null>(null);
+
+  const dniCompleto = enabled && dni.length === VALIDATION.DNI_LENGTH;
+  const resueltoParaEsteDni = resultado?.dni === dni;
 
   useEffect(() => {
-    if (!enabled) {
-      const t = setTimeout(() => {
-        setData(null);
-        setIsFound(false);
-        setIsLoading(false);
-      }, 0);
-      return () => clearTimeout(t);
-    }
-    if (dni.length !== VALIDATION.DNI_LENGTH) {
-      const t = setTimeout(() => {
-        setData(null);
-        setIsFound(false);
-      }, 0);
-      return () => clearTimeout(t);
-    }
+    if (!dniCompleto) return;
 
-    let cancelled = false;
-    setTimeout(() => setIsLoading(true), 0);
+    // Una respuesta que llega tarde no debe pisar a la del DNI actual.
+    let cancelado = false;
+
     (async () => {
       try {
         const res = await teachersApi.findByDni(dni);
-        if (cancelled) return;
-        if (res.ok && res.data) {
-          const persona = res.data as PersonaAutocompleteData;
-          setData(persona);
-          setIsFound(true);
-        } else {
-          setData(null);
-          setIsFound(false);
-        }
+        if (cancelado) return;
+
+        const persona = res.ok && res.data ? (res.data as PersonaAutocompleteData) : null;
+        setResultado({ dni, persona });
       } catch (err) {
-        if (cancelled) return;
+        if (cancelado) return;
         console.error('[useDniAutocomplete] Error:', err);
-        setData(null);
-        setIsFound(false);
-      } finally {
-        if (!cancelled) setIsLoading(false);
+        // También se registra el fallo contra este DNI: sin esto la pantalla
+        // se quedaría diciendo «Buscando...» para siempre.
+        setResultado({ dni, persona: null });
       }
     })();
 
     return () => {
-      cancelled = true;
+      cancelado = true;
     };
-  }, [dni, enabled]);
+  }, [dni, dniCompleto]);
 
-  const isLocked = isFound;
-  const message = isLoading
-    ? 'Buscando...'
-    : isFound && data
-      ? `Persona encontrada: ${data.nombres} ${data.apellidos} (${data.roles.esDirector ? 'Director' : data.roles.esDocenteAula ? 'Docente' : data.roles.esEspecialista ? data.roles.especialistaCargoActivo || 'Especialista' : 'Registrado en el sistema'}). Datos autocompletados.`
-      : '';
+  /**
+   * Los tres estados se derivan y no se guardan.
+   *
+   * Antes eran `useState` que un efecto limpiaba con `setTimeout(…, 0)`, y uno
+   * de esos temporizadores no tenía limpieza: al escribir un dígito más
+   * mientras la búsqueda estaba en vuelo, `setIsLoading(true)` se aplicaba
+   * después de que la petición se diera por cancelada, y el `finally` que lo
+   * habría apagado ya no corría. El campo se quedaba en «Buscando...» hasta
+   * volver a completar ocho dígitos.
+   */
+  const data = dniCompleto && resueltoParaEsteDni ? (resultado?.persona ?? null) : null;
+  const isLoading = dniCompleto && !resueltoParaEsteDni;
+  const isFound = !!data;
 
-  return { data, isLoading, isFound, isLocked, message };
+  return {
+    data,
+    isLoading,
+    isFound,
+    isLocked: isFound,
+    message: mensajeDeBusquedaPorDni({ buscando: isLoading, persona: data }),
+  };
 };

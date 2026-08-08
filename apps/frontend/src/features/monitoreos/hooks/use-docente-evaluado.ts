@@ -35,36 +35,49 @@ export function useDocenteEvaluado({
   initialState,
   onAutocompletarContexto,
 }: OpcionesDocenteEvaluado) {
-  const [docente, setDocente] = useState<Docente | null>(null);
+  /** Lo encontrado, junto al evaluado que lo originó. */
+  const [encontrado, setEncontrado] = useState<{ evaluadoId: string; docente: Docente } | null>(
+    null,
+  );
 
   useEffect(() => {
-    if (!activo || !visitId || !evaluadoId) {
-      setTimeout(() => setDocente(null), 0);
-      return;
-    }
+    if (!activo || !visitId || !evaluadoId) return;
 
-    void fetchDocenteById(evaluadoId).then((encontrado) => {
-      if (!encontrado) return;
+    // Una respuesta que llega tarde no debe cargar al docente de otra visita.
+    let cancelado = false;
 
-      // El diferido es el comportamiento original y se conserva.
-      setTimeout(() => {
-        setDocente(encontrado);
+    void fetchDocenteById(evaluadoId).then((docente) => {
+      if (cancelado || !docente) return;
 
-        const guardado = leerEstadoGuardado(localStorage.getItem(claveEstadoLocal(visitId)));
-        const yaHayContexto =
-          tieneContextoCargado(guardado?.contexto) || tieneContextoCargado(initialState?.contexto);
-        if (yaHayContexto) return;
+      setEncontrado({ evaluadoId, docente });
 
-        const primeraSeccion = encontrado.secciones?.[0];
-        onAutocompletarContexto({
-          area: encontrado.especialidad || 'General',
-          ...(primeraSeccion
-            ? { grado: primeraSeccion.grado || '', seccion: primeraSeccion.seccion || '' }
-            : {}),
-        });
-      }, 0);
+      const guardado = leerEstadoGuardado(localStorage.getItem(claveEstadoLocal(visitId)));
+      const yaHayContexto =
+        tieneContextoCargado(guardado?.contexto) || tieneContextoCargado(initialState?.contexto);
+      if (yaHayContexto) return;
+
+      const primeraSeccion = docente.secciones?.[0];
+      onAutocompletarContexto({
+        // Sin especialidad no se sugiere área: rellenarla con «General» sería
+        // proponer un área que el docente no declaró, en un campo de la ficha.
+        ...(docente.especialidad ? { area: docente.especialidad } : {}),
+        ...(primeraSeccion
+          ? { grado: primeraSeccion.grado || '', seccion: primeraSeccion.seccion || '' }
+          : {}),
+      });
     });
+
+    return () => {
+      cancelado = true;
+    };
   }, [activo, visitId, evaluadoId, initialState, onAutocompletarContexto]);
+
+  /**
+   * Se deriva en vez de limpiarse: cerrar la ficha o cambiar de evaluado ya no
+   * necesita un efecto que ponga el estado en nulo con `setTimeout(…, 0)`.
+   */
+  const docente =
+    activo && encontrado && encontrado.evaluadoId === evaluadoId ? encontrado.docente : null;
 
   /**
    * Áreas que el docente dicta, para ofrecerlas de un toque. La especialidad

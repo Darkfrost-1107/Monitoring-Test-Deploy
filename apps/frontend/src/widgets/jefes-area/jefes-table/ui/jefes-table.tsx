@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { FastActions } from '@shared/ui/FastActions';
 import type { JefeArea } from '@entities/model-jefes-area';
 import { useEntityTable } from '@shared/hooks/useEntityTable';
+import { useAccionDelPadron } from '@shared/hooks/use-accion-del-padron';
+import { AvisoDeError } from '@shared/ui/AvisoDeError';
 import { EntityTable } from '@shared/ui/EntityTable';
 import { ConfirmModal } from '@shared/ui/ConfirmModal';
 import { TableCell, TableHead, TableRow } from '@shared/ui/table';
@@ -36,47 +38,32 @@ export const JefesTableWidget = ({ jefes, onEdit, onView, onChanged }: JefesTabl
   const [restoringDoc, setRestoringDoc] = useState<JefeArea | null>(null);
 
   const pagination = useEntityTable({ data: jefes, filterFn: jefeFilter });
+  const { error, setError, ejecutar } = useAccionDelPadron();
 
   const confirmFinalize = async () => {
     if (!finalizingDoc) return;
-    try {
-      const res = await jefesAreaApi.deactivate(finalizingDoc.id);
-      if (res.ok) {
-        onChanged?.();
-      } else {
-        const errMsg =
-          (res.error as { message?: string })?.message ||
-          'Error al desactivar el registro de jefe de área.';
-        alert(errMsg);
-      }
-    } catch (err) {
-      console.error('Connection error when deactivating jefe de area:', err);
-    } finally {
-      setFinalizingDoc(null);
-    }
+    const ok = await ejecutar(
+      () => jefesAreaApi.deactivate(finalizingDoc.id),
+      'Error al desactivar el registro de jefe de área.',
+      () => setFinalizingDoc(null),
+    );
+    if (ok) onChanged?.();
   };
 
   const confirmRestore = async () => {
     if (!restoringDoc) return;
-    try {
-      const res = await jefesAreaApi.activate(restoringDoc.id);
-      if (res.ok) {
-        onChanged?.();
-      } else {
-        const errMsg =
-          (res.error as { message?: string })?.message ||
-          'Error al reactivar el registro de jefe de área.';
-        alert(errMsg);
-      }
-    } catch (err) {
-      console.error('Connection error when activating jefe de area:', err);
-    } finally {
-      setRestoringDoc(null);
-    }
+    const ok = await ejecutar(
+      () => jefesAreaApi.activate(restoringDoc.id),
+      'Error al reactivar el registro de jefe de área.',
+      () => setRestoringDoc(null),
+    );
+    if (ok) onChanged?.();
   };
 
   return (
     <>
+      <AvisoDeError mensaje={error} onCerrar={() => setError(null)} />
+
       <EntityTable
         header={
           <>

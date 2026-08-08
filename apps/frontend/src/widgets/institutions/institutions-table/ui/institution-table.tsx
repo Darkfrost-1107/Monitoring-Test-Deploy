@@ -4,6 +4,8 @@ import { FastActions } from '@shared/ui/FastActions';
 import { type Institucion } from '@entities/model-instituciones';
 import { NivelBadge, ModalidadBadge, DirectorCell } from '@features/institutions/ui';
 import { useEntityTable } from '@shared/hooks/useEntityTable';
+import { useAccionDelPadron } from '@shared/hooks/use-accion-del-padron';
+import { AvisoDeError } from '@shared/ui/AvisoDeError';
 import { EntityTable } from '@shared/ui/EntityTable';
 import { ConfirmModal } from '@shared/ui/ConfirmModal';
 import { TableCell, TableHead, TableRow } from '@shared/ui/table';
@@ -45,44 +47,40 @@ export const InstitutionsTableWidget = ({
 
   const pagination = useEntityTable({ data: instituciones, filterFn: institutionFilter });
 
+  const { error, setError, ejecutar } = useAccionDelPadron();
+
   const confirmDelete = async () => {
     if (!deletingInst) return;
-    try {
-      const res = await institutionsApi.softDelete(deletingInst.id);
-      if (res.ok) {
-        setInstituciones((prev) =>
-          prev.map((i) => (i.id === deletingInst.id ? { ...i, activo: false } : i)),
-        );
-      } else {
-        alert('Error al dar de baja la institución.');
-      }
-    } catch (err) {
-      console.error('Connection error when deleting institution:', err);
-    } finally {
-      setDeletingInst(null);
-    }
+    const id = deletingInst.id;
+
+    const ok = await ejecutar(
+      () => institutionsApi.softDelete(id),
+      'Error al dar de baja la institución.',
+      () => setDeletingInst(null),
+    );
+    if (!ok) return;
+
+    setInstituciones((prev) => prev.map((i) => (i.id === id ? { ...i, activo: false } : i)));
   };
 
   const confirmRestore = async () => {
     if (!restoringInst) return;
-    try {
-      const res = await institutionsApi.restore(restoringInst.id);
-      if (res.ok) {
-        setInstituciones((prev) =>
-          prev.map((i) => (i.id === restoringInst.id ? { ...i, activo: true } : i)),
-        );
-      } else {
-        alert('Error al reactivar la institución.');
-      }
-    } catch (err) {
-      console.error('Connection error when restoring institution:', err);
-    } finally {
-      setRestoringInst(null);
-    }
+    const id = restoringInst.id;
+
+    const ok = await ejecutar(
+      () => institutionsApi.restore(id),
+      'Error al reactivar la institución.',
+      () => setRestoringInst(null),
+    );
+    if (!ok) return;
+
+    setInstituciones((prev) => prev.map((i) => (i.id === id ? { ...i, activo: true } : i)));
   };
 
   return (
     <>
+      <AvisoDeError mensaje={error} onCerrar={() => setError(null)} />
+
       <EntityTable
         header={
           <>

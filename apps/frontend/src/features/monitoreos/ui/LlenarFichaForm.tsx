@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
-import { CheckCircle2 } from 'lucide-react';
+import { CheckCircle2, AlertCircle } from 'lucide-react';
 import { Card } from '@/shared/ui/card';
 import { HistorialChart } from './HistorialChart';
 import type { Cronograma } from '@/entities/model-cronogramas';
@@ -99,22 +99,35 @@ export const LlenarFichaForm = ({
 
   const [activeTab, setActiveTab] = useState<PestanaFicha>('FICHA');
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
+  /** Motivo por el que la ficha todavía no se puede cerrar. */
+  const [faltaParaCerrar, setFaltaParaCerrar] = useState<string | null>(null);
 
   const printRef = useRef<HTMLDivElement>(null);
   const handlePrint = useReactToPrint({ contentRef: printRef });
 
-  useEffect(() => {
-    if (!isOpen || !visit) return;
+  /**
+   * La ficha se carga una vez por visita abierta: con el estado recibido, con
+   * el borrador local, o en blanco. Un borrador ilegible se descarta —impedir
+   * abrir la ficha sería peor que perderlo—.
+   *
+   * Se ajusta durante el render en vez de diferirse con `setTimeout(…, 0)`
+   * dentro de un efecto. La condición de «una vez por visita» queda escrita en
+   * el código y no depende de que las dependencias del efecto se mantengan
+   * estables: hoy lo son —`initialState` viene memoizado desde `ReportesGrid`—
+   * pero nada lo garantizaba, y volver a hidratar borraría lo que el evaluador
+   * llevara escrito.
+   */
+  const [visitaHidratada, setVisitaHidratada] = useState<string | null>(null);
 
-    // Estado recibido, o el borrador local, o formulario en blanco. Un borrador
-    // ilegible se descarta: impedir abrir la ficha sería peor que perderlo.
-    const fuente =
-      initialState ?? leerEstadoGuardado(localStorage.getItem(claveEstadoLocal(visit.id)));
+  if (isOpen && visit && visitaHidratada !== visit.id) {
+    setVisitaHidratada(visit.id);
+    hidratar(initialState ?? leerEstadoGuardado(localStorage.getItem(claveEstadoLocal(visit.id))));
+  }
 
-    // El diferido es el comportamiento original y se conserva: la hidratación
-    // ocurre fuera del ciclo de render que la dispara.
-    setTimeout(() => hidratar(fuente), 0);
-  }, [isOpen, visit, template, initialState, hidratar]);
+  // Al cerrar se olvida, para que la próxima apertura vuelva a cargar.
+  if (!isOpen && visitaHidratada !== null) {
+    setVisitaHidratada(null);
+  }
 
   const { docente: evaluadoDocente, areasSugeridas } = useDocenteEvaluado({
     activo: isOpen,
@@ -136,11 +149,18 @@ export const LlenarFichaForm = ({
   const handleFinalizeClick = () => {
     // Las cinco condiciones de cierre viven en `lib/validacion-ficha.ts`, con
     // cobertura propia; acá sólo se informa la primera que falte.
+    //
+    // Antes esto era un `alert()`: había que descartarlo para ir a buscar lo
+    // que faltaba, y al descartarlo el motivo desaparecía. En una ficha de
+    // cinco desempeños con sus aspectos, eso es pedirle al evaluador que lo
+    // memorice.
     const falta = validarCierreDeFicha(template, estado);
     if (falta) {
-      alert(falta);
+      setFaltaParaCerrar(falta);
       return;
     }
+
+    setFaltaParaCerrar(null);
 
     onFinalize?.(visit.id, aDatosFicha(estado, visit.tipo));
 
@@ -280,6 +300,23 @@ export const LlenarFichaForm = ({
           </>
         )} {/* fin FICHA */}
         </div> {/* fin scroll interno */}
+
+        {faltaParaCerrar && (
+          <div
+            role="alert"
+            className="mx-6 mb-3 flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl p-3.5 text-amber-800 text-sm font-medium"
+          >
+            <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+            <span className="flex-1">{faltaParaCerrar}</span>
+            <button
+              type="button"
+              onClick={() => setFaltaParaCerrar(null)}
+              className="text-xs font-bold underline cursor-pointer shrink-0"
+            >
+              Cerrar
+            </button>
+          </div>
+        )}
 
         <PieDeFicha
           soloLectura={isCompleted}
