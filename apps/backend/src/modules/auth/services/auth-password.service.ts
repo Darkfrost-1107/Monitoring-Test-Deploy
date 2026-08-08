@@ -155,6 +155,19 @@ export class AuthPasswordService {
 
     const newPasswordHash = await bcrypt.hash(dto.newPassword, 10);
     await this.userRepository.updatePassword(userId, newPasswordHash);
+
+    // El mensaje de abajo promete que se cerró la sesión en todos los
+    // dispositivos, y hasta acá no se cerraba ninguna: el método recibía
+    // `sessionJti` y no lo usaba. El controlador sólo borra las cookies del
+    // navegador que hizo la petición, de modo que cualquier otra sesión —otro
+    // dispositivo, o un token robado— seguía sirviendo. Quien cambia su
+    // contraseña porque sospecha que le robaron la cuenta necesita justamente
+    // lo contrario.
+    //
+    // `resetPassword` ya las cerraba, dentro de la transacción de
+    // `useResetToken`. Los dos caminos ahora coinciden.
+    await this.sessionRepository.invalidateAllUserSessions(userId, 'PASSWORD_CHANGED');
+
     await this.auditRepository.logAuthEvent({ userId, eventType: 'PASSWORD_CHANGED', ...meta });
 
     return {
