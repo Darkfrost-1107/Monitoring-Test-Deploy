@@ -85,10 +85,10 @@ export const TarjetaDeSolicitud = ({ solicitud, puedeDecidir, onAbrir }: Props) 
           <strong>Motivo:</strong> &laquo;{solicitud.motivo}&raquo;
         </div>
 
-        {solicitud.archivoNombre && (
+        {solicitud.adjunto && (
           <div className="text-[10px] text-slate-500 font-semibold flex items-center gap-1 bg-slate-50 p-1.5 rounded-md border border-slate-100 w-fit max-w-full">
             <Paperclip className="h-3 w-3 text-slate-400 shrink-0" />
-            <span className="truncate">{solicitud.archivoNombre}</span>
+            <span className="truncate">{solicitud.adjunto.nombre}</span>
           </div>
         )}
       </div>

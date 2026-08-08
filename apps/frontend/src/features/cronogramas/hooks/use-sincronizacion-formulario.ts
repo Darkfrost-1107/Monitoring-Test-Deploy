@@ -5,19 +5,17 @@ import { numerosDeVisitaDisponibles } from '../lib/numeracion-visitas';
 
 interface Evaluable {
   id: string;
-  nombres: string;
-  apellidos: string;
 }
 
 interface SincronizacionParams {
   /** En edición no se corrige nada: la visita ya está emitida. */
   esEdicion: boolean;
-  evaluadorElegido: string;
-  evaluadoElegido: string;
+  evaluadorElegidoId: string;
+  evaluadoElegidoId: string;
   tipoDeVisita: FormularioCronograma['tipo'];
   /** Evaluados que el evaluador actual puede monitorear. */
   evaluadosDisponibles: readonly Evaluable[];
-  /** Evaluado ya resuelto a su registro, si el nombre coincide con alguno. */
+  /** Evaluado ya resuelto a su registro. */
   evaluadoResuelto: Evaluable | null;
   cronogramas: readonly Cronograma[];
   onCambiar: <K extends keyof FormularioCronograma>(
@@ -38,8 +36,8 @@ interface SincronizacionParams {
  */
 export function useSincronizacionFormulario({
   esEdicion,
-  evaluadorElegido,
-  evaluadoElegido,
+  evaluadorElegidoId,
+  evaluadoElegidoId,
   tipoDeVisita,
   evaluadosDisponibles,
   evaluadoResuelto,
@@ -53,16 +51,14 @@ export function useSincronizacionFormulario({
    * puede monitorear.
    */
   useEffect(() => {
-    if (esEdicion || !evaluadorElegido || !evaluadoElegido) return;
+    if (esEdicion || !evaluadorElegidoId || !evaluadoElegidoId) return;
 
-    const sigueDisponible = evaluadosDisponibles.some(
-      (d) => `${d.nombres} ${d.apellidos}`.trim() === evaluadoElegido.trim(),
-    );
+    const sigueDisponible = evaluadosDisponibles.some((d) => d.id === evaluadoElegidoId);
     if (sigueDisponible) return;
 
-    const t = setTimeout(() => onCambiar('docente', ''), 0);
+    const t = setTimeout(() => onCambiar('evaluadoId', ''), 0);
     return () => clearTimeout(t);
-  }, [esEdicion, evaluadorElegido, evaluadoElegido, evaluadosDisponibles, onCambiar]);
+  }, [esEdicion, evaluadorElegidoId, evaluadoElegidoId, evaluadosDisponibles, onCambiar]);
 
   /**
    * Sugiere el número de visita que corresponde al evaluado elegido. Al editar

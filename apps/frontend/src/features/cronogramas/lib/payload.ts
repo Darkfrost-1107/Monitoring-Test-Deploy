@@ -6,12 +6,18 @@ import type { FormularioCronograma } from './formulario';
  * Fase 5 de PLAN_REMEDIACION.md. Estaba dentro de `handleFormSubmit`, mezclada
  * con la orquestación de guardado, navegación y avisos.
  *
- * El formulario trabaja con nombres —es lo que el usuario elige en los
- * selectores— y la API con identificadores. Esa traducción es donde una visita
- * puede terminar asignada a la persona equivocada, y por eso vale probarla.
+ * ── Ya no hay traducción de nombres ──
+ * El formulario guardaba el nombre visible de especialista, institución y
+ * evaluado, y acá se lo revertía a identificador buscando por cadena. Con tres
+ * nombres de institución repetidos en la base —uno de ellos cinco veces— esa
+ * búsqueda devolvía siempre la primera coincidencia, de modo que la visita
+ * podía quedar programada en el colegio equivocado sin que nada avisara.
+ *
+ * Ahora el formulario ya lleva los identificadores; lo único que queda por
+ * comprobar es que sigan existiendo en los catálogos cargados.
  */
 
-/** Identificadores que la API espera en lugar de los nombres. */
+/** Identificadores que la API espera. */
 export interface ReferenciasResueltas {
   monitorId: string;
   institucionId: string;
@@ -19,33 +25,38 @@ export interface ReferenciasResueltas {
 }
 
 interface CatalogoDeReferencias {
-  especialistas: readonly { id: string; nombre: string }[];
-  instituciones: readonly { id: string; nombre: string }[];
-  docentes: readonly { id: string; nombres: string; apellidos: string }[];
+  especialistas: readonly { id: string }[];
+  instituciones: readonly { id: string }[];
+  docentes: readonly { id: string }[];
 }
 
 /**
- * Traduce los tres nombres elegidos a sus identificadores.
+ * Comprueba que los tres identificadores elegidos existan en los catálogos.
  *
- * Devuelve `null` si alguno no se encuentra: guardar con una referencia sin
- * resolver dejaría la visita colgada de un dato que no existe.
+ * Devuelve `null` si alguno no está: guardar una referencia que el catálogo no
+ * reconoce dejaría la visita colgada de un dato que ya no existe —una
+ * institución dada de baja, un docente desactivado— y el error se descubriría
+ * recién en el backend.
  */
 export function resolverReferencias(
   formulario: FormularioCronograma,
   catalogo: CatalogoDeReferencias,
 ): ReferenciasResueltas | null {
-  const especialista = catalogo.especialistas.find((e) => e.nombre === formulario.especialista);
-  const institucion = catalogo.instituciones.find((i) => i.nombre === formulario.institucion);
-  const docente = catalogo.docentes.find(
-    (d) => `${d.nombres} ${d.apellidos}` === formulario.docente.trim(),
-  );
+  const existe = (lista: readonly { id: string }[], id: string) =>
+    !!id && lista.some((elemento) => elemento.id === id);
 
-  if (!especialista || !institucion || !docente) return null;
+  if (
+    !existe(catalogo.especialistas, formulario.monitorId) ||
+    !existe(catalogo.instituciones, formulario.institucionId) ||
+    !existe(catalogo.docentes, formulario.evaluadoId)
+  ) {
+    return null;
+  }
 
   return {
-    monitorId: especialista.id,
-    institucionId: institucion.id,
-    evaluadoId: docente.id,
+    monitorId: formulario.monitorId,
+    institucionId: formulario.institucionId,
+    evaluadoId: formulario.evaluadoId,
   };
 }
 

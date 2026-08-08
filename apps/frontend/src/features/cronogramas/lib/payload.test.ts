@@ -9,17 +9,19 @@ import { aPayloadDeCreacion, aPayloadDeEdicion, resolverReferencias } from './pa
  * Pruebas de la traducción del formulario al contrato de la API.
  *
  * Fase 5 de PLAN_REMEDIACION.md. Estaba dentro de `handleFormSubmit`, mezclada
- * con la orquestación de guardado, navegación y avisos. El formulario trabaja
- * con nombres —es lo que el usuario elige en los selectores— y la API con
- * identificadores: esa traducción es donde una visita puede terminar asignada a
- * la persona equivocada.
+ * con la orquestación de guardado, navegación y avisos.
+ *
+ * El formulario guardaba nombres y acá se los revertía a identificador
+ * comparando cadenas. Con tres nombres de institución repetidos en la base, esa
+ * comparación devolvía siempre la primera coincidencia. Ahora el formulario ya
+ * lleva identificadores y lo único que queda es comprobar que existan.
  */
 
 const formulario = (over: Partial<FormularioCronograma> = {}): FormularioCronograma => ({
   ...FORMULARIO_CRONOGRAMA_VACIO,
-  especialista: 'Ana Torres',
-  institucion: 'IE 1234',
-  docente: 'Luis Quispe',
+  monitorId: 'esp-1',
+  institucionId: 'ie-1',
+  evaluadoId: 'doc-1',
   modalidad: 'EBR',
   nivel: 'Primaria',
   visita: '02',
@@ -28,13 +30,13 @@ const formulario = (over: Partial<FormularioCronograma> = {}): FormularioCronogr
 });
 
 const catalogo = {
-  especialistas: [{ id: 'esp-1', nombre: 'Ana Torres' }],
-  instituciones: [{ id: 'ie-1', nombre: 'IE 1234' }],
-  docentes: [{ id: 'doc-1', nombres: 'Luis', apellidos: 'Quispe' }],
+  especialistas: [{ id: 'esp-1' }, { id: 'esp-2' }],
+  instituciones: [{ id: 'ie-1' }, { id: 'ie-2' }],
+  docentes: [{ id: 'doc-1' }, { id: 'doc-2' }],
 };
 
 describe('resolverReferencias', () => {
-  it('traduce los tres nombres a identificadores', () => {
+  it('devuelve los tres identificadores elegidos', () => {
     expect(resolverReferencias(formulario(), catalogo)).toEqual({
       monitorId: 'esp-1',
       institucionId: 'ie-1',
@@ -42,16 +44,27 @@ describe('resolverReferencias', () => {
     });
   });
 
-  it('ignora los espacios alrededor del nombre del evaluado', () => {
-    const conEspacios = formulario({ docente: '  Luis Quispe  ' });
-    expect(resolverReferencias(conEspacios, catalogo)?.evaluadoId).toBe('doc-1');
+  it('respeta el que se eligió, no el primero del catálogo', () => {
+    const otro = formulario({ institucionId: 'ie-2', evaluadoId: 'doc-2' });
+    expect(resolverReferencias(otro, catalogo)).toMatchObject({
+      institucionId: 'ie-2',
+      evaluadoId: 'doc-2',
+    });
   });
 
   it.each([
-    ['especialista', { especialista: 'Nadie' }],
-    ['institucion', { institucion: 'IE inexistente' }],
-    ['docente', { docente: 'Nadie' }],
-  ])('devuelve null cuando no encuentra el %s', (_campo, over) => {
+    ['especialista', { monitorId: 'esp-inexistente' }],
+    ['institucion', { institucionId: 'ie-inexistente' }],
+    ['evaluado', { evaluadoId: 'doc-inexistente' }],
+  ])('devuelve null cuando el %s ya no está en el catálogo', (_campo, over) => {
+    expect(resolverReferencias(formulario(over), catalogo)).toBeNull();
+  });
+
+  it.each([
+    ['especialista', { monitorId: '' }],
+    ['institucion', { institucionId: '' }],
+    ['evaluado', { evaluadoId: '' }],
+  ])('devuelve null cuando falta el %s', (_campo, over) => {
     expect(resolverReferencias(formulario(over), catalogo)).toBeNull();
   });
 });

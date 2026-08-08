@@ -7,6 +7,12 @@ import type { Cronograma } from '@entities/model-cronogramas';
  * vivían dentro de `CronogramaPage`, un componente de 1.446 líneas. La regla de
  * fecha compara contra el reloj del sistema y no tenía cobertura, que es
  * exactamente donde se esconden los errores de borde.
+ *
+ * ── Identificadores, no nombres ──
+ * Los tres campos de asignación guardan el identificador de la entidad. Antes
+ * guardaban el nombre visible y se traducía al guardar, comparando cadenas: con
+ * tres nombres de institución repetidos en la base, esa traducción devolvía
+ * siempre la primera coincidencia.
  */
 
 /** Hora a la que se propone la visita cuando se abre el formulario. */
@@ -14,9 +20,15 @@ const HORA_POR_DEFECTO = 8;
 
 export interface FormularioCronograma {
   fechaHora: string;
-  especialista: string;
-  institucion: string;
-  docente: string;
+  /** Especialista asignado. Identificador, no nombre: hay homónimos. */
+  monitorId: string;
+  /**
+   * Institución de la visita. Identificador, no nombre: en la base hay tres
+   * nombres repetidos, uno de ellos cinco veces.
+   */
+  institucionId: string;
+  /** Persona a la que se evalúa. Identificador, no nombre. */
+  evaluadoId: string;
   tipo: 'DOCENTE' | 'DIRECTIVO';
   visita: string;
   estado: Cronograma['estado'];
@@ -27,9 +39,9 @@ export interface FormularioCronograma {
 
 export const FORMULARIO_CRONOGRAMA_VACIO: FormularioCronograma = {
   fechaHora: '',
-  especialista: '',
-  institucion: '',
-  docente: '',
+  monitorId: '',
+  institucionId: '',
+  evaluadoId: '',
   tipo: 'DOCENTE',
   visita: '01',
   estado: 'PROGRAMADO',
@@ -40,12 +52,12 @@ export const FORMULARIO_CRONOGRAMA_VACIO: FormularioCronograma = {
 
 /** Campos que quedan sin sentido al cambiar cada eslabón de la cascada. */
 const DEPENDIENTES: Partial<Record<keyof FormularioCronograma, (keyof FormularioCronograma)[]>> = {
-  modalidad: ['nivel', 'especialista', 'institucion'],
-  nivel: ['especialista', 'institucion'],
+  modalidad: ['nivel', 'monitorId', 'institucionId'],
+  nivel: ['monitorId', 'institucionId'],
   // El evaluado se elige de una institución concreta, y la lista difiere según
   // se evalúe a un docente o a un directivo.
-  institucion: ['docente'],
-  tipo: ['docente'],
+  institucionId: ['evaluadoId'],
+  tipo: ['evaluadoId'],
 };
 
 /**
@@ -96,9 +108,9 @@ export function validarProgramacion(
   const faltaAlguno =
     !formulario.modalidad ||
     !formulario.nivel ||
-    !formulario.especialista ||
-    !formulario.institucion ||
-    !formulario.docente.trim() ||
+    !formulario.monitorId ||
+    !formulario.institucionId ||
+    !formulario.evaluadoId ||
     !formulario.fechaHora;
 
   if (faltaAlguno) {

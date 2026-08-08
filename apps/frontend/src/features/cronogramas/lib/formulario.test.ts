@@ -20,9 +20,9 @@ const formulario = (over: Partial<FormularioCronograma> = {}): FormularioCronogr
   ...FORMULARIO_CRONOGRAMA_VACIO,
   modalidad: 'EBR',
   nivel: 'Primaria',
-  especialista: 'Ana Torres',
-  institucion: 'IE 1234',
-  docente: 'Luis Quispe',
+  monitorId: 'esp-1',
+  institucionId: 'ie-1',
+  evaluadoId: 'doc-1',
   fechaHora: '2026-08-10T09:00',
   ...over,
 });
@@ -48,8 +48,8 @@ describe('aplicarCambioDeAsignacion', () => {
 
     expect(resultado.modalidad).toBe('EBA');
     expect(resultado.nivel).toBe('');
-    expect(resultado.especialista).toBe('');
-    expect(resultado.institucion).toBe('');
+    expect(resultado.monitorId).toBe('');
+    expect(resultado.institucionId).toBe('');
   });
 
   it('cambiar el nivel limpia especialista e institución, no la modalidad', () => {
@@ -57,26 +57,26 @@ describe('aplicarCambioDeAsignacion', () => {
 
     expect(resultado.modalidad).toBe('EBR');
     expect(resultado.nivel).toBe('Secundaria');
-    expect(resultado.especialista).toBe('');
-    expect(resultado.institucion).toBe('');
+    expect(resultado.monitorId).toBe('');
+    expect(resultado.institucionId).toBe('');
   });
 
-  it('cambiar la institución limpia el docente elegido', () => {
-    const resultado = aplicarCambioDeAsignacion(cargado, 'institucion', 'IE 9999');
-    expect(resultado.docente).toBe('');
+  it('cambiar la institución limpia el evaluado elegido', () => {
+    const resultado = aplicarCambioDeAsignacion(cargado, 'institucionId', 'ie-9');
+    expect(resultado.evaluadoId).toBe('');
   });
 
-  it('cambiar el tipo de monitoreo limpia el docente elegido', () => {
+  it('cambiar el tipo de monitoreo limpia el evaluado elegido', () => {
     const resultado = aplicarCambioDeAsignacion(cargado, 'tipo', 'DIRECTIVO');
-    expect(resultado.docente).toBe('');
-    expect(resultado.institucion).toBe('IE 1234');
+    expect(resultado.evaluadoId).toBe('');
+    expect(resultado.institucionId).toBe('ie-1');
   });
 
   it('cambiar el especialista no limpia nada', () => {
-    const resultado = aplicarCambioDeAsignacion(cargado, 'especialista', 'Otro Nombre');
+    const resultado = aplicarCambioDeAsignacion(cargado, 'monitorId', 'esp-9');
 
-    expect(resultado.especialista).toBe('Otro Nombre');
-    expect(resultado.institucion).toBe('IE 1234');
+    expect(resultado.monitorId).toBe('esp-9');
+    expect(resultado.institucionId).toBe('ie-1');
     expect(resultado.nivel).toBe('Primaria');
   });
 
@@ -87,18 +87,16 @@ describe('aplicarCambioDeAsignacion', () => {
 });
 
 describe('validarProgramacion — campos obligatorios', () => {
-  it.each(['modalidad', 'nivel', 'especialista', 'institucion', 'docente', 'fechaHora'] as const)(
-    'exige %s',
-    (campo) => {
-      const incompleto = formulario({ [campo]: '' });
-      expect(validarProgramacion(incompleto, { esEdicion: false })).toContain('obligatorios');
-    },
-  );
-
-  it('rechaza un docente que sólo tiene espacios', () => {
-    expect(validarProgramacion(formulario({ docente: '   ' }), { esEdicion: false })).toContain(
-      'obligatorios',
-    );
+  it.each([
+    'modalidad',
+    'nivel',
+    'monitorId',
+    'institucionId',
+    'evaluadoId',
+    'fechaHora',
+  ] as const)('exige %s', (campo) => {
+    const incompleto = formulario({ [campo]: '' });
+    expect(validarProgramacion(incompleto, { esEdicion: false })).toContain('obligatorios');
   });
 });
 

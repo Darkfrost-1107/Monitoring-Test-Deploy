@@ -15,11 +15,13 @@ import {
  *
  * Acá los actualizadores se crean una sola vez, de modo que el efecto puede
  * declarar sus dependencias de verdad.
+ *
+ * Guarda los valores y nada más: el error y el estado de envío pertenecen al
+ * guardado, y tenerlos acá dejaba dos estados de error distintos —el que el
+ * modal mostraba y el que `reiniciar` limpiaba—.
  */
 export function useFormularioCronograma() {
   const [valores, setValores] = useState<FormularioCronograma>(FORMULARIO_CRONOGRAMA_VACIO);
-  const [error, setError] = useState<string | null>(null);
-  const [enviando, setEnviando] = useState(false);
 
   /** Cambia un campo respetando la cascada modalidad → nivel → asignación. */
   const cambiar = useCallback(
@@ -36,8 +38,7 @@ export function useFormularioCronograma() {
 
   const reiniciar = useCallback((parcial: Partial<FormularioCronograma> = {}) => {
     setValores({ ...FORMULARIO_CRONOGRAMA_VACIO, ...parcial });
-    setError(null);
   }, []);
 
-  return { valores, error, enviando, cambiar, cargar, reiniciar, setError, setEnviando };
+  return { valores, cambiar, cargar, reiniciar };
 }

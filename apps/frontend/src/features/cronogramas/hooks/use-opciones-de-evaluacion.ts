@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import type { Docente } from '@entities/model-docentes';
+import { opcionesDeEvaluadorInterno, type Opcion } from '../lib/opciones-de-asignacion';
 
 /**
  * A quién se puede evaluar y quién puede evaluarlo, dentro de una institución.
@@ -11,6 +12,12 @@ import type { Docente } from '@entities/model-docentes';
  * La regla de fondo: en una institución evalúan el director, el coordinador
  * pedagógico y el jefe de taller. Los dos últimos sólo evalúan a los docentes
  * que tienen asignados; el director, a todos.
+ *
+ * ── Por identificador ──
+ * La institución y el evaluador se buscaban por nombre en minúsculas. En la
+ * base hay tres nombres de institución repetidos, uno de ellos cinco veces:
+ * esa búsqueda devolvía siempre la primera y el personal ofrecido podía ser el
+ * de otro colegio.
  */
 
 /** Cargos de una institución educativa que levantan ficha. */
@@ -19,10 +26,7 @@ const CARGOS_EVALUADORES = ['Director', 'Coordinador Pedagógico', 'Jefe de Tall
 /** Cargos que sólo evalúan al personal que tienen asignado. */
 const CARGOS_CON_CARTERA = ['Coordinador Pedagógico', 'Jefe de Taller'];
 
-export interface Opcion {
-  value: string;
-  label: string;
-}
+export type { Opcion };
 
 interface InstitucionConocida {
   id: string;
@@ -33,14 +37,17 @@ interface InstitucionConocida {
 interface OpcionesDeEvaluacionParams {
   docentes: readonly Docente[];
   instituciones: readonly InstitucionConocida[];
+  /** Para resolver a qué especialista corresponde cada evaluador de la I.E. */
+  especialistas: readonly { id: string; personaId: string }[];
   /** El director trabaja siempre sobre su propia institución. */
   esDirector: boolean;
-  institucionDelUsuario: { id?: string; nombre?: string };
+  /** Identificador de la institución del usuario, cuando pertenece a una. */
+  institucionDelUsuarioId?: string;
   /** Institución elegida en el formulario, para quien sí la elige. */
-  institucionElegida: string;
+  institucionElegidaId: string;
   tipoDeVisita: 'DOCENTE' | 'DIRECTIVO';
-  evaluadorElegido: string;
-  evaluadoElegido: string;
+  evaluadorElegidoId: string;
+  evaluadoElegidoId: string;
 }
 
 const nombreCompleto = (docente: Docente) => `${docente.nombres} ${docente.apellidos}`;
@@ -50,36 +57,44 @@ const nombreCompleto = (docente: Docente) => `${docente.nombres} ${docente.apell
  *
  * Pasa al editar una visita cuyo evaluado cambió de institución o quedó
  * inactivo: sin esto el selector aparecería vacío y el dato se perdería al
- * guardar.
+ * guardar. Se busca su nombre en el padrón completo para no mostrar un
+ * identificador crudo.
  */
-const conValorActual = (opciones: Opcion[], elegido: string): Opcion[] =>
-  elegido && !opciones.some((o) => o.value === elegido)
-    ? [{ value: elegido, label: elegido }, ...opciones]
-    : opciones;
+const conValorActual = (
+  opciones: Opcion[],
+  elegidoId: string,
+  padron: readonly Docente[],
+): Opcion[] => {
+  if (!elegidoId || opciones.some((o) => o.value === elegidoId)) return opciones;
+
+  const conocido = padron.find((d) => d.id === elegidoId);
+  const label = conocido ? `${nombreCompleto(conocido)} (${conocido.cargo})` : 'Registro anterior';
+
+  return [{ value: elegidoId, label }, ...opciones];
+};
 
 const aOpcion = (docente: Docente): Opcion => ({
-  value: nombreCompleto(docente),
+  value: docente.id,
   label: `${nombreCompleto(docente)} (${docente.cargo})`,
 });
 
 export function useOpcionesDeEvaluacion({
   docentes,
   instituciones,
+  especialistas,
   esDirector,
-  institucionDelUsuario,
-  institucionElegida,
+  institucionDelUsuarioId,
+  institucionElegidaId,
   tipoDeVisita,
-  evaluadorElegido,
-  evaluadoElegido,
+  evaluadorElegidoId,
+  evaluadoElegidoId,
 }: OpcionesDeEvaluacionParams) {
   /** Institución sobre la que se está programando. */
   const institucion = useMemo(() => {
-    const nombre = esDirector ? institucionDelUsuario.nombre : institucionElegida;
-    if (!nombre) return null;
-    return (
-      instituciones.find((i) => i.nombre.toLowerCase() === nombre.toLowerCase()) ?? null
-    );
-  }, [esDirector, institucionDelUsuario.nombre, institucionElegida, instituciones]);
+    const id = esDirector ? institucionDelUsuarioId : institucionElegidaId;
+    if (!id) return null;
+    return instituciones.find((i) => i.id === id) ?? null;
+  }, [esDirector, institucionDelUsuarioId, institucionElegidaId, instituciones]);
 
   /**
    * Sólo en Secundaria existen el coordinador pedagógico y el jefe de taller,
@@ -99,19 +114,24 @@ export function useOpcionesDeEvaluacion({
 
   const evaluados = useMemo(() => {
     if (esDirector) {
-      const institucionId = institucionDelUsuario.id;
-      if (!institucionId) return [];
+      if (!institucionDelUsuarioId) return [];
 
       // El director no se evalúa a sí mismo: su visita la programa la UGEL.
       const personal = docentes.filter(
-        (d) => d.institucionId === institucionId && d.activo === true && d.cargo !== 'Director',
+        (d) =>
+          d.institucionId === institucionDelUsuarioId &&
+          d.activo === true &&
+          d.cargo !== 'Director',
       );
 
+      // El formulario guarda el identificador de especialista; para saber qué
+      // cargo ocupa hay que volver a su registro docente por persona.
+      const personaDelEvaluador = especialistas.find(
+        (e) => e.id === evaluadorElegidoId,
+      )?.personaId;
+
       const evaluador = docentes.find(
-        (d) =>
-          d.institucionId === institucionId &&
-          d.activo === true &&
-          nombreCompleto(d).trim().toLowerCase() === evaluadorElegido.trim().toLowerCase(),
+        (d) => d.personaId === personaDelEvaluador && d.institucionId === institucionDelUsuarioId,
       );
 
       if (evaluador && CARGOS_CON_CARTERA.includes(evaluador.cargo)) {
@@ -130,22 +150,34 @@ export function useOpcionesDeEvaluacion({
     });
   }, [
     esDirector,
-    institucionDelUsuario.id,
+    institucionDelUsuarioId,
     docentes,
+    especialistas,
     institucion,
     tipoDeVisita,
-    evaluadorElegido,
+    evaluadorElegidoId,
   ]);
 
   const opcionesDeEvaluado = useMemo(
-    () => conValorActual(evaluados.map(aOpcion), evaluadoElegido),
-    [evaluados, evaluadoElegido],
+    () => conValorActual(evaluados.map(aOpcion), evaluadoElegidoId, docentes),
+    [evaluados, evaluadoElegidoId, docentes],
   );
 
-  const opcionesDeEvaluador = useMemo(
-    () => conValorActual(evaluadores.map(aOpcion), evaluadorElegido),
-    [evaluadores, evaluadorElegido],
-  );
+  /**
+   * El evaluador se elige entre los docentes de la I.E., pero la visita
+   * referencia a su registro de **especialista**: el valor de cada opción es ese
+   * identificador, resuelto por persona.
+   */
+  const opcionesDeEvaluador = useMemo(() => {
+    const opciones = opcionesDeEvaluadorInterno(evaluadores, especialistas);
+    if (!evaluadorElegidoId || opciones.some((o) => o.value === evaluadorElegidoId)) {
+      return opciones;
+    }
+
+    // Al editar, el evaluador puede haber dejado el cargo: se conserva para no
+    // perderlo al guardar.
+    return [{ value: evaluadorElegidoId, label: 'Evaluador anterior' }, ...opciones];
+  }, [evaluadores, especialistas, evaluadorElegidoId]);
 
   return { evaluados, esSecundaria, opcionesDeEvaluado, opcionesDeEvaluador };
 }

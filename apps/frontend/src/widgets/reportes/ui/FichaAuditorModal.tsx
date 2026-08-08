@@ -1,18 +1,24 @@
 import { useState, useMemo } from 'react';
-import {
-  CheckCircle2,
-  FileText,
-  X,
-  Check,
-  Clock,
-  Download,
-  FileText as FileTextIcon
-} from 'lucide-react';
-import { Button } from '@/shared/ui/button';
-import { Card } from '@/shared/ui/card';
-import type { Cronograma } from '@/entities/model-cronogramas';
-import type { Plantilla } from '@/entities/model-plantillas';
+import { CheckCircle2, FileText, X, Clock, Download, AlertCircle } from 'lucide-react';
+import { Button } from '@shared/ui/button';
+import { Card } from '@shared/ui/card';
+import type { Cronograma } from '@entities/model-cronogramas';
+import type { Plantilla } from '@entities/model-plantillas';
 import { formatearFechaEnPalabras } from '@shared/lib/fecha/fecha';
+import { desempenosAuditados, resumenDeAuditoria } from '@features/reportes/lib/auditoria-ficha';
+import { ListaDeDesempenos } from './ficha-auditor/ListaDeDesempenos';
+import { DetalleDeDesempeno } from './ficha-auditor/DetalleDeDesempeno';
+import { EjesEItemsAuditados } from './ficha-auditor/EjesEItemsAuditados';
+
+/**
+ * Auditoría de una ficha de monitoreo finalizada.
+ *
+ * Eran 353 líneas. Dos defectos vivían en la lista lateral, que es justamente
+ * lo que alguien mira para verificar qué se registró: el nivel se mostraba con
+ * `|| 'III'` —un desempeño sin calificar aparecía como logro esperado— y la
+ * marca verde de verificado se dibujaba sin condición alguna, de modo que ese
+ * mismo desempeño salía como «Nivel III ✓».
+ */
 
 interface FichaAuditorModalProps {
   isOpen: boolean;
@@ -34,7 +40,6 @@ interface FichaAuditorModalProps {
   onDownloadPDF: (visit: Cronograma, e: React.MouseEvent) => void;
 }
 
-
 export const FichaAuditorModal = ({
   isOpen,
   onClose,
@@ -44,24 +49,27 @@ export const FichaAuditorModal = ({
   downloadingId,
   onDownloadPDF,
 }: FichaAuditorModalProps) => {
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [elegidoId, setElegidoId] = useState<string | null>(null);
 
-  // Derivamos el desempeño activo de forma reactiva y pura
-  const activeFichaDesempeno = useMemo(() => {
-    if (!template || template.desempenos.length === 0) return null;
-    const defaultId = template.desempenos[0].id;
-    const activeId = (selectedId && template.desempenos.some(d => d.id === selectedId)) ? selectedId : defaultId;
-    return template.desempenos.find((d) => d.id === activeId) || null;
-  }, [template, selectedId]);
+  const auditados = useMemo(
+    () => desempenosAuditados(template?.desempenos ?? [], fichaState?.selectedLevels ?? {}),
+    [template, fichaState],
+  );
 
-  const fichaSelectedDesempenoId = activeFichaDesempeno?.id || '';
+  const resumen = resumenDeAuditoria(auditados);
+
+  // Se abre en el primero mientras nadie elija otro; si el elegido ya no está
+  // en la plantilla, se vuelve al primero.
+  const abierto =
+    auditados.find((d) => d.id === elegidoId) ?? auditados[0] ?? null;
+
+  const desempeno = template?.desempenos.find((d) => d.id === abierto?.id) ?? null;
 
   if (!isOpen || !visit || !template || !fichaState) return null;
 
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 overflow-y-auto animate-in fade-in duration-200">
       <Card className="bg-surface w-full max-w-[1250px] border border-border rounded-2xl shadow-xl flex flex-col max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-200">
-        {/* Header */}
         <div className="p-5 border-b border-border bg-slate-50 flex items-center justify-between">
           <div className="space-y-1">
             <span className="text-[10px] font-black uppercase tracking-widest text-primary flex items-center gap-1.5">
@@ -74,257 +82,73 @@ export const FichaAuditorModal = ({
             </h2>
           </div>
           <button
+            type="button"
             onClick={onClose}
+            aria-label="Cerrar auditoría"
             className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition-colors cursor-pointer"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        {/* Metadatos */}
         <div className="px-6 py-3 bg-primary-light border-b border-primary/5 text-xs text-slate-600 font-bold grid grid-cols-2 md:grid-cols-4 gap-4 shadow-inner">
-          <div>I.E. Monitoreada: <span className="text-slate-800">{visit.institucion}</span></div>
-          <div>Evaluado: <span className="text-slate-800">{visit.docenteDirectivo}</span></div>
-          <div>Especialista: <span className="text-slate-800">{visit.especialista}</span></div>
-          <div>Fecha Ejecución: <span className="text-slate-800">{formatearFechaEnPalabras(visit.fechaHora)}</span></div>
+          <Metadato rotulo="I.E. Monitoreada" valor={visit.institucion} />
+          <Metadato rotulo="Evaluado" valor={visit.docenteDirectivo} />
+          <Metadato rotulo="Especialista" valor={visit.especialista} />
+          <Metadato rotulo="Fecha Ejecución" valor={formatearFechaEnPalabras(visit.fechaHora)} />
         </div>
 
-        {/* Split layout */}
+        {/* Una ficha finalizada con desempeños sin calificar es lo que la
+            auditoría tiene que hacer visible, no algo que deba disimularse. */}
+        {!resumen.completa && resumen.total > 0 && (
+          <div className="px-6 py-2.5 bg-amber-50 border-b border-amber-200 text-amber-800 text-xs font-bold flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            <span>
+              {resumen.sinCalificar} de {resumen.total} desempeños quedaron sin calificar en esta
+              ficha.
+            </span>
+          </div>
+        )}
+
         <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0">
-          {/* Sidebar: Desempeños */}
-          <div className="w-full md:w-80 border-r border-border p-4 overflow-y-auto space-y-2 bg-slate-50/50">
-            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block mb-2">
-              Desempeños Evaluados
-            </span>
-            {template.desempenos.map((des, index) => {
-              const isSelected = fichaSelectedDesempenoId === des.id;
-              const selectedLevel = fichaState.selectedLevels[des.id];
-              
-              return (
-                <div
-                  key={des.id}
-                  onClick={() => setSelectedId(des.id)}
-                  className={`p-3 border rounded-xl cursor-pointer transition-all flex items-start gap-2 text-left select-none relative ${
-                    isSelected
-                      ? 'border-primary ring-1 ring-primary/40 bg-primary-light/50 font-extrabold text-primary shadow-sm'
-                      : 'border-border bg-surface text-slate-600 hover:bg-slate-100'
-                  }`}
-                >
-                  <span className={`h-5 w-5 rounded-full shrink-0 flex items-center justify-center text-[10px] font-black ${
-                    isSelected ? 'bg-primary text-white' : 'bg-slate-100 text-slate-500'
-                  }`}>
-                    {index + 1}
-                  </span>
-                  <div className="space-y-0.5 pr-4">
-                    <div className="text-[11px] font-bold tracking-tight line-clamp-2">
-                      {des.nombre}
-                    </div>
-                    <div className="text-[9px] font-semibold text-slate-400 flex items-center gap-1">
-                      <span>Nivel Calificado:</span>
-                      <strong className="text-primary font-black">
-                        Nivel {selectedLevel || 'III'}
-                      </strong>
-                    </div>
-                  </div>
-                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 bg-emerald-50 border border-emerald-200 text-emerald-700 flex items-center justify-center rounded-full">
-                    <Check className="h-2.5 w-2.5 font-bold" strokeWidth={3} />
-                  </span>
-                </div>
-              );
-            })}
-          </div>
+          <ListaDeDesempenos
+            desempenos={auditados}
+            seleccionadoId={abierto?.id ?? ''}
+            onSeleccionar={setElegidoId}
+          />
 
-          {/* Panel de Detalle */}
           <div className="flex-1 p-6 overflow-y-auto space-y-6">
-            {activeFichaDesempeno ? (
-              <div className="space-y-6 animate-in fade-in duration-200">
-                <div className="space-y-1">
-                  <h3 className="text-base font-black text-slate-800 tracking-tight leading-snug">
-                    {activeFichaDesempeno.nombre}
-                  </h3>
-                  <p className="text-xs text-slate-500 font-medium leading-relaxed border-b border-slate-100 pb-2">
-                    {activeFichaDesempeno.descripcionCorta}
-                  </p>
-                </div>
+            <DetalleDeDesempeno
+              desempeno={desempeno}
+              niveles={template.niveles}
+              nivelRegistrado={abierto?.nivel ?? null}
+              respuestaExtra={
+                desempeno ? fichaState.preguntaExtraAnswers?.[desempeno.id] : undefined
+              }
+            />
 
-                {/* Aspectos (solo lectura) */}
-                {activeFichaDesempeno.aspectos && activeFichaDesempeno.aspectos.length > 0 && (
-                  <div className="space-y-3">
-                    <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">
-                      Aspectos Considerados
-                    </span>
-                    <ul className="list-disc list-inside text-xs text-slate-700 space-y-1 bg-slate-50/50 border border-slate-100 rounded-xl p-3.5">
-                      {activeFichaDesempeno.aspectos.map((asp, idx) => (
-                        <li key={asp.id}>
-                          <strong>Aspecto {idx + 1}:</strong> {asp.descripcion}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {/* Pregunta Extra Sí/No */}
-                {activeFichaDesempeno.preguntaExtra && (
-                  <div className="space-y-2 p-4 border border-slate-200 rounded-xl bg-amber-50/30">
-                    <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest block">
-                      Pregunta Extra
-                    </span>
-                    <p className="text-sm font-medium text-slate-700">{activeFichaDesempeno.preguntaExtra}</p>
-                    <div className="mt-1">
-                      <span className="text-xs font-bold">
-                        Respuesta:{' '}
-                        {fichaState.preguntaExtraAnswers?.[activeFichaDesempeno.id] === true ? (
-                          <span className="text-emerald-700">SÍ</span>
-                        ) : fichaState.preguntaExtraAnswers?.[activeFichaDesempeno.id] === false ? (
-                          <span className="text-red-600">NO</span>
-                        ) : (
-                          <span className="text-slate-400 italic">Sin responder</span>
-                        )}
-                      </span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Rúbrica seleccionada */}
-                <div className="space-y-3.5 pt-1">
-                  <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">
-                    Descripción de Niveles (Evaluación Registrada)
-                  </span>
-                  
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {template.niveles.map((niv) => {
-                      const rubDetail = activeFichaDesempeno.rubrica?.find((r) => r.nivel === niv.nivel);
-                      const isSelected = fichaState.selectedLevels[activeFichaDesempeno.id] === niv.nivel;
-                      
-                      return (
-                        <div
-                          key={niv.nivel}
-                          className={`border rounded-xl p-4 flex flex-col gap-2 shadow-sm relative overflow-hidden transition-all duration-200 ${
-                            isSelected
-                              ? 'ring-2 bg-slate-50 border-transparent shadow'
-                              : 'border-slate-200 opacity-60 bg-surface'
-                          }`}
-                          style={{
-                            borderColor: isSelected ? niv.color : '#e2e8f0',
-                            backgroundColor: isSelected ? niv.color + '07' : 'transparent',
-                          }}
-                        >
-                          <div
-                            className="absolute left-0 top-0 bottom-0 w-1.5"
-                            style={{ backgroundColor: niv.color }}
-                          />
-                          
-                          <div className="pl-2 flex flex-col gap-1">
-                            <span
-                              className="text-xs font-black uppercase tracking-wider"
-                              style={{ color: niv.color }}
-                            >
-                              Nivel {niv.nivel}
-                            </span>
-                            <span
-                              className="text-[10px] font-bold"
-                              style={{ color: niv.color }}
-                            >
-                              {niv.denominacion}
-                            </span>
-                          </div>
-
-                          <p className="pl-2 text-[11px] text-slate-700 font-medium leading-relaxed">
-                            {rubDetail?.descripcion || 'Sin descripción registrada.'}
-                          </p>
-                          
-                          {isSelected && (
-                            <span className="absolute right-3.5 top-3.5 bg-emerald-500 text-white rounded-full h-4 w-4 flex items-center justify-center border border-white shadow-sm font-bold text-[8px]">
-                              ✓
-                            </span>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="h-full flex flex-col items-center justify-center text-slate-300">
-                <FileText className="h-10 w-10 mb-2 stroke-1" />
-                <span className="text-xs font-semibold">Seleccione un desempeño</span>
-              </div>
-            )}
-
-            {/* Ejes e Items (Solo Docente) */}
-            {template.ejesItems && template.ejesItems.length > 0 && (
-              <div className="space-y-3 pt-4 border-t border-slate-100 mt-4">
-                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block flex items-center gap-1.5">
-                  <FileTextIcon className="h-3.5 w-3.5" />
-                  EJES E ITEMS
-                </span>
-                {template.ejesItems.map((item) => {
-                  const nivel = fichaState.respuestasEjeItem?.[item.id];
-                  return (
-                    <div key={item.id} className="border border-slate-200 rounded-xl p-3 space-y-1">
-                      <div className="flex items-start gap-2">
-                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-primary/10 text-[10px] font-bold text-primary">
-                          {item.numero}
-                        </span>
-                        <span className="text-xs text-slate-700">{item.descripcion}</span>
-                      </div>
-                      <div className="flex items-center gap-4 pl-7">
-                        <span className="text-[9px] font-extrabold text-slate-400 uppercase">Nivel:</span>
-                        {nivel ? (() => {
-                          const levelRom = ['', 'I', 'II', 'III', 'IV'][nivel] || '';
-                          const levelConfig = template.niveles.find((n) => n.nivel === levelRom);
-                          const color = levelConfig?.color || '#3b82f6';
-                          return (
-                            <span
-                              className="px-2 py-0.5 rounded text-[10px] font-black text-white"
-                              style={{ backgroundColor: color }}
-                            >
-                              Nivel {levelRom}
-                            </span>
-                          );
-                        })() : (
-                          <span className="text-xs font-bold text-slate-400">—</span>
-                        )}
-                      </div>
-                      {fichaState.observacionesEjeItem?.[item.id] && (
-                        <p className="text-[11px] text-slate-600 leading-relaxed pl-7 whitespace-pre-wrap">
-                          <span className="text-[9px] font-extrabold text-slate-400 uppercase block">Observaciones:</span>
-                          {fichaState.observacionesEjeItem[item.id]}
-                        </p>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+            {!!template.ejesItems?.length && (
+              <EjesEItemsAuditados
+                items={template.ejesItems}
+                niveles={template.niveles}
+                respuestas={fichaState.respuestasEjeItem}
+                observaciones={fichaState.observacionesEjeItem}
+              />
             )}
           </div>
         </div>
 
-        {/* Sugerencias y Compromisos Registrados */}
         <div className="p-5 border-t border-border bg-slate-50/50 grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-1">
-            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">Sugerencias</span>
-            <div className="bg-surface border border-slate-200 rounded-xl p-3 text-xs text-slate-700 leading-relaxed shadow-inner min-h-[3rem]">
-              {fichaState.sugerencias || <span className="text-slate-400 italic">Sin registrar</span>}
-            </div>
-          </div>
-          <div className="space-y-1">
-            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">Compromisos</span>
-            <div className="bg-surface border border-slate-200 rounded-xl p-3 text-xs text-slate-700 leading-relaxed shadow-inner min-h-[3rem]">
-              {fichaState.compromisos || <span className="text-slate-400 italic">Sin registrar</span>}
-            </div>
-          </div>
+          <TextoRegistrado rotulo="Sugerencias" texto={fichaState.sugerencias} />
+          <TextoRegistrado rotulo="Compromisos" texto={fichaState.compromisos} />
         </div>
 
-        {/* Footer */}
         <div className="p-4 border-t border-border bg-slate-50 flex justify-between items-center">
-          <div>
-            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1">
-              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
-              <span>Cerrado y Firmado Digitalmente por la UGEL</span>
-            </span>
-          </div>
-          
+          <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1">
+            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+            <span>Cerrado y Firmado Digitalmente por la UGEL</span>
+          </span>
+
           <div className="flex items-center gap-3">
             <Button
               variant="outline"
@@ -341,7 +165,7 @@ export const FichaAuditorModal = ({
             </Button>
             <Button
               onClick={onClose}
-              className="bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs px-6 py-2.5 h-10 rounded-xl cursor-pointer shadow-sm animate-all"
+              className="bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs px-6 py-2.5 h-10 rounded-xl cursor-pointer shadow-sm"
             >
               Cerrar Auditoría
             </Button>
@@ -351,3 +175,20 @@ export const FichaAuditorModal = ({
     </div>
   );
 };
+
+const Metadato = ({ rotulo, valor }: { rotulo: string; valor: string }) => (
+  <div>
+    {rotulo}: <span className="text-slate-800">{valor}</span>
+  </div>
+);
+
+const TextoRegistrado = ({ rotulo, texto }: { rotulo: string; texto?: string }) => (
+  <div className="space-y-1">
+    <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">
+      {rotulo}
+    </span>
+    <div className="bg-surface border border-slate-200 rounded-xl p-3 text-xs text-slate-700 leading-relaxed shadow-inner min-h-[3rem]">
+      {texto || <span className="text-slate-400 italic">Sin registrar</span>}
+    </div>
+  </div>
+);

@@ -15,6 +15,14 @@ export type NivelEducativo = 'INICIAL' | 'PRIMARIA' | 'SECUNDARIA';
 
 export interface Docente {
   id: string;
+  /**
+   * Persona a la que pertenece este registro docente.
+   *
+   * Es el vínculo con su registro de especialista: quien dirige o coordina en
+   * una I.E. figura en las dos tablas, unidas por `persona_id`. Sin esto, la
+   * programación de visitas cruzaba ambas por nombre.
+   */
+  personaId: string;
   nombres: string;
   apellidos: string;
   dni: string;

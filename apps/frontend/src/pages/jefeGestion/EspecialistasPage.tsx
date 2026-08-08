@@ -9,15 +9,16 @@ import { FilterEspecialistas } from '@features/especialistas';
 import { EspecialistasStatsWidget, EspecialistasTableWidget } from '@widgets/especialistas';
 import { fetchEspecialistas } from '@features/especialistas/especialista-service';
 import type { Especialista } from '@entities/model-especialistas';
+import { RoleCode } from '@sistema-monitoreo/shared-contracts';
 
 // Roles de nivel institucional (docente con cargo de monitor). Tienen un registro
 // de especialista SOLO para poder monitorear en su propia IE, pero no son
 // especialistas UGEL y no deben aparecer en este padrón.
-const ROLES_INSTITUCIONALES = [
-  'coordinador_pedagogico',
-  'jefe_taller',
-  'director_institucion',
-  'docente',
+const ROLES_INSTITUCIONALES: readonly string[] = [
+  RoleCode.COORDINADOR_PEDAGOGICO,
+  RoleCode.JEFE_TALLER,
+  RoleCode.DIRECTOR_INSTITUCION,
+  RoleCode.DOCENTE,
 ];
 
 export const EspecialistasPage = () => {

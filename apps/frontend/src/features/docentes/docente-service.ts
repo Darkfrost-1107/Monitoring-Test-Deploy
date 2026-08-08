@@ -57,6 +57,7 @@ export const mapApiDocenteToFrontend = (apiDoc: IDocenteResponse): Docente => {
 
   return {
     id: apiDoc.id,
+    personaId: apiDoc.personaId,
     nombres: apiDoc.persona.nombres,
     apellidos: apiDoc.persona.apellidos,
     dni: apiDoc.persona.dni,
