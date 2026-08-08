@@ -1147,6 +1147,29 @@ agosto y se conserva como tal. Al día siguiente, los PR #61 y #62 cerraron el
 | Componentes de más de 300 líneas | 0 | 17 ❌ | **0** ✅ |
 | Componente mayor | ≤ 300 | — | **280 líneas** ✅ |
 
+**Remedición (2026-08-08), tras los PR #63 a #68:**
+
+| Métrica | Objetivo | 2026-08-07 | 2026-08-08 |
+| --- | --- | --- | --- |
+| Componentes de más de 300 líneas | 0 | 0 ✅ | **0** ✅ |
+| Componente mayor | ≤ 300 | 280 | **280 líneas** ✅ |
+| Archivos de prueba | — | 100 | **112** |
+| Cobertura de sentencias, frontend | 45 % | 19,87 % | **21,34 %** ❌ |
+| Cobertura de sentencias, backend | 60 % | 27,37 % | **27,37 %** ❌ |
+
+**Corrección del medidor (2026-08-08).** `scripts/metricas.sh` contaba los
+`.test.tsx` como componentes. El defecto estaba desde el principio y no se veía
+porque no había pruebas de componente: en cuanto las hubo, el medidor reportó
+«1 componente sobre 300 líneas» señalando a `ModalCronograma.test.tsx` (308), un
+archivo de 28 pruebas. La métrica dice medir componentes, y un archivo de
+pruebas no lo es —crece con los casos cubiertos, no con la complejidad de lo que
+mantiene—, así que partirlo por número de líneas habría fragmentado una suite
+coherente para satisfacer un medidor roto. Los `.test.tsx` quedan excluidos.
+Conviene notar que la línea base de 17 componentes se midió cuando no existían
+pruebas de componente: medía sólo código de producción por accidente, de modo
+que la exclusión devuelve la métrica a lo que siempre midió y las cifras siguen
+siendo comparables entre sí.
+
 **Sobre las dos cifras de `any`.** La tabla del 6 de agosto mide el frontend, y
 sus 4 ocurrencias siguen siendo correctas. `pnpm metricas` reporta 54 porque
 abarca los dos proyectos e incluye los archivos de prueba; sin ellos son 15, de
@@ -1233,11 +1256,20 @@ explican por qué el esfuerzo fue mayor que un refactor.
 | #62 | 5 → 0. Programación de visitas por identificador: tres nombres de institución están repetidos en la base —uno cinco veces— y el selector mostraba opciones indistinguibles, de modo que `find(por nombre)` devolvía siempre la primera |
 | #63 | `modules/auth` pasa de 0 a 64 pruebas. `changePassword` prometía cerrar la sesión en todos los dispositivos y no cerraba ninguna |
 | #64 | Cero `alert()` del navegador y cero `setTimeout(…, 0)` diferidos en el frontend. La búsqueda por DNI quedaba colgada en «Buscando...» |
+| #65 | `LlenarFichaForm` de vuelta bajo 300 líneas: el propio PR #64 la había llevado a 333 |
+| #66 | La seguridad a nivel de fila no estaba en efecto: la aplicación se conecta con un rol que evita toda política. El arranque ahora lo avisa. `prisma/setup.sql` y las 9 pruebas de aislamiento ya existían y nadie las había ejecutado |
+| #67 | 62 pruebas de componente sobre los tres flujos que deciden algo. Ningún campo de formulario de la aplicación tenía `htmlFor`: se descubrió porque las consultas por rol accesible no encontraban los controles |
+| #68 | Una consulta fallida se veía igual que una bandeja vacía en solicitudes de visita; el rechazo no exigía motivo pese a ser lo único que recibe el solicitante; `seleccionarPlantillaActiva` caía a `plantillas[0]` sin mirar tipo ni estado; y la ficha de una visita completada sin respaldo se abría con datos de demostración fabricados |
 
 **Criterio de medición.** Los números de §8 se obtienen con `pnpm metricas`, no
 de memoria. Durante esta actualización el propio script resultó estar roto: bajo
 `pipefail`, `rg` sale con 1 cuando no encuentra nada, de modo que la medición
-fallaba justo cuando una métrica llegaba a cero —su objetivo—. Corregido.
+fallaba justo cuando una métrica llegaba a cero —su objetivo—. Corregido. Un
+segundo defecto del medidor apareció el 8 de agosto: contaba los `.test.tsx`
+como componentes (ver §8). Las dos cifras de cobertura se leen de
+`coverage-summary.json`, de modo que sólo son ciertas si se corrió
+`pnpm --filter frontend test --coverage` después del último cambio; medir sin
+regenerarlas devuelve el número de la corrida anterior.
 
 **Lo que la barrera de la Fase 2 no ve.** `comparaciones_rol_literal` cuenta
 `role === 'literal'` y `case 'literal':`, y está en 0. No cuenta los literales

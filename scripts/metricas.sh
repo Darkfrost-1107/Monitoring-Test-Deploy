@@ -100,15 +100,23 @@ supresiones_archivo=$(rg -l '^/\* eslint-disable' apps/backend/src apps/frontend
 ocurrencias_any=$(rg -o ':\s*any\b|as any' "${SRC_GLOBS[@]}" | wc -l || true)
 
 # ── Fase 5: tamaño de componentes (objetivo: 0 por encima de 300) ────────────
-componentes_sobre_300=$(fd -e tsx --type f . apps/frontend/src \
+# Los `.test.tsx` quedan fuera: la métrica mide componentes, y un archivo de
+# pruebas no lo es. Crece con los casos cubiertos, no con la complejidad de lo
+# que mantiene; partirlo por número de líneas fragmenta una suite coherente sin
+# ganar nada. La línea base (17 componentes sobre 300) se midió cuando no había
+# pruebas de componente, así que medía sólo código de producción por accidente:
+# excluirlas devuelve la métrica a lo que siempre midió.
+componentes() { fd -e tsx --type f . apps/frontend/src | rg -v '\.test\.tsx$'; }
+
+componentes_sobre_300=$(componentes \
   | xargs wc -l 2>/dev/null \
   | awk '$2 != "total" && $1 > 300' | wc -l)
-componentes_sobre_700=$(fd -e tsx --type f . apps/frontend/src \
+componentes_sobre_700=$(componentes \
   | xargs wc -l 2>/dev/null \
   | awk '$2 != "total" && $1 > 700' | wc -l)
 # `head` cerraría la tubería y `pipefail` lo interpretaría como fallo (SIGPIPE);
 # awk consume toda la entrada y evita esa condición.
-componente_mayor=$(fd -e tsx --type f . apps/frontend/src \
+componente_mayor=$(componentes \
   | xargs wc -l 2>/dev/null \
   | awk '$2 != "total" && $1 > max { max = $1 } END { print max + 0 }')
 
