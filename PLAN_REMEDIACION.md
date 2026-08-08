@@ -1138,6 +1138,21 @@ requiere polyfill.
 | Reexportaciones de compatibilidad | 0 | 2 | **0** ✅ |
 | Componentes de más de 300 líneas | 0 | 20 | **17** ❌ |
 
+**Remedición (2026-08-07).** La tabla de arriba es la instantánea del 6 de
+agosto y se conserva como tal. Al día siguiente, los PR #61 y #62 cerraron el
+único criterio que faltaba:
+
+| Métrica | Objetivo | 2026-08-06 | 2026-08-07 |
+| --- | --- | --- | --- |
+| Componentes de más de 300 líneas | 0 | 17 ❌ | **0** ✅ |
+| Componente mayor | ≤ 300 | — | **280 líneas** ✅ |
+
+**Sobre las dos cifras de `any`.** La tabla del 6 de agosto mide el frontend, y
+sus 4 ocurrencias siguen siendo correctas. `pnpm metricas` reporta 54 porque
+abarca los dos proyectos e incluye los archivos de prueba; sin ellos son 15, de
+los cuales 11 están en el backend. No es que `any` haya crecido: son alcances
+distintos y conviene no compararlos entre sí.
+
 **Sobre el comando de medición de `UserRole`.** El comando del anexo
 (`rg -n "type UserRole"`) cuenta también las **importaciones**, no sólo las
 declaraciones. Reporta 3 cuando la declaración es una sola, en el contrato
@@ -1200,9 +1215,36 @@ Si el plan debe recortarse por restricción de tiempo, **las Fases 0, 1 y 2 son 
 | 2 — Autorización centralizada | **En curso** | 2026-08-05 | | | Migración completa (104 → 0 literales), barrera de CI bloqueante, política al 96 %; falta derivar el menú, bloqueado por decisión de producto |
 | 3 — Red de pruebas | **Cerrada con alcance revisado** | 2026-08-06 | 2026-08-06 | | Umbrales activos como guarda de retroceso; el objetivo de cobertura se traslada a la Fase 5 |
 | 4 — Tipado en capa de datos | **Completada** | 2026-08-06 | 2026-08-06 | | 16 → 0 supresiones; destapó dos defectos reales, H-29 entre ellos |
-| 5 — Descomposición de componentes | **Completada (alcance del plan)** | 2026-08-06 | 2026-08-06 | | Los 4 archivos objetivo: 4.668 → 969 líneas. Cero supresiones de `exhaustive-deps` en el proyecto. Quedan 8 componentes >300 líneas fuera del alcance de esta fase (ver nota) |
-| 6 — Extracción de dominio | **Parcial** | 2026-08-06 | | | H-16 y H-18 cerrados; H-17 con primitivas y los peores casos migrados, faltan 27 archivos. Dos premisas del plan resultaron falsas (ver nota) |
-| 7 — Higiene y consolidación | **Parcial** | 2026-08-06 | | | 4 de 5 tareas cerradas. Falta la tarea 5 (documentación de arquitectura). El criterio «cero componentes >300 líneas» no se cumple: 17, fuera del alcance de las fases |
+| 5 — Descomposición de componentes | **Completada** | 2026-08-06 | 2026-08-07 | | Los 4 archivos objetivo del plan: 4.668 → 969 líneas. Cero supresiones de `exhaustive-deps`. Los componentes >300 líneas que quedaban fuera del alcance se cerraron después en los PR #61 a #64: **0**, mayor archivo 280 líneas |
+| 6 — Extracción de dominio | **Parcial** | 2026-08-06 | | | H-16 y H-18 cerrados. H-17: quedan **2** archivos con formateo manual de fechas (`features/cronogramas/lib/formulario.ts` y `hooks/use-cronogramas-data.ts`); el resto migró al módulo compartido. Faltan las tareas 4 y 5 (ver nota) |
+| 7 — Higiene y consolidación | **Parcial** | 2026-08-06 | | | El criterio «cero componentes >300 líneas» **se cumple**. Falta la tarea 5, documentación de arquitectura. Ver §8.1 para lo que se cerró después de la fase |
+
+
+### 8.1 Trabajo posterior al alcance de las fases
+
+Entre el 2026-08-06 y el 2026-08-07 se cerró, fuera del alcance nominal de las
+fases, el grupo de componentes grandes que ninguna cubría. La descomposición
+destapó defectos que se corrigieron en el mismo trabajo; se listan porque
+explican por qué el esfuerzo fue mayor que un refactor.
+
+| PR | Qué cerró |
+| --- | --- |
+| #61 | 17 componentes >300 líneas → 5. Escala magisterial inventada y escrita en la base; lema oficial del año vencido en la ficha impresa; autorización por inclusión de nombres retirada de ocho lugares tras comprobar con SQL que nadie dependía de ella |
+| #62 | 5 → 0. Programación de visitas por identificador: tres nombres de institución están repetidos en la base —uno cinco veces— y el selector mostraba opciones indistinguibles, de modo que `find(por nombre)` devolvía siempre la primera |
+| #63 | `modules/auth` pasa de 0 a 64 pruebas. `changePassword` prometía cerrar la sesión en todos los dispositivos y no cerraba ninguna |
+| #64 | Cero `alert()` del navegador y cero `setTimeout(…, 0)` diferidos en el frontend. La búsqueda por DNI quedaba colgada en «Buscando...» |
+
+**Criterio de medición.** Los números de §8 se obtienen con `pnpm metricas`, no
+de memoria. Durante esta actualización el propio script resultó estar roto: bajo
+`pipefail`, `rg` sale con 1 cuando no encuentra nada, de modo que la medición
+fallaba justo cuando una métrica llegaba a cero —su objetivo—. Corregido.
+
+**Lo que la barrera de la Fase 2 no ve.** `comparaciones_rol_literal` cuenta
+`role === 'literal'` y `case 'literal':`, y está en 0. No cuenta los literales
+de rol en otras posiciones —valores por omisión de parámetros, elementos de
+arreglo, valores de objeto—, de los que quedan alrededor de veinte. No es un
+fallo del contador: su alcance está documentado y es deliberado. Se anota para
+que nadie lea «0 literales» como «ningún literal de rol en el código».
 
 ---
 

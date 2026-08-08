@@ -1,7 +1,8 @@
 import { useState, useCallback } from 'react';
-import { toast } from 'sonner';
-import { CheckCircle2, AlertCircle } from 'lucide-react';
 import { Card } from '@/shared/ui/card';
+import { AvisoDeError } from '@shared/ui/AvisoDeError';
+import { useHidratacionDeFicha } from '../hooks/use-hidratacion-de-ficha';
+import { useAccionesDeFicha } from '../hooks/use-acciones-de-ficha';
 import { HistorialChart } from './HistorialChart';
 import type { Cronograma } from '@/entities/model-cronogramas';
 import type { Plantilla } from '@/entities/model-plantillas';
@@ -17,9 +18,7 @@ import type { ContextoDeAula } from '../lib/estado-formulario';
 import {
   aDatosFicha,
   claveEstadoLocal,
-  leerEstadoGuardado,
 } from '../lib/estado-formulario';
-import { validarCierreDeFicha } from '../lib/validacion-ficha';
 import { ContextoDeAulaSeccion } from './ficha/ContextoDeAulaSeccion';
 import { EvidenciaGeneralSeccion } from './ficha/EvidenciaGeneralSeccion';
 import { PanelDesempenos } from './ficha/PanelDesempenos';
@@ -99,35 +98,16 @@ export const LlenarFichaForm = ({
 
   const [activeTab, setActiveTab] = useState<PestanaFicha>('FICHA');
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
-  /** Motivo por el que la ficha todavía no se puede cerrar. */
-  const [faltaParaCerrar, setFaltaParaCerrar] = useState<string | null>(null);
 
   const printRef = useRef<HTMLDivElement>(null);
   const handlePrint = useReactToPrint({ contentRef: printRef });
 
-  /**
-   * La ficha se carga una vez por visita abierta: con el estado recibido, con
-   * el borrador local, o en blanco. Un borrador ilegible se descarta —impedir
-   * abrir la ficha sería peor que perderlo—.
-   *
-   * Se ajusta durante el render en vez de diferirse con `setTimeout(…, 0)`
-   * dentro de un efecto. La condición de «una vez por visita» queda escrita en
-   * el código y no depende de que las dependencias del efecto se mantengan
-   * estables: hoy lo son —`initialState` viene memoizado desde `ReportesGrid`—
-   * pero nada lo garantizaba, y volver a hidratar borraría lo que el evaluador
-   * llevara escrito.
-   */
-  const [visitaHidratada, setVisitaHidratada] = useState<string | null>(null);
-
-  if (isOpen && visit && visitaHidratada !== visit.id) {
-    setVisitaHidratada(visit.id);
-    hidratar(initialState ?? leerEstadoGuardado(localStorage.getItem(claveEstadoLocal(visit.id))));
-  }
-
-  // Al cerrar se olvida, para que la próxima apertura vuelva a cargar.
-  if (!isOpen && visitaHidratada !== null) {
-    setVisitaHidratada(null);
-  }
+  useHidratacionDeFicha({
+    abierta: isOpen,
+    visitaId: visit?.id,
+    initialState,
+    hidratar,
+  });
 
   const { docente: evaluadoDocente, areasSugeridas } = useDocenteEvaluado({
     activo: isOpen,
@@ -137,40 +117,18 @@ export const LlenarFichaForm = ({
     onAutocompletarContexto: aplicarContextoSugerido,
   });
 
+  const { guardarBorrador, finalizar, faltaParaCerrar, olvidarFalta } = useAccionesDeFicha({
+    visit,
+    template,
+    estado,
+    onSave,
+    onFinalize,
+  });
+
   if (!isOpen || !visit || !template) return null;
 
   const isCompleted = visit.estado === 'COMPLETADO';
   const isDirectivo = template.tipoMonitoreo.toUpperCase().includes('DIRECTIVO');
-
-  const handleSaveClick = () => {
-    onSave?.(visit.id, aDatosFicha(estado, visit.tipo));
-  };
-
-  const handleFinalizeClick = () => {
-    // Las cinco condiciones de cierre viven en `lib/validacion-ficha.ts`, con
-    // cobertura propia; acá sólo se informa la primera que falte.
-    //
-    // Antes esto era un `alert()`: había que descartarlo para ir a buscar lo
-    // que faltaba, y al descartarlo el motivo desaparecía. En una ficha de
-    // cinco desempeños con sus aspectos, eso es pedirle al evaluador que lo
-    // memorice.
-    const falta = validarCierreDeFicha(template, estado);
-    if (falta) {
-      setFaltaParaCerrar(falta);
-      return;
-    }
-
-    setFaltaParaCerrar(null);
-
-    onFinalize?.(visit.id, aDatosFicha(estado, visit.tipo));
-
-    // Toast indicating email automation
-    toast.success('Ficha finalizada con éxito', {
-      description: 'El PDF oficial se está generando y enviando por correo al docente evaluado de forma automática.',
-      duration: 6000,
-      icon: <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-    });
-  };
 
   /**
    * Calificación consolidada que se muestra al cerrar la ficha.
@@ -182,7 +140,6 @@ export const LlenarFichaForm = ({
    * ver un nivel de logro y guardarse otro distinto. Ver H-28 de
    * PLAN_REMEDIACION.md.
    */
-  // El baremo es el del contrato compartido, el mismo que aplica el backend.
   const calificacion = isCompleted
     ? resolverCalificacion(
         template.desempenos.map((d) => ({ id: d.id, romano: selectedLevels[d.id] ?? '' })),
@@ -301,28 +258,18 @@ export const LlenarFichaForm = ({
         )} {/* fin FICHA */}
         </div> {/* fin scroll interno */}
 
-        {faltaParaCerrar && (
-          <div
-            role="alert"
-            className="mx-6 mb-3 flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl p-3.5 text-amber-800 text-sm font-medium"
-          >
-            <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
-            <span className="flex-1">{faltaParaCerrar}</span>
-            <button
-              type="button"
-              onClick={() => setFaltaParaCerrar(null)}
-              className="text-xs font-bold underline cursor-pointer shrink-0"
-            >
-              Cerrar
-            </button>
-          </div>
-        )}
+        <AvisoDeError
+          mensaje={faltaParaCerrar}
+          onCerrar={olvidarFalta}
+          tono="advertencia"
+          className="mx-6 mb-3"
+        />
 
         <PieDeFicha
           soloLectura={isCompleted}
           onCerrar={onClose}
-          onGuardarBorrador={handleSaveClick}
-          onFinalizar={handleFinalizeClick}
+          onGuardarBorrador={guardarBorrador}
+          onFinalizar={finalizar}
         />
       </Card>
 

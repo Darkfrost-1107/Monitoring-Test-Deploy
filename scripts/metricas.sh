@@ -93,8 +93,11 @@ comparaciones_rol_literal=$(contar_ocurrencias "$PATRON_ROL_LITERAL")
 comparaciones_rol_tipada=$(contar_ocurrencias "$PATRON_ROL_TIPADA")
 
 # ── Fase 4: tipado en capa de datos (objetivos: 0 y <= 20) ───────────────────
-supresiones_archivo=$(rg -l '^/\* eslint-disable' apps/backend/src apps/frontend/src | wc -l)
-ocurrencias_any=$(rg -o ':\s*any\b|as any' "${SRC_GLOBS[@]}" | wc -l)
+# `rg` sale con 1 cuando no encuentra nada, y bajo `pipefail` eso mataba el
+# script justo cuando la métrica llegaba a su objetivo: medir el éxito era
+# imposible. `|| true` acota el fallo a lo que de verdad es un fallo.
+supresiones_archivo=$(rg -l '^/\* eslint-disable' apps/backend/src apps/frontend/src | wc -l || true)
+ocurrencias_any=$(rg -o ':\s*any\b|as any' "${SRC_GLOBS[@]}" | wc -l || true)
 
 # ── Fase 5: tamaño de componentes (objetivo: 0 por encima de 300) ────────────
 componentes_sobre_300=$(fd -e tsx --type f . apps/frontend/src \
