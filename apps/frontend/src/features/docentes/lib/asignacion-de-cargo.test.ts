@@ -63,9 +63,22 @@ describe('candidatosParaCargo', () => {
     docente({ id: 'aula-ept', especialidad: 'EPT' }),
   ];
 
-  it('para Coordinador Pedagógico son los docentes de aula activos', () => {
+  /**
+   * Los dos cargos se reparten el aula por especialidad: EPT es del Jefe de
+   * Taller y el resto del Coordinador. Un docente de EPT figuraba en las dos
+   * listas, porque la regla exigía la especialidad para uno pero no la
+   * descartaba del otro.
+   */
+  it('para Coordinador Pedagógico son los docentes de aula activos que no son de EPT', () => {
     const ids = candidatosParaCargo(lista, 'Coordinador Pedagógico').map((d) => d.id);
-    expect(ids).toEqual(['aula-activo', 'aula-ept']);
+    expect(ids).toEqual(['aula-activo']);
+  });
+
+  it('ningún docente puede ser candidato a los dos cargos a la vez', () => {
+    const coordinadores = candidatosParaCargo(lista, 'Coordinador Pedagógico').map((d) => d.id);
+    const jefes = candidatosParaCargo(lista, 'Jefe de Taller').map((d) => d.id);
+
+    expect(coordinadores.filter((id) => jefes.includes(id))).toEqual([]);
   });
 
   /**

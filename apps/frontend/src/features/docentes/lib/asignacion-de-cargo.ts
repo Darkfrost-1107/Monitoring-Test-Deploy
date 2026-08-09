@@ -63,12 +63,18 @@ export function candidatosParaCargo<T extends DocenteCandidato>(
   docentes: readonly T[],
   cargo: CargoAsignable,
 ): T[] {
-  return docentes.filter(
-    (d) =>
-      d.activo &&
-      d.cargo === DOCENTE_DE_AULA &&
-      (cargo !== 'Jefe de Taller' || esDeEPT(d.especialidad)),
-  );
+  return docentes.filter((d) => {
+    if (!d.activo || d.cargo !== DOCENTE_DE_AULA) return false;
+
+    // Los dos cargos se reparten el aula por especialidad: EPT es del Jefe de
+    // Taller y el resto del Coordinador Pedagógico. La regla exigía EPT para el
+    // primero pero no lo descartaba del segundo, de modo que un docente de EPT
+    // figuraba en las dos listas.
+    if (cargo === 'Jefe de Taller') return esDeEPT(d.especialidad);
+    if (cargo === 'Coordinador Pedagógico') return !esDeEPT(d.especialidad);
+
+    return true;
+  });
 }
 
 /**
