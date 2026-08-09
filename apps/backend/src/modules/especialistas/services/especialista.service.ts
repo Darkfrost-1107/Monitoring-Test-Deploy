@@ -28,6 +28,27 @@ export class EspecialistaService {
     private readonly configService: ConfigService,
   ) {}
 
+  /**
+   * Deja un solo ocupante en los cargos que admiten uno solo.
+   *
+   * Director de UGEL y Jefe de Gestión son únicos. El panel del superusuario ya
+   * relevaba al anterior al **designar**, dentro de una transacción; el alta de
+   * una persona nueva no, y quedaban dos a la vez.
+   *
+   * Se releva **después** de crear y no antes: si el alta falla, el que estaba
+   * conserva su cargo. Al revés, un fallo dejaría el puesto vacante.
+   */
+  private async relevarAlAnteriorSiElCargoEsUnico(
+    rolCode: string,
+    nuevaPersonaId: string,
+  ): Promise<void> {
+    const esCargoUnico = rolCode === RoleCode.DIRECTOR_UGEL || rolCode === RoleCode.JEFE_GESTION;
+
+    if (!esCargoUnico) return;
+
+    await this.repository.relevarDelCargo(rolCode, nuevaPersonaId);
+  }
+
   async findAll(filters?: QueryEspecialistaDto): Promise<IEspecialistaResponse[]> {
     return this.repository.findAll(filters);
   }
@@ -60,6 +81,19 @@ export class EspecialistaService {
     ) {
       throw new BadRequestException(
         'La condición laboral de un Jefe de Gestión debe ser exactamente Nombrado.',
+      );
+    }
+
+    // ── Regla 2b: sólo el Jefe de Gestión puede ser Nombrado ──────────────────
+    // El validador del DTO aceptaba antes únicamente Encargado, Destacado y
+    // Designado, de modo que esta restricción viajaba implícita en él. Al
+    // ampliarlo para que la Regla 2 fuera satisfacible, pasa a declararse acá.
+    if (
+      (dto.cargo as CargoNombre) !== CargoNombre.JEFE_GESTION &&
+      (dto.condicionLaboral as CondicionLaboral) === CondicionLaboral.NOMBRADO
+    ) {
+      throw new BadRequestException(
+        'Sólo un Jefe de Gestión puede registrarse con condición laboral Nombrado.',
       );
     }
 
@@ -118,7 +152,13 @@ export class EspecialistaService {
 
     const saltRounds = this.configService.get<number>('BCRYPT_SALT_ROUNDS') ?? 12;
     const passwordHash = await bcrypt.hash(dto.dni, saltRounds);
-    return this.repository.create(dto, passwordHash, role.id);
+    const creado = await this.repository.create(dto, passwordHash, role.id);
+
+    // El alta también designa: Director de UGEL y Jefe de Gestión son cargos
+    // únicos, y sin esto quedaban dos a la vez.
+    await this.relevarAlAnteriorSiElCargoEsUnico(dto.rolCode, creado.personaId);
+
+    return creado;
   }
 
   async update(
@@ -146,6 +186,19 @@ export class EspecialistaService {
     ) {
       throw new BadRequestException(
         'La condición laboral de un Jefe de Gestión debe ser exactamente Nombrado.',
+      );
+    }
+
+    // ── Regla 2b: sólo el Jefe de Gestión puede ser Nombrado ──────────────────
+    // El validador del DTO aceptaba antes únicamente Encargado, Destacado y
+    // Designado, de modo que esta restricción viajaba implícita en él. Al
+    // ampliarlo para que la Regla 2 fuera satisfacible, pasa a declararse acá.
+    if (
+      (dto.cargo as CargoNombre) !== CargoNombre.JEFE_GESTION &&
+      (dto.condicionLaboral as CondicionLaboral) === CondicionLaboral.NOMBRADO
+    ) {
+      throw new BadRequestException(
+        'Sólo un Jefe de Gestión puede registrarse con condición laboral Nombrado.',
       );
     }
 

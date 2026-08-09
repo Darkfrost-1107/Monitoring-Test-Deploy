@@ -9,10 +9,7 @@ import {
   IsIn,
 } from 'class-validator';
 import type { IUpdateEspecialistaRequest } from '@sistema-monitoreo/shared-contracts';
-import {
-  CargoEspecialista,
-  CondicionLaboralEspecialista,
-} from '@sistema-monitoreo/shared-contracts';
+import { CargoEspecialista, CondicionLaboralDeAlta } from '@sistema-monitoreo/shared-contracts';
 import { IsValidNivelForModalidad } from '../../../common/validators/modalidad-nivel.validator.js';
 
 export class UpdateEspecialistaDto implements IUpdateEspecialistaRequest {
@@ -70,7 +67,7 @@ export class UpdateEspecialistaDto implements IUpdateEspecialistaRequest {
 
   @IsString()
   @IsOptional()
-  @IsIn(CondicionLaboralEspecialista, {
+  @IsIn(CondicionLaboralDeAlta, {
     message: 'La condición laboral debe ser Encargado, Destacado o Designado',
   })
   condicionLaboral?: string;

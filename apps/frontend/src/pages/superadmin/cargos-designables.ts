@@ -1,4 +1,4 @@
-import { RoleCode } from '@sistema-monitoreo/shared-contracts';
+import { RoleCode, type CondicionLaboralDeAlta } from '@sistema-monitoreo/shared-contracts';
 
 /**
  * Los dos cargos de conducción de la UGEL que el superusuario designa.
@@ -33,8 +33,15 @@ export interface CargoDesignable {
   rutaDeAlta: string;
   /** Cargo con el que se lo registra en el padrón de especialistas. */
   cargoEnElPadron: 'Especialista' | 'Jefe de Gestión';
-  /** Condición laboral con la que se abre su formulario de alta. */
-  condicionLaboral: 'Encargado' | 'Nombrado';
+  /**
+   * Condición laboral con la que se abre su formulario de alta.
+   *
+   * Se tipa contra el contrato y no con una unión escrita a mano: decía
+   * `'Encargado' | 'Nombrado'` mientras el validador del servidor sólo aceptaba
+   * Encargado, Destacado y Designado, y el alta del Jefe de Gestión fallaba sin
+   * que nada lo advirtiera al compilar.
+   */
+  condicionLaboral: (typeof CondicionLaboralDeAlta)[number];
   /** Clases de la insignia que marca a quien ocupa el cargo. */
   insignia: string;
   /** Clases del botón cuando la fila es la persona designada. */

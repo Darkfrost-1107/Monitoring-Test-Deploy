@@ -15,6 +15,22 @@ export interface CargoRecord {
 }
 
 export abstract class EspecialistaRepository {
+  /**
+   * Devuelve al rol de Especialista a quien ostentaba un cargo único.
+   *
+   * Director de UGEL y Jefe de Gestión son uno solo a la vez. El panel del
+   * superusuario ya relevaba al anterior al **designar**, pero el alta de una
+   * persona nueva asignaba el rol sin mirar si ya había alguien, y quedaban dos.
+   *
+   * Se excluye por `personaId` y no por el identificador del especialista: son
+   * tablas distintas y el usuario cuelga de la persona. Confundirlos relevaría
+   * también a quien acaba de asumir.
+   *
+   * @param exceptoPersonaId Persona que acaba de asumir, para no relevarla.
+   * @returns Cuántos fueron relevados.
+   */
+  abstract relevarDelCargo(roleCode: string, exceptoPersonaId: string): Promise<number>;
+
   abstract findAll(filters?: IQueryEspecialistaRequest): Promise<IEspecialistaResponse[]>;
   abstract findById(id: string): Promise<IEspecialistaResponse | null>;
   abstract create(

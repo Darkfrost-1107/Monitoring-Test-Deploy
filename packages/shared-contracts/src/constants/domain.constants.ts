@@ -63,6 +63,22 @@ export const CargoEspecialista = {
 
 export const CondicionLaboralEspecialista = ['Encargado', 'Destacado', 'Designado'] as const;
 
+/**
+ * La del Jefe de Gestión Pedagógica, que su cargo exige exactamente.
+ *
+ * Vivía sólo como regla del servicio —«debe ser exactamente Nombrado»— mientras
+ * el validador del DTO aceptaba únicamente las tres de arriba, que no la
+ * incluyen. Las dos reglas no se podían satisfacer a la vez y crear un Jefe de
+ * Gestión era imposible.
+ */
+export const CONDICION_LABORAL_JEFE_GESTION = 'Nombrado';
+
+/** Todas las que el alta de un especialista puede recibir. El cargo acota cuál. */
+export const CondicionLaboralDeAlta = [
+  ...CondicionLaboralEspecialista,
+  CONDICION_LABORAL_JEFE_GESTION,
+] as const;
+
 /** Áreas curriculares por nivel educativo */
 export const AREAS_CURRICULARES: Record<string, string[]> = {
   INICIAL: [

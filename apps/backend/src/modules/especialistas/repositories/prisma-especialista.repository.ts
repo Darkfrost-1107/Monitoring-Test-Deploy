@@ -25,6 +25,22 @@ import { transicionDocenteAEspecialista } from './transicion-rol.helper.js';
 export class PrismaEspecialistaRepository implements EspecialistaRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  async relevarDelCargo(roleCode: string, exceptoPersonaId: string): Promise<number> {
+    const [rolDelCargo, rolEspecialista] = await Promise.all([
+      this.prisma.role.findUnique({ where: { codigo: roleCode } }),
+      this.prisma.role.findUnique({ where: { codigo: 'especialista' } }),
+    ]);
+
+    if (!rolDelCargo || !rolEspecialista) return 0;
+
+    const { count } = await this.prisma.usuario.updateMany({
+      where: { rolId: rolDelCargo.id, personaId: { not: exceptoPersonaId } },
+      data: { rolId: rolEspecialista.id },
+    });
+
+    return count;
+  }
+
   async findAll(filters?: IQueryEspecialistaRequest): Promise<IEspecialistaResponse[]> {
     return findAll(this.prisma, filters);
   }
