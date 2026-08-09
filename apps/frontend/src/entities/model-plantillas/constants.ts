@@ -1,4 +1,4 @@
-import type { Baremo, NivelCalificacion, NivelRomano } from './model';
+import type { Baremo, NivelRomano } from './model';
 
 export const TIPOS_MONITOREO = ['Monitoreo Docente', 'Monitoreo Directivo'] as const;
 
@@ -10,9 +10,7 @@ export const BAREMOS: { value: Baremo; label: string }[] = [
 export const NIVELES_ROMANOS: NivelRomano[] = ['I', 'II', 'III', 'IV'];
 
 // Niveles por defecto de la escala (como en el mockup).
-export const NIVELES_DEFAULT: NivelCalificacion[] = [
-  { nivel: 'I', denominacion: 'Muy Insatisfactorio', rangoMin: 0, color: '#ef4444' },
-  { nivel: 'II', denominacion: 'En Proceso', rangoMin: 11, color: '#f59e0b' },
-  { nivel: 'III', denominacion: 'Satisfactorio', rangoMin: 15, color: '#22c55e' },
-  { nivel: 'IV', denominacion: 'Destacado', rangoMin: 18, color: '#3b82f6' },
-];
+// La escala por defecto vive en `escala-por-defecto.ts`: depende del tipo de
+// monitoreo, porque la rúbrica docente y la directiva cortan distinto. Acá había
+// una sola —0/11/15/18, «Muy Insatisfactorio…»— que no salía de ningún documento
+// oficial y pasó inadvertida mientras el motor ignoraba `rangoMin`.
