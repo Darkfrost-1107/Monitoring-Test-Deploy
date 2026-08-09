@@ -40,11 +40,26 @@ export interface UsuarioAsignador {
 export interface EspecialistaAsignable {
   id: string;
   cargo: string;
+  /** Rol del usuario. Distingue a quien conduce la UGEL de quien acompaña. */
+  rolCode?: string;
   activo?: boolean;
   nivelEducativo: string;
   modalidad?: string;
   especialidades?: string[];
 }
+
+/**
+ * Quien conduce la UGEL y por eso no sale a monitorear.
+ *
+ * El Director de UGEL se registra en el padrón con cargo «Especialista» —el
+ * cargo describe su plaza y el rol su función— de modo que aparecía entre los
+ * asignables de un cronograma. Ocupa un cargo de conducción, no una plaza de
+ * acompañamiento en territorio.
+ *
+ * El Jefe de Gestión no entra en esta lista: tiene su propia regla más abajo,
+ * que le permite asignarse a sí mismo pero no a un par.
+ */
+const ROLES_DE_CONDUCCION: readonly string[] = ['director_ugel'];
 
 export interface InstitucionAsignable {
   id: string;
@@ -142,6 +157,7 @@ export function especialistasAsignables<T extends EspecialistaAsignable>(
   return especialistas.filter((especialista) => {
     if (especialista.activo !== true) return false;
     if (!CARGOS_QUE_MONITOREAN.includes(especialista.cargo)) return false;
+    if (ROLES_DE_CONDUCCION.includes(especialista.rolCode ?? '')) return false;
 
     // Un jefe de gestión puede asignarse a sí mismo, pero no a otro par: la
     // carga de trabajo de un jefe la decide él, no un colega.

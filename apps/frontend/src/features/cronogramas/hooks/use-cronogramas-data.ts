@@ -104,6 +104,9 @@ export const useCronogramasData = (enabled = true) => {
       modalidad: e.modalidad || 'EBR',
       nivelEducativo: e.nivelEducativo || 'Primaria',
       cargo: e.cargo || 'Especialista',
+      // El rol, para distinguir a quien conduce la UGEL de quien acompaña: los
+      // dos figuran con cargo «Especialista».
+      rolCode: e.user?.role?.code,
       especialidades: e.especialidades || [],
       activo: e.estado === 'Activo',
       dni: e.persona.dni,
