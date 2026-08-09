@@ -52,6 +52,15 @@ const getNotificationBadge = (tipo: string) => {
         actionUrl: '/monitoreo/calendario',
         actionLabel: 'Ver Calendario',
       };
+    // El aviso de la agenda del día: lleva al calendario, que es donde está la
+    // visita con su hora, su institución y el acceso a la ficha.
+    case 'VISITA_DE_HOY':
+      return {
+        icon: Calendar,
+        bg: 'bg-primary/10 text-primary',
+        actionUrl: '/monitoreo/calendario',
+        actionLabel: 'Ver Calendario',
+      };
     case 'CRONOGRAMA_REPROGRAMADO':
       return {
         icon: Calendar,
