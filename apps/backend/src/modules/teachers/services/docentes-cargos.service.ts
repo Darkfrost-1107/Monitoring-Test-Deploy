@@ -122,6 +122,7 @@ export class DocentesCargosService {
     let roleUpdate: { usuarioId: string; roleCodigo: string } | null = null;
     let especialistaUpdate: { especialistaId: string; cargo: string; estado: string } | null = null;
     let monitorEspecialistaId: string | null = null;
+    let docenteUpdate: { estado: string; institucionId: null } | null = null;
 
     if (MONITOR_CARGOS.includes(dc.cargo.nombre)) {
       const docenteInfo = await this.docentesCargosRepository.findDocentePersonaInfo(docenteId);
@@ -134,6 +135,11 @@ export class DocentesCargosService {
         .map((r) => r.cargo.nombre);
 
       if (remainingMonitors.length === 0) {
+        // Sin ningún cargo de monitoreo vigente deja de dirigir: se da de baja y
+        // se suelta la institución, que ya no le corresponde. Vuelve a tenerla
+        // el día que lo designen de nuevo, acá o en otra I.E.
+        docenteUpdate = { estado: 'Inactivo', institucionId: null };
+
         if (docenteInfo.usuarioId) {
           roleUpdate = { usuarioId: docenteInfo.usuarioId, roleCodigo: 'docente' };
         }
@@ -181,6 +187,7 @@ export class DocentesCargosService {
       roleUpdate,
       especialistaUpdate,
       monitorEspecialistaId,
+      docenteUpdate,
     });
 
     // Invalidar TODAS las sesiones activas del usuario asociado al docente.

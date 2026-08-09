@@ -151,6 +151,16 @@ export class PrismaDocentesCargosRepository implements DocentesCargosRepository 
         }
       }
 
+      if (params.docenteUpdate) {
+        await tx.docente.update({
+          where: { id: params.docenteId },
+          data: {
+            estado: params.docenteUpdate.estado,
+            institucionId: params.docenteUpdate.institucionId,
+          },
+        });
+      }
+
       if (params.especialistaUpdate) {
         await tx.especialista.update({
           where: { id: params.especialistaUpdate.especialistaId },
