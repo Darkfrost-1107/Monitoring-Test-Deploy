@@ -11,8 +11,8 @@ export class CreateInstitucionDto implements ICreateInstitucionRequest {
 
   @IsString()
   @IsNotEmpty({ message: 'El código de local es requerido' })
-  @Length(8, 8, { message: 'El código de local debe tener exactamente 8 dígitos' })
-  @Matches(/^\d{8}$/, { message: 'El código de local debe contener solo números' })
+  @Length(6, 6, { message: 'El código de local debe tener exactamente 6 dígitos' })
+  @Matches(/^\d{6}$/, { message: 'El código de local debe contener solo números' })
   codigoLocal!: string;
 
   @IsString()

@@ -12,7 +12,7 @@ export const institucionSchema = z
       .regex(/^\d+$/, 'El código modular solo debe contener números'),
     codigoLocal: z
       .string()
-      .length(8, 'El código de local debe tener exactamente 8 dígitos')
+      .length(6, 'El código de local debe tener exactamente 6 dígitos')
       .regex(/^\d+$/, 'El código de local solo debe contener números'),
     nombre: z.string().min(4, 'El nombre de la institución es muy corto'),
     direccion: z.string().min(4, 'La dirección es requerida'),

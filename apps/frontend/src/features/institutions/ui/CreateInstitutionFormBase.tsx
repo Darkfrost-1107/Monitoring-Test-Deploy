@@ -153,10 +153,10 @@ export const InstitutionFormBase = ({ onCancel, onSubmit, isLoading, initialData
             }
           />
           <TextField
-            label="Código de Local (8 dígitos)"
+            label="Código de Local (6 dígitos)"
             required
             value={form.codigoLocal}
-            onChange={(v) => set('codigoLocal', v.replace(/\D/g, '').slice(0, 8))}
+            onChange={(v) => set('codigoLocal', v.replace(/\D/g, '').slice(0, 6))}
             placeholder="Ej. 12457896"
             error={showError('codigoLocal')}
             adornment={
