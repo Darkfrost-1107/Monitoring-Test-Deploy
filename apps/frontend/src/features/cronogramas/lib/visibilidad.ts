@@ -77,9 +77,17 @@ const evaluaAlUsuario = (cronograma: CronogramaVisible, usuario: UsuarioObservad
   !!usuario.docenteId &&
   cronograma.evaluadoId === usuario.docenteId;
 
-/** ¿El cronograma cae dentro del nivel que atiende un jefe de área? */
+/**
+ * ¿El cronograma cae dentro del nivel que atiende un jefe de área?
+ *
+ * La comparación de nivel se hace sin distinguir mayúsculas. Se comparaba
+ * exacto, de modo que un «SECUNDARIA» guardado en la visita no coincidía con el
+ * «Secundaria» del perfil y el jefe de área no veía **ninguno** de sus
+ * cronogramas, ni los que acababa de registrar. La modalidad, dos líneas más
+ * abajo, ya se normalizaba.
+ */
 const caeEnSuNivel = (cronograma: CronogramaVisible, nivel: string): boolean => {
-  if (cronograma.nivel === nivel) return true;
+  if (cronograma.nivel?.toUpperCase() === nivel.toUpperCase()) return true;
 
   const modalidades = MODALIDADES_POR_NIVEL_DE_JEFE[nivel] ?? [];
   return modalidades.includes((cronograma.modalidad ?? '').toUpperCase());

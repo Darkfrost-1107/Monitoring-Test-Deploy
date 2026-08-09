@@ -214,3 +214,27 @@ describe('cronogramasVisibles — jefe de área', () => {
     expect(idsVisibles([sinModalidad], jefe('Primaria'))).toEqual(['c0']);
   });
 });
+
+/**
+ * El jefe de área dejaba de ver sus propios cronogramas.
+ *
+ * El nivel se comparaba exacto: un «SECUNDARIA» guardado en la visita no
+ * coincidía con el «Secundaria» del perfil y la lista quedaba vacía, incluso con
+ * las visitas que el propio jefe acababa de registrar.
+ */
+describe('cronogramasVisibles — el nivel del jefe de área no distingue mayúsculas', () => {
+  const jefe = (nivel: string) =>
+    usuario({ role: RoleCode.JEFE_AREA, especialistaNivel: nivel });
+
+  it.each([
+    ['SECUNDARIA', 'Secundaria'],
+    ['Secundaria', 'SECUNDARIA'],
+    ['secundaria', 'Secundaria'],
+  ])('la visita en %s la ve el jefe de %s', (nivelVisita, nivelJefe) => {
+    expect(idsVisibles([cronograma({ nivel: nivelVisita })], jefe(nivelJefe))).toEqual(['c0']);
+  });
+
+  it('sigue sin ver los de otro nivel', () => {
+    expect(idsVisibles([cronograma({ nivel: 'Inicial' })], jefe('Secundaria'))).toEqual([]);
+  });
+});
