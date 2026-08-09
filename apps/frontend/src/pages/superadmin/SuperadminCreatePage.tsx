@@ -53,9 +53,14 @@ export const SuperadminCreatePage = ({ targetRole }: SuperadminCreatePageProps) 
           <ArrowLeft className="h-[18px] w-[18px]" strokeWidth={2.5} />
         </button>
         <div className="flex-1">
+          {/*
+            El cargo se gana por examen y puede quedarlo alguien que nunca
+            trabajó como especialista. Titular «Registrar Nuevo Especialista» lo
+            nombraba como lo que no es.
+          */}
           <PageHeader
-            title="Registrar Nuevo Especialista"
-            description="Complete los datos para registrar un nuevo especialista en el sistema."
+            title={`Registrar ${cargo.nombre}`}
+            description={`Complete los datos para registrar al nuevo ${cargo.nombreCorto} en el sistema.`}
           />
         </div>
       </div>

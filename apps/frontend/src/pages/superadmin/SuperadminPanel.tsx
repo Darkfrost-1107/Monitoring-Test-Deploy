@@ -98,8 +98,9 @@ export const SuperadminPanel = ({ targetRole }: SuperadminPanelProps) => {
         <AlertCircle className="h-5 w-5 text-primary shrink-0 mt-0.5" />
         <div className="text-sm text-primary-dark">
           <strong className="font-bold text-primary">Atención:</strong> Esta interfaz es de uso
-          exclusivo para asignar al {cargo.nombre}. Al asignar este cargo a una nueva persona, el
-          funcionario anterior regresará automáticamente a su rol de Especialista base.
+          exclusivo para asignar al {cargo.nombre}. Al asignarlo a una nueva persona, quien lo
+          ocupaba vuelve al rol que tenía antes de asumirlo; si ingresó directamente a este cargo,
+          se le da de baja.
         </div>
       </div>
 
@@ -215,8 +216,8 @@ export const SuperadminPanel = ({ targetRole }: SuperadminPanelProps) => {
               </p>
               {enElCargo && enElCargo.id !== aConfirmar.id && (
                 <div className="bg-amber-50 border border-amber-200 rounded-md p-2.5 text-amber-800 text-xs">
-                  <strong>{nombreDe(enElCargo)}</strong> dejará el cargo y volverá automáticamente a
-                  su rol de Especialista base.
+                  <strong>{nombreDe(enElCargo)}</strong> dejará el cargo y volverá al rol que tenía
+                  antes de asumirlo. Si ingresó directamente a este cargo, se le dará de baja.
                 </div>
               )}
               <p>¿Deseas continuar?</p>
