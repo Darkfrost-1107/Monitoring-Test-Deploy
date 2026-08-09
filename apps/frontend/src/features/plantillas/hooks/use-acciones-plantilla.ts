@@ -75,7 +75,14 @@ export function useAccionesPlantilla(plantillas: readonly Plantilla[]) {
       setACambiarEstado(null);
       setAviso({ mensaje: `Estado cambiado a ${destino}`, tono: 'exito' });
     } catch (err) {
-      setErrorEstado(err instanceof Error ? err.message : 'Error al cambiar el estado.');
+      const mensaje = err instanceof Error ? err.message : 'Error al cambiar el estado.';
+      setErrorEstado(mensaje);
+
+      // También como aviso de página: el botón de confirmar cierra el diálogo al
+      // pulsarlo, de modo que el error se guardaba en un modal que ya no estaba
+      // en pantalla y el usuario veía que no pasaba nada.
+      setACambiarEstado(null);
+      setAviso({ mensaje, tono: 'error' });
     }
   };
 
