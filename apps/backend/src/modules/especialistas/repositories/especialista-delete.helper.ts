@@ -59,9 +59,13 @@ export async function deleteEspecialista(
       data: { fechaFin: fin },
     });
 
+    // `estado` faltaba: se cerraban los cargos y se reseteaba el cargo, pero el
+    // registro seguía Activo. La pantalla mostraba «Inactivo» por su
+    // actualización optimista y al recargar volvía a Activo, porque nunca se
+    // había guardado. La ruta de alta sí escribe `estado`.
     await tx.especialista.update({
       where: { id },
-      data: { cargo: 'Especialista' },
+      data: { cargo: 'Especialista', estado: EstadoRegistro.INACTIVO },
     });
 
     if (rolCodigo === 'jefe_area') {
