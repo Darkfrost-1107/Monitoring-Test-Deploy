@@ -14,7 +14,16 @@ export interface INivelCalificacion {
   id: string;
   plantillaId: string;
   nivelRomano: NivelRomano;
+  /** Nombre de la marca individual, el que ve el evaluador al calificar. */
   denominacion: string;
+  /**
+   * Nombre del resultado global cuando el instrumento lo llama distinto.
+   *
+   * La rúbrica directiva nombra «Logro Esperado» la marca de cada rúbrica y
+   * «Logrado» el resultado consolidado de ese mismo tramo. Nulo cuando las dos
+   * capas coinciden, que es el caso de la rúbrica docente.
+   */
+  denominacionConsolidado: string | null;
   rangoMin: number;
   color: string;
   orden: number;
@@ -74,6 +83,14 @@ export interface IPlantilla {
     nombre: string;
     codigoModular: string;
   };
+  /**
+   * Lema oficial del `anioAcademico`, resuelto por el servidor.
+   *
+   * Derivado, no almacenado en la plantilla: vive una sola vez por año en
+   * `lemas_anuales`. Viaja acá para que la ficha impresa no necesite una
+   * consulta aparte. Nulo mientras el año no tenga lema cargado.
+   */
+  lema: string | null;
 }
 
 export interface ICreatePlantillaRequest {

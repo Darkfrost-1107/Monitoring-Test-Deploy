@@ -2,6 +2,7 @@ import { NotFoundException } from '@nestjs/common';
 import type { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import type { IPlantilla } from '@sistema-monitoreo/shared-contracts';
 import type { UpdatePlantillaData } from './plantilla.repository.js';
+import { resolverLemaDelAnio } from './lema-anual.helper.js';
 import { randomUUID } from 'node:crypto';
 
 export async function versionarConClon(
@@ -37,6 +38,10 @@ export async function versionarConClon(
   });
   const nuevaVersion = (maxVersion._max.version ?? 0) + 1;
 
+  // Fuera de la transacción a propósito: el lema vive en otra tabla y no se
+  // toca acá, de modo que no necesita la consistencia del bloque.
+  const lema = await resolverLemaDelAnio(prisma, original.anioAcademico);
+
   return prisma.$transaction(async (tx) => {
     await tx.plantillaMonitoreo.update({
       where: { id: original.id },
@@ -70,6 +75,7 @@ export async function versionarConClon(
           plantillaId: nuevoId,
           nivelRomano: n.nivelRomano,
           denominacion: n.denominacion,
+          denominacionConsolidado: n.denominacionConsolidado ?? null,
           rangoMin: n.rangoMin,
           color: n.color,
           orden: n.orden,
@@ -174,6 +180,7 @@ export async function versionarConClon(
     });
     if (!creada) throw new NotFoundException('Error creando nueva version.');
     return {
+      lema,
       id: creada.id,
       tipoMonitoreo: creada.tipoMonitoreo as 'DOCENTE' | 'DIRECTIVO',
       anioAcademico: creada.anioAcademico,
@@ -189,6 +196,7 @@ export async function versionarConClon(
         plantillaId: n.plantillaId,
         nivelRomano: n.nivelRomano as 'I' | 'II' | 'III' | 'IV',
         denominacion: n.denominacion,
+        denominacionConsolidado: n.denominacionConsolidado,
         rangoMin: n.rangoMin,
         color: n.color,
         orden: n.orden,

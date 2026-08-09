@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { FormButton } from '@shared/ui/form-controls';
 import { plantillaSchema } from '@entities/model-plantillas/validator';
+import { useLemaDelAnio } from '@entities/model-lemas';
+import { validarLema } from '@features/plantillas/lib/campo-lema';
 import { PlantillaCabecera } from './PlantillaCabecera';
 import { PlantillaDesempenos } from './PlantillaDesempenos';
 import { PlantillaEjesItems } from './PlantillaEjesItems';
@@ -22,8 +24,23 @@ export const EditarPlantillaForm = ({ initialData, onCancel, onSubmit, isLoading
     setForm((prev) => ({ ...prev, ...p }));
   };
 
+  const { data: lemaDelAnio, isLoading: cargandoLema } = useLemaDelAnio(form.anioAcademico);
+  const lemaGuardado = lemaDelAnio?.lema ?? initialData.lema ?? null;
+
+  // Derivado, no sincronizado: el borrador recuerda su año, de modo que sin
+  // efecto alguno el campo refleja lo que el año tiene guardado.
+  const [borradorLema, setBorradorLema] = useState<{ anio: number; texto: string } | null>(null);
+  const lemaVigente =
+    borradorLema?.anio === form.anioAcademico ? borradorLema.texto : (lemaGuardado ?? '');
+
   const handleSubmit = () => {
     setSubmitted(true);
+
+    const faltaLema = validarLema(lemaVigente);
+    if (faltaLema) {
+      setErrors({ lema: faltaLema });
+      return;
+    }
 
     // Validar usando el esquema Zod real del dominio
     const validationResult = plantillaSchema.safeParse(form);
@@ -39,7 +56,7 @@ export const EditarPlantillaForm = ({ initialData, onCancel, onSubmit, isLoading
     }
 
     setErrors({});
-    onSubmit(form);
+    onSubmit({ ...form, lema: lemaVigente.trim() });
   };
 
   return (
@@ -59,6 +76,10 @@ export const EditarPlantillaForm = ({ initialData, onCancel, onSubmit, isLoading
       <PlantillaCabecera
         tipoMonitoreo={form.tipoMonitoreo}
         anioAcademico={form.anioAcademico}
+        lema={lemaVigente}
+        lemaGuardado={lemaGuardado}
+        cargandoLema={cargandoLema}
+        onLemaChange={(texto) => setBorradorLema({ anio: form.anioAcademico, texto })}
         baremo={form.baremo}
         niveles={form.niveles}
         onChange={patch}

@@ -73,6 +73,7 @@ export const FichaPrintable = forwardRef<HTMLDivElement, FichaPrintableProps>(
       <div ref={ref} className="p-8 bg-white text-black font-sans text-[11px] leading-snug w-full">
         <EncabezadoOficial
           anioAcademico={template.anioAcademico}
+          lema={template.lema}
           esDirectivo={visit.tipo === 'DIRECTIVO'}
         />
 

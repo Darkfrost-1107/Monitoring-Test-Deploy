@@ -12,6 +12,7 @@ const labelTipoMonitoreo = (tipo: TipoPlantilla): string => TIPO_MONITOREO_LABEL
 const mapNivel = (n: INivelCalificacion): NivelCalificacion => ({
   nivel: n.nivelRomano,
   denominacion: n.denominacion,
+  denominacionConsolidado: n.denominacionConsolidado ?? undefined,
   rangoMin: n.rangoMin,
   color: n.color,
 });
@@ -65,6 +66,7 @@ export const mapIPlantillaToPlantilla = (p: IPlantilla): Plantilla => ({
   id: p.id,
   tipoMonitoreo: labelTipoMonitoreo(p.tipoMonitoreo),
   anioAcademico: p.anioAcademico,
+  lema: p.lema ?? null,
   baremo: p.baremo as Baremo,
   niveles: (p.niveles ?? []).map(mapNivel),
   desempenos: (p.desempenos ?? []).map(mapDesempeno),

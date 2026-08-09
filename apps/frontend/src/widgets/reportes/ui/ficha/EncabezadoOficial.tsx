@@ -1,21 +1,24 @@
-import { lemaDelAnio } from '@features/reportes/lib/lema-del-anio';
-
 /**
  * Membrete del Estado y título de la ficha.
  *
- * El lema del año estaba escrito a mano —fijo en el de 2025— dentro del JSX.
- * Ahora sale de `lemaDelAnio`, que devuelve nulo antes que un lema vencido: un
- * encabezado oficial equivocado es peor que ninguno.
+ * El lema del año estaba escrito a mano —fijo en el de 2025— dentro del JSX, y
+ * después en una tabla literal del frontend que obligaba a desplegar cada
+ * enero. Ahora se carga al registrar la primera plantilla del año y viaja con
+ * ella, resuelto por el servidor.
+ *
+ * Cuando el año no tiene lema, la ficha se imprime sin esa línea: un encabezado
+ * oficial equivocado afirma la vigencia de un decreto que no rige, y eso es peor
+ * que omitirlo.
  */
 
 interface Props {
   anioAcademico: number | string;
+  /** Lema oficial del año, o nulo si no está cargado. */
+  lema: string | null;
   esDirectivo: boolean;
 }
 
-export const EncabezadoOficial = ({ anioAcademico, esDirectivo }: Props) => {
-  const lema = lemaDelAnio(anioAcademico);
-
+export const EncabezadoOficial = ({ anioAcademico, lema, esDirectivo }: Props) => {
   return (
     <>
       <div className="border-b-2 border-slate-900 pb-3 mb-4">

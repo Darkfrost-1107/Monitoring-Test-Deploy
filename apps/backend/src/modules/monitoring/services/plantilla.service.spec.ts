@@ -30,6 +30,7 @@ describe('PlantillaService - ILA-0046', () => {
     ejesItems: [],
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
+    lema: null,
   };
 
   const plantillaHistorica = {

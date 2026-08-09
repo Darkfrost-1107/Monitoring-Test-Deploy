@@ -53,6 +53,7 @@ const PLANTILLA: Plantilla = {
   id: 'pl-1',
   tipoMonitoreo: 'Monitoreo Docente',
   anioAcademico: 2026,
+  lema: null,
   baremo: 'Vigente',
   niveles: NIVELES,
   desempenos: [desempeno('d1', 'Involucra activamente a los estudiantes')],

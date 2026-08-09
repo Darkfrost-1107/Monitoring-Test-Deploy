@@ -1,6 +1,7 @@
 import { NotFoundException } from '@nestjs/common';
 import type { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import type { IPlantilla } from '@sistema-monitoreo/shared-contracts';
+import { resolverLemaDelAnio } from './lema-anual.helper.js';
 
 export async function buildPlantilla(
   prisma: PrismaService,
@@ -24,7 +25,11 @@ export async function buildPlantilla(
   if (!plantilla) {
     throw new NotFoundException(`Plantilla ${plantillaId} no encontrada.`);
   }
+
+  const lema = await resolverLemaDelAnio(prisma, plantilla.anioAcademico);
+
   return {
+    lema,
     id: plantilla.id,
     tipoMonitoreo: plantilla.tipoMonitoreo as 'DOCENTE' | 'DIRECTIVO',
     anioAcademico: plantilla.anioAcademico,
@@ -40,6 +45,7 @@ export async function buildPlantilla(
       plantillaId: n.plantillaId,
       nivelRomano: n.nivelRomano as 'I' | 'II' | 'III' | 'IV',
       denominacion: n.denominacion,
+      denominacionConsolidado: n.denominacionConsolidado,
       rangoMin: n.rangoMin,
       color: n.color,
       orden: n.orden,

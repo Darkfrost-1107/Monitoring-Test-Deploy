@@ -8,8 +8,17 @@ export type NivelRomano = 'I' | 'II' | 'III' | 'IV';
 // Un nivel de la escala de calificación (cabecera de la plantilla).
 export interface NivelCalificacion {
   nivel: NivelRomano;
-  denominacion: string; // Ej. "Satisfactorio"
-  rangoMin: number; // puntaje mínimo del nivel
+  /** Nombre de la marca individual, el que ve el evaluador al calificar. */
+  denominacion: string;
+  /**
+   * Nombre del resultado global cuando el instrumento lo llama distinto.
+   *
+   * La rúbrica directiva nombra «Logro Esperado» la marca de cada rúbrica y
+   * «Logrado» el resultado consolidado de ese mismo tramo. Vacío cuando las dos
+   * capas coinciden, que es el caso de la rúbrica docente.
+   */
+  denominacionConsolidado?: string;
+  rangoMin: number; // corte mínimo del nivel
   color: string; // hex
 }
 
@@ -47,6 +56,13 @@ export interface Plantilla {
   id: string;
   tipoMonitoreo: string; // Ej. "Monitoreo Docente"
   anioAcademico: number;
+  /**
+   * Lema oficial del `anioAcademico`, resuelto por el servidor.
+   *
+   * Viaja con la plantilla para que la ficha impresa no necesite una consulta
+   * aparte. Nulo mientras el año no tenga lema cargado.
+   */
+  lema: string | null;
   baremo: Baremo;
   niveles: NivelCalificacion[]; // los 4 niveles de la escala
   desempenos: Desempeno[];

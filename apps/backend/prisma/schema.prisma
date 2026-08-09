@@ -92,6 +92,7 @@ model Usuario {
   logsAuditoria        LogAuditoria[]
   planesAutor          PlanMonitoreo[]
   plantillasAutor      PlantillaMonitoreo[]
+  lemasAnualesCargados LemaAnual[]
   cronogramasCreados   Cronograma[]              @relation("CronogramaCreador")
   solicitudesCreadas   SolicitudReprogramacion[] @relation("SolicitudSolicitante")
   solicitudesResueltas SolicitudReprogramacion[] @relation("SolicitudResolutor")
@@ -557,11 +558,39 @@ model PlantillaMonitoreo {
   @@map("plantillas_monitoreo")
 }
 
+/// Lema oficial del Estado peruano, uno por año académico.
+///
+/// Lo fija un decreto supremo cada enero y es el mismo para todo el país: es
+/// propiedad del año, no de la plantilla. Por eso el año es la clave primaria y
+/// no hay forma de registrar dos lemas para el mismo año.
+///
+/// Se conserva el histórico —y no un único «lema vigente»— porque una ficha de
+/// 2025 reimpresa en 2027 debe encabezarse con el decreto que regía cuando se
+/// levantó.
+model LemaAnual {
+  anio      Int      @id
+  lema      String   @db.VarChar(250)
+  autorId   String?  @map("autor_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  autor Usuario? @relation(fields: [autorId], references: [id], onDelete: SetNull)
+
+  @@map("lemas_anuales")
+}
+
 model NivelCalificacion {
   id           String @id @default(uuid()) @db.Uuid
   plantillaId  String @map("plantilla_id") @db.Uuid
   nivelRomano  String @map("nivel_romano") @db.VarChar(4) // I | II | III | IV
+  /// Nombre de la marca individual, el que ve el evaluador al calificar.
   denominacion String @db.VarChar(100)
+  /// Nombre del resultado global cuando el instrumento lo llama distinto.
+  ///
+  /// La rúbrica directiva nombra la marca de cada rúbrica «Logro Esperado» y el
+  /// resultado consolidado de ese mismo tramo «Logrado». Nulo cuando las dos
+  /// capas usan la misma palabra, que es el caso de la rúbrica docente.
+  denominacionConsolidado String? @map("denominacion_consolidado") @db.VarChar(100)
   rangoMin     Int    @map("rango_min")
   color        String @db.Char(7)
   orden        Int
