@@ -20,25 +20,28 @@ import { update } from './especialista-update.helper.js';
 import { deleteEspecialista, activate, deactivate } from './especialista-delete.helper.js';
 import { createCargo, finalizeCargo } from './especialista-cargo.helper.js';
 import { transicionDocenteAEspecialista } from './transicion-rol.helper.js';
+import { relevarDelCargo } from '../../superuser/relevar-del-cargo.helper.js';
 
 @Injectable()
 export class PrismaEspecialistaRepository implements EspecialistaRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async relevarDelCargo(roleCode: string, exceptoPersonaId: string): Promise<number> {
-    const [rolDelCargo, rolEspecialista] = await Promise.all([
-      this.prisma.role.findUnique({ where: { codigo: roleCode } }),
-      this.prisma.role.findUnique({ where: { codigo: 'especialista' } }),
-    ]);
+    const rolDelCargo = await this.prisma.role.findUnique({ where: { codigo: roleCode } });
+    if (!rolDelCargo) return 0;
 
-    if (!rolDelCargo || !rolEspecialista) return 0;
-
-    const { count } = await this.prisma.usuario.updateMany({
+    const salientes = await this.prisma.usuario.findMany({
       where: { rolId: rolDelCargo.id, personaId: { not: exceptoPersonaId } },
-      data: { rolId: rolEspecialista.id },
+      select: { id: true, rolPrevio: true },
     });
 
-    return count;
+    // Uno por uno y no con `updateMany`: cada saliente vuelve al rol del que
+    // vino, y a quien no vino de ninguno se lo da de baja.
+    for (const saliente of salientes) {
+      await relevarDelCargo(this.prisma, saliente);
+    }
+
+    return salientes.length;
   }
 
   async findAll(filters?: IQueryEspecialistaRequest): Promise<IEspecialistaResponse[]> {

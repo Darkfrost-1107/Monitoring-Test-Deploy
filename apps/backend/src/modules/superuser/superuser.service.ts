@@ -1,6 +1,7 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { RoleCode } from '../../common/enums/role.enum.js';
+import { relevarDelCargo } from './relevar-del-cargo.helper.js';
 
 @Injectable()
 export class SuperuserService {
@@ -82,33 +83,22 @@ export class SuperuserService {
       throw new NotFoundException('El rol solicitado no existe en el catálogo.');
     }
 
-    const baseEspecialistaRole = await this.prisma.role.findUnique({
-      where: { codigo: RoleCode.ESPECIALISTA },
-    });
-
-    if (!baseEspecialistaRole) {
-      throw new NotFoundException('El rol de Especialista base no existe.');
-    }
-
-    // Usar una transacción para asegurar consistencia
     const updatedUser = await this.prisma.$transaction(async (tx) => {
-      // 1. Demoler a quien actualmente tenga el rol solicitado (si hay alguien)
-      const currentUserWithRole = await tx.usuario.findFirst({
+      // 1. Relevar a quien ocupa hoy el cargo, si hay alguien.
+      const ocupanteActual = await tx.usuario.findFirst({
         where: { rolId: newRole.id },
       });
 
-      if (currentUserWithRole && currentUserWithRole.id !== usuarioId) {
-        await tx.usuario.update({
-          where: { id: currentUserWithRole.id },
-          data: { rolId: baseEspecialistaRole.id },
-        });
+      if (ocupanteActual && ocupanteActual.id !== usuarioId) {
+        await relevarDelCargo(tx, ocupanteActual);
       }
 
-      // 2. Asignar el nuevo rol al usuario objetivo
+      // 2. Asignar el cargo, recordando de dónde viene para poder devolvérselo.
       return tx.usuario.update({
         where: { id: usuarioId },
         data: {
           rolId: newRole.id,
+          rolPrevio: rolActual,
         },
         include: {
           persona: true,

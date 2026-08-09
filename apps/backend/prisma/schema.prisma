@@ -74,6 +74,20 @@ model Usuario {
   id                  String    @id @default(uuid()) @db.Uuid
   personaId           String    @unique @map("persona_id") @db.Uuid
   rolId               String    @map("rol_id") @db.Uuid
+  /// Rol que ocupaba antes de asumir un cargo único, para devolvérselo al salir.
+  ///
+  /// Director de UGEL y Jefe de Gestión se ganan por examen: puede quedarlos un
+  /// especialista en ejercicio o alguien que nunca trabajó como tal. Al relevar
+  /// se devolvía a todo el mundo al rol de especialista, lo que convertía al
+  /// segundo en un especialista que nunca fue y lo dejaba en el padrón como
+  /// personal disponible.
+  ///
+  /// Nulo significa que no vino de ningún rol previo: al relevarlo se lo da de
+  /// baja en vez de inventarle un puesto.
+  ///
+  /// Guarda el `codigo` del rol y no su identificador: es lo que los servicios
+  /// comparan y sobrevive a un resembrado del catálogo.
+  rolPrevio           String?   @map("rol_previo") @db.VarChar(50)
   passwordHash        String    @map("password_hash") @db.VarChar(255)
   isActive            Boolean   @default(true) @map("is_active")
   isFirstLogin        Boolean   @default(true) @map("is_first_login")
