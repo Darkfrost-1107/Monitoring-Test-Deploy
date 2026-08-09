@@ -61,6 +61,14 @@ interface LampaMapProps {
   onSelectInstitucion?: (institucionId: string) => void;
   /** IE seleccionada actualmente, para resaltar su marcador. */
   selectedInstitucionId?: string | null;
+  /**
+   * Avisa qué nivel educativo quedó filtrado.
+   *
+   * El filtro vivía sólo acá adentro, de modo que elegir «Secundaria» acotaba el
+   * mapa y dejaba intacta la lista de al lado: dos vistas del mismo recorte
+   * mostrando cosas distintas.
+   */
+  onNivelChange?: (nivel: string) => void;
 }
 
 export const LampaMap = ({
@@ -70,6 +78,7 @@ export const LampaMap = ({
   onSelectDistrito,
   onSelectInstitucion,
   selectedInstitucionId,
+  onNivelChange,
 }: LampaMapProps) => {
   const { user } = useUser();
 
@@ -78,7 +87,11 @@ export const LampaMap = ({
   const modo =
     user?.role === RoleCode.DIRECTOR_UGEL ? MODO_DISTRITAL : MODO_INSTITUCIONAL;
 
-  const [nivel, setNivel] = useState<string>(TODOS);
+  const [nivel, setNivelInterno] = useState<string>(TODOS);
+  const setNivel = (siguiente: string) => {
+    setNivelInterno(siguiente);
+    onNivelChange?.(siguiente);
+  };
   const [estado, setEstado] = useState<string>(TODOS);
 
   const porDistrito = useMemo(

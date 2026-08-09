@@ -24,10 +24,27 @@ export const FocosAtencionPage = () => {
   const [distrito, setDistrito] = useState<string | null>(null);
   const [institucionSel, setInstitucionSel] = useState<string | null>(null);
 
+  /**
+   * Nivel educativo elegido en el mapa.
+   *
+   * El filtro acotaba sólo los puntos y dejaba la lista de al lado completa:
+   * elegir «Secundaria» mostraba un mapa de secundaria junto a instituciones de
+   * primaria. Las dos vistas son del mismo recorte y deben moverse juntas.
+   */
+  const [nivelFiltrado, setNivelFiltrado] = useState<string>('Todos');
+
+
   const sel = distrito ? normDistrito(distrito) : null;
   const atencionDocente = sel
     ? (data?.requierenAtencion ?? []).filter((ie) => normDistrito(ie.distrito) === sel)
     : (data?.requierenAtencion ?? []);
+
+  const atencionVisible =
+    nivelFiltrado === 'Todos'
+      ? atencionDocente
+      : atencionDocente.filter(
+          (ie) => ie.nivelEducativo?.toUpperCase() === nivelFiltrado.toUpperCase(),
+        );
 
   const atencionDistrito = sel
     ? (data?.distritosCriticos ?? []).filter((d) => normDistrito(d.distrito) === sel)
@@ -59,6 +76,7 @@ export const FocosAtencionPage = () => {
               onSelectDistrito={setDistrito}
               onSelectInstitucion={setInstitucionSel}
               selectedInstitucionId={institucionSel}
+              onNivelChange={setNivelFiltrado}
             />
           </div>
           <div className="lg:col-span-1">
@@ -70,7 +88,7 @@ export const FocosAtencionPage = () => {
             ) : isDirectorUgel ? (
               <RequierenAtencionCard items={atencionDistrito} />
             ) : (
-              <RequierenAtencionInstitucionalCard items={atencionDocente} />
+              <RequierenAtencionInstitucionalCard items={atencionVisible} />
             )}
           </div>
         </div>
