@@ -128,9 +128,19 @@ export const JefesTableWidget = ({ jefes, onEdit, onView, onChanged }: JefesTabl
       {finalizingDoc && (
         <ConfirmModal
           danger
-          title="¿Desactivar Jefe de Área?"
-          message={`Esta acción cambiará el estado de ${finalizingDoc.apellidos}, ${finalizingDoc.nombres} a Inactivo.`}
-          confirmLabel="Desactivar"
+          title="¿Retirar el cargo de Jefe de Área?"
+          message={
+            <>
+              <strong>{finalizingDoc.apellidos}, {finalizingDoc.nombres}</strong> dejará el cargo de
+              Jefe de Área y volverá a figurar como Especialista, de modo que saldrá de este
+              listado. Su registro quedará inactivo y sin acceso al sistema.
+              <br />
+              <br />
+              Al reactivarlo lo hará como Especialista: el cargo de Jefe de Área se asigna de nuevo
+              aparte.
+            </>
+          }
+          confirmLabel="Retirar el cargo"
           cancelLabel="Cancelar"
           onConfirm={confirmFinalize}
           onCancel={() => setFinalizingDoc(null)}
@@ -140,7 +150,7 @@ export const JefesTableWidget = ({ jefes, onEdit, onView, onChanged }: JefesTabl
       {restoringDoc && (
         <ConfirmModal
           title="¿Reactivar Jefe de Área?"
-          message={`Esta acción reactivará el registro de ${restoringDoc.apellidos}, ${restoringDoc.nombres} en el sistema.`}
+          message={`Esta acción reactivará el registro de ${restoringDoc.apellidos}, ${restoringDoc.nombres} como Especialista y le devolverá el acceso. El cargo de Jefe de Área se asigna aparte.`}
           confirmLabel="Reactivar"
           cancelLabel="Cancelar"
           onConfirm={confirmRestore}
