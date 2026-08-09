@@ -17,7 +17,12 @@ import {
 } from './especialista-read.helper.js';
 import { create } from './especialista-create.helper.js';
 import { update } from './especialista-update.helper.js';
-import { deleteEspecialista, activate, deactivate } from './especialista-delete.helper.js';
+import {
+  deleteEspecialista,
+  activate,
+  deactivate,
+  retirarCargo,
+} from './especialista-delete.helper.js';
 import { createCargo, finalizeCargo } from './especialista-cargo.helper.js';
 import { transicionDocenteAEspecialista } from './transicion-rol.helper.js';
 import { relevarDelCargo } from '../../superuser/relevar-del-cargo.helper.js';
@@ -78,6 +83,10 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
 
   async deactivate(id: string): Promise<IEspecialistaResponse> {
     return deactivate(this.prisma, id);
+  }
+
+  async retirarCargo(id: string): Promise<IEspecialistaResponse> {
+    return retirarCargo(this.prisma, id);
   }
 
   async findUserIdByEspecialistaId(especialistaId: string): Promise<string | null> {

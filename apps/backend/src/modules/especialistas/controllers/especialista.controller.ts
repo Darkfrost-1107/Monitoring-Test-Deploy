@@ -91,6 +91,13 @@ export class EspecialistaController {
     return this.service.activate(id);
   }
 
+  @Patch(':id/retirar-cargo')
+  @RequirePermissions('especialistas:write')
+  @HttpCode(HttpStatus.OK)
+  async retirarCargo(@Param('id') id: string): Promise<IEspecialistaResponse> {
+    return this.service.retirarCargo(id);
+  }
+
   @Patch(':id/baja')
   @RequirePermissions('especialistas:write')
   @HttpCode(HttpStatus.OK)

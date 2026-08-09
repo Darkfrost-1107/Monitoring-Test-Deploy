@@ -45,6 +45,9 @@ export abstract class EspecialistaRepository {
   ): Promise<IEspecialistaResponse>;
   abstract delete(id: string): Promise<IEspecialistaResponse>;
   abstract activate(id: string): Promise<IEspecialistaResponse>;
+  /** Retira los cargos vigentes y deja a la persona activa como Especialista. */
+  abstract retirarCargo(id: string): Promise<IEspecialistaResponse>;
+
   abstract deactivate(id: string): Promise<IEspecialistaResponse>;
   abstract findUserIdByEspecialistaId(especialistaId: string): Promise<string | null>;
   abstract findCargosByEspecialistaId(especialistaId: string): Promise<CargoRecord[]>;

@@ -5,9 +5,22 @@ import { EstadoRegistro } from '../../../common/enums/estado.enum.js';
 import { mapEspecialista, ESPECIALISTA_INCLUDE } from './especialista-mapper.helper.js';
 import { findById } from './especialista-read.helper.js';
 
+/**
+ * Cierra los cargos vigentes de un especialista.
+ *
+ * ── Retirar el cargo no es dar de baja ──
+ * Son dos intenciones distintas y compartían esta función. Quitarle el cargo de
+ * Jefe de Área a alguien lo devuelve a Especialista y ahí sigue trabajando: debe
+ * quedar **activo**. Darlo de baja es que se va de la UGEL, y eso se hace desde
+ * la sección de Especialistas.
+ *
+ * Con `desactivar` en falso sólo se retira el cargo; el registro y su acceso
+ * quedan intactos.
+ */
 export async function deleteEspecialista(
   prisma: PrismaService,
   id: string,
+  { desactivar = true }: { desactivar?: boolean } = {},
 ): Promise<IEspecialistaResponse> {
   const existing = await findById(prisma, id);
   if (!existing) {
@@ -65,17 +78,21 @@ export async function deleteEspecialista(
     // había guardado. La ruta de alta sí escribe `estado`.
     await tx.especialista.update({
       where: { id },
-      data: { cargo: 'Especialista', estado: EstadoRegistro.INACTIVO },
+      data: {
+        cargo: 'Especialista',
+        ...(desactivar ? { estado: EstadoRegistro.INACTIVO } : {}),
+      },
     });
 
-    // Se corta el acceso: el login rechaza con «Cuenta inactiva» cuando
-    // `isActive` es falso, pero la baja sólo cambiaba el rol y nunca lo apagaba,
-    // de modo que un especialista dado de baja seguía entrando con normalidad.
-    // La ruta de alta sí lo enciende.
-    await tx.usuario.updateMany({
-      where: { personaId: esp.personaId },
-      data: { isActive: false },
-    });
+    // Se corta el acceso sólo cuando es una baja: el login rechaza con «Cuenta
+    // inactiva» si `isActive` es falso. Retirar un cargo no debe dejar a la
+    // persona afuera, porque sigue trabajando como especialista.
+    if (desactivar) {
+      await tx.usuario.updateMany({
+        where: { personaId: esp.personaId },
+        data: { isActive: false },
+      });
+    }
 
     if (rolCodigo === 'jefe_area') {
       const rolJefeArea = await tx.role.findUnique({
@@ -134,4 +151,12 @@ export async function deactivate(
   id: string,
 ): Promise<IEspecialistaResponse> {
   return deleteEspecialista(prisma, id);
+}
+
+/** Retira los cargos vigentes y deja a la persona activa como Especialista. */
+export async function retirarCargo(
+  prisma: PrismaService,
+  id: string,
+): Promise<IEspecialistaResponse> {
+  return deleteEspecialista(prisma, id, { desactivar: false });
 }

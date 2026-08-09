@@ -68,10 +68,14 @@ export const jefesAreaApi = {
     return especialistasApi.delete(id);
   },
 
+  /**
+   * Retira el cargo de Jefe de Área. La persona vuelve a ser Especialista y
+   * sigue activa: darla de baja es otra acción, la de esa sección.
+   */
   deactivate: async (
     id: string,
   ): Promise<{ ok: boolean; data?: IJefeAreaResponse; error?: unknown }> => {
-    return especialistasApi.deactivate(id);
+    return especialistasApi.retirarCargo(id);
   },
 
   activate: async (

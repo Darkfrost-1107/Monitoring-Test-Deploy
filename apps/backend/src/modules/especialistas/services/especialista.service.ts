@@ -276,6 +276,17 @@ export class EspecialistaService {
     return result;
   }
 
+  /**
+   * Retira los cargos vigentes sin dar de baja a la persona.
+   *
+   * Quitarle el cargo de Jefe de Área lo devuelve a Especialista y ahí sigue
+   * trabajando: no corresponde inactivarlo ni cortarle el acceso. Irse de la
+   * UGEL es otra acción, la de la sección de Especialistas.
+   */
+  async retirarCargo(id: string): Promise<IEspecialistaResponse> {
+    return this.repository.retirarCargo(id);
+  }
+
   async transicionRolAEspecialista(
     personaId: string,
     dto: CreateEspecialistaDto,

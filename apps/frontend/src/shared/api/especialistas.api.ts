@@ -85,6 +85,21 @@ export const especialistasApi = {
     }
   },
 
+  /** Retira los cargos vigentes y deja a la persona activa como Especialista. */
+  retirarCargo: async (
+    id: string,
+  ): Promise<{ ok: boolean; data?: IEspecialistaResponse; error?: unknown }> => {
+    try {
+      const data = await request<IEspecialistaResponse>(
+        `/api/especialistas/${id}/retirar-cargo`,
+        { method: 'PATCH' },
+      );
+      return { ok: true, data };
+    } catch (err) {
+      return { ok: false, error: err };
+    }
+  },
+
   deactivate: async (
     id: string,
   ): Promise<{ ok: boolean; data?: IEspecialistaResponse; error?: unknown }> => {

@@ -132,12 +132,12 @@ export const JefesTableWidget = ({ jefes, onEdit, onView, onChanged }: JefesTabl
           message={
             <>
               <strong>{finalizingDoc.apellidos}, {finalizingDoc.nombres}</strong> dejará el cargo de
-              Jefe de Área y volverá a figurar como Especialista, de modo que saldrá de este
-              listado. Su registro quedará inactivo y sin acceso al sistema.
+              Jefe de Área y volverá a figurar como Especialista, de modo que saldrá de este listado
+              y pasará al de Especialistas.
               <br />
               <br />
-              Al reactivarlo lo hará como Especialista: el cargo de Jefe de Área se asigna de nuevo
-              aparte.
+              Sigue activo y conserva su acceso: retirar el cargo no es darlo de baja. Si se retira
+              de la UGEL, la baja se hace desde Especialistas.
             </>
           }
           confirmLabel="Retirar el cargo"
