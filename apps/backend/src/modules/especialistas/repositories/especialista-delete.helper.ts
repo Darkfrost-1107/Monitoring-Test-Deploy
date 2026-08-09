@@ -68,6 +68,15 @@ export async function deleteEspecialista(
       data: { cargo: 'Especialista', estado: EstadoRegistro.INACTIVO },
     });
 
+    // Se corta el acceso: el login rechaza con «Cuenta inactiva» cuando
+    // `isActive` es falso, pero la baja sólo cambiaba el rol y nunca lo apagaba,
+    // de modo que un especialista dado de baja seguía entrando con normalidad.
+    // La ruta de alta sí lo enciende.
+    await tx.usuario.updateMany({
+      where: { personaId: esp.personaId },
+      data: { isActive: false },
+    });
+
     if (rolCodigo === 'jefe_area') {
       const rolJefeArea = await tx.role.findUnique({
         where: { codigo: 'jefe_area' },
