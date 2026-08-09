@@ -4,10 +4,17 @@ import type { Baremo, NivelCalificacion } from '@entities/model-plantillas';
 import { TIPOS_MONITOREO, BAREMOS } from '@entities/model-plantillas';
 import { useUser } from '@entities/model-user';
 import { RoleCode } from '@sistema-monitoreo/shared-contracts';
+import { CampoLemaOficial } from './CampoLemaOficial';
 
 interface Props {
   tipoMonitoreo: string;
   anioAcademico: number;
+  /** Lema oficial del año, ya resuelto por el formulario. */
+  lema: string;
+  /** Lo que el año tiene guardado, o nulo si todavía no se cargó. */
+  lemaGuardado: string | null;
+  cargandoLema: boolean;
+  onLemaChange: (lema: string) => void;
   baremo: Baremo;
   niveles: NivelCalificacion[];
   onChange: (patch: Partial<{
@@ -22,6 +29,10 @@ interface Props {
 export const PlantillaCabecera = ({
   tipoMonitoreo,
   anioAcademico,
+  lema,
+  lemaGuardado,
+  cargandoLema,
+  onLemaChange,
   baremo,
   niveles,
   onChange,
@@ -62,6 +73,13 @@ export const PlantillaCabecera = ({
             placeholder="2024"
             disabled={isEditMode}
           />
+          <CampoLemaOficial
+            anioAcademico={anioAcademico}
+            lema={lema}
+            lemaGuardado={lemaGuardado}
+            cargando={cargandoLema}
+            onChange={onLemaChange}
+          />
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-semibold text-text">
               Baremo (Escala de Calificación) <span className="text-destructive">*</span>
@@ -85,16 +103,20 @@ export const PlantillaCabecera = ({
 
         {/* Tabla de niveles de logro */}
         <div className="border border-border rounded-xl h-fit">
-          <div className="grid grid-cols-[44px_minmax(160px,1fr)_80px_60px] gap-2 bg-muted/40 px-3 py-2 text-[0.6rem] font-bold uppercase tracking-wider text-text-muted">
+          <div className="grid grid-cols-[44px_minmax(140px,1fr)_minmax(140px,1fr)_72px_52px] gap-2 bg-muted/40 px-3 py-2 text-[0.6rem] font-bold uppercase tracking-wider text-text-muted">
             <span>Nivel</span>
             <span>Denominación</span>
-            <span>Rango Mín.</span>
+            {/* Sólo se completa cuando el instrumento nombra distinto la marca
+                y el resultado, como la rúbrica directiva. */}
+            <span>Nombre del resultado</span>
+            {/* Qué mide el corte depende del baremo elegido arriba. */}
+            <span>{baremo === 'Porcentual' ? '% Mín.' : 'Rango Mín.'}</span>
             <span>Color</span>
           </div>
           {niveles.map((n, i) => (
             <div
               key={n.nivel}
-              className="grid grid-cols-[44px_minmax(160px,1fr)_80px_60px] gap-2 items-start px-3 py-2 border-t border-border"
+              className="grid grid-cols-[44px_minmax(140px,1fr)_minmax(140px,1fr)_72px_52px] gap-2 items-start px-3 py-2 border-t border-border"
             >
               <span className="font-bold text-sm text-text pt-1">{n.nivel}</span>
               <textarea
@@ -102,6 +124,15 @@ export const PlantillaCabecera = ({
                 onChange={(e) => setNivel(i, { denominacion: e.target.value })}
                 rows={1}
                 className="text-xs border border-input rounded-md px-2 py-1 bg-transparent w-full resize-none overflow-hidden"
+              />
+              <textarea
+                value={n.denominacionConsolidado ?? ''}
+                onChange={(e) =>
+                  setNivel(i, { denominacionConsolidado: e.target.value || undefined })
+                }
+                rows={1}
+                placeholder="Igual que la denominación"
+                className="text-xs border border-input rounded-md px-2 py-1 bg-transparent w-full resize-none overflow-hidden placeholder:text-text-muted/60"
               />
               <input
                 value={String(n.rangoMin)}
