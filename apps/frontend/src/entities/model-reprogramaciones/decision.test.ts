@@ -158,6 +158,23 @@ describe('puedeDecidirReprogramacion', () => {
       });
       expect(puedeDecidirReprogramacion(porNombre, visita(), RoleCode.JEFE_TALLER)).toBe(true);
     });
+
+    /**
+     * El nombre es respaldo, no una segunda vía de acceso.
+     *
+     * En la base de la UGEL hay tres nombres de institución repetidos, uno de
+     * ellos cinco veces. Con el identificador presente y distinto, la
+     * comparación por nombre no debe habilitar la decisión: el director de una
+     * sede resolvería las solicitudes de sus homónimas.
+     */
+    it('no decide sobre una institución homónima teniendo identificador propio', () => {
+      const deOtraSede = usuario({
+        role: RoleCode.DIRECTOR_INSTITUCION,
+        institucion: 'ie-9',
+        institucionNombre: 'I.E. Ejemplo',
+      });
+      expect(puedeDecidirReprogramacion(deOtraSede, visita(), RoleCode.JEFE_TALLER)).toBe(false);
+    });
   });
 
   describe('roles sin participación en la decisión', () => {

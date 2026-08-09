@@ -1,4 +1,5 @@
 import { RoleCode, MONITOR_CAMPO_ROLES } from '@sistema-monitoreo/shared-contracts';
+import { esDeLaInstitucionDelUsuario } from '@shared/lib/pertenencia-institucional';
 
 /**
  * Qué cronogramas ve cada usuario en pantalla.
@@ -59,11 +60,7 @@ export interface CronogramaVisible {
 
 /** ¿El cronograma pertenece a la institución del usuario? */
 const esDeSuInstitucion = (cronograma: CronogramaVisible, usuario: UsuarioObservador): boolean =>
-  !!(
-    (usuario.institucion && cronograma.institucionId === usuario.institucion) ||
-    (usuario.institucionNombre &&
-      cronograma.institucion.toLowerCase() === usuario.institucionNombre.toLowerCase())
-  );
+  esDeLaInstitucionDelUsuario(usuario, cronograma);
 
 /**
  * ¿La visita evalúa al propio usuario?

@@ -3,6 +3,7 @@ import {
   NivelEducativoEBR,
   MONITOR_CAMPO_ROLES,
 } from '@sistema-monitoreo/shared-contracts';
+import { esDeLaInstitucionDelUsuario } from '@shared/lib/pertenencia-institucional';
 
 /**
  * Quién puede decidir sobre una solicitud de reprogramación.
@@ -59,11 +60,7 @@ export const esSolicitudDeInstitucion = (solicitanteRolAlCrear?: string): boolea
 
 /** ¿El usuario y la visita corresponden a la misma institución educativa? */
 const esMismaInstitucion = (usuario: UsuarioDecisor, visita: VisitaDecidible): boolean =>
-  !!(
-    (usuario.institucion && visita.institucionId === usuario.institucion) ||
-    (usuario.institucionNombre &&
-      visita.institucion.toLowerCase() === usuario.institucionNombre.toLowerCase())
-  );
+  esDeLaInstitucionDelUsuario(usuario, visita);
 
 export function puedeDecidirReprogramacion(
   usuario: UsuarioDecisor | null | undefined,

@@ -79,6 +79,20 @@ describe('cronogramasVisibles — director de institución', () => {
   });
 
   /**
+   * El nombre es respaldo, no una segunda vía de acceso.
+   *
+   * En la base de la UGEL hay tres nombres de institución repetidos —«COORDINACION
+   * DE PRONOEI - UGEL LAMPA» figura cinco veces, una por distrito—. Con el
+   * identificador presente y distinto, la comparación por nombre no debe
+   * habilitar nada: el director de una de esas sedes vería las visitas de las
+   * otras cuatro.
+   */
+  it('no ve las visitas de una institución homónima teniendo identificador propio', () => {
+    const actor = director({ institucion: 'ie-9', institucionNombre: 'IE 1234' });
+    expect(idsVisibles([cronograma({ institucionId: 'ie-1', institucion: 'IE 1234' })], actor)).toEqual([]);
+  });
+
+  /**
    * Un director también es evaluado: ve la visita dirigida a él aunque esté
    * registrada en otra institución. Se reconoce por `evaluadoId`, columna no
    * nula con clave foránea; antes se comparaban los nombres por inclusión de
