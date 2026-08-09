@@ -35,7 +35,35 @@ export const FilterDirectores = () => {
 
   const search = searchParams.get('search') || '';
   const condicion = searchParams.get('condicion') || '';
+  const modalidad = searchParams.get('modalidad') || '';
   const nivelEducativo = searchParams.get('nivelEducativo') || '';
+
+  /**
+   * Los niveles que ofrece el selector.
+   *
+   * Sin modalidad elegida se acumulaban todos en una sola lista —Inicial y
+   * Primaria de EBR junto a CEBE, PRITE, «Peluquería y barbería»— y encontrar
+   * uno era leer catorce opciones de cuatro modalidades distintas. Elegir la
+   * modalidad primero deja sólo sus niveles.
+   */
+  const nivelesDeLaModalidad = modalidad
+    ? (MODALIDAD_NIVEL_MAP[modalidad] ?? []).filter((n) => allowedNiveles.includes(n))
+    : allowedNiveles;
+
+  /**
+   * Cambiar de modalidad limpia el nivel.
+   *
+   * Un nivel de EBE no existe dentro de EBR: conservarlo dejaría la tabla vacía
+   * con dos filtros que se contradicen y ninguna pista de por qué.
+   */
+  const cambiarModalidad = (valor: string) => {
+    const newParams = new URLSearchParams(searchParams);
+    if (valor) newParams.set('modalidad', valor);
+    else newParams.delete('modalidad');
+    newParams.delete('nivelEducativo');
+    newParams.set('page', '1');
+    setSearchParams(newParams);
+  };
 
   const updateFilter = (key: string, value: string) => {
     const newParams = new URLSearchParams(searchParams);
@@ -50,7 +78,7 @@ export const FilterDirectores = () => {
 
   return (
     <Card className="p-5 border border-border shadow-xs animate-in fade-in-0 duration-300">
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="flex flex-col gap-1.5 w-full">
           <label className="text-[0.7rem] font-bold uppercase tracking-wider text-text-muted">
             Buscar Director
@@ -76,10 +104,18 @@ export const FilterDirectores = () => {
         />
 
         <FilterSelect
+          label="Modalidad"
+          value={modalidad}
+          onChange={cambiarModalidad}
+          options={Object.keys(MODALIDAD_NIVEL_MAP)}
+          allLabel="Todas las modalidades"
+        />
+
+        <FilterSelect
           label="Nivel Educativo"
           value={nivelEducativo}
           onChange={(v) => updateFilter('nivelEducativo', v)}
-          options={allowedNiveles}
+          options={nivelesDeLaModalidad}
           allLabel="Todos los niveles"
         />
       </div>

@@ -12,6 +12,7 @@ import { Avatar, AvatarFallback } from '@shared/ui/avatar';
 import { Badge } from '@shared/ui/badge';
 import { TableCell, TableHead, TableRow } from '@shared/ui/table';
 import { hoyISO } from '@shared/lib/fecha/fecha';
+import { MODALIDAD_NIVEL_MAP } from '@entities/model-instituciones';
 
 // Escala magisterial romana → número con cero (V → "05"), como en el mockup.
 const ESCALA_NUM: Record<string, string> = {
@@ -59,7 +60,14 @@ const directorFilter = (dir: Docente, params: URLSearchParams) => {
   const matchNivel =
     !nivel || (dir.nivelEducativo ?? '').toLowerCase() === nivel.toLowerCase();
 
-  return matchSearch && matchCondicion && matchNivel;
+  // El padrón no guarda la modalidad del director, pero cada nivel pertenece a
+  // una sola: se deduce del mapa en vez de agregar un campo que ya está implícito.
+  const modalidad = params.get('modalidad') || '';
+  const nivelesDeLaModalidad = (MODALIDAD_NIVEL_MAP[modalidad] ?? []).map((n) => n.toLowerCase());
+  const matchModalidad =
+    !modalidad || nivelesDeLaModalidad.includes((dir.nivelEducativo ?? '').toLowerCase());
+
+  return matchSearch && matchCondicion && matchNivel && matchModalidad;
 };
 
 interface DirectoresTableWidgetProps {
