@@ -67,14 +67,17 @@ const getNotificationBadge = (tipo: string) => {
         actionUrl: '/monitoreo/solicitudes-visita',
         actionLabel: 'Ver Solicitudes de visita',
       };
+    // Las tres alertas de desempeño llevan a Focos de Atención, que es donde
+    // están el mapa y la institución o el distrito señalado. Apuntaban a
+    // solicitudes de visita, que es otra bandeja y no tiene nada de esto.
     case 'ALERTA_INSTITUCION':
     case 'ALERTA_DISTRITO':
     case 'IE_SIN_VISITA':
       return {
         icon: AlertTriangle,
         bg: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
-        actionUrl: '/monitoreo/solicitudes-visita',
-        actionLabel: 'Ver Solicitudes de visita',
+        actionUrl: '/focos-atencion',
+        actionLabel: 'Ver Focos de Atención',
       };
     default:
       return {
