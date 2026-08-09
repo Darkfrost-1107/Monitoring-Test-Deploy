@@ -301,7 +301,6 @@ export class PrismaFichaRepository implements FichaRepository {
           nivelRomano: true,
           rangoMin: true,
           denominacion: true,
-          denominacionConsolidado: true,
         },
       }),
     ]);
@@ -312,7 +311,6 @@ export class PrismaFichaRepository implements FichaRepository {
         nivelRomano: n.nivelRomano as 'I' | 'II' | 'III' | 'IV',
         rangoMin: n.rangoMin,
         denominacion: n.denominacion,
-        denominacionConsolidado: n.denominacionConsolidado,
       })),
     };
   }

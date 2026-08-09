@@ -22,7 +22,6 @@ export async function syncArbol(
         where: { id: existing.id },
         data: {
           denominacion: n.denominacion,
-          denominacionConsolidado: n.denominacionConsolidado ?? null,
           rangoMin: n.rangoMin,
           color: n.color,
           orden: n.orden,
@@ -35,7 +34,6 @@ export async function syncArbol(
           plantillaId,
           nivelRomano: n.nivelRomano,
           denominacion: n.denominacion,
-          denominacionConsolidado: n.denominacionConsolidado ?? null,
           rangoMin: n.rangoMin,
           color: n.color,
           orden: n.orden,

@@ -12,7 +12,6 @@ const labelTipoMonitoreo = (tipo: TipoPlantilla): string => TIPO_MONITOREO_LABEL
 const mapNivel = (n: INivelCalificacion): NivelCalificacion => ({
   nivel: n.nivelRomano,
   denominacion: n.denominacion,
-  denominacionConsolidado: n.denominacionConsolidado ?? undefined,
   rangoMin: n.rangoMin,
   color: n.color,
 });

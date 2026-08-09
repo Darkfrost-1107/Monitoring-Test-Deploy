@@ -37,10 +37,6 @@ describe('nivelesPorDefecto — Monitoreo Docente', () => {
     ]);
   });
 
-  /** Sus dos capas usan las mismas palabras, así que no hace falta el segundo. */
-  it('no propone un nombre distinto para el resultado', () => {
-    expect(escala.every((n) => n.denominacionConsolidado === undefined)).toBe(true);
-  });
 });
 
 describe('nivelesPorDefecto — Monitoreo Directivo', () => {
@@ -59,27 +55,20 @@ describe('nivelesPorDefecto — Monitoreo Directivo', () => {
   });
 
   /**
-   * El documento usa dos vocabularios: su tabla «NIVELES DEL LOGRO» nombra la
-   * marca de cada rúbrica y el baremo del consolidado nombra el resultado del
-   * mismo tramo. Con un solo nombre, uno de los dos quedaba mal rotulado.
+   * Se proponen los nombres del baremo consolidado, que son los que distinguen
+   * a este instrumento. Los de la tabla «NIVELES DEL LOGRO» —Inicio, En
+   * Proceso, Logro Esperado, Logro Destacado— son idénticos a los del docente y
+   * dejaban las dos plantillas indistinguibles en pantalla.
    */
-  it('propone los nombres de la marca de cada rúbrica', () => {
+  it('propone los nombres que distinguen a la rúbrica directiva', () => {
     expect(escala.map((n) => n.denominacion)).toEqual([
-      'Inicio',
-      'En Proceso',
-      'Logro Esperado',
-      'Logro Destacado',
-    ]);
-  });
-
-  it('propone aparte los nombres del resultado consolidado', () => {
-    expect(escala.map((n) => n.denominacionConsolidado)).toEqual([
       'En inicio',
       'En proceso',
       'Logrado',
       'Satisfactorio',
     ]);
   });
+
 
   /**
    * El nivel más alto tiene que ser alcanzable.

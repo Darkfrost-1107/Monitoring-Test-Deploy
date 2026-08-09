@@ -61,18 +61,21 @@ const ESCALA_DOCENTE: readonly NivelCalificacion[] = [
  * rúbricas; el porcentaje no depende de cuántas tenga la ficha y sigue siendo
  * fiel al documento.
  *
- * ── Dos vocabularios ──
- * El documento nombra distinto la marca y el resultado. Su tabla «NIVELES DEL
+ * ── Qué nombres se usan ──
+ * El documento nombra distinto la marca y el resultado: su tabla «NIVELES DEL
  * LOGRO» rotula la marca de cada rúbrica —Inicio, En Proceso, Logro Esperado,
- * Logro Destacado— y el baremo del consolidado rotula el resultado del mismo
- * tramo —En inicio, En proceso, Logrado, Satisfactorio—. Por eso cada nivel
- * lleva los dos nombres.
+ * Logro Destacado, iguales a las del docente— y el baremo del consolidado
+ * rotula el resultado —En inicio, En proceso, Logrado, Satisfactorio—.
+ *
+ * Se proponen los del consolidado, que son los que distinguen a este
+ * instrumento del docente. Con los de marca las dos plantillas se veían iguales
+ * en pantalla y no había forma de diferenciarlas.
  */
 const ESCALA_DIRECTIVO: readonly NivelCalificacion[] = [
-  { nivel: 'I', denominacion: 'Inicio', denominacionConsolidado: 'En inicio', rangoMin: 25, color: '#ef4444' },
-  { nivel: 'II', denominacion: 'En Proceso', denominacionConsolidado: 'En proceso', rangoMin: 50, color: '#f59e0b' },
-  { nivel: 'III', denominacion: 'Logro Esperado', denominacionConsolidado: 'Logrado', rangoMin: 75, color: '#22c55e' },
-  { nivel: 'IV', denominacion: 'Logro Destacado', denominacionConsolidado: 'Satisfactorio', rangoMin: 100, color: '#3b82f6' },
+  { nivel: 'I', denominacion: 'En inicio', rangoMin: 25, color: '#ef4444' },
+  { nivel: 'II', denominacion: 'En proceso', rangoMin: 50, color: '#f59e0b' },
+  { nivel: 'III', denominacion: 'Logrado', rangoMin: 75, color: '#22c55e' },
+  { nivel: 'IV', denominacion: 'Satisfactorio', rangoMin: 100, color: '#3b82f6' },
 ];
 
 /**

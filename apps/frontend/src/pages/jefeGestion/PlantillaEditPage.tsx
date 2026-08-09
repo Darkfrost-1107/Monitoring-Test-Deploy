@@ -63,7 +63,6 @@ export const PlantillaEditPage = () => {
           niveles: data.niveles.map((n, i) => ({
             nivelRomano: n.nivel,
             denominacion: n.denominacion,
-            denominacionConsolidado: n.denominacionConsolidado ?? null,
             rangoMin: n.rangoMin,
             color: n.color,
             orden: i + 1,

@@ -45,7 +45,6 @@ export async function buildPlantilla(
       plantillaId: n.plantillaId,
       nivelRomano: n.nivelRomano as 'I' | 'II' | 'III' | 'IV',
       denominacion: n.denominacion,
-      denominacionConsolidado: n.denominacionConsolidado,
       rangoMin: n.rangoMin,
       color: n.color,
       orden: n.orden,

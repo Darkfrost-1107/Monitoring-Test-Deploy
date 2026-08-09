@@ -150,7 +150,6 @@ export const LlenarFichaForm = ({
           nivelRomano: n.nivel,
           rangoMin: n.rangoMin,
           denominacion: n.denominacion,
-          denominacionConsolidado: n.denominacionConsolidado,
         })),
         // Y cómo leerlos: la rúbrica docente corta sobre el puntaje, la
         // directiva sobre el porcentaje de avance.

@@ -583,14 +583,7 @@ model NivelCalificacion {
   id           String @id @default(uuid()) @db.Uuid
   plantillaId  String @map("plantilla_id") @db.Uuid
   nivelRomano  String @map("nivel_romano") @db.VarChar(4) // I | II | III | IV
-  /// Nombre de la marca individual, el que ve el evaluador al calificar.
   denominacion String @db.VarChar(100)
-  /// Nombre del resultado global cuando el instrumento lo llama distinto.
-  ///
-  /// La rúbrica directiva nombra la marca de cada rúbrica «Logro Esperado» y el
-  /// resultado consolidado de ese mismo tramo «Logrado». Nulo cuando las dos
-  /// capas usan la misma palabra, que es el caso de la rúbrica docente.
-  denominacionConsolidado String? @map("denominacion_consolidado") @db.VarChar(100)
   rangoMin     Int    @map("rango_min")
   color        String @db.Char(7)
   orden        Int

@@ -95,16 +95,7 @@ export type ModoDeBaremo = 'Vigente' | 'Porcentual';
 export interface TramoDeEscala {
   nivelRomano: 'I' | 'II' | 'III' | 'IV';
   rangoMin: number;
-  /** Nombre de la marca individual, el que ve el evaluador al calificar. */
   denominacion: string;
-  /**
-   * Nombre del resultado global, cuando el instrumento lo llama distinto.
-   *
-   * La rúbrica directiva nombra «Logro Esperado» la marca de cada rúbrica y
-   * «Logrado» el resultado consolidado de ese mismo tramo. Ausente cuando las
-   * dos capas coinciden, y entonces se reutiliza `denominacion`.
-   */
-  denominacionConsolidado?: string | null;
 }
 
 /**
@@ -152,11 +143,10 @@ export interface ResultadoBaremo {
   promedio: number;
   nivelLogro: NivelLogro;
   /**
-   * Nombre del **resultado** tal como lo escribió la plantilla.
+   * Nombre del nivel tal como lo escribió la plantilla.
    *
-   * No es necesariamente el nombre de la marca individual: la rúbrica directiva
-   * llama «Logro Esperado» a la marca de cada rúbrica y «Logrado» al resultado
-   * consolidado de ese mismo tramo. El ordinal se guarda, el nombre se muestra.
+   * La rúbrica docente llama «Logro destacado» a su nivel IV y la directiva
+   * «Satisfactorio» al suyo: el ordinal se guarda, el nombre se muestra.
    */
   denominacion: string;
   /** Porcentaje del puntaje máximo, redondeado, para mostrar en pantalla. */
@@ -213,8 +203,7 @@ export function calcularResultadoBaremo(
     puntajeMaximo,
     promedio,
     nivelLogro,
-    denominacion:
-      tramo?.denominacionConsolidado || tramo?.denominacion || NIVEL_LOGRO_LABELS[nivelLogro],
+    denominacion: tramo?.denominacion ?? NIVEL_LOGRO_LABELS[nivelLogro],
     porcentaje,
   };
 }

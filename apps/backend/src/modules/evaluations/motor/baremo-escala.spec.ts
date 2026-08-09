@@ -27,25 +27,10 @@ const ESCALA_DOCENTE: TramoDeEscala[] = [
 
 /** Rúbrica de monitoreo DIRECTIVO 2025. Corta sobre el porcentaje de avance. */
 const ESCALA_DIRECTIVO: TramoDeEscala[] = [
-  { nivelRomano: 'I', rangoMin: 25, denominacion: 'Inicio', denominacionConsolidado: 'En inicio' },
-  {
-    nivelRomano: 'II',
-    rangoMin: 50,
-    denominacion: 'En Proceso',
-    denominacionConsolidado: 'En proceso',
-  },
-  {
-    nivelRomano: 'III',
-    rangoMin: 75,
-    denominacion: 'Logro Esperado',
-    denominacionConsolidado: 'Logrado',
-  },
-  {
-    nivelRomano: 'IV',
-    rangoMin: 100,
-    denominacion: 'Logro Destacado',
-    denominacionConsolidado: 'Satisfactorio',
-  },
+  { nivelRomano: 'I', rangoMin: 25, denominacion: 'En inicio' },
+  { nivelRomano: 'II', rangoMin: 50, denominacion: 'En proceso' },
+  { nivelRomano: 'III', rangoMin: 75, denominacion: 'Logrado' },
+  { nivelRomano: 'IV', rangoMin: 100, denominacion: 'Satisfactorio' },
 ];
 
 describe('nivelPorEscala', () => {
@@ -75,7 +60,7 @@ describe('nivelPorEscala', () => {
       [99, 'Logrado'],
       [100, 'Satisfactorio'],
     ])('%i%% de avance cae en %s', (avance, denominacion) => {
-      expect(nivelPorEscala(avance, ESCALA_DIRECTIVO)?.denominacionConsolidado).toBe(denominacion);
+      expect(nivelPorEscala(avance, ESCALA_DIRECTIVO)?.denominacion).toBe(denominacion);
     });
   });
 
@@ -90,7 +75,7 @@ describe('nivelPorEscala', () => {
 
   it('ordena la escala por rango, no confía en el orden recibido', () => {
     const desordenada = [...ESCALA_DIRECTIVO].reverse();
-    expect(nivelPorEscala(75, desordenada)?.denominacionConsolidado).toBe('Logrado');
+    expect(nivelPorEscala(75, desordenada)?.denominacion).toBe('Logrado');
   });
 
   it('sin escala declarada no decide nada', () => {
@@ -184,32 +169,6 @@ describe('calcularResultadoBaremo con escala de plantilla', () => {
     expect(calcularResultadoBaremo(niveles, ESCALA_DIRECTIVO, 'Vigente').denominacion).toBe(
       'En inicio',
     );
-  });
-
-  /**
-   * El instrumento directivo nombra distinto la marca y el resultado: su tabla
-   * «NIVELES DEL LOGRO» llama «Logro Esperado» a la marca de cada rúbrica y su
-   * baremo llama «Logrado» al resultado del mismo tramo.
-   *
-   * El resultado toma el nombre consolidado; la marca conserva el suyo para
-   * rotular la rúbrica en pantalla.
-   */
-  it('el resultado usa el nombre consolidado cuando la plantilla lo declara', () => {
-    const resultado = calcularResultadoBaremo([3, 3, 3, 3, 3], ESCALA_DIRECTIVO, 'Porcentual');
-
-    expect(resultado.denominacion).toBe('Logrado');
-    expect(nivelPorEscala(75, ESCALA_DIRECTIVO)?.denominacion).toBe('Logro Esperado');
-  });
-
-  /**
-   * La rúbrica docente usa las mismas palabras en las dos capas y no declara el
-   * segundo nombre: el resultado reutiliza la denominación de la marca.
-   */
-  it('sin nombre consolidado el resultado reutiliza la denominación', () => {
-    const resultado = calcularResultadoBaremo([3, 3, 3, 3, 3], ESCALA_DOCENTE, 'Vigente');
-
-    expect(ESCALA_DOCENTE[2].denominacionConsolidado).toBeUndefined();
-    expect(resultado.denominacion).toBe('Logro esperado');
   });
 
   /**

@@ -65,7 +65,6 @@ export async function clonePlantilla(
         plantillaId: nuevoId,
         nivelRomano: n.nivelRomano,
         denominacion: n.denominacion,
-        denominacionConsolidado: n.denominacionConsolidado ?? null,
         rangoMin: n.rangoMin,
         color: n.color,
         orden: n.orden,
