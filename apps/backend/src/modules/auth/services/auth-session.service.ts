@@ -13,6 +13,18 @@ import {
   IRefreshTokenResponse,
 } from '@sistema-monitoreo/shared-contracts';
 
+/**
+ * Política de bloqueo por intentos fallidos.
+ *
+ * Vive acá y en ningún otro lado. La pantalla de ingreso tenía su propia copia
+ * —`AUTH_SECURITY`, con los mismos números— y calculaba el bloqueo por su
+ * cuenta: coincidían hasta que alguien cambiara uno de los dos. Ahora el
+ * servidor responde cuántos intentos quedan y hasta cuándo dura el bloqueo, y
+ * la pantalla sólo muestra lo que recibe.
+ */
+const INTENTOS_ANTES_DE_BLOQUEAR = 3;
+const MINUTOS_DE_BLOQUEO = 30;
+
 @Injectable()
 export class AuthSessionService {
   constructor(
@@ -50,7 +62,14 @@ export class AuthSessionService {
 
     if (user.lockedUntil && user.lockedUntil > now) {
       const minutesLeft = Math.ceil((user.lockedUntil.getTime() - now.getTime()) / 60000);
-      throw new ForbiddenException(`Cuenta bloqueada. Intente de nuevo en ${minutesLeft} minutos.`);
+
+      // Se responde `lockedUntil` también acá, no sólo en el intento que
+      // dispara el bloqueo: es el único dato con el que la pantalla puede
+      // mostrar cuánto falta sin llevar su propia cuenta.
+      throw new ForbiddenException({
+        message: `Cuenta bloqueada. Intente de nuevo en ${minutesLeft} minutos.`,
+        lockedUntil: user.lockedUntil.toISOString(),
+      });
     }
 
     if (user.lastFailedLoginAt) {
@@ -71,19 +90,23 @@ export class AuthSessionService {
         ...meta,
       });
 
-      if (failedAttempts >= 3) {
-        const lockUntil = new Date(now.getTime() + 30 * 60 * 1000);
+      if (failedAttempts >= INTENTOS_ANTES_DE_BLOQUEAR) {
+        const lockUntil = new Date(now.getTime() + MINUTOS_DE_BLOQUEO * 60 * 1000);
         await this.userRepository.lockAccount(user.id, lockUntil);
         throw new UnauthorizedException({
           message: 'Cuenta bloqueada por múltiples intentos fallidos',
           failedLoginAttempts: failedAttempts,
+          intentosRestantes: 0,
           lockedUntil: lockUntil.toISOString(),
         });
       }
 
+      // Cuántos quedan lo dice quien conoce el umbral. La pantalla lo restaba
+      // con una constante propia, escrita también acá.
       throw new UnauthorizedException({
         message: 'Credenciales inválidas',
         failedLoginAttempts: failedAttempts,
+        intentosRestantes: INTENTOS_ANTES_DE_BLOQUEAR - failedAttempts,
       });
     }
 

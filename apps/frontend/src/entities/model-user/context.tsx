@@ -47,6 +47,9 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
 
     localStorage.removeItem('accessToken'); // Limpieza por si quedó de la versión anterior
     localStorage.removeItem('refreshToken');
+    // El bloqueo por intentos fallidos se guardaba acá y ahora lo decide el
+    // servidor. Ya nadie lo lee, pero sigue en los navegadores que usaron la
+    // versión anterior.
     localStorage.removeItem('ugel_penalty_expiry');
     // Limpiar la caché de react-query para no mostrar datos del usuario anterior
     // al iniciar sesión con otra cuenta (las queryKeys no incluyen el usuario).

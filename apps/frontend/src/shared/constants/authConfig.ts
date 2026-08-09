@@ -1,4 +1,0 @@
-export const AUTH_SECURITY = {
-  MAX_ATTEMPTS: 3,
-  PENALIZATION_TIME_SECONDS: 1800, // 30 minutos = 30 * 60
-};

@@ -2,15 +2,16 @@ import { AlertCircle } from 'lucide-react';
 
 interface LoginFailedModalProps {
   isOpen: boolean;
-  attempts: number;
-  maxAttempts: number;
+  attempts: number | null;
+  /** Intentos restantes según el servidor. Nulo si no los informó. */
+  intentosRestantes: number | null;
   onClose: () => void;
 }
 
 export const LoginFailedModal = ({
   isOpen,
   attempts,
-  maxAttempts,
+  intentosRestantes,
   onClose,
 }: LoginFailedModalProps) => {
   if (!isOpen) return null;
@@ -23,15 +24,21 @@ export const LoginFailedModal = ({
           <AlertCircle className="w-6 h-6 text-white" strokeWidth={2.5} />
         </div>
 
-        {/* Título dinámico según el intento */}
+        {/* El número de intento lo informa el servidor; sin dato, se omite. */}
         <h3 className="text-xl font-bold text-white mb-2">
-          {attempts === 1 ? 'Primer intento fallido' : 'Segundo intento fallido'}
+          {attempts === 1 ? 'Primer intento fallido' : 'Intento fallido'}
         </h3>
 
-        {/* Contador de intentos restantes */}
-        <p className="text-sm text-rose-100 mb-6 font-medium">
-          Le queda {maxAttempts - attempts} {maxAttempts - attempts === 1 ? 'intento' : 'intentos'}
-        </p>
+        {/*
+          Los intentos restantes también los informa el servidor, que es quien
+          conoce su umbral. Antes se restaban con una constante propia de esta
+          pantalla, escrita también en el backend.
+        */}
+        {intentosRestantes !== null && (
+          <p className="text-sm text-rose-100 mb-6 font-medium">
+            Le queda {intentosRestantes} {intentosRestantes === 1 ? 'intento' : 'intentos'}
+          </p>
+        )}
 
         {/* Botón de Confirmación */}
         <button

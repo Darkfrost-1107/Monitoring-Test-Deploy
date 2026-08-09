@@ -1,103 +1,105 @@
 import { useState, useEffect } from 'react';
 import { useUser, type User } from '@entities/model-user';
 import { authApi } from '@shared/api/auth.api';
-import { AUTH_SECURITY } from '@shared/constants/authConfig';
 
-// Extraemos la configuración (ej. 3 intentos, 60 segundos de bloqueo)
-const { MAX_ATTEMPTS, PENALIZATION_TIME_SECONDS } = AUTH_SECURITY;
+/**
+ * Inicio de sesión.
+ *
+ * ── El bloqueo lo decide el servidor ──
+ * Esta pantalla llevaba su propia cuenta de intentos fallidos y su propio
+ * bloqueo, con el vencimiento guardado en `localStorage`. Eso tenía tres
+ * problemas:
+ *
+ * 1. Un bloqueo en `localStorage` no bloquea nada. Borrar la clave desde las
+ *    herramientas del navegador devolvía el formulario al instante.
+ * 2. Cuando la respuesta no traía los datos, la pantalla los inventaba:
+ *    sumaba uno a su propio contador y calculaba el vencimiento con una
+ *    constante propia. Podía anunciar un bloqueo que el servidor no aplicó, o
+ *    dejar pasar uno que sí.
+ * 3. El umbral y la duración estaban escritos en los dos lados. Coincidían,
+ *    hasta que alguien cambiara uno.
+ *
+ * El servidor es la única autoridad: rechaza la credencial, cuenta los fallos,
+ * bloquea la cuenta y responde `failedLoginAttempts` y `lockedUntil`. Acá sólo
+ * se muestra lo que llegó.
+ *
+ * Al recargar la página el bloqueo se olvida, y está bien: el próximo intento lo
+ * rechaza el servidor con el tiempo real que falta. Recordarlo en el navegador
+ * era simular una barrera que no existía.
+ */
+
+/** Lo que el servidor responde cuando rechaza el ingreso. */
+interface RespuestaDeRechazo {
+  failedLoginAttempts?: number;
+  /** Cuántos quedan antes del bloqueo. Lo dice quien conoce el umbral. */
+  intentosRestantes?: number;
+  lockedUntil?: string;
+  message?: string;
+}
+
+/** Segundos que faltan para que venza un bloqueo, o cero si ya venció. */
+const segundosHasta = (lockedUntil: string): number => {
+  const restante = Math.ceil((new Date(lockedUntil).getTime() - Date.now()) / 1000);
+  return restante > 0 ? restante : 0;
+};
 
 export const useLoginService = () => {
-  // 1. Nos conectamos a la Entidad Global para inyectar al usuario si tiene éxito
   const { setUser } = useUser();
 
-  // 2. Estados locales de la operación
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showFailedModal, setShowFailedModal] = useState(false);
 
-  // 3. Lógica de cálculo de penalización basada en persistencia (localStorage)
-  const [timeLeft, setTimeLeft] = useState(() => {
-    const penaltyExpiry = localStorage.getItem('ugel_penalty_expiry');
-    if (penaltyExpiry) {
-      const remaining = Math.ceil((parseInt(penaltyExpiry) - Date.now()) / 1000);
-      return remaining > 0 ? remaining : 0;
-    }
-    return 0;
-  });
+  /** Intentos fallidos que informó el servidor. Nulo mientras no informe ninguno. */
+  const [attempts, setAttempts] = useState<number | null>(null);
+  /** Intentos restantes que informó el servidor. */
+  const [intentosRestantes, setIntentosRestantes] = useState<number | null>(null);
+  /** Segundos restantes del bloqueo que informó el servidor. */
+  const [timeLeft, setTimeLeft] = useState(0);
 
   const isPenalized = timeLeft > 0;
-  const [attempts, setAttempts] = useState(() => (isPenalized ? MAX_ATTEMPTS : 0));
 
-  // 4. Efecto del temporizador: Corre en segundo plano si el usuario está bloqueado
+  // Cuenta regresiva de lo que el servidor informó. No decide el bloqueo: sólo
+  // muestra cuánto falta de uno ya declarado.
   useEffect(() => {
     if (!isPenalized) return;
 
     const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          localStorage.removeItem('ugel_penalty_expiry');
-          setAttempts(0);
-          return 0;
-        }
-        return prev - 1;
-      });
+      setTimeLeft((previo) => (previo <= 1 ? 0 : previo - 1));
     }, 1000);
 
     return () => clearInterval(timer);
   }, [isPenalized]);
 
-  // 5. La función principal que será llamada por el formulario
   const login = async (dni: string, password: string) => {
     setLoading(true);
     setError(null);
 
-    // Llamada a la capa shared/api
     const { ok, data, error: apiError } = await authApi.login(dni, password);
 
     setLoading(false);
 
-    // Manejo de fracaso
     if (!ok || !data) {
-      interface ApiLoginError {
-        failedLoginAttempts?: number;
-        lockedUntil?: string;
-        message?: string;
-      }
-      const errJson = (apiError || {}) as ApiLoginError;
-      const nextAttempts =
-        errJson.failedLoginAttempts !== undefined ? errJson.failedLoginAttempts : attempts + 1;
-      setAttempts(nextAttempts);
+      const rechazo = (apiError || {}) as RespuestaDeRechazo;
+      const mensaje = rechazo.message || 'Credenciales incorrectas';
 
-      if (nextAttempts >= MAX_ATTEMPTS || errJson.lockedUntil) {
-        // Bloqueo total
-        const expiryTime = errJson.lockedUntil
-          ? new Date(errJson.lockedUntil).getTime()
-          : Date.now() + PENALIZATION_TIME_SECONDS * 1000;
+      // Sólo lo que informó el servidor. Sin dato, no se cuenta nada: mostrar un
+      // número inventado es peor que no mostrar ninguno.
+      setAttempts(rechazo.failedLoginAttempts ?? null);
+      setIntentosRestantes(rechazo.intentosRestantes ?? null);
 
-        const calculatedPenaltyTime =
-          Math.max(0, Math.ceil((expiryTime - Date.now()) / 1000)) || PENALIZATION_TIME_SECONDS;
-        localStorage.setItem('ugel_penalty_expiry', expiryTime.toString());
-        setTimeLeft(calculatedPenaltyTime);
-        setShowFailedModal(false);
+      const restante = rechazo.lockedUntil ? segundosHasta(rechazo.lockedUntil) : 0;
+      setTimeLeft(restante);
+      setShowFailedModal(restante === 0 && rechazo.failedLoginAttempts !== undefined);
+      setError(mensaje);
 
-        const blockMsg = errJson.message || 'Demasiados intentos fallidos. Acceso bloqueado.';
-        setError(blockMsg);
-        return { success: false, error: blockMsg };
-      } else {
-        // Fallo pero aún tiene intentos
-        setShowFailedModal(true);
-        const failMsg = errJson.message || 'Credenciales incorrectas';
-        setError(failMsg);
-        return { success: false, error: failMsg };
-      }
+      return { success: false, error: mensaje };
     }
 
-    // Manejo de éxito
-    localStorage.removeItem('ugel_penalty_expiry');
-    // Ya no guardamos el accessToken ni refreshToken en localStorage porque el backend lo envía en cookies HttpOnly
-    setAttempts(0);
+    setAttempts(null);
+    setIntentosRestantes(null);
+    setTimeLeft(0);
 
-    // Inyectamos el usuario en el contexto global (Entidad)
     setUser({
       id: data.user.id,
       dni: data.user.dni,
@@ -120,16 +122,15 @@ export const useLoginService = () => {
     return { success: true };
   };
 
-  // Exponemos las herramientas que el Widget/Formulario van a necesitar
   return {
     login,
     loading,
     error,
     attempts,
+    intentosRestantes,
     isPenalized,
     timeLeft,
     showFailedModal,
     setShowFailedModal,
-    MAX_ATTEMPTS,
   };
 };

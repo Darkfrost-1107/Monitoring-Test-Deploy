@@ -25,7 +25,7 @@ export const LoginCardWidget = () => {
     showFailedModal,
     setShowFailedModal,
     attempts,
-    MAX_ATTEMPTS,
+    intentosRestantes,
     isPenalized,
     timeLeft,
   } = useLoginService();
@@ -127,7 +127,7 @@ export const LoginCardWidget = () => {
       <LoginFailedModal
         isOpen={showFailedModal}
         attempts={attempts}
-        maxAttempts={MAX_ATTEMPTS}
+        intentosRestantes={intentosRestantes}
         onClose={() => setShowFailedModal(false)}
       />
     </>
