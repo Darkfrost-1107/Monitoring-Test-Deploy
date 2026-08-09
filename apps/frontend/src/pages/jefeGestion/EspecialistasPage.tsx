@@ -11,14 +11,30 @@ import { fetchEspecialistas } from '@features/especialistas/especialista-service
 import type { Especialista } from '@entities/model-especialistas';
 import { RoleCode } from '@sistema-monitoreo/shared-contracts';
 
-// Roles de nivel institucional (docente con cargo de monitor). Tienen un registro
-// de especialista SOLO para poder monitorear en su propia IE, pero no son
-// especialistas UGEL y no deben aparecer en este padrón.
-const ROLES_INSTITUCIONALES: readonly string[] = [
+/**
+ * Quiénes tienen registro de especialista pero no son especialistas de la UGEL.
+ *
+ * Dos grupos distintos, por dos razones distintas:
+ *
+ * ── Personal de institución ──
+ * Coordinador pedagógico, jefe de taller, director de I.E. y docente llevan un
+ * registro de especialista sólo para poder monitorear dentro de su propio
+ * colegio.
+ *
+ * ── Conducción de la UGEL ──
+ * El Director de UGEL y el Jefe de Gestión se registran en el padrón con cargo
+ * «Especialista» —el cargo describe su plaza y el rol su función— y por eso caían
+ * en este listado mientras ocupaban su puesto. Ocupan un cargo de conducción, no
+ * una plaza de acompañamiento: al ser relevados vuelven a aparecer acá si su rol
+ * pasa a ser especialista.
+ */
+const ROLES_QUE_NO_SON_ESPECIALISTA_UGEL: readonly string[] = [
   RoleCode.COORDINADOR_PEDAGOGICO,
   RoleCode.JEFE_TALLER,
   RoleCode.DIRECTOR_INSTITUCION,
   RoleCode.DOCENTE,
+  RoleCode.DIRECTOR_UGEL,
+  RoleCode.JEFE_GESTION,
 ];
 
 export const EspecialistasPage = () => {
@@ -31,7 +47,7 @@ export const EspecialistasPage = () => {
     const mapped = await fetchEspecialistas({ cargo: 'Especialista' });
     const filtered = mapped.filter(
       (esp) =>
-        esp.cargo === 'Especialista' && !ROLES_INSTITUCIONALES.includes(esp.rolCode ?? ''),
+        esp.cargo === 'Especialista' && !ROLES_QUE_NO_SON_ESPECIALISTA_UGEL.includes(esp.rolCode ?? ''),
     );
     setEspecialistas(filtered);
     setLoading(false);
