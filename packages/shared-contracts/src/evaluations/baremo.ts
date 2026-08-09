@@ -71,12 +71,94 @@ export function calcularNivelLogro(promedio: number): NivelLogro {
   return UMBRALES.find((u) => promedio <= u.hasta)?.nivel ?? 'LOGRO_DESTACADO';
 }
 
+/**
+ * Cómo se leen los cortes que declara la plantilla.
+ *
+ * Es el campo `baremo` que la pantalla de registro ya pregunta —«Vigente
+ * (0-20)» o «Porcentual (%)»— y que hasta ahora se guardaba sin que ningún
+ * cálculo lo consultara.
+ *
+ *   Vigente     Los cortes son puntajes absolutos. Rúbrica DOCENTE 2025:
+ *               5·8·13·18 sobre un total de 5 a 20.
+ *   Porcentual  Los cortes son porcentajes de avance. Rúbrica DIRECTIVA 2025:
+ *               25·50·75·100.
+ */
+export type ModoDeBaremo = 'Vigente' | 'Porcentual';
+
+/**
+ * Un tramo de la escala que la plantilla declara.
+ *
+ * `rangoMin` es el límite **inferior inclusivo**, tal como lo rotula la columna
+ * «Rango Mín.» de la pantalla de registro. Qué mide depende del modo: en
+ * `Vigente` es puntaje, en `Porcentual` es porcentaje de avance.
+ */
+export interface TramoDeEscala {
+  nivelRomano: 'I' | 'II' | 'III' | 'IV';
+  rangoMin: number;
+  /** Nombre de la marca individual, el que ve el evaluador al calificar. */
+  denominacion: string;
+  /**
+   * Nombre del resultado global, cuando el instrumento lo llama distinto.
+   *
+   * La rúbrica directiva nombra «Logro Esperado» la marca de cada rúbrica y
+   * «Logrado» el resultado consolidado de ese mismo tramo. Ausente cuando las
+   * dos capas coinciden, y entonces se reutiliza `denominacion`.
+   */
+  denominacionConsolidado?: string | null;
+}
+
+/**
+ * Nivel al que corresponde un puntaje total dentro de la escala de la plantilla.
+ *
+ * ── Por qué sobre el total y no sobre el promedio ──
+ * Las dos rúbricas de la UGEL Lampa cortan sobre el total: la docente en
+ * 5·8·13·18 sobre un máximo de 20, la directiva en 0·9·17·21 sobre 24. El
+ * promedio del documento docente es esa misma división dividida entre cinco, de
+ * modo que decidir sobre el total sirve a las dos y no ata el cálculo a una
+ * cantidad fija de desempeños.
+ *
+ * Un total por debajo del tramo más bajo cae en ese tramo: no clasificar una
+ * ficha ya evaluada sería peor que ubicarla en el nivel inicial.
+ *
+ * Devuelve nulo sólo si la plantilla no declaró escala.
+ */
+export function nivelPorEscala(
+  total: number,
+  escala: readonly TramoDeEscala[],
+): TramoDeEscala | null {
+  if (escala.length === 0) return null;
+
+  // El orden de llegada no es de fiar: la escala viaja desde la base y desde el
+  // formulario, y ninguno de los dos garantiza que venga ascendente.
+  const ordenada = [...escala].sort((a, b) => a.rangoMin - b.rangoMin);
+
+  const alcanzados = ordenada.filter((tramo) => total >= tramo.rangoMin);
+
+  return alcanzados[alcanzados.length - 1] ?? ordenada[0];
+}
+
+/** Nivel de logro canónico de cada numeral romano de la escala. */
+const NIVEL_LOGRO_POR_ROMANO: Record<'I' | 'II' | 'III' | 'IV', NivelLogro> = {
+  I: 'INICIO',
+  II: 'EN_PROCESO',
+  III: 'LOGRO_ESPERADO',
+  IV: 'LOGRO_DESTACADO',
+};
+
 export interface ResultadoBaremo {
   puntajeTotal: number;
   /** Puntaje máximo alcanzable con la cantidad de desempeños evaluados. */
   puntajeMaximo: number;
   promedio: number;
   nivelLogro: NivelLogro;
+  /**
+   * Nombre del **resultado** tal como lo escribió la plantilla.
+   *
+   * No es necesariamente el nombre de la marca individual: la rúbrica directiva
+   * llama «Logro Esperado» a la marca de cada rúbrica y «Logrado» al resultado
+   * consolidado de ese mismo tramo. El ordinal se guarda, el nombre se muestra.
+   */
+  denominacion: string;
   /** Porcentaje del puntaje máximo, redondeado, para mostrar en pantalla. */
   porcentaje: number;
 }
@@ -87,7 +169,11 @@ export interface ResultadoBaremo {
  * Una ficha sin desempeños devuelve el resultado neutro en lugar de fallar: la
  * pantalla la muestra en blanco mientras el evaluador la completa.
  */
-export function calcularResultadoBaremo(niveles: readonly number[]): ResultadoBaremo {
+export function calcularResultadoBaremo(
+  niveles: readonly number[],
+  escala: readonly TramoDeEscala[] = [],
+  modo: ModoDeBaremo = 'Vigente',
+): ResultadoBaremo {
   const puntajeMaximo = niveles.length * NIVEL_DESEMPENO_MAXIMO;
 
   if (niveles.length === 0) {
@@ -96,19 +182,40 @@ export function calcularResultadoBaremo(niveles: readonly number[]): ResultadoBa
       puntajeMaximo: 0,
       promedio: 1,
       nivelLogro: 'INICIO',
+      denominacion: NIVEL_LOGRO_LABELS.INICIO,
       porcentaje: 0,
     };
   }
 
   const puntajeTotal = niveles.reduce((acc, n) => acc + n, 0);
   const promedio = calcularPromedio(niveles);
+  const porcentaje = puntajeMaximo > 0 ? Math.round((puntajeTotal / puntajeMaximo) * 100) : 0;
+
+  /**
+   * Qué número se compara contra los cortes.
+   *
+   * La rúbrica directiva se resuelve por porcentaje de avance —cada nivel vale
+   * 25·50·75·100— y no por puntaje absoluto. Sus rangos absolutos (00-08,
+   * 09-16, 17-20, 21-24) están calculados sobre 24 puntos, que son seis
+   * rúbricas de cuatro niveles; la ficha vigente tiene cinco, de modo que sobre
+   * el puntaje crudo el nivel más alto quedaría fuera de alcance. El porcentaje
+   * no depende de cuántas rúbricas tenga la ficha.
+   */
+  const valorClasificado = modo === 'Porcentual' ? porcentaje : puntajeTotal;
+  const tramo = nivelPorEscala(valorClasificado, escala);
+
+  // Sin escala declarada se conservan los umbrales sobre el promedio: una
+  // plantilla vieja sin niveles cargados debe seguir clasificando sus fichas.
+  const nivelLogro = tramo ? NIVEL_LOGRO_POR_ROMANO[tramo.nivelRomano] : calcularNivelLogro(promedio);
 
   return {
     puntajeTotal,
     puntajeMaximo,
     promedio,
-    nivelLogro: calcularNivelLogro(promedio),
-    porcentaje: puntajeMaximo > 0 ? Math.round((puntajeTotal / puntajeMaximo) * 100) : 0,
+    nivelLogro,
+    denominacion:
+      tramo?.denominacionConsolidado || tramo?.denominacion || NIVEL_LOGRO_LABELS[nivelLogro],
+    porcentaje,
   };
 }
 

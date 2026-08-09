@@ -143,6 +143,18 @@ export const LlenarFichaForm = ({
   const calificacion = isCompleted
     ? resolverCalificacion(
         template.desempenos.map((d) => ({ id: d.id, romano: selectedLevels[d.id] ?? '' })),
+        // La escala que declara la plantilla, la misma que el backend consulta
+        // al persistir: sin ella la pantalla volvería a mostrar un nivel y el
+        // servidor a guardar otro.
+        template.niveles.map((n) => ({
+          nivelRomano: n.nivel,
+          rangoMin: n.rangoMin,
+          denominacion: n.denominacion,
+          denominacionConsolidado: n.denominacionConsolidado,
+        })),
+        // Y cómo leerlos: la rúbrica docente corta sobre el puntaje, la
+        // directiva sobre el porcentaje de avance.
+        template.baremo,
       )
     : null;
 

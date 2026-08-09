@@ -3,6 +3,8 @@ import {
   calcularResultadoBaremo,
   romanoANivel,
   type NivelLogro,
+  type TramoDeEscala,
+  type ModoDeBaremo,
 } from '@sistema-monitoreo/shared-contracts';
 
 /**
@@ -52,17 +54,27 @@ export interface CalificacionPresentada {
   nivelBg: string;
 }
 
+/**
+ * @param escala Niveles que declara la plantilla, con su `rangoMin` y su
+ * denominación. Es lo que decide el nivel de logro, y hay que pasarla: el
+ * backend la usa al persistir, de modo que omitirla acá reabre la discrepancia
+ * entre lo que el evaluador ve y lo que se guarda.
+ */
 export function resolverCalificacion(
   desempenos: readonly DesempenoCalificado[],
+  escala: readonly TramoDeEscala[] = [],
+  modo: ModoDeBaremo = 'Vigente',
 ): CalificacionPresentada {
   const niveles = desempenos.map((d) => romanoANivel(d.romano)).filter((n) => n > 0);
 
-  const resultado = calcularResultadoBaremo(niveles);
+  const resultado = calcularResultadoBaremo(niveles, escala, modo);
 
   return {
     ...resultado,
     puntajeMax: desempenos.length * PUNTAJE_MAXIMO_POR_DESEMPENO,
-    nivel: NIVEL_LOGRO_LABELS[resultado.nivelLogro],
+    // El nombre lo pone la plantilla: la rúbrica directiva llama
+    // «Satisfactorio» a su nivel IV, donde la docente dice «Logro destacado».
+    nivel: resultado.denominacion || NIVEL_LOGRO_LABELS[resultado.nivelLogro],
     ...COLORES_NIVEL[resultado.nivelLogro],
   };
 }

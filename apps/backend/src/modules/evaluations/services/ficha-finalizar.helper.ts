@@ -22,8 +22,22 @@ export async function finalizar(
     throw new BadRequestException('No se puede finalizar una ficha sin respuestas de desempeno.');
   }
 
+  /**
+   * El total sale de los desempeños.
+   *
+   * En el consolidado de la ficha docente la fila TOTAL abarca D1 a D5, y los
+   * ejes e items —R6 y R7— llevan sus propias celdas al costado: se califican
+   * con la misma escala pero se informan aparte. Cuántos desempeños declare la
+   * plantilla puede variar, y por eso el baremo se resuelve sobre el porcentaje,
+   * que se ajusta solo al máximo que esa plantilla permita.
+   */
   const niveles = ficha.respuestasDesempeno.map((r) => r.nivel);
-  const resultado = baremoService.calcularResultadoCompleto(niveles);
+
+  // El nivel de logro lo decide la escala que declara la plantilla, leída en su
+  // modo: la rúbrica docente corta sobre el puntaje y la directiva sobre el
+  // porcentaje de avance.
+  const escala = await repository.findEscalaDePlantilla(ficha.plantillaId);
+  const resultado = baremoService.calcularResultadoCompleto(niveles, escala.tramos, escala.modo);
 
   const result = await repository.finalizar(
     fichaId,

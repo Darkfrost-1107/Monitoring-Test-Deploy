@@ -6,6 +6,8 @@ import type {
   IFichaRespuestaEjeItem,
   NivelLogro,
   IHistorialPedagogicoResponse,
+  TramoDeEscala,
+  ModoDeBaremo,
 } from '@sistema-monitoreo/shared-contracts';
 
 export interface CreateFichaData {
@@ -54,6 +56,12 @@ export interface CronogramaBasic {
   evaluadoId: string;
 }
 
+/** Los cortes de una plantilla y cómo se leen. */
+export interface EscalaDePlantilla {
+  modo: ModoDeBaremo;
+  tramos: TramoDeEscala[];
+}
+
 export interface PlantillaBasic {
   id: string;
   estado: string;
@@ -88,6 +96,18 @@ export abstract class FichaRepository {
   abstract findDocenteCursoByDocenteId(docenteId: string): Promise<{ cursoId: string } | null>;
   abstract findFirstCursoBasic(): Promise<{ id: string } | null>;
   abstract findPlantillaBasicById(id: string): Promise<PlantillaBasic | null>;
+
+  /**
+   * Escala de calificación que la plantilla declara, con su modo de lectura.
+   *
+   * Es lo que decide el nivel de logro. La rúbrica docente corta sobre el
+   * puntaje (5·8·13·18) y la directiva sobre el porcentaje de avance
+   * (25·50·75·100), de modo que los cortes no significan lo mismo sin el modo.
+   *
+   * Una plantilla sin niveles cargados devuelve la lista vacía y el cálculo cae
+   * a los umbrales sobre el promedio.
+   */
+  abstract findEscalaDePlantilla(plantillaId: string): Promise<EscalaDePlantilla>;
   abstract updateCronogramaEstado(id: string, estado: string): Promise<void>;
   abstract findRespuestaEjeItemByFichaAndEje(
     fichaId: string,

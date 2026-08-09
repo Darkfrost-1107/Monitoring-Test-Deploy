@@ -5,6 +5,8 @@ import {
   calcularResultadoBaremo,
   nivelARomano,
   type NivelLogro,
+  type TramoDeEscala,
+  type ModoDeBaremo,
 } from '@sistema-monitoreo/shared-contracts';
 
 /**
@@ -36,13 +38,29 @@ export class BaremoCalculatorService {
     return calcularNivelLogro(promedio);
   }
 
-  /** Calcula el resultado completo del baremo: puntaje, promedio, nivel. */
-  calcularResultadoCompleto(niveles: number[]): {
+  /**
+   * Resultado completo del baremo: puntaje, promedio, nivel y su denominación.
+   *
+   * La escala la declara la plantilla —`rangoMin` y `denominacion` por nivel— y
+   * el modo dice cómo leerla: la rúbrica docente corta sobre el puntaje
+   * (5·8·13·18) y la directiva sobre el porcentaje de avance (25·50·75·100).
+   * Sin escala se conservan los umbrales sobre el promedio.
+   */
+  calcularResultadoCompleto(
+    niveles: number[],
+    escala: readonly TramoDeEscala[] = [],
+    modo: ModoDeBaremo = 'Vigente',
+  ): {
     puntajeTotal: number;
     promedio: number;
     nivelLogro: NivelLogro;
+    denominacion: string;
   } {
-    const { puntajeTotal, promedio, nivelLogro } = calcularResultadoBaremo(niveles);
-    return { puntajeTotal, promedio, nivelLogro };
+    const { puntajeTotal, promedio, nivelLogro, denominacion } = calcularResultadoBaremo(
+      niveles,
+      escala,
+      modo,
+    );
+    return { puntajeTotal, promedio, nivelLogro, denominacion };
   }
 }

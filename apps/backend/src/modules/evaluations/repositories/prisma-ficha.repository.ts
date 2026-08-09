@@ -17,6 +17,7 @@ import {
   SaveRespuestaEjeItemData,
   CronogramaBasic,
   PlantillaBasic,
+  EscalaDePlantilla,
 } from './ficha.repository.js';
 import { fromPrismaFicha } from './ficha.mapper.js';
 import { aFechaDeCalendario } from '../../../common/utils/fecha-calendario.js';
@@ -285,6 +286,35 @@ export class PrismaFichaRepository implements FichaRepository {
     return this.prisma.curso.findFirst({
       select: { id: true },
     });
+  }
+
+  async findEscalaDePlantilla(plantillaId: string): Promise<EscalaDePlantilla> {
+    const [plantilla, niveles] = await Promise.all([
+      this.prisma.plantillaMonitoreo.findUnique({
+        where: { id: plantillaId },
+        select: { baremo: true },
+      }),
+      this.prisma.nivelCalificacion.findMany({
+        where: { plantillaId },
+        orderBy: { rangoMin: 'asc' },
+        select: {
+          nivelRomano: true,
+          rangoMin: true,
+          denominacion: true,
+          denominacionConsolidado: true,
+        },
+      }),
+    ]);
+
+    return {
+      modo: plantilla?.baremo === 'Porcentual' ? 'Porcentual' : 'Vigente',
+      tramos: niveles.map((n) => ({
+        nivelRomano: n.nivelRomano as 'I' | 'II' | 'III' | 'IV',
+        rangoMin: n.rangoMin,
+        denominacion: n.denominacion,
+        denominacionConsolidado: n.denominacionConsolidado,
+      })),
+    };
   }
 
   async findPlantillaBasicById(id: string): Promise<PlantillaBasic | null> {
