@@ -16,7 +16,9 @@ const OPCIONES_ESTADO = ESTADOS_VISITA.map((estado) => ({ value: estado, label: 
 
 const TIPOS = [
   { valor: 'DOCENTE', rotulo: 'Docente' },
-  { valor: 'DIRECTIVO', rotulo: 'Directivo' },
+  // «Director», no «Directivo»: un solo nombre para el cargo en todo el
+  // sistema —padrón, designación, focos de atención y avisos—.
+  { valor: 'DIRECTIVO', rotulo: 'Director' },
 ] as const;
 
 interface Props {
@@ -60,7 +62,7 @@ export const CamposDeEvaluacion = ({ form, onCambiar, opciones, perfil, esEdicio
       label={
         perfil.esDirector
           ? 'Docente a Evaluar *'
-          : `Seleccionar ${form.tipo === 'DOCENTE' ? 'Docente' : 'Directivo'} a Evaluar *`
+          : `Seleccionar ${form.tipo === 'DOCENTE' ? 'Docente' : 'Director'} a Evaluar *`
       }
       value={form.evaluadoId}
       onChange={(valor) => onCambiar('evaluadoId', valor)}

@@ -184,7 +184,7 @@ describe('ModalCronograma — qué ve cada perfil', () => {
   it('el director no elige tipo de monitoreo', () => {
     montar({ perfil: { esDirector: true } });
 
-    expect(screen.queryByRole('button', { name: 'Directivo' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Director' })).not.toBeInTheDocument();
   });
 });
 
@@ -297,12 +297,12 @@ describe('ModalCronograma — tipo de monitoreo', () => {
   it('elegir directivo lo informa al formulario', async () => {
     const { onCambiar } = montar();
 
-    await userEvent.click(screen.getByRole('button', { name: 'Directivo' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Director' }));
     expect(onCambiar).toHaveBeenCalledWith('tipo', 'DIRECTIVO');
   });
 
   it('el rótulo del evaluado sigue al tipo elegido', () => {
     montar({ form: { tipo: 'DIRECTIVO' } });
-    expect(screen.getByRole('combobox', { name: /Directivo a Evaluar/i })).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: /Director a Evaluar/i })).toBeInTheDocument();
   });
 });

@@ -213,13 +213,6 @@ export class PrismaDashboardRepository implements DashboardRepository {
                 docenteEspecialidades: {
                   select: { especialidad: { select: { nombre: true } } },
                 },
-                // El cargo que ocupa hoy. La etiqueta salía del tipo de la
-                // ficha, de modo que a un director evaluado con una ficha
-                // docente se lo rotulaba «Docente».
-                docenteCargos: {
-                  where: { fechaFin: null },
-                  select: { cargo: { select: { nombre: true } } },
-                },
               },
             },
             institucion: {
@@ -317,11 +310,12 @@ export class PrismaDashboardRepository implements DashboardRepository {
       ie.docentes.push({
         docenteId: c.evaluadoId,
         nombre: `${p.nombres} ${p.apellidos}`.trim(),
-        // El cargo de la persona manda sobre el tipo de la ficha: a un director
-        // se lo puede monitorear con una ficha docente, y seguía siendo director.
-        cargo:
-          c.evaluado.docenteCargos?.[0]?.cargo?.nombre ??
-          (c.tipoMonitoreo === 'DIRECTIVO' ? 'Directivo' : 'Docente'),
+        // El tipo de ficha identifica al evaluado: a un director se lo monitorea
+        // siempre con la ficha directiva y a un docente con la docente. Se usa
+        // «Director» y no «Directivo» para nombrarlo igual que en el resto del
+        // sistema —el padrón, la designación, los avisos— y no acumular palabras
+        // distintas para el mismo cargo.
+        cargo: c.tipoMonitoreo === 'DIRECTIVO' ? 'Director' : 'Docente',
         especialidad: especialidades.length > 0 ? especialidades.join(', ') : null,
         promedio: Number(ficha.promedio),
         nivelLogro: 'INICIO',
@@ -651,12 +645,6 @@ export class PrismaDashboardRepository implements DashboardRepository {
                     docenteEspecialidades: {
                       select: { especialidad: { select: { nombre: true } } },
                     },
-                    // El cargo vigente, para no rotular «Docente» a un director
-                    // evaluado con una ficha docente.
-                    docenteCargos: {
-                      where: { fechaFin: null },
-                      select: { cargo: { select: { nombre: true } } },
-                    },
                   },
                 },
               },
@@ -682,11 +670,12 @@ export class PrismaDashboardRepository implements DashboardRepository {
       return {
         docenteId: c.evaluadoId,
         nombre: `${p.nombres} ${p.apellidos}`.trim(),
-        // El cargo de la persona manda sobre el tipo de la ficha: a un director
-        // se lo puede monitorear con una ficha docente, y seguía siendo director.
-        cargo:
-          c.evaluado.docenteCargos?.[0]?.cargo?.nombre ??
-          (c.tipoMonitoreo === 'DIRECTIVO' ? 'Directivo' : 'Docente'),
+        // El tipo de ficha identifica al evaluado: a un director se lo monitorea
+        // siempre con la ficha directiva y a un docente con la docente. Se usa
+        // «Director» y no «Directivo» para nombrarlo igual que en el resto del
+        // sistema —el padrón, la designación, los avisos— y no acumular palabras
+        // distintas para el mismo cargo.
+        cargo: c.tipoMonitoreo === 'DIRECTIVO' ? 'Director' : 'Docente',
         especialidad: especialidades.length > 0 ? especialidades.join(', ') : null,
         nivelLogro: ficha.nivelLogro as NivelLogro,
         promedio: Number(ficha.promedio),
