@@ -26,7 +26,7 @@ export const PlantillaEjesItems = ({ ejeItems, onChange }: Props) => {
   };
 
   return (
-    <SectionCard icon={<GripVertical className="w-5 h-5" />} title="3. Ejes e Items (Solo Docente)">
+    <SectionCard icon={<GripVertical className="w-5 h-5" />} title="3. Planificación y Diseño de Evaluación">
       <div className="flex flex-col gap-3">
         {ejeItems.map((item) => (
           <div

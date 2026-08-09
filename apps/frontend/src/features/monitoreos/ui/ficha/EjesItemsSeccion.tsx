@@ -20,7 +20,11 @@ interface EjesItemsSeccionProps {
 }
 
 /**
- * Ejes e ítems del instrumento: nivel de logro y observación por cada uno.
+ * Planificación y diseño de evaluación: nivel de logro y observación por ítem.
+ *
+ * Así se titula la sección en la ficha de monitoreo al docente; «ejes e items»
+ * es el encabezado de su columna, no el nombre de la sección. Sólo existe en el
+ * instrumento docente: la ficha directiva no la lleva.
  *
  * Las observaciones son obligatorias para cerrar la ficha, según la regla de
  * `lib/validacion-ficha.ts`.
@@ -37,7 +41,7 @@ export const EjesItemsSeccion = ({
   <div className="border-t border-border pt-6 mt-6 px-5 space-y-4">
     <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block flex items-center gap-1.5">
       <FileText className="h-3.5 w-3.5" />
-      EJES E ITEMS
+      PLANIFICACIÓN Y DISEÑO DE EVALUACIÓN
     </span>
 
     {items.map((item) => (

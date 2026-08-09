@@ -56,7 +56,12 @@ export const Consolidado = ({
   estado: EstadoDeCierre;
 }) => {
   const resultado = consolidarFicha(template.desempenos, estado.selectedLevels);
-  const ejes = template.ejesItems ?? [];
+
+  // Planificación y diseño de evaluación existe sólo en el instrumento docente:
+  // una plantilla directiva con ítems cargados agregaría columnas al
+  // consolidado impreso que su ficha no lleva.
+  const esDirectivo = template.tipoMonitoreo.toUpperCase().includes('DIRECTIVO');
+  const ejes = esDirectivo ? [] : (template.ejesItems ?? []);
   const columnas = template.desempenos.length + ejes.length;
 
   return (

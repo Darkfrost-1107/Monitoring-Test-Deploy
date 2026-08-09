@@ -92,10 +92,13 @@ export const EditarPlantillaForm = ({ initialData, onCancel, onSubmit, isLoading
         onChange={(desempenos) => patch({ desempenos })}
       />
 
-      <PlantillaEjesItems
-        ejeItems={form.ejeItems}
-        onChange={(ejeItems) => patch({ ejeItems })}
-      />
+      {/* Sólo el instrumento docente lleva esta sección. */}
+      {form.tipoMonitoreo !== 'Monitoreo Directivo' && (
+        <PlantillaEjesItems
+          ejeItems={form.ejeItems}
+          onChange={(ejeItems) => patch({ ejeItems })}
+        />
+      )}
 
       <div className="flex justify-end gap-3">
         <FormButton variant="secondary" onClick={onCancel} disabled={isLoading}>

@@ -214,7 +214,12 @@ export const LlenarFichaForm = ({
               soloLectura={isCompleted}
             />
 
-        {template.ejesItems && template.ejesItems.length > 0 && (
+        {/* Planificación y diseño de evaluación existe sólo en el instrumento
+            docente. Se condiciona al tipo y no sólo a que haya ítems: una
+            plantilla directiva que los tenga cargados —el formulario ya no lo
+            permite, pero la base puede traerlos— le mostraría al evaluador una
+            sección que su ficha no lleva. */}
+        {!isDirectivo && template.ejesItems && template.ejesItems.length > 0 && (
           <EjesItemsSeccion
             items={template.ejesItems}
             niveles={template.niveles}
@@ -258,7 +263,9 @@ export const LlenarFichaForm = ({
         {calificacion && (
           <ConsolidadoSeccion
             desempenos={template.desempenos}
-            ejesItems={template.ejesItems}
+            // Una ficha directiva no lleva esta sección, y su consolidado
+            // tampoco debe listarla.
+            ejesItems={isDirectivo ? [] : template.ejesItems}
             niveles={template.niveles}
             nivelesElegidos={selectedLevels}
             respuestasEjeItem={respuestasEjeItem}

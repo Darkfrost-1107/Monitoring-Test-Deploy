@@ -102,7 +102,9 @@ export const FichaPrintable = forwardRef<HTMLDivElement, FichaPrintableProps>(
 
         <DesempenosEvaluados desempenos={template.desempenos} estado={fichaState} />
 
-        {!!template.ejesItems?.length && (
+        {/* Sólo el instrumento docente lleva planificación y diseño de
+            evaluación. Se condiciona al tipo y no sólo a que haya ítems. */}
+        {visit.tipo !== 'DIRECTIVO' && !!template.ejesItems?.length && (
           <EjesEItems items={template.ejesItems} estado={fichaState} />
         )}
 

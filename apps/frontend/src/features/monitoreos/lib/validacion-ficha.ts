@@ -17,6 +17,8 @@ export interface PlantillaValidable {
   desempenos: readonly { id: string; nombre: string }[];
   /** `numero` llega como número desde el contrato de plantilla. */
   ejesItems?: readonly { id: string; numero: string | number; descripcion: string }[];
+  /** Decide si la ficha lleva planificación y diseño de evaluación. */
+  tipoMonitoreo: string;
 }
 
 export interface RespuestasAValidar {
@@ -58,7 +60,18 @@ export function validarCierreDeFicha(
     )}`;
   }
 
-  const sinObservar = (plantilla.ejesItems ?? []).filter((item) =>
+  /**
+   * Planificación y diseño de evaluación existe sólo en el instrumento docente.
+   *
+   * Se decide acá dentro y no en quien llama: es una regla que **bloquea** el
+   * cierre, y una plantilla directiva con ítems heredados dejaría la ficha sin
+   * poder finalizarse, reclamando observaciones de una sección que su pantalla
+   * ni siquiera muestra.
+   */
+  const esDirectivo = plantilla.tipoMonitoreo.toUpperCase().includes('DIRECTIVO');
+  const itemsExigibles = esDirectivo ? [] : (plantilla.ejesItems ?? []);
+
+  const sinObservar = itemsExigibles.filter((item) =>
     estaVacio(respuestas.observacionesEjeItem[item.id]),
   );
   if (sinObservar.length > 0) {

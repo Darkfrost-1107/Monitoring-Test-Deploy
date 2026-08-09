@@ -127,7 +127,9 @@ export const FichaAuditorModal = ({
               }
             />
 
-            {!!template.ejesItems?.length && (
+            {/* Sólo el instrumento docente lleva esta sección. */}
+            {!template.tipoMonitoreo.toUpperCase().includes('DIRECTIVO') &&
+              !!template.ejesItems?.length && (
               <EjesEItemsAuditados
                 items={template.ejesItems}
                 niveles={template.niveles}

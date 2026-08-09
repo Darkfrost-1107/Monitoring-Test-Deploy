@@ -19,6 +19,7 @@ import {
 const plantilla = (over: Partial<PlantillaValidable> = {}): PlantillaValidable => ({
   desempenos: [{ id: 'd1', nombre: 'Involucra activamente a los estudiantes' }],
   ejesItems: [],
+  tipoMonitoreo: 'Monitoreo Docente',
   ...over,
 });
 
@@ -163,5 +164,31 @@ describe('validarCierreDeFicha — orden de las reglas', () => {
   it('informa las sugerencias antes que los compromisos', () => {
     const sinCierre = respuestas({ sugerencias: '', compromisos: '' });
     expect(validarCierreDeFicha(plantilla(), sinCierre)).toContain('sugerencias');
+  });
+});
+
+/**
+ * Planificación y diseño de evaluación existe sólo en el instrumento docente.
+ *
+ * El formulario ya no deja cargar ítems en una plantilla directiva, pero la base
+ * puede traerlos de antes. Exigirles observación dejaría la ficha directiva sin
+ * poder cerrarse, reclamando una sección que su pantalla ni siquiera muestra.
+ */
+describe('validarCierreDeFicha — ejes e items en una plantilla directiva', () => {
+  const conItems = plantilla({
+    tipoMonitoreo: 'Monitoreo Directivo',
+    ejesItems: [{ id: 'e1', numero: 6, descripcion: 'Planifica el proceso' }],
+  });
+
+  it('no reclama observaciones de ítems que la ficha directiva no muestra', () => {
+    expect(validarCierreDeFicha(conItems, respuestas())).toBeNull();
+  });
+
+  it('sí las reclama en una plantilla docente', () => {
+    const docente = plantilla({
+      ejesItems: [{ id: 'e1', numero: 6, descripcion: 'Planifica el proceso' }],
+    });
+
+    expect(validarCierreDeFicha(docente, respuestas())).toContain('observaciones');
   });
 });

@@ -40,6 +40,8 @@ export const PlantillaForm = ({ onCancel, onSubmit, isSaving = false }: Props) =
   }));
   const [errorDeLema, setErrorDeLema] = useState<string | null>(null);
 
+  const esDirectivo = form.tipoMonitoreo === 'Monitoreo Directivo';
+
   /**
    * Cambiar el tipo de monitoreo repone la escala y su modo de lectura.
    *
@@ -60,6 +62,10 @@ export const PlantillaForm = ({ onCancel, onSubmit, isSaving = false }: Props) =
           ? {
               niveles: nivelesPorDefecto(p.tipoMonitoreo!),
               baremo: baremoPorDefecto(p.tipoMonitoreo!),
+              // La ficha directiva no lleva planificación y diseño de
+              // evaluación: conservar los ítems los dejaría guardados en una
+              // plantilla que nunca los va a mostrar.
+              ...(p.tipoMonitoreo === 'Monitoreo Directivo' ? { ejeItems: [] } : {}),
             }
           : {}),
       };
@@ -111,10 +117,15 @@ export const PlantillaForm = ({ onCancel, onSubmit, isSaving = false }: Props) =
         onChange={(desempenos) => patch({ desempenos })}
       />
 
-      <PlantillaEjesItems
-        ejeItems={form.ejeItems}
-        onChange={(ejeItems) => patch({ ejeItems })}
-      />
+      {/* Sólo el instrumento docente lleva esta sección. Antes se ofrecía
+          siempre y sólo lo advertía el título, de modo que una plantilla
+          directiva podía quedar con ítems que su ficha no muestra. */}
+      {!esDirectivo && (
+        <PlantillaEjesItems
+          ejeItems={form.ejeItems}
+          onChange={(ejeItems) => patch({ ejeItems })}
+        />
+      )}
 
       {errorDeLema && (
         <p role="alert" className="text-sm text-destructive text-right">
