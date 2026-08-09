@@ -28,7 +28,19 @@ const ESCALA_NUM: Record<string, string> = {
 // PRIMARIA → Primaria
 const nivelLabel = (nivel: string) => nivel.charAt(0) + nivel.slice(1).toLowerCase();
 
+/**
+ * La designación de Director vigente, o `undefined` si ya fue cesada.
+ *
+ * Es lo que distingue a quien dirige hoy de quien dirigió alguna vez: una
+ * designación cerrada conserva su fila en el historial, con `fechaFin`.
+ */
+const designacionVigente = (dir: Docente) =>
+  dir.cargosList?.find((c) => c.nombre === 'Director' && c.fechaFin === null);
+
 const directorFilter = (dir: Docente, params: URLSearchParams) => {
+  // Conserva a los cesados en el padrón —hay que poder verlos y reactivarlos—
+  // pero lo que la fila muestra y ofrece sí distingue si la designación sigue
+  // vigente.
   const hasCargo = dir.cargosList?.some((c) => c.nombre === 'Director') ?? (dir.cargo === 'Director');
   if (!hasCargo) return false;
 
@@ -164,7 +176,14 @@ export const DirectoresTableWidget = ({
               </div>
             </TableCell>
             <TableCell className="font-semibold text-text">{dir.dni}</TableCell>
-            <TableCell className="text-xs font-medium text-text">Director de {nivelLabel(dir.nivelEducativo)}</TableCell>
+            {/*
+              Decía «Director de {nivel}» escrito a mano, para toda fila del
+              padrón: una designación cesada seguía figurando como Director.
+              El cargo vigente lo resuelve el servicio filtrando por `fechaFin`.
+            */}
+            <TableCell className="text-xs font-medium text-text">
+              {designacionVigente(dir) ? `Director de ${nivelLabel(dir.nivelEducativo)}` : dir.cargo}
+            </TableCell>
             <TableCell className="text-xs font-medium text-text">{getInstName(dir.institucionId)}</TableCell>
             <TableCell>
               <Badge
@@ -188,7 +207,10 @@ export const DirectoresTableWidget = ({
                 <FastActions
                   onView={() => onView(dir)}
                   onEdit={dir.activo && onEdit ? () => onEdit(dir) : undefined}
-                  onFinalize={dir.activo ? () => setFinalizing(dir) : undefined}
+                  // Sólo se cesa a quien tiene la designación vigente: antes
+                  // bastaba con estar activo y la opción reaparecía sobre un
+                  // director ya cesado.
+                  onFinalize={designacionVigente(dir) ? () => setFinalizing(dir) : undefined}
                   onRestore={!dir.activo ? () => setRestoring(dir) : undefined}
                   viewTitle="Ver ficha"
                   restoreTitle="Reactivar director"
