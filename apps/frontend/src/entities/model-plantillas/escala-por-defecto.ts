@@ -26,31 +26,20 @@ const esDirectivo = (tipoMonitoreo: string) => tipoMonitoreo === 'Monitoreo Dire
 /**
  * FICHA Y RÚBRICA DE MONITOREO AL DOCENTE 2025 — UGEL Lampa.
  *
- * ── Por qué porcentaje y no puntaje ──
- * Su consolidado puntúa **siete** columnas: D1 a D5 —los desempeños de
- * observación de aula— más R6 y R7, los ejes e items de planificación y diseño
- * de evaluación. La columna TOTAL de la leyenda ([5-7], [8-12], [13-17],
- * [18-20]) está calculada sobre cinco, igual que los rangos absolutos del
- * documento directivo: con siete filas, siete niveles III suman 21 y cruzarían
- * el corte de 18 como si fueran «Logro destacado».
+ * Se califica con puntaje, no con porcentaje: su leyenda da la columna TOTAL
+ * sobre la escala de 0 a 20 —[5-7], [8-12], [13-17], [18-20]— que es lo que la
+ * pantalla ofrece como «Vigente (0-20)». El total sale de los cinco desempeños
+ * de observación de aula; los ejes e items se informan aparte.
  *
- * La columna PROMEDIO de la leyenda sí es independiente de cuántas filas haya, y
- * es la regla operativa. Llevada a porcentaje sobre el nivel máximo de 4 da
- * estos cortes:
- *
- *   1 – 1,4   →  25 – 35 %   Inicio
- *   1,6 – 2,4 →  40 – 60 %   En proceso
- *   2,6 – 3,4 →  65 – 85 %   Logro esperado
- *   3,6 – 4   →  90 – 100 %  Logro destacado
- *
- * Y reproduce exacto la columna TOTAL para cinco filas: 7 → 35 %, 8 → 40 %,
- * 13 → 65 %, 18 → 90 %.
+ * Una plantilla con otra cantidad de desempeños mueve su techo, y entonces
+ * estos cortes hay que ajustarlos en la pantalla de registro. Son valores
+ * propuestos, no impuestos.
  */
 const ESCALA_DOCENTE: readonly NivelCalificacion[] = [
-  { nivel: 'I', denominacion: 'Inicio', rangoMin: 25, color: '#ef4444' },
-  { nivel: 'II', denominacion: 'En proceso', rangoMin: 40, color: '#f59e0b' },
-  { nivel: 'III', denominacion: 'Logro esperado', rangoMin: 65, color: '#22c55e' },
-  { nivel: 'IV', denominacion: 'Logro destacado', rangoMin: 90, color: '#3b82f6' },
+  { nivel: 'I', denominacion: 'Inicio', rangoMin: 5, color: '#ef4444' },
+  { nivel: 'II', denominacion: 'En proceso', rangoMin: 8, color: '#f59e0b' },
+  { nivel: 'III', denominacion: 'Logro esperado', rangoMin: 13, color: '#22c55e' },
+  { nivel: 'IV', denominacion: 'Logro destacado', rangoMin: 18, color: '#3b82f6' },
 ];
 
 /**
@@ -105,17 +94,11 @@ export function nivelesPorDefecto(tipoMonitoreo: string): NivelCalificacion[] {
 /**
  * Cómo se leen los cortes de esa escala.
  *
- * Las dos rúbricas oficiales se resuelven por **porcentaje**, con cortes
- * distintos: la docente en 25·40·65·90 y la directiva en 25·50·75·100. Ninguna
- * corta sobre el puntaje crudo, porque los rangos absolutos de ambos documentos
- * están calculados sobre una cantidad de filas que ya no es la vigente.
- *
- * `Vigente` queda disponible para plantillas propias que sí quieran cortes por
- * puntaje, que es lo que su etiqueta «Vigente (0-20)» ofrece en la pantalla.
- *
- * No recibe el tipo de monitoreo a propósito: hoy la respuesta es la misma para
- * los dos, y un parámetro que se ignora hace creer que decide algo.
+ * La rúbrica docente se califica con **puntaje** sobre la escala de 0 a 20, tal
+ * como da su leyenda. La directiva se resuelve por **porcentaje de avance**: su
+ * consolidado lleva una fila «% DE AVANCE» y su baremo rotula cada tramo con
+ * 25·50·75·100.
  */
-export function baremoPorDefecto(): Baremo {
-  return 'Porcentual';
+export function baremoPorDefecto(tipoMonitoreo: string): Baremo {
+  return esDirectivo(tipoMonitoreo) ? 'Porcentual' : 'Vigente';
 }

@@ -20,10 +20,10 @@ import type { TramoDeEscala } from '@sistema-monitoreo/shared-contracts';
  */
 
 const ESCALA_DOCENTE: TramoDeEscala[] = [
-  { nivelRomano: 'I', rangoMin: 25, denominacion: 'Inicio' },
-  { nivelRomano: 'II', rangoMin: 40, denominacion: 'En proceso' },
-  { nivelRomano: 'III', rangoMin: 65, denominacion: 'Logro esperado' },
-  { nivelRomano: 'IV', rangoMin: 90, denominacion: 'Logro destacado' },
+  { nivelRomano: 'I', rangoMin: 5, denominacion: 'Inicio' },
+  { nivelRomano: 'II', rangoMin: 8, denominacion: 'En proceso' },
+  { nivelRomano: 'III', rangoMin: 13, denominacion: 'Logro esperado' },
+  { nivelRomano: 'IV', rangoMin: 18, denominacion: 'Logro destacado' },
 ];
 
 const ESCALA_DIRECTIVO: TramoDeEscala[] = [
@@ -71,15 +71,15 @@ describe('finalizar — el nivel sale de la escala de la plantilla', () => {
   const baremo = new BaremoCalculatorService();
 
   it('lee la escala de la plantilla de la ficha', async () => {
-    const repo = armarRepositorio(fichaCon([3, 3, 3, 3, 3]), ESCALA_DOCENTE, 'Porcentual');
+    const repo = armarRepositorio(fichaCon([3, 3, 3, 3, 3]), ESCALA_DOCENTE, 'Vigente');
 
     await finalizar(repo, baremo, 'f-1', DTO, SESION);
 
     expect(repo.findEscalaDePlantilla).toHaveBeenCalledWith('pl-1');
   });
 
-  it('guarda LOGRO_DESTACADO para 18 de 20 en la rúbrica docente', async () => {
-    const repo = armarRepositorio(fichaCon([4, 4, 4, 3, 3]), ESCALA_DOCENTE, 'Porcentual');
+  it('guarda LOGRO_DESTACADO para un total de 18 en la rúbrica docente', async () => {
+    const repo = armarRepositorio(fichaCon([4, 4, 4, 3, 3]), ESCALA_DOCENTE, 'Vigente');
 
     await finalizar(repo, baremo, 'f-1', DTO, SESION);
 
@@ -125,7 +125,7 @@ describe('finalizar — el nivel sale de la escala de la plantilla', () => {
   });
 
   it('marca la visita como completada', async () => {
-    const repo = armarRepositorio(fichaCon([3, 3, 3]), ESCALA_DOCENTE, 'Porcentual');
+    const repo = armarRepositorio(fichaCon([3, 3, 3]), ESCALA_DOCENTE, 'Vigente');
 
     await finalizar(repo, baremo, 'f-1', DTO, SESION);
 

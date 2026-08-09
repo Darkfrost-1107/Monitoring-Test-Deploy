@@ -33,7 +33,7 @@ export const PlantillaForm = ({ onCancel, onSubmit, isSaving = false }: Props) =
     tipoMonitoreo: 'Monitoreo Docente',
     anioAcademico: new Date().getFullYear(),
     lema: '',
-    baremo: baremoPorDefecto(),
+    baremo: baremoPorDefecto('Monitoreo Docente'),
     niveles: nivelesPorDefecto('Monitoreo Docente'),
     desempenos: [crearDesempenoVacio()],
     ejeItems: [],
@@ -59,7 +59,7 @@ export const PlantillaForm = ({ onCancel, onSubmit, isSaving = false }: Props) =
         ...(cambiaDeTipo
           ? {
               niveles: nivelesPorDefecto(p.tipoMonitoreo!),
-              baremo: baremoPorDefecto(),
+              baremo: baremoPorDefecto(p.tipoMonitoreo!),
             }
           : {}),
       };

@@ -17,12 +17,12 @@ import {
  * la base. El motor los ignoraba. Ahora los usa.
  */
 
-/** Rúbrica de monitoreo al DOCENTE 2025 — UGEL Lampa. Corta sobre el porcentaje. */
+/** Rúbrica de monitoreo al DOCENTE 2025 — UGEL Lampa. Corta sobre el puntaje, 0–20. */
 const ESCALA_DOCENTE: TramoDeEscala[] = [
-  { nivelRomano: 'I', rangoMin: 25, denominacion: 'Inicio' },
-  { nivelRomano: 'II', rangoMin: 40, denominacion: 'En proceso' },
-  { nivelRomano: 'III', rangoMin: 65, denominacion: 'Logro esperado' },
-  { nivelRomano: 'IV', rangoMin: 90, denominacion: 'Logro destacado' },
+  { nivelRomano: 'I', rangoMin: 5, denominacion: 'Inicio' },
+  { nivelRomano: 'II', rangoMin: 8, denominacion: 'En proceso' },
+  { nivelRomano: 'III', rangoMin: 13, denominacion: 'Logro esperado' },
+  { nivelRomano: 'IV', rangoMin: 18, denominacion: 'Logro destacado' },
 ];
 
 /** Rúbrica de monitoreo DIRECTIVO 2025. Corta sobre el porcentaje de avance. */
@@ -49,23 +49,19 @@ const ESCALA_DIRECTIVO: TramoDeEscala[] = [
 ];
 
 describe('nivelPorEscala', () => {
-  /**
-   * La leyenda del documento da los bordes en puntaje para cinco filas. Sobre
-   * el máximo de 20 que dan esas cinco, cada uno equivale a un porcentaje, y
-   * ése es el que el motor compara.
-   */
-  describe('rúbrica docente — los bordes de la leyenda, llevados a porcentaje', () => {
+  /** Los bordes que da la leyenda del documento, en puntaje. */
+  describe('rúbrica docente — los bordes de la leyenda', () => {
     it.each([
-      [5, 25, 'Inicio'],
-      [7, 35, 'Inicio'],
-      [8, 40, 'En proceso'],
-      [12, 60, 'En proceso'],
-      [13, 65, 'Logro esperado'],
-      [17, 85, 'Logro esperado'],
-      [18, 90, 'Logro destacado'],
-      [20, 100, 'Logro destacado'],
-    ])('total %i sobre 20 es %i%% y cae en %s', (_total, avance, denominacion) => {
-      expect(nivelPorEscala(avance, ESCALA_DOCENTE)?.denominacion).toBe(denominacion);
+      [5, 'Inicio'],
+      [7, 'Inicio'],
+      [8, 'En proceso'],
+      [12, 'En proceso'],
+      [13, 'Logro esperado'],
+      [17, 'Logro esperado'],
+      [18, 'Logro destacado'],
+      [20, 'Logro destacado'],
+    ])('total %i cae en %s', (total, denominacion) => {
+      expect(nivelPorEscala(total, ESCALA_DOCENTE)?.denominacion).toBe(denominacion);
     });
   });
 
@@ -112,31 +108,30 @@ describe('nivelPorEscala', () => {
 });
 
 describe('calcularResultadoBaremo con escala de plantilla', () => {
-  it('decide sobre el porcentaje y devuelve la denominación de la plantilla', () => {
-    // Cinco desempeños que suman 17 de 20: el 85% de avance.
-    const resultado = calcularResultadoBaremo([4, 4, 3, 3, 3], ESCALA_DOCENTE, 'Porcentual');
+  it('decide sobre el puntaje y devuelve la denominación de la plantilla', () => {
+    // Cinco desempeños que suman 17.
+    const resultado = calcularResultadoBaremo([4, 4, 3, 3, 3], ESCALA_DOCENTE, 'Vigente');
 
     expect(resultado.puntajeTotal).toBe(17);
-    expect(resultado.porcentaje).toBe(85);
     expect(resultado.nivelLogro).toBe('LOGRO_ESPERADO');
     expect(resultado.denominacion).toBe('Logro esperado');
   });
 
   /**
-   * La ficha docente puntúa SIETE columnas —D1 a D5 más R6 y R7, los ejes e
-   * items— y la leyenda del documento está calculada sobre cinco.
+   * Los cortes por puntaje se calibran contra un techo concreto: los de la
+   * leyenda docente valen para los cinco desempeños que dan un máximo de 20.
    *
-   * Siete niveles III suman 21. Leído sobre el puntaje crudo con el corte de 18
-   * de la leyenda, ese 21 cruzaba a «Logro destacado» pese a que el promedio es
-   * 3,0 exacto. Sobre el porcentaje —21 de 28, el 75%— cae donde corresponde.
+   * Una plantilla con siete desempeños llega a 28, y entonces siete niveles III
+   * suman 21 y cruzan el corte de 18 pese a promediar 3,0. No es un defecto del
+   * cálculo sino de la calibración: al cambiar la cantidad hay que ajustar los
+   * cortes en la pantalla de registro, que es para lo que son editables.
    */
-  it('siete desempeños en nivel III no alcanzan el nivel más alto', () => {
-    const resultado = calcularResultadoBaremo([3, 3, 3, 3, 3, 3, 3], ESCALA_DOCENTE, 'Porcentual');
+  it('los cortes por puntaje quedan calibrados al techo de la plantilla', () => {
+    const resultado = calcularResultadoBaremo([3, 3, 3, 3, 3, 3, 3], ESCALA_DOCENTE, 'Vigente');
 
     expect(resultado.puntajeTotal).toBe(21);
     expect(resultado.promedio).toBe(3);
-    expect(resultado.porcentaje).toBe(75);
-    expect(resultado.denominacion).toBe('Logro esperado');
+    expect(resultado.denominacion).toBe('Logro destacado');
   });
 
   it('clasifica una ficha directiva en el tramo más bajo sin fallar', () => {
@@ -170,7 +165,7 @@ describe('calcularResultadoBaremo con escala de plantilla', () => {
   it('el mismo puntaje cae en niveles distintos según la rúbrica', () => {
     const niveles = [4, 4, 4, 3, 3]; // 18 de 20, el 90% de avance
 
-    expect(calcularResultadoBaremo(niveles, ESCALA_DOCENTE, 'Porcentual').denominacion).toBe(
+    expect(calcularResultadoBaremo(niveles, ESCALA_DOCENTE, 'Vigente').denominacion).toBe(
       'Logro destacado',
     );
     expect(calcularResultadoBaremo(niveles, ESCALA_DIRECTIVO, 'Porcentual').denominacion).toBe(
@@ -211,7 +206,7 @@ describe('calcularResultadoBaremo con escala de plantilla', () => {
    * segundo nombre: el resultado reutiliza la denominación de la marca.
    */
   it('sin nombre consolidado el resultado reutiliza la denominación', () => {
-    const resultado = calcularResultadoBaremo([3, 3, 3, 3, 3], ESCALA_DOCENTE, 'Porcentual');
+    const resultado = calcularResultadoBaremo([3, 3, 3, 3, 3], ESCALA_DOCENTE, 'Vigente');
 
     expect(ESCALA_DOCENTE[2].denominacionConsolidado).toBeUndefined();
     expect(resultado.denominacion).toBe('Logro esperado');

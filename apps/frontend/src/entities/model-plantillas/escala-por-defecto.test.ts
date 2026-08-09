@@ -24,8 +24,8 @@ describe('nivelesPorDefecto — Monitoreo Docente', () => {
    * PROMEDIO —1-1,4 / 1,6-2,4 / 2,6-3,4 / 3,6-4— es la regla operativa, y sobre
    * el nivel máximo de 4 da estos porcentajes.
    */
-  it('propone los cortes porcentuales de la rúbrica docente', () => {
-    expect(escala.map((n) => n.rangoMin)).toEqual([25, 40, 65, 90]);
+  it('propone los cortes en puntaje de la rúbrica docente', () => {
+    expect(escala.map((n) => n.rangoMin)).toEqual([5, 8, 13, 18]);
   });
 
   it('propone los nombres de la rúbrica docente', () => {
@@ -106,8 +106,12 @@ describe('baremoPorDefecto', () => {
    * es la vigente —cinco en el docente, que puntúa siete; seis en el directivo,
    * que puntúa cinco— y el porcentaje no depende de eso.
    */
-  it('propone cortar sobre el porcentaje de avance', () => {
-    expect(baremoPorDefecto()).toBe('Porcentual');
+  it('la rúbrica docente se califica con puntaje', () => {
+    expect(baremoPorDefecto('Monitoreo Docente')).toBe('Vigente');
+  });
+
+  it('la rúbrica directiva se resuelve por porcentaje de avance', () => {
+    expect(baremoPorDefecto('Monitoreo Directivo')).toBe('Porcentual');
   });
 });
 
@@ -140,6 +144,6 @@ describe('nivelesPorDefecto — lo común a las dos', () => {
     const primera = nivelesPorDefecto('Monitoreo Docente');
     primera[0].rangoMin = 99;
 
-    expect(nivelesPorDefecto('Monitoreo Docente')[0].rangoMin).toBe(25);
+    expect(nivelesPorDefecto('Monitoreo Docente')[0].rangoMin).toBe(5);
   });
 });
