@@ -18,10 +18,22 @@ export class NivelCalificacionInput {
   @IsIn(['I', 'II', 'III', 'IV'])
   nivelRomano!: 'I' | 'II' | 'III' | 'IV';
 
+  /** Nombre de la marca individual, el que ve el evaluador al calificar. */
   @IsString()
   @IsNotEmpty()
   @MaxLength(100)
   denominacion!: string;
+
+  /**
+   * Nombre del resultado global, cuando el instrumento lo llama distinto.
+   *
+   * La rúbrica directiva nombra «Logro Esperado» la marca de cada rúbrica y
+   * «Logrado» el resultado consolidado de ese mismo tramo.
+   */
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  denominacionConsolidado?: string | null;
 
   @Type(() => Number)
   @IsInt()

@@ -76,6 +76,7 @@ export async function updatePlantillaInPlace(
         ).map((n) => ({
           nivelRomano: n.nivelRomano,
           denominacion: n.denominacion,
+          denominacionConsolidado: n.denominacionConsolidado ?? null,
           rangoMin: n.rangoMin,
           color: n.color,
           orden: n.orden,
@@ -94,6 +95,7 @@ export async function updatePlantillaInPlace(
       for (const n of nivelesActuales as {
         nivelRomano: string;
         denominacion: string;
+        denominacionConsolidado?: string | null;
         rangoMin: number;
         color?: string | null;
         orden: number;
@@ -106,6 +108,7 @@ export async function updatePlantillaInPlace(
             where: { id: existing.id },
             data: {
               denominacion: n.denominacion,
+              denominacionConsolidado: n.denominacionConsolidado ?? null,
               rangoMin: n.rangoMin,
               color: n.color ?? undefined,
               orden: n.orden,

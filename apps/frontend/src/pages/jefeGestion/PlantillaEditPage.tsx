@@ -7,6 +7,8 @@ import { EditarPlantillaForm } from '@widgets/plantillas';
 import type { PlantillaFormState } from '@widgets/plantillas';
 import { usePlantilla, useActualizarPlantilla } from '@entities/model-plantillas/use-plantillas-api';
 import { NIVELES_ROMANOS } from '@entities/model-plantillas';
+import { lemasApi } from '@entities/model-lemas';
+import { useQueryClient } from '@tanstack/react-query';
 import { formatearFechaCorta } from '@shared/lib/fecha/fecha';
 
 export const PlantillaEditPage = () => {
@@ -14,6 +16,7 @@ export const PlantillaEditPage = () => {
   const navigate = useNavigate();
   const { data: plantilla, isLoading, isError, error } = usePlantilla(id);
   const actualizar = useActualizarPlantilla();
+  const qc = useQueryClient();
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const initialData = useMemo<PlantillaFormState | null>(() => {
@@ -21,6 +24,7 @@ export const PlantillaEditPage = () => {
     return {
       tipoMonitoreo: plantilla.tipoMonitoreo,
       anioAcademico: plantilla.anioAcademico,
+      lema: plantilla.lema ?? '',
       baremo: plantilla.baremo,
       niveles: plantilla.niveles,
       desempenos: plantilla.desempenos.map((d) => ({
@@ -43,6 +47,14 @@ export const PlantillaEditPage = () => {
     if (!id) return;
     setSubmitError(null);
     try {
+      // Sólo si cambió: el lema pertenece al año y tocarlo reescribe el
+      // encabezado de todas las fichas de ese año, no sólo el de esta plantilla.
+      const lemaCorregido = data.lema.trim();
+      if (lemaCorregido && lemaCorregido !== (plantilla?.lema ?? '')) {
+        await lemasApi.upsert(Number(data.anioAcademico), lemaCorregido);
+        qc.invalidateQueries({ queryKey: ['lema-anual'] });
+      }
+
       await actualizar.mutateAsync({
         id,
         data: {
@@ -51,6 +63,7 @@ export const PlantillaEditPage = () => {
           niveles: data.niveles.map((n, i) => ({
             nivelRomano: n.nivel,
             denominacion: n.denominacion,
+            denominacionConsolidado: n.denominacionConsolidado ?? null,
             rangoMin: n.rangoMin,
             color: n.color,
             orden: i + 1,

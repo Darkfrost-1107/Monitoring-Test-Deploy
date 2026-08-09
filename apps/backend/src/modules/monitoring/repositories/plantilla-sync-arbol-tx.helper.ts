@@ -4,6 +4,7 @@ import type { Prisma } from '../../../generated/prisma/client.js';
 export interface SyncNivel {
   nivelRomano: string;
   denominacion: string;
+  denominacionConsolidado?: string | null;
   rangoMin: number;
   color?: string | null;
   orden: number;
@@ -50,6 +51,7 @@ export async function syncArbolWithTx(
         plantillaId,
         nivelRomano: n.nivelRomano,
         denominacion: n.denominacion,
+        denominacionConsolidado: n.denominacionConsolidado ?? null,
         rangoMin: n.rangoMin,
         color: n.color ?? '#000000',
         orden: n.orden,

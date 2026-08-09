@@ -4,6 +4,7 @@ import { ArrowLeft } from 'lucide-react';
 import { PageHeader } from '@shared/ui/pageHeader';
 import { PlantillaForm, type PlantillaFormState } from '@widgets/plantillas';
 import { plantillasApi } from '@entities/model-plantillas/api/plantillas.api';
+import { lemasApi } from '@entities/model-lemas';
 import { useQueryClient } from '@tanstack/react-query';
 import { ConfirmModal } from '@shared/ui/ConfirmModal';
 import { formatearFechaCorta } from '@shared/lib/fecha/fecha';
@@ -60,6 +61,11 @@ export const PlantillaCreatePage = () => {
 
   const executeCreate = async (data: PlantillaFormState, backendTipo: 'DOCENTE' | 'DIRECTIVO', toArchive: { id: string }[]) => {
     try {
+      // El lema va primero: la plantilla lo devuelve ya resuelto por su año, de
+      // modo que crearla antes la dejaría con el encabezado en blanco hasta la
+      // próxima recarga.
+      await lemasApi.upsert(Number(data.anioAcademico), data.lema);
+
       for (const old of toArchive) {
         await plantillasApi.cambiarEstado(old.id, 'Historico');
       }
@@ -72,6 +78,7 @@ export const PlantillaCreatePage = () => {
         niveles: data.niveles.map((n, i) => ({
           nivelRomano: n.nivel,
           denominacion: n.denominacion,
+          denominacionConsolidado: n.denominacionConsolidado ?? null,
           rangoMin: n.rangoMin,
           color: n.color,
           orden: i + 1,
@@ -104,6 +111,7 @@ export const PlantillaCreatePage = () => {
       await plantillasApi.cambiarEstado(created.id, 'Vigente');
 
       qc.invalidateQueries({ queryKey: ['plantillas'] });
+      qc.invalidateQueries({ queryKey: ['lema-anual'] });
 
       setPendingArchive(null);
       setIsSaving(false);
