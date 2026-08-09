@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { PlusCircle, FileSpreadsheet } from 'lucide-react';
+import { PlusCircle } from 'lucide-react';
 import { Button } from '@shared/ui/button';
 import { PageHeader } from '@shared/ui/pageHeader';
 import { Spinner } from '@shared/ui/Spinner';
@@ -59,22 +59,13 @@ export const DirectoresPage = () => {
         title="Gestión de Directores"
         description="Administra el padrón de directores de las instituciones educativas."
         action={
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              className="flex items-center gap-2 font-semibold cursor-pointer"
-            >
-              <FileSpreadsheet className="w-[18px] h-[18px]" strokeWidth={2} />
-              Importar desde Excel
-            </Button>
-            <Button
-              onClick={() => navigate('/instituciones/docentes/nuevo')}
-              className="flex items-center gap-2 font-bold cursor-pointer bg-primary hover:bg-primary-hover text-white"
-            >
-              <PlusCircle className="w-[18px] h-[18px]" strokeWidth={2} />
-              Registrar Director
-            </Button>
-          </div>
+          <Button
+            onClick={() => navigate('/instituciones/docentes/nuevo')}
+            className="flex items-center gap-2 font-bold cursor-pointer bg-primary hover:bg-primary-hover text-white"
+          >
+            <PlusCircle className="w-[18px] h-[18px]" strokeWidth={2} />
+            Registrar Director
+          </Button>
         }
       />
 
