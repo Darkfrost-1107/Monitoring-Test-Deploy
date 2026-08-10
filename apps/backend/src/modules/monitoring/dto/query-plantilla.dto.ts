@@ -1,3 +1,4 @@
+import { ROLES_AUTOR_PLANTILLA, type RolAutorPlantilla } from '@sistema-monitoreo/shared-contracts';
 import { Type } from 'class-transformer';
 import { IsIn, IsInt, IsOptional, IsString, Min } from 'class-validator';
 
@@ -24,8 +25,8 @@ export class QueryPlantillaDto {
 
   @IsOptional()
   @IsString()
-  @IsIn(['jefe_gestion', 'director_ie'])
-  rolAutorAlCrear?: 'jefe_gestion' | 'director_ie';
+  @IsIn(ROLES_AUTOR_PLANTILLA)
+  rolAutorAlCrear?: RolAutorPlantilla;
 
   @IsOptional()
   @IsString()

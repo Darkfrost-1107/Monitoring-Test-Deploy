@@ -1,10 +1,10 @@
-import type { IPlantilla } from '@sistema-monitoreo/shared-contracts';
+import type { IPlantilla, RolAutorPlantilla } from '@sistema-monitoreo/shared-contracts';
 import type { CreatePlantillaDto } from '../dto/create-plantilla.dto.js';
 import type { UpdatePlantillaDto } from '../dto/update-plantilla.dto.js';
 
 export interface CreatePlantillaData {
   autorId: string;
-  rolAutorAlCrear: 'jefe_gestion' | 'director_ie';
+  rolAutorAlCrear: RolAutorPlantilla;
   institucionId: string | null;
   data: CreatePlantillaDto;
 }
@@ -27,7 +27,7 @@ export abstract class PlantillaRepository {
     anioAcademico?: number;
     tipoMonitoreo?: 'DOCENTE' | 'DIRECTIVO';
     estado?: 'Borrador' | 'Vigente' | 'Historico';
-    rolAutorAlCrear?: 'jefe_gestion' | 'director_ie';
+    rolAutorAlCrear?: RolAutorPlantilla;
     institucionId?: string | null;
   }): Promise<IPlantilla[]>;
 
@@ -61,7 +61,7 @@ export abstract class PlantillaRepository {
   abstract clone(
     sourceId: string,
     nuevoAutorId: string,
-    rolAutorAlCrear: 'jefe_gestion' | 'director_ie',
+    rolAutorAlCrear: RolAutorPlantilla,
     institucionId: string | null,
     descripcion?: string,
     anioAcademico?: number,

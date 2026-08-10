@@ -8,7 +8,23 @@ export type Baremo = 'Vigente' | 'Porcentual';
 
 export type ModoVersionado = 'IN_PLACE' | 'VERSIONADO';
 
-export type RolAutorPlantilla = 'jefe_gestion' | 'director_ie';
+/**
+ * Quién es dueño de la plantilla.
+ *
+ * Cada actor usa la suya al monitorear: el Jefe de Gestión crea la de la UGEL,
+ * el Director de I.E. la clona y la adapta, y el Jefe de Taller y el Coordinador
+ * Pedagógico clonan la del Director. Los tres de la institución compartían el
+ * valor `director_ie`, de modo que la regla de una sola vigente por autor los
+ * tomaba por uno solo y sólo el primero podía activar la suya.
+ */
+export const ROLES_AUTOR_PLANTILLA = [
+  'jefe_gestion',
+  'director_ie',
+  'coordinador_pedagogico',
+  'jefe_taller',
+] as const;
+
+export type RolAutorPlantilla = (typeof ROLES_AUTOR_PLANTILLA)[number];
 
 export interface INivelCalificacion {
   id: string;

@@ -1,3 +1,4 @@
+import type { RolAutorPlantilla } from '@sistema-monitoreo/shared-contracts';
 // Plantilla de Monitoreo (la registra el Jefe de Gestión).
 
 // Baremo de calificación: Vigente = escala 0-20; Porcentual = %.
@@ -61,7 +62,9 @@ export interface Plantilla {
   fechaCreacion: string;
   estado: 'Vigente' | 'Borrador' | 'Historico';
   descripcion: string;
-  creadoPorRole?: 'jefe_gestion' | 'director_ie';
+  /** Se tipa contra el contrato: la unión escrita a mano quedó corta al sumar
+   *  los dos actores nuevos de la institución. */
+  creadoPorRole?: RolAutorPlantilla;
   creadoPorId?: string;
   ieId?: string;
   institucionNombre?: string;

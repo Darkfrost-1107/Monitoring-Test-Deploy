@@ -1,5 +1,5 @@
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
-import type { IPlantilla } from '@sistema-monitoreo/shared-contracts';
+import type { IPlantilla, RolAutorPlantilla } from '@sistema-monitoreo/shared-contracts';
 import type { CreatePlantillaDto } from '../dto/create-plantilla.dto.js';
 import { RoleCode } from '../../../common/enums/role.enum.js';
 import type { SessionUser } from '../../../shared/types/session-user.js';
@@ -39,13 +39,28 @@ function isSchoolStaff(session: SessionUser): boolean {
   );
 }
 
+/** El autor que corresponde a cada rol del personal de institución. */
+const AUTOR_POR_ROL: Record<string, RolAutorPlantilla> = {
+  [RoleCode.DIRECTOR_INSTITUCION]: 'director_ie',
+  [RoleCode.COORDINADOR_PEDAGOGICO]: 'coordinador_pedagogico',
+  [RoleCode.JEFE_TALLER]: 'jefe_taller',
+};
+
+/**
+ * Quién queda como dueño de la plantilla que se está creando o clonando.
+ *
+ * Devolvía `director_ie` para todo el personal de institución, de modo que la
+ * plantilla del Coordinador y la del Jefe de Taller quedaban atribuidas al
+ * Director. La regla de una sola vigente por autor las tomaba por la misma y
+ * sólo el primero podía activar la suya.
+ */
 export function resolveAutor(session: SessionUser): {
-  rolAutorAlCrear: 'jefe_gestion' | 'director_ie';
+  rolAutorAlCrear: RolAutorPlantilla;
   institucionId: string | null;
 } {
   if (isSchoolStaff(session)) {
     return {
-      rolAutorAlCrear: 'director_ie',
+      rolAutorAlCrear: AUTOR_POR_ROL[session.role] ?? 'director_ie',
       institucionId: session.institucionId ?? null,
     };
   }

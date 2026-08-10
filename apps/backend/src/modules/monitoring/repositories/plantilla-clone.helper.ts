@@ -1,6 +1,6 @@
 import { NotFoundException } from '@nestjs/common';
 import type { PrismaService } from '../../../shared/prisma/prisma.service.js';
-import type { IPlantilla } from '@sistema-monitoreo/shared-contracts';
+import type { IPlantilla, RolAutorPlantilla } from '@sistema-monitoreo/shared-contracts';
 import { buildPlantilla } from './plantilla-builder.helper.js';
 import { randomUUID } from 'node:crypto';
 
@@ -8,7 +8,7 @@ export async function clonePlantilla(
   prisma: PrismaService,
   sourceId: string,
   nuevoAutorId: string,
-  rolAutorAlCrear: 'jefe_gestion' | 'director_ie',
+  rolAutorAlCrear: RolAutorPlantilla,
   institucionId: string | null,
   descripcion?: string,
   anioAcademico?: number,

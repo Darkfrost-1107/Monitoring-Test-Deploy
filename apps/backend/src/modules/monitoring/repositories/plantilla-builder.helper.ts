@@ -1,6 +1,6 @@
 import { NotFoundException } from '@nestjs/common';
 import type { PrismaService } from '../../../shared/prisma/prisma.service.js';
-import type { IPlantilla } from '@sistema-monitoreo/shared-contracts';
+import type { IPlantilla, RolAutorPlantilla } from '@sistema-monitoreo/shared-contracts';
 import { resolverLemaDelAnio } from './lema-anual.helper.js';
 
 export async function buildPlantilla(
@@ -38,7 +38,7 @@ export async function buildPlantilla(
     descripcion: plantilla.descripcion,
     estado: plantilla.estado as 'Borrador' | 'Vigente' | 'Historico',
     autorId: plantilla.autorId,
-    rolAutorAlCrear: plantilla.rolAutorAlCrear as 'jefe_gestion' | 'director_ie',
+    rolAutorAlCrear: plantilla.rolAutorAlCrear as RolAutorPlantilla,
     institucionId: plantilla.institucionId,
     niveles: plantilla.nivelesCalificacion.map((n) => ({
       id: n.id,

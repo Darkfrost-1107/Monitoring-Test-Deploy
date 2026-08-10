@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
-import type { IPlantilla } from '@sistema-monitoreo/shared-contracts';
+import type { IPlantilla, RolAutorPlantilla } from '@sistema-monitoreo/shared-contracts';
 import {
   PlantillaRepository,
   CreatePlantillaData,
@@ -79,7 +79,7 @@ export class PrismaPlantillaRepository implements PlantillaRepository {
   async clone(
     sourceId: string,
     nuevoAutorId: string,
-    rolAutorAlCrear: 'jefe_gestion' | 'director_ie',
+    rolAutorAlCrear: RolAutorPlantilla,
     institucionId: string | null,
     descripcion?: string,
     anioAcademico?: number,

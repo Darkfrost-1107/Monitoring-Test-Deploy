@@ -1,6 +1,6 @@
 import { NotFoundException } from '@nestjs/common';
 import type { PrismaService } from '../../../shared/prisma/prisma.service.js';
-import type { IPlantilla } from '@sistema-monitoreo/shared-contracts';
+import type { IPlantilla, RolAutorPlantilla } from '@sistema-monitoreo/shared-contracts';
 import type { UpdatePlantillaData } from './plantilla.repository.js';
 import { resolverLemaDelAnio } from './lema-anual.helper.js';
 import { randomUUID } from 'node:crypto';
@@ -188,7 +188,7 @@ export async function versionarConClon(
       descripcion: creada.descripcion,
       estado: creada.estado as 'Borrador' | 'Vigente' | 'Historico',
       autorId: creada.autorId,
-      rolAutorAlCrear: creada.rolAutorAlCrear as 'jefe_gestion' | 'director_ie',
+      rolAutorAlCrear: creada.rolAutorAlCrear as RolAutorPlantilla,
       institucionId: creada.institucionId,
       niveles: creada.nivelesCalificacion.map((n) => ({
         id: n.id,
