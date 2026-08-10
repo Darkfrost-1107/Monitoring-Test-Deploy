@@ -23,6 +23,18 @@ import {
   type SolicitudPayload,
 } from './cronograma.mapper.js';
 
+/**
+ * Con qué plantilla monitorea cada rol.
+ *
+ * Quien no esté acá monitorea con la de la UGEL: es el caso del especialista y
+ * del jefe de área, que trabajan sobre la plantilla del Jefe de Gestión.
+ */
+const AUTOR_DE_PLANTILLA_POR_ROL: Record<string, string> = {
+  director_institucion: 'director_ie',
+  coordinador_pedagogico: 'coordinador_pedagogico',
+  jefe_taller: 'jefe_taller',
+};
+
 @Injectable()
 export class PrismaCronogramaRepository implements CronogramaRepository {
   constructor(private readonly prisma: PrismaService) {}
@@ -92,13 +104,29 @@ export class PrismaCronogramaRepository implements CronogramaRepository {
   async findPlantillaVigentePara(
     tipoMonitoreo: TipoMonitoreo,
     anio: number,
+    monitorId: string,
   ): Promise<string | null> {
+    // Cada actor monitorea con la suya: el especialista de la UGEL usa la del
+    // Jefe de Gestión, y dentro de la I.E. el Director, el Coordinador y el
+    // Jefe de Taller tienen cada uno la propia. Sin acotar por autor, con las
+    // cuatro conviviendo se tomaba cualquiera.
+    const monitor = await this.prisma.especialista.findUnique({
+      where: { id: monitorId },
+      select: {
+        persona: { select: { usuario: { select: { rol: { select: { codigo: true } } } } } },
+      },
+    });
+
+    const rol = monitor?.persona?.usuario?.rol?.codigo;
+    const autor = AUTOR_DE_PLANTILLA_POR_ROL[rol ?? ''] ?? 'jefe_gestion';
+
     const plantilla = await this.prisma.plantillaMonitoreo.findFirst({
       where: {
         anioAcademico: anio,
         tipoMonitoreo,
         estado: 'Vigente',
         deleted: false,
+        rolAutorAlCrear: autor,
       },
     });
     return plantilla?.id ?? null;

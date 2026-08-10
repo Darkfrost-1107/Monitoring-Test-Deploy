@@ -71,9 +71,17 @@ export abstract class CronogramaRepository {
   abstract findAll(filters?: QueryVisitasFilters): Promise<IVisita[]>;
   abstract findById(id: string): Promise<IVisita | null>;
   abstract findPlanVigentePara(institucionId: string, anio: number): Promise<string | null>;
+  /**
+   * La plantilla vigente con la que monitorea ese monitor.
+   *
+   * Se resuelve por quién ejecuta la visita y no por quién la programa: el
+   * director puede programarle visitas al Jefe de Taller, y esa visita usa la
+   * plantilla del Jefe de Taller.
+   */
   abstract findPlantillaVigentePara(
     tipoMonitoreo: TipoMonitoreo,
     anio: number,
+    monitorId: string,
   ): Promise<string | null>;
   abstract validateEntidadesActivas(
     institucionId: string,

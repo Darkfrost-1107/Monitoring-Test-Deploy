@@ -174,11 +174,20 @@ export async function crearVisita(
     );
   }
 
-  const plantillaId = await cronogramaRepo.findPlantillaVigentePara(dto.tipoMonitoreo, anio);
+  // La plantilla la decide quién ejecuta la visita, no quién la programa: el
+  // director puede programarle una al Jefe de Taller, y esa usa la del Jefe de
+  // Taller. Se comprueba acá, al programar, y no al levantar la ficha: descubrir
+  // que falta con el evaluador ya en el aula cuesta el viaje.
+  const plantillaId = await cronogramaRepo.findPlantillaVigentePara(
+    dto.tipoMonitoreo,
+    anio,
+    dto.monitorId,
+  );
   if (!plantillaId) {
     throw new BadRequestException(
-      `No existe una Plantilla de Monitoreo vigente para ${dto.tipoMonitoreo} del año ${anio}. ` +
-        'Antes de programar visitas, el Jefe de Gestión debe registrar y activar una plantilla.',
+      `El monitor asignado no tiene una Plantilla de Monitoreo vigente para ${dto.tipoMonitoreo} ` +
+        `del año ${anio}. Cada actor monitorea con la suya: debe registrarla o clonar la del ` +
+        'Director antes de que se le programen visitas.',
     );
   }
 
