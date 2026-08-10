@@ -48,11 +48,14 @@ export const useLoginService = () => {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showFailedModal, setShowFailedModal] = useState(false);
 
-  /** Intentos fallidos que informó el servidor. Nulo mientras no informe ninguno. */
-  const [attempts, setAttempts] = useState<number | null>(null);
-  /** Intentos restantes que informó el servidor. */
+  /**
+   * Intentos restantes que informó el servidor.
+   *
+   * Es lo que la pantalla muestra. El total de fallos acumulados
+   * —`failedLoginAttempts`— lo consumía el modal que se retiró, y sin nadie que
+   * lo lea sólo confundiría a quien lo encuentre.
+   */
   const [intentosRestantes, setIntentosRestantes] = useState<number | null>(null);
   /** Segundos restantes del bloqueo que informó el servidor. */
   const [timeLeft, setTimeLeft] = useState(0);
@@ -85,18 +88,15 @@ export const useLoginService = () => {
 
       // Sólo lo que informó el servidor. Sin dato, no se cuenta nada: mostrar un
       // número inventado es peor que no mostrar ninguno.
-      setAttempts(rechazo.failedLoginAttempts ?? null);
       setIntentosRestantes(rechazo.intentosRestantes ?? null);
 
       const restante = rechazo.lockedUntil ? segundosHasta(rechazo.lockedUntil) : 0;
       setTimeLeft(restante);
-      setShowFailedModal(restante === 0 && rechazo.failedLoginAttempts !== undefined);
       setError(mensaje);
 
       return { success: false, error: mensaje };
     }
 
-    setAttempts(null);
     setIntentosRestantes(null);
     setTimeLeft(0);
 
@@ -126,11 +126,8 @@ export const useLoginService = () => {
     login,
     loading,
     error,
-    attempts,
     intentosRestantes,
     isPenalized,
     timeLeft,
-    showFailedModal,
-    setShowFailedModal,
   };
 };

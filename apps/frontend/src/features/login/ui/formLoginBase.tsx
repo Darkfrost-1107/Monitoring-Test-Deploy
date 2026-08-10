@@ -5,9 +5,21 @@ interface BaseLoginFormProps {
   onSubmit: (dni: string, password: string) => void;
   onForgotPassword: () => void;
   isLoading?: boolean;
+  /**
+   * La cuenta está bloqueada por intentos fallidos.
+   *
+   * Deshabilita sin cambiar el rótulo del botón: «Verificando…» diría que algo
+   * está pasando cuando en realidad no se envió nada.
+   */
+  bloqueado?: boolean;
 }
 
-export const BaseLoginForm = ({ onSubmit, onForgotPassword, isLoading }: BaseLoginFormProps) => {
+export const BaseLoginForm = ({
+  onSubmit,
+  onForgotPassword,
+  isLoading,
+  bloqueado = false,
+}: BaseLoginFormProps) => {
   const [dni, setDni] = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
@@ -42,7 +54,7 @@ export const BaseLoginForm = ({ onSubmit, onForgotPassword, isLoading }: BaseLog
             value={dni}
             onChange={(e) => setDni(e.target.value.replace(/\D/g, '').slice(0, 8))}
             maxLength={8}
-            disabled={isLoading}
+            disabled={isLoading || bloqueado}
             className="w-full bg-transparent border-none outline-none text-slate-800 text-sm px-3 py-3 disabled:opacity-50"
           />
         </div>
@@ -68,7 +80,7 @@ export const BaseLoginForm = ({ onSubmit, onForgotPassword, isLoading }: BaseLog
             placeholder="Ingrese su contraseña"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            disabled={isLoading}
+            disabled={isLoading || bloqueado}
             className="w-full bg-transparent border-none outline-none text-slate-800 text-sm px-3 py-3 disabled:opacity-50"
           />
           {/*
@@ -79,7 +91,7 @@ export const BaseLoginForm = ({ onSubmit, onForgotPassword, isLoading }: BaseLog
           <button
             type="button"
             onClick={() => setShowPass((p) => !p)}
-            disabled={isLoading}
+            disabled={isLoading || bloqueado}
             aria-label={showPass ? 'Ocultar contraseña' : 'Mostrar contraseña'}
             aria-pressed={showPass}
             className="shrink-0 pr-3 pl-1 text-[#990537] hover:text-[#7a042c] text-xs flex items-center gap-1.5 cursor-pointer bg-transparent border-none font-semibold disabled:opacity-50"
@@ -94,6 +106,8 @@ export const BaseLoginForm = ({ onSubmit, onForgotPassword, isLoading }: BaseLog
         </div>
 
         <div className="flex justify-end mt-2">
+          {/* Sigue disponible con la cuenta bloqueada: recuperar la contraseña es
+              justamente lo que corresponde hacer en ese momento. */}
           <button
             type="button"
             onClick={onForgotPassword}
@@ -108,7 +122,7 @@ export const BaseLoginForm = ({ onSubmit, onForgotPassword, isLoading }: BaseLog
       {/* Botón de Envío (Integrado al form para disparar el onSubmit nativo) */}
       <button
         type="submit"
-        disabled={isLoading || dni.length < 8 || password.length < 6}
+        disabled={isLoading || bloqueado || dni.length < 8 || password.length < 6}
         className="w-full py-3.5 bg-[#990537] hover:bg-[#80042e] disabled:bg-[#990537]/50 text-white font-bold text-sm tracking-wider rounded-xl transition-all shadow-md mt-2 cursor-pointer disabled:cursor-not-allowed border-none"
       >
         {isLoading ? 'Verificando...' : 'INICIO DE SESIÓN'}
