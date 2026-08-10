@@ -79,6 +79,15 @@ export interface IPlantilla {
   descripcion: string | null;
   estado: EstadoPlantilla;
   autorId: string;
+  /**
+   * Nombre de quien creó la plantilla, resuelto por el servidor.
+   *
+   * Derivado de la persona detrás del `autorId`: el catálogo mostraba sólo el
+   * nombre de la institución, y desde que cada actor tiene su propia plantilla
+   * eso deja tres tarjetas indistinguibles. Ausente en respuestas anteriores a
+   * este campo.
+   */
+  autorNombre?: string;
   rolAutorAlCrear: RolAutorPlantilla;
   institucionId: string | null;
   niveles: INivelCalificacion[];

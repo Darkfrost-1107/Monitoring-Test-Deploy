@@ -3,6 +3,22 @@ import type { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import type { IPlantilla, RolAutorPlantilla } from '@sistema-monitoreo/shared-contracts';
 import { resolverLemaDelAnio } from './lema-anual.helper.js';
 
+/**
+ * Nombre de quien creó la plantilla.
+ *
+ * El catálogo rotulaba el origen con el nombre de la institución, igual en las
+ * tres plantillas que ve un Director desde que cada actor tiene la suya. El
+ * nombre viaja resuelto para que la lista no tenga que consultar al autor una
+ * vez por tarjeta.
+ */
+function nombreDelAutor(
+  autor: { persona: { nombres: string; apellidos: string } } | null,
+): string | undefined {
+  if (!autor) return undefined;
+  const nombre = `${autor.persona.nombres} ${autor.persona.apellidos}`.trim();
+  return nombre || undefined;
+}
+
 export async function buildPlantilla(
   prisma: PrismaService,
   plantillaId: string,
@@ -20,6 +36,7 @@ export async function buildPlantilla(
       },
       ejesItems: { orderBy: { orden: 'asc' } },
       institucion: { select: { nombre: true, codigoModular: true } },
+      autor: { select: { persona: { select: { nombres: true, apellidos: true } } } },
     },
   });
   if (!plantilla) {
@@ -38,6 +55,7 @@ export async function buildPlantilla(
     descripcion: plantilla.descripcion,
     estado: plantilla.estado as 'Borrador' | 'Vigente' | 'Historico',
     autorId: plantilla.autorId,
+    autorNombre: nombreDelAutor(plantilla.autor),
     rolAutorAlCrear: plantilla.rolAutorAlCrear as RolAutorPlantilla,
     institucionId: plantilla.institucionId,
     niveles: plantilla.nivelesCalificacion.map((n) => ({

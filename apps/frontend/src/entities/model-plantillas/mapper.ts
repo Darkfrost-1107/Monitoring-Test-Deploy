@@ -75,6 +75,7 @@ export const mapIPlantillaToPlantilla = (p: IPlantilla): Plantilla => ({
   descripcion: p.descripcion ?? '',
   creadoPorRole: p.rolAutorAlCrear as RolAutorPlantilla,
   creadoPorId: p.autorId,
+  autorNombre: p.autorNombre,
   ieId: p.institucionId ?? undefined,
   institucionNombre: p.institucion?.nombre,
 });

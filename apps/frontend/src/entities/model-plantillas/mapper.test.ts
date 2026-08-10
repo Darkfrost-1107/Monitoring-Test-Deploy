@@ -58,3 +58,21 @@ describe('mapIPlantillaToPlantilla — fecha de creación', () => {
     expect(p.fechaCreacion).toBe('');
   });
 });
+
+/**
+ * El catálogo necesita decir de quién es cada plantilla: con una vigente por
+ * actor, al Director le llegan la suya, la del Coordinador Pedagógico y la del
+ * Jefe de Taller, todas de la misma institución.
+ */
+describe('mapIPlantillaToPlantilla — autor', () => {
+  it('traslada el nombre del autor que resuelve el servidor', () => {
+    const p = mapIPlantillaToPlantilla(iPlantilla({ autorNombre: 'MARIA QUISPE HUANCA' }));
+    expect(p.autorNombre).toBe('MARIA QUISPE HUANCA');
+  });
+
+  /** Las plantillas antiguas no traen el campo; la tarjeta muestra «—». */
+  it('deja el nombre sin definir cuando el servidor no lo manda', () => {
+    const p = mapIPlantillaToPlantilla(iPlantilla());
+    expect(p.autorNombre).toBeUndefined();
+  });
+});

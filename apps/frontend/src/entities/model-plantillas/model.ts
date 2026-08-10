@@ -66,6 +66,8 @@ export interface Plantilla {
    *  los dos actores nuevos de la institución. */
   creadoPorRole?: RolAutorPlantilla;
   creadoPorId?: string;
+  /** Nombre de quien la creó. Ausente en las plantillas anteriores al campo. */
+  autorNombre?: string;
   ieId?: string;
   institucionNombre?: string;
 }

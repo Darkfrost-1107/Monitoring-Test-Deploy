@@ -1,10 +1,11 @@
-import { Eye, Calendar, List, BarChart3 } from 'lucide-react';
+import { Eye, Calendar, List, BarChart3, UserRound } from 'lucide-react';
 import { Button } from '@shared/ui/button';
 import { Card } from '@shared/ui/card';
 import { Badge } from '@shared/ui/badge';
 import { formatearFechaAbreviada } from '@shared/lib/fecha/fecha';
 import type { Plantilla } from '@entities/model-plantillas';
 import { esDeUgel } from '@features/plantillas/lib/visibilidad-plantillas';
+import { etiquetaDeAutor } from '@features/plantillas/lib/autor-de-plantilla';
 import { AccionesPlantilla } from './AccionesPlantilla';
 
 /**
@@ -42,12 +43,16 @@ export const TarjetaPlantilla = ({
   const esDocente = plantilla.tipoMonitoreo === 'Monitoreo Docente';
   const deUgel = esDeUgel(plantilla);
   const origen = deUgel ? 'UGEL' : plantilla.institucionNombre || 'Mi I.E.';
+  // En las de la UGEL el cargo repetiría la insignia de origen.
+  const cargoDelAutor = deUgel ? null : etiquetaDeAutor(plantilla.creadoPorRole);
 
   return (
     <Card className="bg-surface border border-border rounded-2xl p-5 hover:shadow-md transition-all duration-300 flex flex-col gap-5 group relative h-full">
       <div className="space-y-2">
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <div className="flex items-center gap-1.5">
+        <div className="flex items-start justify-between flex-wrap gap-2">
+          {/* Envuelve: «Coordinador Pedagógico» junto al nombre de la institución
+              no entra en una sola línea en la grilla de tres columnas. */}
+          <div className="flex items-center flex-wrap gap-1.5">
             <Badge
               variant="outline"
               className="text-[10px] font-bold px-2 py-0.5 border-slate-200 text-slate-600 bg-slate-50"
@@ -65,6 +70,15 @@ export const TarjetaPlantilla = ({
             >
               {origen}
             </Badge>
+            {cargoDelAutor && (
+              <Badge
+                variant="outline"
+                className="text-[9px] font-bold px-2 py-0.5 border shadow-sm leading-tight bg-amber-50 text-amber-700 border-amber-200"
+                title={`Plantilla del ${cargoDelAutor}`}
+              >
+                {cargoDelAutor}
+              </Badge>
+            )}
           </div>
           <Badge
             className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 border shadow-sm ${
@@ -91,6 +105,21 @@ export const TarjetaPlantilla = ({
       </div>
 
       <div className="border-t border-slate-100 pt-3.5 space-y-2 text-[11px] text-slate-500 font-semibold">
+        {plantilla.autorNombre && (
+          <div className="flex items-center justify-between gap-2">
+            <span className="flex items-center gap-1 shrink-0">
+              <UserRound className="h-3.5 w-3.5 text-primary" />
+              <span>Autor:</span>
+            </span>
+            <span
+              className="text-slate-800 text-right line-clamp-1 break-all"
+              title={plantilla.autorNombre}
+            >
+              {plantilla.autorNombre}
+            </span>
+          </div>
+        )}
+
         <div className="flex items-center justify-between">
           <span className="flex items-center gap-1">
             <Calendar className="h-3.5 w-3.5 text-primary" />
