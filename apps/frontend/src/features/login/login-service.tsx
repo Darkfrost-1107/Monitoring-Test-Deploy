@@ -60,6 +60,13 @@ export const useLoginService = () => {
   const [intentosRestantes, setIntentosRestantes] = useState<number | null>(null);
   /** Segundos restantes del bloqueo que informó el servidor. */
   const [timeLeft, setTimeLeft] = useState(0);
+  /**
+   * Cuenta de intentos fallidos de esta pantalla.
+   *
+   * No se muestra: es la señal con la que el formulario devuelve el foco a la
+   * contraseña. Se incrementa para que dos fallos seguidos se distingan.
+   */
+  const [senalDeFallo, setSenalDeFallo] = useState(0);
 
   const isPenalized = timeLeft > 0;
 
@@ -98,6 +105,7 @@ export const useLoginService = () => {
       const restante = rechazo.lockedUntil ? segundosHasta(rechazo.lockedUntil) : 0;
       setTimeLeft(restante);
       setError(mensaje);
+      setSenalDeFallo((previo) => previo + 1);
 
       return { success: false, error: mensaje };
     }
@@ -127,8 +135,22 @@ export const useLoginService = () => {
     return { success: true };
   };
 
+  /**
+   * Borra el aviso del intento anterior.
+   *
+   * Se llama al escribir: el cartel de error quedaba en pantalla mientras la
+   * persona corregía, contradiciendo lo que estaba haciendo. Los intentos
+   * restantes se van con él, porque describen ese mismo intento ya pasado.
+   */
+  const limpiarAviso = () => {
+    setError(null);
+    setIntentosRestantes(null);
+  };
+
   return {
     login,
+    limpiarAviso,
+    senalDeFallo,
     loading,
     error,
     intentosRestantes,

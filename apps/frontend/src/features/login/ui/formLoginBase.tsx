@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { CreditCard, Lock, Eye, EyeOff } from 'lucide-react';
 
 interface BaseLoginFormProps {
@@ -12,6 +12,21 @@ interface BaseLoginFormProps {
    * está pasando cuando en realidad no se envió nada.
    */
   bloqueado?: boolean;
+  /**
+   * Avisa que el usuario empezó a corregir.
+   *
+   * El aviso de error quedaba en pantalla mientras se reescribía la contraseña,
+   * contradiciendo lo que la persona estaba haciendo.
+   */
+  onEditar?: () => void;
+  /**
+   * Cambia con cada intento fallido.
+   *
+   * Sirve de disparador para devolver el foco a la contraseña: no es un dato que
+   * se muestre, es la señal de que hubo un fallo nuevo. Un booleano no alcanza,
+   * porque dos fallos seguidos no lo harían cambiar.
+   */
+  senalDeFallo?: number;
 }
 
 export const BaseLoginForm = ({
@@ -19,10 +34,24 @@ export const BaseLoginForm = ({
   onForgotPassword,
   isLoading,
   bloqueado = false,
+  onEditar,
+  senalDeFallo = 0,
 }: BaseLoginFormProps) => {
   const [dni, setDni] = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
+  const campoPassword = useRef<HTMLInputElement>(null);
+
+  // Tras fallar, el cursor quedaba donde estaba y había que ir al campo con el
+  // mouse. Se devuelve el foco con el texto seleccionado, para reescribir de una.
+  useEffect(() => {
+    if (senalDeFallo === 0) return;
+    campoPassword.current?.focus();
+    campoPassword.current?.select();
+  }, [senalDeFallo]);
+
+  /** Cada tecla en cualquiera de los dos campos limpia el aviso anterior. */
+  const alEditar = () => onEditar?.();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,7 +81,10 @@ export const BaseLoginForm = ({
             autoComplete="username"
             placeholder="Ingrese su DNI"
             value={dni}
-            onChange={(e) => setDni(e.target.value.replace(/\D/g, '').slice(0, 8))}
+            onChange={(e) => {
+              setDni(e.target.value.replace(/\D/g, '').slice(0, 8));
+              alEditar();
+            }}
             maxLength={8}
             disabled={isLoading || bloqueado}
             className="w-full bg-transparent border-none outline-none text-slate-800 text-sm px-3 py-3 disabled:opacity-50"
@@ -78,8 +110,12 @@ export const BaseLoginForm = ({
             type={showPass ? 'text' : 'password'}
             autoComplete="current-password"
             placeholder="Ingrese su contraseña"
+            ref={campoPassword}
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(e) => {
+              setPassword(e.target.value);
+              alEditar();
+            }}
             disabled={isLoading || bloqueado}
             className="w-full bg-transparent border-none outline-none text-slate-800 text-sm px-3 py-3 disabled:opacity-50"
           />

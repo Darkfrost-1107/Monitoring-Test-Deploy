@@ -32,7 +32,24 @@ const segun = (n: number, singular: string, plural: string) => (n === 1 ? singul
 export const LoginCardWidget = () => {
   const navigate = useNavigate();
 
-  const { login, loading, error, intentosRestantes, isPenalized, timeLeft } = useLoginService();
+  const {
+    login,
+    limpiarAviso,
+    senalDeFallo,
+    loading,
+    error,
+    intentosRestantes,
+    isPenalized,
+    timeLeft,
+  } = useLoginService();
+
+  /**
+   * El último intento se anuncia más fuerte.
+   *
+   * «Le quedan 2» y «le queda 1» se veían idénticos, cuando el segundo es el que
+   * decide si la cuenta se bloquea media hora.
+   */
+  const esUltimoIntento = intentosRestantes === 1;
 
   const handleLoginSubmit = async (dni: string, password: string) => {
     const result = await login(dni, password);
@@ -65,6 +82,8 @@ export const LoginCardWidget = () => {
           onForgotPassword={() => navigate('/recuperar-password')}
           isLoading={loading}
           bloqueado={isPenalized}
+          onEditar={limpiarAviso}
+          senalDeFallo={senalDeFallo}
         />
 
         {/*
@@ -99,18 +118,30 @@ export const LoginCardWidget = () => {
         {error && !isPenalized && (
           <div
             role="alert"
-            className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-xl p-3 mt-4 animate-fade-in"
+            className={`flex items-start gap-2 rounded-xl p-3 mt-4 animate-fade-in border ${
+              esUltimoIntento ? 'bg-red-100 border-red-400' : 'bg-red-50 border-red-200'
+            }`}
           >
             <AlertCircle
-              className="w-[15px] h-[15px] text-red-600 mt-0.5 shrink-0"
+              className={`w-[15px] h-[15px] mt-0.5 shrink-0 ${
+                esUltimoIntento ? 'text-red-700' : 'text-red-600'
+              }`}
               strokeWidth={2}
             />
             <div className="text-xs">
-              <p className="font-semibold text-red-700">{error}</p>
-              {intentosRestantes !== null && intentosRestantes > 0 && (
+              <p className={esUltimoIntento ? 'font-bold text-red-800' : 'font-semibold text-red-700'}>
+                {error}
+              </p>
+
+              {esUltimoIntento && (
+                <p className="font-bold text-red-800 mt-1">
+                  Último intento: si vuelve a fallar, la cuenta se bloqueará por 30 minutos.
+                </p>
+              )}
+
+              {intentosRestantes !== null && intentosRestantes > 1 && (
                 <p className="text-red-600/90 mt-0.5">
-                  Le {segun(intentosRestantes, 'queda', 'quedan')}{' '}
-                  <span className="font-bold">{intentosRestantes}</span>{' '}
+                  Le quedan <span className="font-bold">{intentosRestantes}</span>{' '}
                   {segun(intentosRestantes, 'intento', 'intentos')} antes de que la cuenta se
                   bloquee.
                 </p>
