@@ -83,11 +83,25 @@ export abstract class CronogramaRepository {
     anio: number,
     monitorId: string,
   ): Promise<string | null>;
+  /**
+   * El estado de las tres entidades que intervienen en una visita.
+   *
+   * Devuelve además si el evaluado dirige hoy la institución: a un director se
+   * lo monitorea sólo con la ficha directiva, y eso hay que saberlo al
+   * programar. Va acá y no en una consulta aparte porque al evaluado ya se lo
+   * está leyendo.
+   */
   abstract validateEntidadesActivas(
     institucionId: string,
     monitorId: string,
     evaluadoId: string,
-  ): Promise<{ institucion: boolean; monitor: boolean; evaluado: boolean; monitorCargo?: string }>;
+  ): Promise<{
+    institucion: boolean;
+    monitor: boolean;
+    evaluado: boolean;
+    monitorCargo?: string;
+    evaluadoEsDirector: boolean;
+  }>;
   abstract countPendientesByMonitor(monitorId: string): Promise<number>;
   abstract findVisitaExistente(
     evaluadoId: string,

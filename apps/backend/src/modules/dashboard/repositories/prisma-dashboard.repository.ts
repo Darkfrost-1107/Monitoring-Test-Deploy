@@ -18,6 +18,7 @@ import type {
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import { ScopeFilter, ScopeContext } from '../../../shared/auth/scope-filter.js';
 import { DashboardRepository, SessionScope } from './dashboard.repository.js';
+import { esDirectorEnEjercicio } from './cargo-del-evaluado.js';
 
 /** Cuántos monitoreos recientes devuelve el dashboard. */
 const RECIENTES_LIMIT = 5;
@@ -213,6 +214,13 @@ export class PrismaDashboardRepository implements DashboardRepository {
                 docenteEspecialidades: {
                   select: { especialidad: { select: { nombre: true } } },
                 },
+                // La designación abierta de Director. Es lo que dice qué cargo ocupa
+                // la persona; el tipo de ficha sólo dice con qué se la evaluó.
+                docenteCargos: {
+                  where: { fechaFin: null, cargo: { nombre: 'Director' } },
+                  select: { id: true },
+                  take: 1,
+                },
               },
             },
             institucion: {
@@ -310,12 +318,13 @@ export class PrismaDashboardRepository implements DashboardRepository {
       ie.docentes.push({
         docenteId: c.evaluadoId,
         nombre: `${p.nombres} ${p.apellidos}`.trim(),
-        // El tipo de ficha identifica al evaluado: a un director se lo monitorea
-        // siempre con la ficha directiva y a un docente con la docente. Se usa
-        // «Director» y no «Directivo» para nombrarlo igual que en el resto del
-        // sistema —el padrón, la designación, los avisos— y no acumular palabras
-        // distintas para el mismo cargo.
-        cargo: c.tipoMonitoreo === 'DIRECTIVO' ? 'Director' : 'Docente',
+        // El cargo sale de la designación vigente, no del instrumento con que se
+        // lo monitoreó. Antes se deducía de `tipoMonitoreo` dando por sentado
+        // que a un director siempre se lo evalúa con la ficha directiva: había
+        // directores en ejercicio con ficha docente, y la insignia los mostraba
+        // como docentes. Se dice «Director» y no «Directivo» para nombrarlo
+        // igual que en el padrón, la designación y los avisos.
+        cargo: esDirectorEnEjercicio(c.evaluado) ? 'Director' : 'Docente',
         especialidad: especialidades.length > 0 ? especialidades.join(', ') : null,
         promedio: Number(ficha.promedio),
         nivelLogro: 'INICIO',
@@ -645,6 +654,13 @@ export class PrismaDashboardRepository implements DashboardRepository {
                     docenteEspecialidades: {
                       select: { especialidad: { select: { nombre: true } } },
                     },
+                    // La designación abierta de Director. Es lo que dice qué cargo ocupa
+                    // la persona; el tipo de ficha sólo dice con qué se la evaluó.
+                    docenteCargos: {
+                      where: { fechaFin: null, cargo: { nombre: 'Director' } },
+                      select: { id: true },
+                      take: 1,
+                    },
                   },
                 },
               },
@@ -670,12 +686,13 @@ export class PrismaDashboardRepository implements DashboardRepository {
       return {
         docenteId: c.evaluadoId,
         nombre: `${p.nombres} ${p.apellidos}`.trim(),
-        // El tipo de ficha identifica al evaluado: a un director se lo monitorea
-        // siempre con la ficha directiva y a un docente con la docente. Se usa
-        // «Director» y no «Directivo» para nombrarlo igual que en el resto del
-        // sistema —el padrón, la designación, los avisos— y no acumular palabras
-        // distintas para el mismo cargo.
-        cargo: c.tipoMonitoreo === 'DIRECTIVO' ? 'Director' : 'Docente',
+        // El cargo sale de la designación vigente, no del instrumento con que se
+        // lo monitoreó. Antes se deducía de `tipoMonitoreo` dando por sentado
+        // que a un director siempre se lo evalúa con la ficha directiva: había
+        // directores en ejercicio con ficha docente, y la insignia los mostraba
+        // como docentes. Se dice «Director» y no «Directivo» para nombrarlo
+        // igual que en el padrón, la designación y los avisos.
+        cargo: esDirectorEnEjercicio(c.evaluado) ? 'Director' : 'Docente',
         especialidad: especialidades.length > 0 ? especialidades.join(', ') : null,
         nivelLogro: ficha.nivelLogro as NivelLogro,
         promedio: Number(ficha.promedio),

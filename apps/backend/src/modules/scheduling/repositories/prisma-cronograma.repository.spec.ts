@@ -39,7 +39,7 @@ describe('PrismaCronogramaRepository', () => {
     const activas = (prisma: ReturnType<typeof montar>['prisma']) => {
       prisma.institucionEducativa.findUnique.mockResolvedValue({ estado: 'Activa' });
       prisma.especialista.findUnique.mockResolvedValue({ estado: 'Activo', cargo: 'Especialista' });
-      prisma.docente.findUnique.mockResolvedValue({ estado: 'Activo' });
+      prisma.docente.findUnique.mockResolvedValue({ estado: 'Activo', docenteCargos: [] });
     };
 
     it('confirma las tres entidades cuando están activas', async () => {
@@ -53,6 +53,7 @@ describe('PrismaCronogramaRepository', () => {
         monitor: true,
         evaluado: true,
         monitorCargo: 'Especialista',
+        evaluadoEsDirector: false,
       });
     });
 
@@ -97,6 +98,40 @@ describe('PrismaCronogramaRepository', () => {
       expect(r.monitorCargo).toBe('Jefe de Taller');
     });
 
+    /**
+     * A un director se lo evalúa sólo con la ficha directiva, así que al
+     * programar hay que saber si quien va a ser evaluado dirige la institución.
+     */
+    it('avisa que el evaluado dirige cuando tiene designación abierta', async () => {
+      const { repo, prisma } = montar();
+      activas(prisma);
+      prisma.docente.findUnique.mockResolvedValue({
+        estado: 'Activo',
+        docenteCargos: [{ id: 'dc-1' }],
+      });
+
+      const r = await repo.validateEntidadesActivas('ie-1', 'm-1', 'd-1');
+
+      expect(r.evaluadoEsDirector).toBe(true);
+    });
+
+    it('sólo cuenta la designación vigente, que es la que la consulta filtra', async () => {
+      const { repo, prisma } = montar();
+      activas(prisma);
+
+      await repo.validateEntidadesActivas('ie-1', 'm-1', 'd-1');
+
+      const args = (
+        prisma.docente.findUnique.mock.calls as unknown as [
+          { include: { docenteCargos: { where: Record<string, unknown> } } },
+        ][]
+      )[0][0];
+      expect(args.include.docenteCargos.where).toEqual({
+        fechaFin: null,
+        cargo: { nombre: 'Director' },
+      });
+    });
+
     it('consulta las tres entidades en paralelo', async () => {
       const { repo, prisma } = montar();
       activas(prisma);
@@ -107,7 +142,9 @@ describe('PrismaCronogramaRepository', () => {
         where: { id: 'ie-1' },
       });
       expect(prisma.especialista.findUnique).toHaveBeenCalledWith({ where: { id: 'm-1' } });
-      expect(prisma.docente.findUnique).toHaveBeenCalledWith({ where: { id: 'd-1' } });
+      expect(prisma.docente.findUnique).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: 'd-1' } }),
+      );
     });
   });
 

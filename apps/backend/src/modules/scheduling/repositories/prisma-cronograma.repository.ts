@@ -136,11 +136,28 @@ export class PrismaCronogramaRepository implements CronogramaRepository {
     institucionId: string,
     monitorId: string,
     evaluadoId: string,
-  ): Promise<{ institucion: boolean; monitor: boolean; evaluado: boolean; monitorCargo?: string }> {
+  ): Promise<{
+    institucion: boolean;
+    monitor: boolean;
+    evaluado: boolean;
+    monitorCargo?: string;
+    evaluadoEsDirector: boolean;
+  }> {
     const [ie, monitor, evaluado] = await Promise.all([
       this.prisma.institucionEducativa.findUnique({ where: { id: institucionId } }),
       this.prisma.especialista.findUnique({ where: { id: monitorId } }),
-      this.prisma.docente.findUnique({ where: { id: evaluadoId } }),
+      this.prisma.docente.findUnique({
+        where: { id: evaluadoId },
+        // La designación abierta es la que manda: quien fue director y cesó ya
+        // no lo es, y se lo monitorea como al resto.
+        include: {
+          docenteCargos: {
+            where: { fechaFin: null, cargo: { nombre: 'Director' } },
+            select: { id: true },
+            take: 1,
+          },
+        },
+      }),
     ]);
 
     return {
@@ -148,6 +165,7 @@ export class PrismaCronogramaRepository implements CronogramaRepository {
       monitor: monitor?.estado === 'Activo',
       evaluado: evaluado?.estado === 'Activo',
       monitorCargo: monitor?.cargo,
+      evaluadoEsDirector: (evaluado?.docenteCargos?.length ?? 0) > 0,
     };
   }
 

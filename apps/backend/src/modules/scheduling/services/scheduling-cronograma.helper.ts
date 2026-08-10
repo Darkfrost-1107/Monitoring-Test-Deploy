@@ -213,6 +213,18 @@ export async function crearVisita(
     throw new BadRequestException('El evaluado (docente/director) seleccionado no está activo.');
   }
 
+  // A un director se lo evalúa sólo con la ficha directiva. Sin esta regla se
+  // le podía programar una visita con ficha docente, y la ficha equivocada no
+  // se nota hasta que ya está llena: mide desempeño de aula a quien conduce la
+  // institución, y los tableros terminan mostrándolo como docente porque el
+  // instrumento es lo único que dice qué se evaluó.
+  if (activas.evaluadoEsDirector && dto.tipoMonitoreo !== 'DIRECTIVO') {
+    throw new BadRequestException(
+      'El evaluado dirige la institución y solo puede monitorearse con la ficha directiva. ' +
+        'Seleccione el tipo de monitoreo DIRECTIVO.',
+    );
+  }
+
   // REGLA DE NEGOCIO EDU-0002: Máximo 3 visitas pendientes (Programada/Reprogramada) por monitor
   const pendingVisitsCount = await cronogramaRepo.countPendientesByMonitor(dto.monitorId);
   if (pendingVisitsCount >= 3) {

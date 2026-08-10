@@ -51,9 +51,12 @@ describe('SchedulingService - Reprogramaciones', () => {
       findById: jest.fn<any>().mockResolvedValue(visitaBase),
       findPlanVigentePara: jest.fn<any>(),
       findPlantillaVigentePara: jest.fn<any>().mockResolvedValue('plantilla-1'),
-      validateEntidadesActivas: jest
-        .fn<any>()
-        .mockResolvedValue({ institucion: true, monitor: true, evaluado: true }),
+      validateEntidadesActivas: jest.fn<any>().mockResolvedValue({
+        institucion: true,
+        monitor: true,
+        evaluado: true,
+        evaluadoEsDirector: false,
+      }),
       countPendientesByMonitor: jest.fn<any>().mockResolvedValue(0),
       findVisitasMonitorPorFecha: jest.fn<any>().mockResolvedValue([]),
       findVisitaExistente: jest.fn<any>().mockResolvedValue(null),
@@ -144,6 +147,68 @@ describe('SchedulingService - Reprogramaciones', () => {
         } as any,
         sesionEspecialista,
       );
+      expect(r.id).toBe('vis-1');
+    });
+  });
+
+  describe('crearVisita - a un director solo la ficha directiva', () => {
+    const visitaPara = (tipoMonitoreo: 'DOCENTE' | 'DIRECTIVO') => ({
+      monitorId: 'esp-1',
+      institucionId: 'ie-1',
+      evaluadoId: 'doc-1',
+      tipoMonitoreo,
+      numeroVisita: 1,
+      fechaProgramada: '2099-03-15',
+      horaInicio: '09:00:00',
+      modalidad: 'EBR',
+      nivelEducativo: 'Primaria',
+    });
+
+    beforeEach(() => {
+      cronogramaRepo.findPlanVigentePara.mockResolvedValue('plan-ugel-2026');
+      cronogramaRepo.validateEntidadesActivas.mockResolvedValue({
+        institucion: true,
+        monitor: true,
+        evaluado: true,
+        evaluadoEsDirector: true,
+      });
+    });
+
+    /**
+     * La ficha equivocada no se nota hasta que ya está llena: mide desempeño de
+     * aula a quien conduce la institución. Por eso se rechaza al programar.
+     */
+    it('rechaza programarle una ficha docente', async () => {
+      await expect(
+        service.crearVisita(visitaPara('DOCENTE') as any, sesionEspecialista),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('el mensaje dice qué tipo corresponde', async () => {
+      await expect(
+        service.crearVisita(visitaPara('DOCENTE') as any, sesionEspecialista),
+      ).rejects.toThrow(/ficha directiva/i);
+    });
+
+    it('acepta la ficha directiva', async () => {
+      cronogramaRepo.create.mockResolvedValue(visitaBase);
+
+      const r = await service.crearVisita(visitaPara('DIRECTIVO') as any, sesionEspecialista);
+
+      expect(r.id).toBe('vis-1');
+    });
+
+    it('a quien no dirige no le impone la ficha directiva', async () => {
+      cronogramaRepo.validateEntidadesActivas.mockResolvedValue({
+        institucion: true,
+        monitor: true,
+        evaluado: true,
+        evaluadoEsDirector: false,
+      });
+      cronogramaRepo.create.mockResolvedValue(visitaBase);
+
+      const r = await service.crearVisita(visitaPara('DOCENTE') as any, sesionEspecialista);
+
       expect(r.id).toBe('vis-1');
     });
   });
