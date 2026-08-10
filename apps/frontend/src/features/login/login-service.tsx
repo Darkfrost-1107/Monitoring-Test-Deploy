@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useUser, type User } from '@entities/model-user';
 import { authApi } from '@shared/api/auth.api';
+import { ErrorDeApi } from '@shared/config/api';
 
 /**
  * Inicio de sesión.
@@ -83,8 +84,12 @@ export const useLoginService = () => {
     setLoading(false);
 
     if (!ok || !data) {
-      const rechazo = (apiError || {}) as RespuestaDeRechazo;
-      const mensaje = rechazo.message || 'Credenciales incorrectas';
+      // Los datos vienen en el cuerpo de la respuesta, no en el error: el
+      // wrapper conservaba sólo el mensaje y `intentosRestantes` y `lockedUntil`
+      // se perdían antes de llegar acá.
+      const rechazo = (apiError instanceof ErrorDeApi ? (apiError.cuerpo ?? {}) : {}) as
+        RespuestaDeRechazo;
+      const mensaje = rechazo.message || (apiError as Error)?.message || 'Credenciales incorrectas';
 
       // Sólo lo que informó el servidor. Sin dato, no se cuenta nada: mostrar un
       // número inventado es peor que no mostrar ninguno.
