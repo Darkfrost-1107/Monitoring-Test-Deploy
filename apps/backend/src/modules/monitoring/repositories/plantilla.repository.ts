@@ -54,6 +54,15 @@ export abstract class PlantillaRepository {
     estado: 'Borrador' | 'Vigente' | 'Historico',
   ): Promise<IPlantilla>;
 
+  /**
+   * Pone una plantilla en Vigente y archiva a las que lo estaban.
+   *
+   * Es un relevo, no dos cambios de estado: entre archivar la anterior y
+   * activar la nueva, un fallo dejaría al año sin ninguna plantilla vigente y
+   * ningún monitoreo podría programarse. Por eso va en una transacción.
+   */
+  abstract activarArchivando(id: string, idsAArchivar: string[]): Promise<IPlantilla>;
+
   abstract softDelete(id: string): Promise<IPlantilla>;
 
   abstract eliminarConCascade(id: string): Promise<{ id: string; deletedFichas: number }>;

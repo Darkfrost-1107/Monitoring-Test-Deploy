@@ -1,6 +1,6 @@
 import { Test } from '@nestjs/testing';
 import { jest } from '@jest/globals';
-import { ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
+import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { PlantillaService } from './plantilla.service.js';
 import { PlantillaRepository } from '../repositories/plantilla.repository.js';
 import { RoleCode } from '../../../common/enums/role.enum.js';
@@ -94,19 +94,28 @@ describe('PlantillaService - ILA-0046 Versionado', () => {
       ).rejects.toThrow(BadRequestException);
     });
 
-    it('debe fallar con Conflict si ya existe otra plantilla Vigente del mismo tipo+anio', async () => {
+    /**
+     * Sigue habiendo una sola plantilla Vigente por (tipo, año, autor, IE). Lo
+     * que cambió es quién hace cumplir la regla: antes se rechazaba con un 409
+     * que exigía archivar la anterior a mano; ahora la activación la releva.
+     */
+    it('archiva la vigente anterior al activar la nueva', async () => {
       const borrador = { ...basePlantilla, estado: 'Borrador' as const };
       const otraVigente = { ...basePlantilla, id: 'otra-vigente', estado: 'Vigente' as const };
       repo.findById = jest.fn<any>().mockResolvedValue(borrador);
       repo.findAll = jest.fn<any>().mockResolvedValue([basePlantilla, otraVigente]);
+      repo.activarArchivando = jest
+        .fn<any>()
+        .mockResolvedValue({ ...basePlantilla, estado: 'Vigente' });
 
-      await expect(
-        service.cambiarEstado(
-          'plantilla-v1',
-          { estado: 'Vigente' },
-          { id: 'admin', role: 'admin' as RoleCode },
-        ),
-      ).rejects.toThrow(ConflictException);
+      const r = await service.cambiarEstado(
+        'plantilla-v1',
+        { estado: 'Vigente' },
+        { id: 'admin', role: 'admin' as RoleCode },
+      );
+
+      expect(repo.activarArchivando).toHaveBeenCalledWith('plantilla-v1', ['otra-vigente']);
+      expect(r.estado).toBe('Vigente');
     });
 
     it('debe ser idempotente: si el estado es el mismo, retorna sin error', async () => {

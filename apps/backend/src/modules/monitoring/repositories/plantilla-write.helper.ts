@@ -138,6 +138,35 @@ export async function updatePlantillaEstado(
   return buildPlantilla(prisma, id);
 }
 
+/**
+ * El relevo de la plantilla vigente.
+ *
+ * Archiva a las que regían y activa a la nueva en una sola transacción. Hacerlo
+ * en dos escrituras sueltas deja una ventana en la que el año no tiene ninguna
+ * plantilla vigente: si algo falla en el medio, no se puede programar ningún
+ * monitoreo hasta que alguien lo note y lo corrija a mano.
+ */
+export async function activarArchivandoPlantillas(
+  prisma: PrismaService,
+  id: string,
+  idsAArchivar: string[],
+): Promise<IPlantilla> {
+  const exists = await prisma.plantillaMonitoreo.findUnique({ where: { id } });
+  if (!exists) throw new NotFoundException(`Plantilla ${id} no encontrada.`);
+
+  await prisma.$transaction(async (tx) => {
+    if (idsAArchivar.length > 0) {
+      await tx.plantillaMonitoreo.updateMany({
+        where: { id: { in: idsAArchivar } },
+        data: { estado: 'Historico' },
+      });
+    }
+    await tx.plantillaMonitoreo.update({ where: { id }, data: { estado: 'Vigente' } });
+  });
+
+  return buildPlantilla(prisma, id);
+}
+
 export async function softDeletePlantilla(prisma: PrismaService, id: string): Promise<IPlantilla> {
   const exists = await prisma.plantillaMonitoreo.findUnique({ where: { id } });
   if (!exists) throw new NotFoundException(`Plantilla ${id} no encontrada.`);

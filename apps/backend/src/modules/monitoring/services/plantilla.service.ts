@@ -165,13 +165,15 @@ export class PlantillaService {
         rolAutorAlCrear: original.rolAutorAlCrear,
         institucionId: original.institucionId,
       });
-      const conflicto = otrasVigentes.find((p) => p.id !== id);
-      if (conflicto) {
-        throw new ConflictException(
-          `Ya existe plantilla Vigente para (${original.tipoMonitoreo}, ${original.anioAcademico})` +
-            (original.institucionId ? ` en su IE` : '') +
-            `: ${conflicto.id}. Arch\u00edvela primero.`,
-        );
+      // Activar una plantilla releva a la que reg\u00eda: se la archiva sola. Antes
+      // esto era un 409 que exig\u00eda archivarla a mano, o sea dos pasos para una
+      // sola intenci\u00f3n \u2014\u00abesta es la que rige ahora\u00bb\u2014 y un error que ni siquiera
+      // dec\u00eda cu\u00e1l era el paso que faltaba. La regla de una sola vigente por
+      // (tipo, a\u00f1o, autor, instituci\u00f3n) se mantiene: lo que cambia es que el
+      // sistema la hace cumplir en vez de exigirle al usuario que la cumpla.
+      const aArchivar = otrasVigentes.filter((p) => p.id !== id).map((p) => p.id);
+      if (aArchivar.length > 0) {
+        return this.repository.activarArchivando(id, aArchivar);
       }
     }
     return this.repository.updateEstado(id, dto.estado);

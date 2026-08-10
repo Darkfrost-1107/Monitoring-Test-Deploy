@@ -1,12 +1,7 @@
 import { RoleCode } from '../../../common/enums/role.enum.js';
 import { Test } from '@nestjs/testing';
 import { jest } from '@jest/globals';
-import {
-  BadRequestException,
-  ConflictException,
-  ForbiddenException,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { PlantillaService } from './plantilla.service.js';
 import { PlantillaRepository } from '../repositories/plantilla.repository.js';
 
@@ -54,6 +49,7 @@ describe('PlantillaService - ILA-0046', () => {
       updateInPlace: jest.fn<any>(),
       versionarConClon: jest.fn<any>(),
       updateEstado: jest.fn<any>(),
+      activarArchivando: jest.fn<any>(),
       clone: jest.fn<any>(),
     };
     const moduleRef = await Test.createTestingModule({
@@ -179,12 +175,50 @@ describe('PlantillaService - ILA-0046', () => {
       ).rejects.toThrow(BadRequestException);
     });
 
-    it('rechaza promover a Vigente si ya hay otra Vigente', async () => {
+    /**
+     * Activar una plantilla archiva a la que estaba vigente.
+     *
+     * Antes se rechazaba con un 409 que exigía archivarla a mano: dos pasos para
+     * una sola intención —«esta es la que rige ahora»— y un error que no decía
+     * cuál era el paso que faltaba.
+     */
+    it('archiva la vigente anterior en vez de rechazar', async () => {
       repo.findById.mockResolvedValue({ ...plantillaVigente, estado: 'Borrador' });
       repo.findAll.mockResolvedValue([{ ...plantillaVigente, id: 'otra-vigente' }]);
-      await expect(
-        service.cambiarEstado('plantilla-v1', { estado: 'Vigente' }, sesionJefe),
-      ).rejects.toThrow(ConflictException);
+      repo.activarArchivando.mockResolvedValue(plantillaVigente);
+
+      const r = await service.cambiarEstado('plantilla-v1', { estado: 'Vigente' }, sesionJefe);
+
+      expect(repo.activarArchivando).toHaveBeenCalledWith('plantilla-v1', ['otra-vigente']);
+      expect(r.estado).toBe('Vigente');
+    });
+
+    it('el relevo es una sola operación, no dos escrituras sueltas', async () => {
+      repo.findById.mockResolvedValue({ ...plantillaVigente, estado: 'Borrador' });
+      repo.findAll.mockResolvedValue([{ ...plantillaVigente, id: 'otra-vigente' }]);
+      repo.activarArchivando.mockResolvedValue(plantillaVigente);
+
+      await service.cambiarEstado('plantilla-v1', { estado: 'Vigente' }, sesionJefe);
+
+      // Si se archivara por un lado y se activara por el otro, un fallo entre
+      // ambas dejaría al año sin ninguna plantilla vigente.
+      expect(repo.updateEstado).not.toHaveBeenCalled();
+    });
+
+    it('archiva todas las vigentes que hubiera, no sólo la primera', async () => {
+      repo.findById.mockResolvedValue({ ...plantillaVigente, estado: 'Borrador' });
+      repo.findAll.mockResolvedValue([
+        { ...plantillaVigente, id: 'otra-vigente' },
+        { ...plantillaVigente, id: 'tercera-vigente' },
+      ]);
+      repo.activarArchivando.mockResolvedValue(plantillaVigente);
+
+      await service.cambiarEstado('plantilla-v1', { estado: 'Vigente' }, sesionJefe);
+
+      expect(repo.activarArchivando).toHaveBeenCalledWith('plantilla-v1', [
+        'otra-vigente',
+        'tercera-vigente',
+      ]);
     });
 
     it('permite promover a Vigente si no hay otra', async () => {

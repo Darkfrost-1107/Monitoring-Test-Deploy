@@ -16,6 +16,7 @@ import {
   createPlantilla,
   updatePlantillaInPlace,
   updatePlantillaEstado,
+  activarArchivandoPlantillas,
   softDeletePlantilla,
 } from './plantilla-write.helper.js';
 import { eliminarConCascade as eliminarConCascadeFn } from './plantilla-delete.helper.js';
@@ -66,6 +67,10 @@ export class PrismaPlantillaRepository implements PlantillaRepository {
     estado: 'Borrador' | 'Vigente' | 'Historico',
   ): Promise<IPlantilla> {
     return updatePlantillaEstado(this.prisma, id, estado);
+  }
+
+  async activarArchivando(id: string, idsAArchivar: string[]): Promise<IPlantilla> {
+    return activarArchivandoPlantillas(this.prisma, id, idsAArchivar);
   }
 
   async softDelete(id: string): Promise<IPlantilla> {
