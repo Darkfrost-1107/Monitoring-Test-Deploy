@@ -15,7 +15,14 @@ import {
  */
 
 interface ModalCambiarEstadoProps {
-  descripcion: string;
+  /**
+   * Cómo se nombra la plantilla en la confirmación.
+   *
+   * Era la descripción, que el formulario fabricaba y que quedó vacía al dejar
+   * de fabricarla: el modal preguntaba por una plantilla sin nombre. Se nombra
+   * por tipo y año, igual que en el modal de eliminar.
+   */
+  nombre: string;
   estado: EstadoDePlantilla;
   onConfirmar: () => void;
   onCancelar: () => void;
@@ -23,7 +30,7 @@ interface ModalCambiarEstadoProps {
 }
 
 export const ModalCambiarEstado = ({
-  descripcion,
+  nombre,
   estado,
   onConfirmar,
   onCancelar,
@@ -40,7 +47,7 @@ export const ModalCambiarEstado = ({
       <div className="space-y-4 text-left">
         <p className="text-sm text-slate-600">
           ¿Estás seguro de que deseas cambiar el estado de la plantilla{' '}
-          <strong>{descripcion}</strong> de <strong>{estado}</strong> a{' '}
+          <strong>{nombre}</strong> de <strong>{estado}</strong> a{' '}
           <strong>{siguienteEstado(estado)}</strong>?
         </p>
         {esCambioIrreversible(estado) && (

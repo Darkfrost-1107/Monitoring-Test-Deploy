@@ -22,7 +22,7 @@ interface P extends PlantillaFiltrable {
 const plantilla = (over: Partial<P> = {}): P => ({
   id: 'p1',
   tipoMonitoreo: 'Monitoreo Docente',
-  descripcion: 'Ficha de acompañamiento en aula',
+  autorNombre: 'ROSMINDA MAMANI HILASACA',
   estado: 'Vigente',
   anioAcademico: 2026,
   ...over,
@@ -37,7 +37,7 @@ describe('hayFiltroActivo', () => {
   });
 
   it('es verdadero con texto de búsqueda', () => {
-    expect(hayFiltroActivo(con({ texto: 'aula' }))).toBe(true);
+    expect(hayFiltroActivo(con({ texto: 'mamani' }))).toBe(true);
   });
 
   it('es verdadero con cualquier selector distinto de «Todos»', () => {
@@ -56,8 +56,14 @@ describe('filtrarPlantillas — búsqueda por texto', () => {
     expect(filtrarPlantillas([plantilla()], con({ texto: 'docente' }))).toHaveLength(1);
   });
 
-  it('busca en la descripción', () => {
-    expect(filtrarPlantillas([plantilla()], con({ texto: 'acompañamiento' }))).toHaveLength(1);
+  /**
+   * Reemplaza a la búsqueda por descripción. La descripción se fabricaba con la
+   * fecha y la cantidad de desempeños, y dejó de mostrarse en la tarjeta:
+   * buscarla era buscar texto invisible. El autor es lo que hoy distingue a las
+   * tres plantillas que una institución tiene del mismo tipo y año.
+   */
+  it('busca en el nombre del autor', () => {
+    expect(filtrarPlantillas([plantilla()], con({ texto: 'mamani' }))).toHaveLength(1);
   });
 
   it('busca en el nombre de la institución', () => {
@@ -66,7 +72,7 @@ describe('filtrarPlantillas — búsqueda por texto', () => {
   });
 
   it('no distingue mayúsculas', () => {
-    expect(filtrarPlantillas([plantilla()], con({ texto: 'AULA' }))).toHaveLength(1);
+    expect(filtrarPlantillas([plantilla()], con({ texto: 'RoSmInDa' }))).toHaveLength(1);
   });
 
   it('descarta lo que no coincide en ningún campo', () => {
@@ -75,7 +81,13 @@ describe('filtrarPlantillas — búsqueda por texto', () => {
 
   it('tolera la plantilla sin institución', () => {
     const p = plantilla({ institucionNombre: undefined });
-    expect(filtrarPlantillas([p], con({ texto: 'aula' }))).toHaveLength(1);
+    expect(filtrarPlantillas([p], con({ texto: 'mamani' }))).toHaveLength(1);
+  });
+
+  /** Las plantillas anteriores al campo no traen autor y no deben romper. */
+  it('tolera la plantilla sin autor', () => {
+    const p = plantilla({ autorNombre: undefined });
+    expect(filtrarPlantillas([p], con({ texto: 'docente' }))).toHaveLength(1);
   });
 });
 

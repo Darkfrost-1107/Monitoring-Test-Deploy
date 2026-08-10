@@ -139,7 +139,7 @@ export const PlantillasCatalog = ({ institucionId }: PlantillasCatalogProps = {}
 
       {acciones.estado.objetivo && (
         <ModalCambiarEstado
-          descripcion={acciones.estado.objetivo.descripcion}
+          nombre={`${acciones.estado.objetivo.tipoMonitoreo} ${acciones.estado.objetivo.anioAcademico}`}
           estado={acciones.estado.objetivo.estado as EstadoDePlantilla}
           onConfirmar={acciones.estado.confirmar}
           onCancelar={acciones.estado.cerrar}

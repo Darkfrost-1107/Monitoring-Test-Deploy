@@ -7,7 +7,6 @@ import { plantillasApi } from '@entities/model-plantillas/api/plantillas.api';
 import { lemasApi } from '@entities/model-lemas';
 import { useQueryClient } from '@tanstack/react-query';
 import { ConfirmModal } from '@shared/ui/ConfirmModal';
-import { formatearFechaCorta } from '@shared/lib/fecha/fecha';
 
 const toBackendTipo = (tipo: string): 'DOCENTE' | 'DIRECTIVO' =>
   tipo.toUpperCase().includes('DIRECTIVO') ? 'DIRECTIVO' : 'DOCENTE';
@@ -74,7 +73,8 @@ export const PlantillaCreatePage = () => {
         tipoMonitoreo: backendTipo,
         anioAcademico: Number(data.anioAcademico),
         baremo: data.baremo,
-        descripcion: `Plantilla registrada el ${formatearFechaCorta(new Date().toISOString())}. Contiene ${data.desempenos.length} desempeños de evaluación.`,
+        // Sin descripción: la que se fabricaba acá —fecha de registro y cantidad
+        // de desempeños— repetía dos filas que la tarjeta ya muestra.
         niveles: data.niveles.map((n, i) => ({
           nivelRomano: n.nivel,
           denominacion: n.denominacion,

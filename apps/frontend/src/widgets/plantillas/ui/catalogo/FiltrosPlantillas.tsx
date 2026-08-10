@@ -59,7 +59,7 @@ export const FiltrosPlantillas = ({
           <Search className="absolute left-3 top-2.5 h-4.5 w-4.5 text-slate-400" />
           <input
             type="text"
-            placeholder="Buscar por tipo, descripción..."
+            placeholder="Buscar por tipo, autor o institución..."
             value={filtros.texto}
             onChange={(e) => onCambiar({ texto: e.target.value })}
             className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-10 pr-4 py-2 text-sm text-text focus:outline-none focus:ring-1 focus:ring-primary focus:bg-surface transition-all shadow-inner"

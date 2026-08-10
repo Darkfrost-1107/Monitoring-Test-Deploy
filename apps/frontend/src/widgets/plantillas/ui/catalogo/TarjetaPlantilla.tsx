@@ -99,9 +99,10 @@ export const TarjetaPlantilla = ({
           </span>
         </div>
 
-        <p className="text-xs text-text-muted leading-relaxed line-clamp-3 pt-1">
-          {plantilla.descripcion}
-        </p>
+        {/* La descripción no se dibuja: la fabricaba el formulario con la fecha
+            y la cantidad de desempeños, dos datos que ya están abajo, y en las
+            copias repetía el «Copia basada en …» del clonado. El campo sigue en
+            la base para las plantillas que ya lo traían. */}
       </div>
 
       <div className="border-t border-slate-100 pt-3.5 space-y-2 text-[11px] text-slate-500 font-semibold">

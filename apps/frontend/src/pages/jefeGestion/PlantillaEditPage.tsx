@@ -9,7 +9,6 @@ import { usePlantilla, useActualizarPlantilla } from '@entities/model-plantillas
 import { NIVELES_ROMANOS } from '@entities/model-plantillas';
 import { lemasApi } from '@entities/model-lemas';
 import { useQueryClient } from '@tanstack/react-query';
-import { formatearFechaCorta } from '@shared/lib/fecha/fecha';
 
 export const PlantillaEditPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -59,7 +58,10 @@ export const PlantillaEditPage = () => {
         id,
         data: {
           baremo: data.baremo,
-          descripcion: `Plantilla modificada el ${formatearFechaCorta(new Date().toISOString())}. Contiene ${data.desempenos.length} desempeños de evaluación.`,
+          // La descripción no se toca al editar. Se reescribía con la fecha y la
+          // cantidad de desempeños —dato que la tarjeta ya muestra en dos filas—
+          // y eso borraba el «Copia basada en …» que deja el clonado, que es el
+          // único rastro de qué versión desciende cada copia.
           niveles: data.niveles.map((n, i) => ({
             nivelRomano: n.nivel,
             denominacion: n.denominacion,

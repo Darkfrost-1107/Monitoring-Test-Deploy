@@ -8,7 +8,8 @@
 
 export interface PlantillaFiltrable {
   tipoMonitoreo: string;
-  descripcion: string;
+  /** Ausente en las plantillas anteriores a que se registrara el autor. */
+  autorNombre?: string;
   institucionNombre?: string;
   estado: string;
   anioAcademico: number;
@@ -38,12 +39,19 @@ export const hayFiltroActivo = (filtros: FiltrosDePlantillas): boolean =>
   filtros.estado !== TODOS ||
   filtros.anio !== TODOS;
 
-/** La búsqueda mira el tipo de monitoreo, la descripción y la institución. */
+/**
+ * La búsqueda mira el tipo de monitoreo, el autor y la institución.
+ *
+ * Antes miraba la descripción, que el formulario fabricaba con la fecha y la
+ * cantidad de desempeños y que la tarjeta dejó de mostrar: era buscar sobre
+ * texto invisible. El autor sí distingue, que es de lo que se trata cuando una
+ * institución tiene tres plantillas del mismo tipo y del mismo año.
+ */
 const coincideElTexto = (p: PlantillaFiltrable, texto: string): boolean => {
   if (!texto) return true;
 
   const buscado = texto.toLowerCase();
-  return [p.tipoMonitoreo, p.descripcion, p.institucionNombre ?? ''].some((campo) =>
+  return [p.tipoMonitoreo, p.autorNombre ?? '', p.institucionNombre ?? ''].some((campo) =>
     campo.toLowerCase().includes(buscado),
   );
 };
