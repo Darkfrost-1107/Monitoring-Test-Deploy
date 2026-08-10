@@ -3,7 +3,8 @@ import { ConfigModule } from '@nestjs/config';
 import { LoggerModule } from 'nestjs-pino';
 import { validate } from './config/env.validation.js';
 import { APP_GUARD } from '@nestjs/core';
-import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlePorUsuarioGuard } from './shared/guards/throttle-por-usuario.guard.js';
 import { ScheduleModule } from '@nestjs/schedule';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { HealthModule } from './shared/health/health.module.js';
@@ -67,7 +68,7 @@ import { VisitRequestsModule } from './modules/visit-requests/visit-requests.mod
   providers: [
     {
       provide: APP_GUARD,
-      useClass: ThrottlerGuard,
+      useClass: ThrottlePorUsuarioGuard,
     },
   ],
 })
