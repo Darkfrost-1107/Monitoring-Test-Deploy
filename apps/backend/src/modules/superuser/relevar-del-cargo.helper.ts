@@ -15,6 +15,11 @@ import { RoleCode } from '../../common/enums/role.enum.js';
  * quien se retira de la UGEL deja de tener acceso, y no hay puesto que
  * inventarle.
  *
+ * En ambos casos el cargo se retira: quien deja de dirigir la UGEL no puede
+ * seguir figurando como su director, ni siquiera con la cuenta apagada. Sin rol
+ * previo cae al de especialista, que es el rol base del sistema, y queda
+ * inactivo.
+ *
  * En ambos casos se limpia `rolPrevio`: ya se usó, y dejarlo haría que el
  * próximo relevo restaurara un rol de dos cargos atrás.
  */
@@ -53,11 +58,20 @@ export async function relevarDelCargo(
     return;
   }
 
-  // Sin rol previo al cual volver: baja lógica. Se conserva la fila para no
-  // perder su historial de auditoría ni las fichas que haya firmado.
+  // Sin rol previo al cual volver: se le retira el cargo igual y se lo da de
+  // baja. Apagar la cuenta sin sacarle el rol lo dejaba figurando como Director
+  // de UGEL, que es el puesto que acaba de perder.
+  const rolBase = await tx.role.findUnique({ where: { codigo: RoleCode.ESPECIALISTA } });
+
+  // Se conserva la fila para no perder su historial de auditoría ni las fichas
+  // que haya firmado.
   await tx.usuario.update({
     where: { id: usuario.id },
-    data: { isActive: false, rolPrevio: null },
+    data: {
+      ...(rolBase ? { rolId: rolBase.id } : {}),
+      isActive: false,
+      rolPrevio: null,
+    },
   });
 }
 

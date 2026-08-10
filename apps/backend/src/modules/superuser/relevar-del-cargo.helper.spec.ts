@@ -78,23 +78,20 @@ describe('relevarDelCargo — entró desde afuera', () => {
 
     await relevarDelCargo(cliente, { id: 'u-1', rolPrevio: null });
 
-    expect(datosDelUpdate(cliente)).toEqual({ isActive: false, rolPrevio: null });
+    expect(datosDelUpdate(cliente).isActive).toBe(false);
   });
 
-  it('no le asigna ningún rol', async () => {
+  /**
+   * Apagar la cuenta no alcanza: sin quitarle el rol seguía figurando como
+   * Director de UGEL, que es justamente el puesto que acaba de perder.
+   */
+  it('le retira el cargo y no lo deja en el que perdió', async () => {
     const cliente = armarCliente();
 
     await relevarDelCargo(cliente, { id: 'u-1', rolPrevio: null });
 
-    expect(datosDelUpdate(cliente)).not.toHaveProperty('rolId');
-  });
-
-  it('no consulta el catálogo de roles: no hay ninguno que buscar', async () => {
-    const cliente = armarCliente();
-
-    await relevarDelCargo(cliente, { id: 'u-1', rolPrevio: null });
-
-    expect(cliente.role.findUnique).not.toHaveBeenCalled();
+    expect(cliente.role.findUnique).toHaveBeenCalledWith({ where: { codigo: 'especialista' } });
+    expect(datosDelUpdate(cliente).rolId).toBe('rol-especialista-uuid');
   });
 
   /**
@@ -117,12 +114,13 @@ describe('relevarDelCargo — el rol previo ya no existe en el catálogo', () =>
    * dejarlo en el cargo que acaba de perder lo mantendría con los permisos de
    * un puesto que ya no ocupa.
    */
-  it('lo da de baja en vez de dejarlo con el cargo que perdió', async () => {
+  it('lo da de baja aunque no haya rol base al cual moverlo', async () => {
     const cliente = armarCliente(false);
 
     await relevarDelCargo(cliente, { id: 'u-1', rolPrevio: 'rol_que_ya_no_existe' });
 
-    expect(datosDelUpdate(cliente)).toEqual({ isActive: false, rolPrevio: null });
+    expect(datosDelUpdate(cliente).isActive).toBe(false);
+    expect(datosDelUpdate(cliente).rolPrevio).toBeNull();
   });
 });
 
