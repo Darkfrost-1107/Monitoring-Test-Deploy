@@ -1,5 +1,13 @@
 import { useState } from 'react';
 import { mensajeDeError } from '@shared/lib/errores-formulario';
+import {
+  LARGO_CODIGO_LOCAL,
+  LARGO_CODIGO_MODULAR,
+  esCodigoValido,
+  errorDeCodigo,
+  recortarCodigo,
+  ejemploDeCodigo,
+} from '../codigos-de-institucion';
 import { Book, MapPin, Check } from 'lucide-react';
 import {
   DISTRITOS_LAMPA,
@@ -109,11 +117,11 @@ export const InstitutionFormBase = ({ onCancel, onSubmit, isLoading, initialData
   const set = <K extends keyof InstitutionRawInput>(key: K, value: InstitutionRawInput[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));
 
-  const codigoOk = /^\d{7}$/.test(form.codigoModular);
-  const codigoLocalOk = /^\d{8}$/.test(form.codigoLocal);
+  const codigoOk = esCodigoValido(form.codigoModular, LARGO_CODIGO_MODULAR);
+  const codigoLocalOk = esCodigoValido(form.codigoLocal, LARGO_CODIGO_LOCAL);
   const errors = {
-    codigoModular: !form.codigoModular ? 'Obligatorio' : !codigoOk ? 'Deben ser 7 dígitos' : '',
-    codigoLocal: !form.codigoLocal ? 'Obligatorio' : !codigoLocalOk ? 'Deben ser 8 dígitos' : '',
+    codigoModular: errorDeCodigo(form.codigoModular, LARGO_CODIGO_MODULAR),
+    codigoLocal: errorDeCodigo(form.codigoLocal, LARGO_CODIGO_LOCAL),
     nombre: !form.nombre.trim() ? 'Obligatorio' : '',
     nivel: !form.nivel ? 'Seleccione nivel' : '',
     provincia: !form.provincia ? 'Seleccione provincia' : '',
@@ -139,11 +147,11 @@ export const InstitutionFormBase = ({ onCancel, onSubmit, isLoading, initialData
       <SectionCard icon={<Book className="w-5 h-5" />} title="Información General">
         <div style={twoCols}>
           <TextField
-            label="Código Modular (7 dígitos)"
+            label={`Código Modular (${LARGO_CODIGO_MODULAR} dígitos)`}
             required
             value={form.codigoModular}
-            onChange={(v) => set('codigoModular', v.replace(/\D/g, '').slice(0, 7))}
-            placeholder="Ej. 0645213"
+            onChange={(v) => set('codigoModular', recortarCodigo(v, LARGO_CODIGO_MODULAR))}
+            placeholder={ejemploDeCodigo(LARGO_CODIGO_MODULAR)}
             error={showError('codigoModular')}
             disabled={!!initialData}
             adornment={
@@ -153,11 +161,11 @@ export const InstitutionFormBase = ({ onCancel, onSubmit, isLoading, initialData
             }
           />
           <TextField
-            label="Código de Local (6 dígitos)"
+            label={`Código de Local (${LARGO_CODIGO_LOCAL} dígitos)`}
             required
             value={form.codigoLocal}
-            onChange={(v) => set('codigoLocal', v.replace(/\D/g, '').slice(0, 6))}
-            placeholder="Ej. 12457896"
+            onChange={(v) => set('codigoLocal', recortarCodigo(v, LARGO_CODIGO_LOCAL))}
+            placeholder={ejemploDeCodigo(LARGO_CODIGO_LOCAL)}
             error={showError('codigoLocal')}
             adornment={
               codigoLocalOk ? (
