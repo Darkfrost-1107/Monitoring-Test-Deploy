@@ -1,4 +1,4 @@
-import { Eye, Calendar, List, BarChart3, UserRound } from 'lucide-react';
+import { Eye, Calendar, List, BarChart3, UserRound, PencilLine, History } from 'lucide-react';
 import { Button } from '@shared/ui/button';
 import { Card } from '@shared/ui/card';
 import { Badge } from '@shared/ui/badge';
@@ -45,6 +45,8 @@ export const TarjetaPlantilla = ({
   const origen = deUgel ? 'UGEL' : plantilla.institucionNombre || 'Mi I.E.';
   // En las de la UGEL el cargo repetiría la insignia de origen.
   const cargoDelAutor = deUgel ? null : etiquetaDeAutor(plantilla.creadoPorRole);
+  const fueEditada =
+    !!plantilla.fechaActualizacion && plantilla.fechaActualizacion !== plantilla.fechaCreacion;
 
   return (
     <Card className="bg-surface border border-border rounded-2xl p-5 hover:shadow-md transition-all duration-300 flex flex-col gap-5 group relative h-full">
@@ -130,6 +132,33 @@ export const TarjetaPlantilla = ({
             {formatearFechaAbreviada(plantilla.fechaCreacion, '—')}
           </span>
         </div>
+
+        {/* Sólo cuando difiere del registro: una plantilla que nunca se tocó
+            mostraría la misma fecha dos veces. Es el único rastro de las
+            ediciones in-place, que no suben la versión. */}
+        {fueEditada && (
+          <div className="flex items-center justify-between">
+            <span className="flex items-center gap-1">
+              <PencilLine className="h-3.5 w-3.5 text-primary" />
+              <span>Actualizada:</span>
+            </span>
+            <span className="text-slate-800">
+              {formatearFechaAbreviada(plantilla.fechaActualizacion, '—')}
+            </span>
+          </div>
+        )}
+
+        {/* La versión sube cuando la edición tuvo que versionar por tener fichas
+            asociadas. En la v1 no dice nada que no se sepa. */}
+        {plantilla.version > 1 && (
+          <div className="flex items-center justify-between">
+            <span className="flex items-center gap-1">
+              <History className="h-3.5 w-3.5 text-primary" />
+              <span>Versión:</span>
+            </span>
+            <span className="text-slate-800 font-bold">v{plantilla.version}</span>
+          </div>
+        )}
 
         <div className="flex items-center justify-between">
           <span className="flex items-center gap-1">

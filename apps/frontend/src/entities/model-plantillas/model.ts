@@ -60,6 +60,17 @@ export interface Plantilla {
   desempenos: Desempeno[];
   ejesItems?: EjeItem[];
   fechaCreacion: string;
+  /**
+   * Día de la última modificación del registro.
+   *
+   * Rastro de las ediciones que se aplican sobre la misma fila: cuando la
+   * plantilla no tiene fichas asociadas, `plantilla.service.ts` la actualiza
+   * in-place y ni la versión ni la fecha de registro cambian. Vacío si el
+   * servidor no manda `updatedAt`.
+   */
+  fechaActualizacion: string;
+  /** Sube cuando una edición versiona por tener fichas asociadas. */
+  version: number;
   estado: 'Vigente' | 'Borrador' | 'Historico';
   descripcion: string;
   /** Se tipa contra el contrato: la unión escrita a mano quedó corta al sumar

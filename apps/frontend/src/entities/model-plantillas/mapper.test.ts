@@ -76,3 +76,37 @@ describe('mapIPlantillaToPlantilla — autor', () => {
     expect(p.autorNombre).toBeUndefined();
   });
 });
+
+/**
+ * Rastro de las ediciones.
+ *
+ * Editar una plantilla toma uno de dos caminos (`plantilla.service.ts:121`): con
+ * fichas asociadas se crea una versión nueva y la anterior queda Histórica; sin
+ * fichas se pisa la misma fila. En ese segundo caso el único rastro es
+ * `updatedAt`, que antes no llegaba al modelo.
+ */
+describe('mapIPlantillaToPlantilla — trazabilidad de la edición', () => {
+  it('trae la fecha de actualización en el día que corresponde en Perú', () => {
+    const p = mapIPlantillaToPlantilla(
+      iPlantilla({ createdAt: '2026-03-09T12:00:00.000Z', updatedAt: '2026-03-11T01:00:00.000Z' }),
+    );
+    expect(p.fechaActualizacion).toBe('2026-03-10');
+  });
+
+  /** Sin `updatedAt` no se inventa una fecha: la tarjeta no muestra la fila. */
+  it('sin updatedAt deja la fecha de actualización vacía', () => {
+    const p = mapIPlantillaToPlantilla(iPlantilla({ updatedAt: undefined }));
+    expect(p.fechaActualizacion).toBe('');
+  });
+
+  it('trae el número de versión, que es el rastro cuando la edición versiona', () => {
+    const p = mapIPlantillaToPlantilla(iPlantilla({ version: 3 }));
+    expect(p.version).toBe(3);
+  });
+
+  /** Las respuestas viejas no traían versión; la primera es la 1. */
+  it('sin versión asume la primera', () => {
+    const p = mapIPlantillaToPlantilla(iPlantilla({ version: undefined }));
+    expect(p.version).toBe(1);
+  });
+});

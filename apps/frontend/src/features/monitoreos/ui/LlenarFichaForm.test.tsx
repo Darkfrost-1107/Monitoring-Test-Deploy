@@ -59,6 +59,8 @@ const PLANTILLA: Plantilla = {
   desempenos: [desempeno('d1', 'Involucra activamente a los estudiantes')],
   ejesItems: [],
   fechaCreacion: '2026-01-15',
+  fechaActualizacion: '2026-01-15',
+  version: 1,
   estado: 'Vigente',
   descripcion: 'Plantilla de prueba',
 };

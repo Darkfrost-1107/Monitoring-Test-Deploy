@@ -42,17 +42,17 @@ const mapDesempeno = (d: IDesempeno): Desempeno => ({
 });
 
 /**
- * La fecha de creación de la plantilla, en el día que corresponde en Perú.
+ * Un instante del servidor, en el día que corresponde en Perú.
  *
- * `createdAt` es un **instante**, no una fecha de calendario. Cortarlo por la
- * «T» devolvía el día en UTC: una plantilla creada un martes a las 20:00 en
- * Lima —miércoles 01:00 UTC— aparecía como del miércoles.
+ * `createdAt` y `updatedAt` son **instantes**, no fechas de calendario.
+ * Cortarlos por la «T» devolvía el día en UTC: una plantilla creada un martes a
+ * las 20:00 en Lima —miércoles 01:00 UTC— aparecía como del miércoles.
  *
- * Sin `createdAt` devuelve cadena vacía. Antes devolvía `hoyISO()`, de modo que
- * una plantilla sin fecha se mostraba como creada hoy; el catálogo ya sabe
- * mostrar «—» cuando no hay fecha.
+ * Sin instante devuelve cadena vacía. Antes devolvía `hoyISO()`, de modo que una
+ * plantilla sin fecha se mostraba como creada hoy; el catálogo ya sabe mostrar
+ * «—» cuando no hay fecha.
  */
-const formatFechaCreacion = (iso: string): string => (iso ? aFechaISOLocal(iso) : '');
+const aDiaLocal = (iso: string | undefined): string => (iso ? aFechaISOLocal(iso) : '');
 
 /**
  * Convierte IPlantilla (backend) a Plantilla (modelo frontend).
@@ -70,7 +70,9 @@ export const mapIPlantillaToPlantilla = (p: IPlantilla): Plantilla => ({
   niveles: (p.niveles ?? []).map(mapNivel),
   desempenos: (p.desempenos ?? []).map(mapDesempeno),
   ejesItems: (p.ejesItems ?? []).map(mapEjeItem),
-  fechaCreacion: formatFechaCreacion(p.createdAt),
+  fechaCreacion: aDiaLocal(p.createdAt),
+  fechaActualizacion: aDiaLocal(p.updatedAt),
+  version: p.version ?? 1,
   estado: p.estado as EstadoPlantilla,
   descripcion: p.descripcion ?? '',
   creadoPorRole: p.rolAutorAlCrear as RolAutorPlantilla,
