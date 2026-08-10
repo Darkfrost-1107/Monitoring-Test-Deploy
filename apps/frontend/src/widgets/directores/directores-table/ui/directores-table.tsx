@@ -12,7 +12,7 @@ import { Avatar, AvatarFallback } from '@shared/ui/avatar';
 import { Badge } from '@shared/ui/badge';
 import { TableCell, TableHead, TableRow } from '@shared/ui/table';
 import { hoyISO } from '@shared/lib/fecha/fecha';
-import { MODALIDAD_NIVEL_MAP } from '@entities/model-instituciones';
+import { directorFilter } from './filtro-directores';
 
 // Escala magisterial romana → número con cero (V → "05"), como en el mockup.
 const ESCALA_NUM: Record<string, string> = {
@@ -38,37 +38,6 @@ const nivelLabel = (nivel: string) => nivel.charAt(0) + nivel.slice(1).toLowerCa
 const designacionVigente = (dir: Docente) =>
   dir.cargosList?.find((c) => c.nombre === 'Director' && c.fechaFin === null);
 
-const directorFilter = (dir: Docente, params: URLSearchParams) => {
-  // Conserva a los cesados en el padrón —hay que poder verlos y reactivarlos—
-  // pero lo que la fila muestra y ofrece sí distingue si la designación sigue
-  // vigente.
-  const hasCargo = dir.cargosList?.some((c) => c.nombre === 'Director') ?? (dir.cargo === 'Director');
-  if (!hasCargo) return false;
-
-  const searchQuery = params.get('search') || '';
-  const matchSearch =
-    !searchQuery ||
-    dir.nombres.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    dir.apellidos.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    dir.dni.includes(searchQuery);
-
-  const condicion = params.get('condicion') || '';
-  const matchCondicion =
-    !condicion || (dir.condicion ?? '').toLowerCase() === condicion.toLowerCase();
-
-  const nivel = params.get('nivelEducativo') || '';
-  const matchNivel =
-    !nivel || (dir.nivelEducativo ?? '').toLowerCase() === nivel.toLowerCase();
-
-  // El padrón no guarda la modalidad del director, pero cada nivel pertenece a
-  // una sola: se deduce del mapa en vez de agregar un campo que ya está implícito.
-  const modalidad = params.get('modalidad') || '';
-  const nivelesDeLaModalidad = (MODALIDAD_NIVEL_MAP[modalidad] ?? []).map((n) => n.toLowerCase());
-  const matchModalidad =
-    !modalidad || nivelesDeLaModalidad.includes((dir.nivelEducativo ?? '').toLowerCase());
-
-  return matchSearch && matchCondicion && matchNivel && matchModalidad;
-};
 
 interface DirectoresTableWidgetProps {
   directores: Docente[];
@@ -233,7 +202,7 @@ export const DirectoresTableWidget = ({
         <ConfirmModal
           danger
           title="¿Finalizar Designación de Director?"
-          message={<>Esta acción cesará a <strong>{finalizing.nombres} {finalizing.apellidos}</strong> como Director. La persona pasará a figurar como docente sin institución asignada y su acceso al sistema será desactivado. Puede reactivarse posteriormente.</>}
+          message={<>Esta acción cesará a <strong>{finalizing.nombres} {finalizing.apellidos}</strong> como Director. Saldrá de esta tabla y pasará a figurar como docente de aula, sin institución asignada, y su acceso al sistema será desactivado. Desde el padrón de docentes puede volver a designarlo.</>}
           confirmLabel="Cesar Director"
           cancelLabel="Cancelar"
           onConfirm={confirmFinalize}
