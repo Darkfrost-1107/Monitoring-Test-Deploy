@@ -99,6 +99,7 @@ export class SuperuserService {
         data: {
           rolId: newRole.id,
           rolPrevio: rolActual,
+          isActive: true,
         },
         include: {
           persona: true,
@@ -114,6 +115,7 @@ export class SuperuserService {
         id: updatedUser.id,
         rolActual: updatedUser.rol.nombre,
         rolCodigo: updatedUser.rol.codigo,
+        activo: updatedUser.isActive,
       },
     };
   }
