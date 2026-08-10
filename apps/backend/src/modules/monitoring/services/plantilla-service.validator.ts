@@ -39,6 +39,17 @@ function isSchoolStaff(session: SessionUser): boolean {
   );
 }
 
+/**
+ * Autores que pertenecen a una institución educativa.
+ *
+ * Los tres tienen su propia plantilla. `'director_ie'` se usaba como sinónimo de
+ * «de una I.E.», que dejaba afuera a los otros dos en cuanto pudieron tener la
+ * suya: el Coordinador duplicaba la del Director y su copia desaparecía del
+ * catálogo, filtrada por no ser del director.
+ */
+export const esAutorDeInstitucion = (autor: RolAutorPlantilla): boolean =>
+  autor === 'director_ie' || autor === 'coordinador_pedagogico' || autor === 'jefe_taller';
+
 /** El autor que corresponde a cada rol del personal de institución. */
 const AUTOR_POR_ROL: Record<string, RolAutorPlantilla> = {
   [RoleCode.DIRECTOR_INSTITUCION]: 'director_ie',
@@ -85,12 +96,12 @@ export function guardVisibilidad(plantilla: IPlantilla, session?: SessionUser): 
   if (isSchoolStaff(session) && plantilla.institucionId !== session.institucionId) {
     throw new ForbiddenException('No tiene permisos para ver esta plantilla.');
   }
-  if (session.role === RoleCode.JEFE_AREA && plantilla.rolAutorAlCrear === 'director_ie') {
+  if (session.role === RoleCode.JEFE_AREA && esAutorDeInstitucion(plantilla.rolAutorAlCrear)) {
     throw new ForbiddenException('El Jefe de Area no tiene acceso a las plantillas de II.EE.');
   }
   if (
     session.role === RoleCode.JEFE_GESTION &&
-    plantilla.rolAutorAlCrear === 'director_ie' &&
+    esAutorDeInstitucion(plantilla.rolAutorAlCrear) &&
     plantilla.estado === 'Borrador'
   ) {
     throw new ForbiddenException(
@@ -105,7 +116,7 @@ export function guardModificacion(plantilla: IPlantilla, session: SessionUser): 
       'Los Directores e integrantes de la IE no pueden modificar plantillas UGEL.',
     );
   }
-  if (!isSchoolStaff(session) && plantilla.rolAutorAlCrear === 'director_ie') {
+  if (!isSchoolStaff(session) && esAutorDeInstitucion(plantilla.rolAutorAlCrear)) {
     throw new ForbiddenException(
       'Los usuarios de UGEL no pueden modificar plantillas de las II.EE.',
     );

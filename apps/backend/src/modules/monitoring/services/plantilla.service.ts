@@ -15,6 +15,7 @@ import type { SessionUser } from '../../../shared/types/session-user.js';
 import {
   validarReglas,
   resolveAutor,
+  esAutorDeInstitucion,
   guardVisibilidad,
   guardModificacion,
   validarAnioAcademico,
@@ -56,7 +57,7 @@ export class PlantillaService {
       if (isUgelRole) {
         // UGEL no debe ver plantillas 'Borrador' de las II.EE.
         plantillas = plantillas.filter(
-          (p) => !(p.rolAutorAlCrear === 'director_ie' && p.estado === 'Borrador'),
+          (p) => !(esAutorDeInstitucion(p.rolAutorAlCrear) && p.estado === 'Borrador'),
         );
       } else if (this.isSchoolStaff(session)) {
         // IE no debe ver plantillas 'Borrador' de la UGEL
@@ -70,7 +71,11 @@ export class PlantillaService {
           session.role === RoleCode.JEFE_TALLER
         ) {
           plantillas = plantillas.filter(
-            (p) => p.institucionId === session.institucionId && p.rolAutorAlCrear === 'director_ie',
+            // Ven las de su institución: la del Director, para poder clonarla, y
+            // la suya propia. Se pedía `director_ie` a secas, de modo que su
+            // propia copia quedaba fuera del catálogo apenas la creaban.
+            (p) =>
+              p.institucionId === session.institucionId && esAutorDeInstitucion(p.rolAutorAlCrear),
           );
         }
       }
