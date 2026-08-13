@@ -156,7 +156,7 @@ export const DashboardPage = () => {
       {/* Monitoreos recientes */}
       <RecentMonitoringsTable
         rows={recientes}
-        detailPath="/monitoreo/reportes"
+        detailPath="/reportes"
         emptyLabel={
           distrito ? `Sin monitoreos recientes en ${distrito}.` : 'Sin monitoreos registrados.'
         }

@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { OnEvent } from '@nestjs/event-emitter';
 import { ReporteService } from '../services/reporte.service.js';
 import { MailerService } from '../../../shared/mailer/mailer.service.js';
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
@@ -20,7 +19,7 @@ export class FichaFinalizadaListener {
     private readonly prisma: PrismaService,
   ) {}
 
-  @OnEvent('ficha.finalizada', { async: true })
+  // @OnEvent('ficha.finalizada', { async: true })
   async handleFichaFinalizada(event: FichaFinalizadaEvent) {
     this.logger.log(`Procesando evento ficha.finalizada para ficha ${event.fichaId}`);
 

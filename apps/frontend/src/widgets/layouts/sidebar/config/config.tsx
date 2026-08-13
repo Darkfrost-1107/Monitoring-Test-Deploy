@@ -11,6 +11,7 @@ import {
   Shield,
   CalendarClock,
   AlertTriangle,
+  PenTool,
 } from 'lucide-react';
 import type { MenuItem } from '@shared/constants/roles';
 
@@ -122,6 +123,13 @@ export const SIDEBAR_CONFIG: MenuCategory[] = [
     label: 'Reportes',
     icon: <BarChart3 className="h-[18px] w-[18px]" />,
     path: '/reportes',
+    children: [],
+  },
+  {
+    id: 'mi_firma',
+    label: 'Mi Firma',
+    icon: <PenTool className="h-[18px] w-[18px]" />,
+    path: '/mi-firma',
     children: [],
   },
   {

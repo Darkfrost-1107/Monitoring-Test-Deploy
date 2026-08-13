@@ -1,4 +1,4 @@
-import { GraduationCap, User, Download, Eye } from 'lucide-react';
+import { GraduationCap, User, Download, Eye, Mail, Loader2, Check, Clock } from 'lucide-react';
 import { Button } from '@/shared/ui/button';
 import { Card } from '@/shared/ui/card';
 import { Badge } from '@/shared/ui/badge';
@@ -20,6 +20,8 @@ interface TarjetaReporteProps {
   isEvaluatedView: boolean;
   onAbrir: () => void;
   onDescargar: (e: React.MouseEvent) => void;
+  onEnviarCorreo?: (e: React.MouseEvent) => void;
+  isEnviandoCorreo?: boolean;
 }
 
 export const TarjetaReporte = ({
@@ -27,6 +29,8 @@ export const TarjetaReporte = ({
   isEvaluatedView,
   onAbrir,
   onDescargar,
+  onEnviarCorreo,
+  isEnviandoCorreo,
 }: TarjetaReporteProps) => {
   const medicion = medirVisita(visita);
   const esDocente = visita.tipo === 'DOCENTE';
@@ -54,6 +58,19 @@ export const TarjetaReporte = ({
             }`}
           >
             {esDocente ? 'DOCENTE' : 'DIRECTIVO'}
+          </Badge>
+          <Badge
+            className={`font-bold text-[9px] uppercase tracking-wider ml-auto ${
+              visita.correoEnviado
+                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                : 'bg-amber-50 text-amber-700 border-amber-200'
+            }`}
+          >
+            {visita.correoEnviado ? (
+              <span className="flex items-center gap-1"><Check className="h-3 w-3" /> Enviado</span>
+            ) : (
+              <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> Pendiente de Enviar</span>
+            )}
           </Badge>
         </div>
 
@@ -107,6 +124,20 @@ export const TarjetaReporte = ({
         </Badge>
 
         <div className="flex items-center gap-1.5">
+          {!isEvaluatedView && onEnviarCorreo && (
+            <button
+              onClick={onEnviarCorreo}
+              disabled={isEnviandoCorreo}
+              className="p-2 rounded-lg border border-slate-200 text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition-colors shadow-sm disabled:opacity-50 cursor-pointer"
+              title="Enviar por Correo"
+            >
+              {isEnviandoCorreo ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Mail className="h-3.5 w-3.5" />
+              )}
+            </button>
+          )}
           <button
             onClick={onDescargar}
             className="p-2 rounded-lg border border-slate-200 text-slate-500 hover:text-primary hover:bg-slate-50 transition-colors shadow-sm disabled:opacity-50 cursor-pointer"

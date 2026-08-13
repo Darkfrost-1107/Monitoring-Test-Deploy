@@ -3,6 +3,10 @@ import type { Plantilla } from '@entities/model-plantillas';
 import { formatearFechaCorta } from '@shared/lib/fecha/fecha';
 import { consolidarFicha, puntajeDeDesempeno } from '@features/reportes/lib/consolidado-ficha';
 import { TituloDeSeccion } from './tabla';
+import { useQuery } from '@tanstack/react-query';
+import { firmasApi } from '@/shared/api/firmas.api';
+import { requestBlob } from '@/shared/config/api';
+import { useEffect, useState } from 'react';
 
 /**
  * El cierre de la ficha: sugerencias, consolidado, evidencias y firmas.
@@ -151,34 +155,99 @@ export const Evidencias = ({ estado }: { estado: EstadoDeCierre }) => {
   );
 };
 
+/** Carga y muestra la imagen de firma desde su URL autenticada. */
+const FirmaImagen = ({ url }: { url: string | null | undefined }) => {
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!url) return;
+    let objectUrl: string | null = null;
+    requestBlob(url)
+      .then((blob) => {
+        objectUrl = URL.createObjectURL(blob);
+        setBlobUrl(objectUrl);
+      })
+      .catch(() => {
+        // Si falla (p.ej. URL directa), intentar usar la URL tal cual
+        setBlobUrl(url);
+      });
+    return () => {
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [url]);
+
+  if (!blobUrl) return <div style={{ height: '40px' }} />;
+
+  return (
+    <img
+      src={blobUrl}
+      alt="Firma"
+      style={{ maxHeight: '48px', maxWidth: '120px', objectFit: 'contain', margin: '0 auto 4px' }}
+    />
+  );
+};
+
 export const Firmas = ({
   visita,
   directorNombre,
 }: {
   visita: Cronograma;
   directorNombre: string;
-}) => (
-  <div className="mt-14 pt-6 break-inside-avoid">
-    <div className="flex justify-between items-end gap-4 px-4">
-      <Firma titulo="Firma del Especialista Monitor" nombre={visita.especialista} pie="AGP - UGEL Lampa" />
-      <Firma
-        titulo="Firma del Evaluado(a)"
-        nombre={visita.docenteDirectivo}
-        pie="Docente / Directivo"
-      />
-      {visita.tipo === 'DOCENTE' && (
-        <Firma
-          titulo="Firma del Director(a) IE"
-          nombre={directorNombre}
-          pie="Sello / V°B° Institucional"
-        />
-      )}
-    </div>
-  </div>
-);
+}) => {
+  // El ID que se usa puede ser el de la ficha (BackendReportVisit.id) o el cronogramaId
+  const fichaId = visita.id;
+  const { data } = useQuery({
+    queryKey: ['ficha-firmas', fichaId],
+    queryFn: () => firmasApi.getFirmasDeFicha(fichaId),
+    enabled: !!fichaId,
+    staleTime: 30_000,
+  });
 
-const Firma = ({ titulo, nombre, pie }: { titulo: string; nombre: string; pie: string }) => (
+  const firmaMap = new Map(
+    (data?.firmas ?? []).map((f) => [f.rolFirmante.toUpperCase(), f.imagenUrl]),
+  );
+
+  return (
+    <div className="mt-14 pt-6 break-inside-avoid">
+      <div className="flex justify-between items-end gap-4 px-4">
+        <Firma
+          titulo="Firma del Especialista Monitor"
+          nombre={visita.especialista}
+          pie="AGP - UGEL Lampa"
+          imagenUrl={firmaMap.get('EVALUADOR')}
+        />
+        <Firma
+          titulo="Firma del Evaluado(a)"
+          nombre={visita.docenteDirectivo}
+          pie="Docente / Directivo"
+          imagenUrl={firmaMap.get('EVALUADO')}
+        />
+        {visita.tipo === 'DOCENTE' && (
+          <Firma
+            titulo="Firma del Director(a) IE"
+            nombre={directorNombre}
+            pie="Sello / V°B° Institucional"
+            imagenUrl={firmaMap.get('DIRECTOR')}
+          />
+        )}
+      </div>
+    </div>
+  );
+};
+
+const Firma = ({
+  titulo,
+  nombre,
+  pie,
+  imagenUrl,
+}: {
+  titulo: string;
+  nombre: string;
+  pie: string;
+  imagenUrl?: string | null;
+}) => (
   <div className="text-center flex-1">
+    <FirmaImagen url={imagenUrl} />
     <div className="border-b border-slate-600 mb-2 w-3/4 mx-auto" />
     <p className="font-extrabold text-[11px] text-slate-800">{titulo}</p>
     <p className="text-[9.5px] text-slate-600 font-medium">{nombre}</p>
@@ -195,3 +264,5 @@ export const PieDeDocumento = ({ visitaId }: { visitaId: string }) => (
     </span>
   </div>
 );
+
+

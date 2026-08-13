@@ -18,6 +18,8 @@ import {
   SugerenciasYCompromisos,
 } from './ficha/CierreDeLaFicha';
 import { TablaDeFicha, Rotulo, TituloDeSeccion } from './ficha/tabla';
+import { useCan } from '@shared/auth';
+import { Capability } from '@sistema-monitoreo/shared-contracts';
 
 /**
  * La ficha de monitoreo tal como se imprime.
@@ -53,7 +55,8 @@ interface FichaPrintableProps {
 
 export const FichaPrintable = forwardRef<HTMLDivElement, FichaPrintableProps>(
   ({ visit, template, fichaState }, ref) => {
-    const { docentes, especialistas, instituciones } = useCronogramasData();
+    const { can } = useCan();
+    const { docentes, especialistas, instituciones } = useCronogramasData(can(Capability.MONITOREO_READ));
 
     // La hora de cierre sólo existe en la ficha finalizada del backend.
     const { data: fichaDelBackend } = useQuery({

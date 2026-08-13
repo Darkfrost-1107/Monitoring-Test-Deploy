@@ -99,23 +99,27 @@ model Usuario {
   createdAt           DateTime  @default(now()) @map("created_at")
   updatedAt           DateTime  @default(now()) @updatedAt @map("updated_at")
 
-  persona              Persona                   @relation(fields: [personaId], references: [id])
-  rol                  Role                      @relation(fields: [rolId], references: [id])
-  sesionesAuth         SesionAuth[]
-  tokensRecuperacion   TokenRecuperacion[]
-  logsAuditoria        LogAuditoria[]
-  planesAutor          PlanMonitoreo[]
-  plantillasAutor      PlantillaMonitoreo[]
-  lemasAnualesCargados LemaAnual[]
-  cronogramasCreados   Cronograma[]              @relation("CronogramaCreador")
-  solicitudesCreadas   SolicitudReprogramacion[] @relation("SolicitudSolicitante")
-  solicitudesResueltas SolicitudReprogramacion[] @relation("SolicitudResolutor")
-  fichasCreadas        FichaMonitoreo[]          @relation("FichaCreador")
-  fichasFinalizadas    FichaMonitoreo[]          @relation("FichaFinalizador")
-  notificacionesRecibidas Notificacion[]         @relation("NotificacionDestinatario")
-  notificacionesEnviadas  Notificacion[]         @relation("NotificacionEmisor")
-  solicitudesVisita       SolicitudVisita[]      @relation("SolicitudVisitaSolicitante")
-  solicitudesVisitaResueltas SolicitudVisita[]   @relation("SolicitudVisitaResolutor")
+  persona                    Persona                   @relation(fields: [personaId], references: [id])
+  rol                        Role                      @relation(fields: [rolId], references: [id])
+  sesionesAuth               SesionAuth[]
+  tokensRecuperacion         TokenRecuperacion[]
+  logsAuditoria              LogAuditoria[]
+  planesAutor                PlanMonitoreo[]
+  plantillasAutor            PlantillaMonitoreo[]
+  lemasAnualesCargados       LemaAnual[]
+  cronogramasCreados         Cronograma[]              @relation("CronogramaCreador")
+  solicitudesCreadas         SolicitudReprogramacion[] @relation("SolicitudSolicitante")
+  solicitudesResueltas       SolicitudReprogramacion[] @relation("SolicitudResolutor")
+  fichasCreadas              FichaMonitoreo[]          @relation("FichaCreador")
+  fichasFinalizadas          FichaMonitoreo[]          @relation("FichaFinalizador")
+  notificacionesRecibidas    Notificacion[]            @relation("NotificacionDestinatario")
+  notificacionesEnviadas     Notificacion[]            @relation("NotificacionEmisor")
+  solicitudesVisita          SolicitudVisita[]         @relation("SolicitudVisitaSolicitante")
+  solicitudesVisitaResueltas SolicitudVisita[]         @relation("SolicitudVisitaResolutor")
+
+  // Firmas
+  firmaUrl String?      @map("firma_url") @db.Text
+  firmas   FichaFirma[]
 
   @@index([personaId])
   @@index([rolId])
@@ -232,24 +236,24 @@ model EspecialistaCargo {
 // ==========================================
 
 model InstitucionEducativa {
-  id               String   @id @default(uuid()) @db.Uuid
-  codigoModular    String   @unique @map("codigo_modular") @db.VarChar(7)
-  codigoLocal      String   @map("codigo_local") @db.VarChar(8)
-  nombre           String   @db.VarChar(100)
-  nivelEducativoId String?  @map("nivel_educativo_id") @db.Uuid
-  nivelEducativo   String   @map("nivel_educativo") @db.VarChar(50)
-  modalidad        String   @map("modalidad") @db.VarChar(50)
-  departamento     String   @default("Puno") @db.VarChar(50)
-  provincia        String   @db.VarChar(50)
-  distrito         String   @db.VarChar(50)
-  direccion        String   @db.VarChar(150)
-  zona             String   @db.VarChar(20)
-  estado           String   @default("Activa") @db.VarChar(20)
-  latitud          Decimal? @db.Decimal(9, 6)
-  longitud         Decimal? @db.Decimal(9, 6)
+  id                String    @id @default(uuid()) @db.Uuid
+  codigoModular     String    @unique @map("codigo_modular") @db.VarChar(7)
+  codigoLocal       String    @map("codigo_local") @db.VarChar(8)
+  nombre            String    @db.VarChar(100)
+  nivelEducativoId  String?   @map("nivel_educativo_id") @db.Uuid
+  nivelEducativo    String    @map("nivel_educativo") @db.VarChar(50)
+  modalidad         String    @map("modalidad") @db.VarChar(50)
+  departamento      String    @default("Puno") @db.VarChar(50)
+  provincia         String    @db.VarChar(50)
+  distrito          String    @db.VarChar(50)
+  direccion         String    @db.VarChar(150)
+  zona              String    @db.VarChar(20)
+  estado            String    @default("Activa") @db.VarChar(20)
+  latitud           Decimal?  @db.Decimal(9, 6)
+  longitud          Decimal?  @db.Decimal(9, 6)
   alertaSinVisitaAt DateTime? @map("alerta_sin_visita_at")
-  createdAt        DateTime @default(now()) @map("created_at")
-  updatedAt        DateTime @default(now()) @updatedAt @map("updated_at")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @default(now()) @updatedAt @map("updated_at")
 
   nivelEducativoRel NivelEducativo?      @relation(fields: [nivelEducativoId], references: [id], onDelete: SetNull)
   docentes          Docente[]
@@ -692,23 +696,23 @@ model FichaRespuestaEjeItem {
 // ==========================================
 
 model Cronograma {
-  id              String   @id @default(uuid()) @db.Uuid
-  monitorId       String   @map("monitor_id") @db.Uuid
-  institucionId   String   @map("institucion_id") @db.Uuid
-  evaluadoId      String   @map("evaluado_id") @db.Uuid
-  planId          String?  @map("plan_id") @db.Uuid
-  tipoMonitoreo   String   @map("tipo_monitoreo") @db.VarChar(20) // DOCENTE | DIRECTIVO
-  numeroVisita    Int      @map("numero_visita") @db.SmallInt
-  fechaProgramada DateTime @map("fecha_programada") @db.Date
-  horaInicio      String   @map("hora_inicio") @db.VarChar(8) // HH:mm:ss
-  detalles        String?  @db.Text
-  estado          String   @default("PROGRAMADO") @db.VarChar(20) // PROGRAMADO | EN_PROCESO | COMPLETADO | REPROGRAMADO | CANCELADO | ANULADO
-  modalidad       String   @db.VarChar(20) // EBR | EBA | EBE | CEPTRO
-  nivelEducativo  String   @map("nivel_educativo") @db.VarChar(100)
-  creadoPorId     String?  @map("creado_por_id") @db.Uuid
-  alertaVencimientoEnviada Boolean @default(false) @map("alerta_vencimiento_enviada")
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at")
+  id                       String   @id @default(uuid()) @db.Uuid
+  monitorId                String   @map("monitor_id") @db.Uuid
+  institucionId            String   @map("institucion_id") @db.Uuid
+  evaluadoId               String   @map("evaluado_id") @db.Uuid
+  planId                   String?  @map("plan_id") @db.Uuid
+  tipoMonitoreo            String   @map("tipo_monitoreo") @db.VarChar(20) // DOCENTE | DIRECTIVO
+  numeroVisita             Int      @map("numero_visita") @db.SmallInt
+  fechaProgramada          DateTime @map("fecha_programada") @db.Date
+  horaInicio               String   @map("hora_inicio") @db.VarChar(8) // HH:mm:ss
+  detalles                 String?  @db.Text
+  estado                   String   @default("PROGRAMADO") @db.VarChar(20) // PROGRAMADO | EN_PROCESO | COMPLETADO | REPROGRAMADO | CANCELADO | ANULADO
+  modalidad                String   @db.VarChar(20) // EBR | EBA | EBE | CEPTRO
+  nivelEducativo           String   @map("nivel_educativo") @db.VarChar(100)
+  creadoPorId              String?  @map("creado_por_id") @db.Uuid
+  alertaVencimientoEnviada Boolean  @default(false) @map("alerta_vencimiento_enviada")
+  createdAt                DateTime @default(now()) @map("created_at")
+  updatedAt                DateTime @default(now()) @updatedAt @map("updated_at")
 
   monitor     Especialista              @relation(fields: [monitorId], references: [id], onDelete: Restrict)
   institucion InstitucionEducativa      @relation(fields: [institucionId], references: [id], onDelete: Restrict)
@@ -756,23 +760,24 @@ model SolicitudReprogramacion {
 // ==========================================
 
 model FichaMonitoreo {
-  id              String    @id @default(uuid()) @db.Uuid
-  cronogramaId    String    @unique @map("cronograma_id") @db.Uuid
-  plantillaId     String    @map("plantilla_id") @db.Uuid
-  fichaContextoId String    @unique @map("ficha_contexto_id") @db.Uuid
-  anioAcademico   Int       @map("anio_academico")
-  puntajeTotal    Int       @map("puntaje_total") @db.SmallInt
-  promedio        Decimal   @db.Decimal(4, 2)
-  nivelLogro      String    @map("nivel_logro") @db.VarChar(20) // INICIO | EN_PROCESO | LOGRO_ESPERADO | LOGRO_DESTACADO
-  estado          String    @default("BORRADOR") @db.VarChar(20) // BORRADOR | FINALIZADO | MIGRADA
-  creadoPorId     String?   @map("creado_por_id") @db.Uuid
-  finalizadaPorId String?   @map("finalizada_por_id") @db.Uuid
-  observaciones   String?   @db.Text
-  sugerencias     String?   @db.Text
-  compromisos     String?   @db.Text
-  evidenciaGeneral String?  @map("evidencia_general") @db.Text
-  createdAt       DateTime  @default(now()) @map("created_at")
-  finalizadaAt    DateTime? @map("finalizada_at")
+  id               String    @id @default(uuid()) @db.Uuid
+  cronogramaId     String    @unique @map("cronograma_id") @db.Uuid
+  plantillaId      String    @map("plantilla_id") @db.Uuid
+  fichaContextoId  String    @unique @map("ficha_contexto_id") @db.Uuid
+  anioAcademico    Int       @map("anio_academico")
+  puntajeTotal     Int       @map("puntaje_total") @db.SmallInt
+  promedio         Decimal   @db.Decimal(4, 2)
+  nivelLogro       String    @map("nivel_logro") @db.VarChar(20) // INICIO | EN_PROCESO | LOGRO_ESPERADO | LOGRO_DESTACADO
+  estado           String    @default("BORRADOR") @db.VarChar(20) // BORRADOR | FINALIZADO | MIGRADA
+  creadoPorId      String?   @map("creado_por_id") @db.Uuid
+  finalizadaPorId  String?   @map("finalizada_por_id") @db.Uuid
+  observaciones    String?   @db.Text
+  sugerencias      String?   @db.Text
+  compromisos      String?   @db.Text
+  evidenciaGeneral String?   @map("evidencia_general") @db.Text
+  correoEnviado    Boolean   @default(false) @map("correo_enviado")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  finalizadaAt     DateTime? @map("finalizada_at")
 
   cronograma          Cronograma                @relation(fields: [cronogramaId], references: [id], onDelete: Restrict)
   plantilla           PlantillaMonitoreo        @relation(fields: [plantillaId], references: [id], onDelete: Restrict)
@@ -782,6 +787,7 @@ model FichaMonitoreo {
   respuestasDesempeno FichaRespuestaDesempeno[]
   respuestasAspecto   FichaRespuestaAspecto[]
   respuestasEjeItem   FichaRespuestaEjeItem[]
+  firmas              FichaFirma[]
 
   @@index([plantillaId])
   @@index([estado])
@@ -887,3 +893,22 @@ model SolicitudVisita {
   @@map("solicitudes_visita")
 }
 
+// ==========================================
+// 12. FIRMAS DE FICHAS (feature/firmas)
+// ==========================================
+
+model FichaFirma {
+  id          String   @id @default(uuid()) @db.Uuid
+  fichaId     String   @map("ficha_id") @db.Uuid
+  firmanteId  String   @map("firmante_id") @db.Uuid
+  rolFirmante String   @map("rol_firmante") @db.VarChar(20) // EVALUADOR | EVALUADO
+  imagenUrl   String?  @map("imagen_url") @db.Text
+  ipAddress   String?  @map("ip_address") @db.VarChar(64)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  ficha    FichaMonitoreo @relation(fields: [fichaId], references: [id], onDelete: Cascade)
+  firmante Usuario        @relation(fields: [firmanteId], references: [id], onDelete: Restrict)
+
+  @@unique([fichaId, rolFirmante])
+  @@map("ficha_firmas")
+}

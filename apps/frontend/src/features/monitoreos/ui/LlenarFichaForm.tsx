@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useUser } from '@entities/model-user';
 import { Card } from '@/shared/ui/card';
 import { AvisoDeError } from '@shared/ui/AvisoDeError';
 import { useHidratacionDeFicha } from '../hooks/use-hidratacion-de-ficha';
@@ -8,6 +9,7 @@ import type { Cronograma } from '@/entities/model-cronogramas';
 import type { Plantilla } from '@/entities/model-plantillas';
 import { useReactToPrint } from 'react-to-print';
 import { FichaPrintable } from '@/widgets/reportes/ui/FichaPrintable';
+import { useQuery } from '@tanstack/react-query';
 import { useRef } from 'react';
 import { safeSetLocalStorage } from '@/shared/lib/utils';
 import { useFormularioFicha } from '../hooks/use-formulario-ficha';
@@ -28,6 +30,8 @@ import { ConsolidadoSeccion } from './ficha/ConsolidadoSeccion';
 import { PieDeFicha } from './ficha/PieDeFicha';
 import { VistaPreviaEvidencia } from './ficha/VistaPreviaEvidencia';
 import { CabeceraFicha, type PestanaFicha } from './ficha/CabeceraFicha';
+import { firmasApi } from '@/shared/api/firmas.api';
+import { toast } from 'sonner';
 
 
 /**
@@ -55,6 +59,7 @@ export const LlenarFichaForm = ({
   onFinalize,
   initialState,
 }: LlenarFichaFormProps) => {
+  const { user } = useUser();
   // Una sola pieza de estado; los actualizadores conservan la firma de
   // `useState` para que los sitios de uso del formulario no cambien.
   const {
@@ -125,10 +130,19 @@ export const LlenarFichaForm = ({
     onFinalize,
   });
 
+  const isCompleted = visit?.estado === 'COMPLETADO';
+  const isDirectivo = template?.tipoMonitoreo.toUpperCase().includes('DIRECTIVO');
+
+  const { data: firmasData, refetch: refetchFirmas } = useQuery({
+    queryKey: ['ficha-firmas', visit?.id],
+    queryFn: () => firmasApi.getFirmasDeFicha(visit.id),
+    enabled: !!visit?.id && isCompleted,
+    staleTime: 30_000,
+  });
+
   if (!isOpen || !visit || !template) return null;
 
-  const isCompleted = visit.estado === 'COMPLETADO';
-  const isDirectivo = template.tipoMonitoreo.toUpperCase().includes('DIRECTIVO');
+
 
   /**
    * Calificación consolidada que se muestra al cerrar la ficha.
@@ -158,6 +172,23 @@ export const LlenarFichaForm = ({
     : null;
 
   const currentFichaState = aDatosFicha(estado, visit.tipo);
+
+
+  const rolEsperado = user?.id === visit.evaluadoId ? 'EVALUADO' : 'EVALUADOR';
+  const yaFirmo = firmasData?.firmas?.some(f => f.rolFirmante === rolEsperado);
+
+  const handleFirmar = async () => {
+    try {
+      await firmasApi.signFicha(visit.id, {
+        rolFirmante: user?.id === visit.evaluadoId ? 'EVALUADO' : 'EVALUADOR',
+        consentimiento: true,
+      });
+      toast.success('Ficha firmada con éxito');
+      refetchFirmas();
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'Error al firmar la ficha');
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 overflow-y-auto animate-in fade-in duration-200">
@@ -288,6 +319,8 @@ export const LlenarFichaForm = ({
           onCerrar={onClose}
           onGuardarBorrador={guardarBorrador}
           onFinalizar={finalizar}
+          onFirmar={isCompleted ? handleFirmar : undefined}
+          yaFirmo={yaFirmo}
         />
       </Card>
 

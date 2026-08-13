@@ -6,9 +6,9 @@ import { usePlantillasList } from '@entities/model-plantillas/use-plantillas-api
 import { useFichasCompletadas } from '@entities/model-reportes';
 import { PageHeader } from '@shared/ui/pageHeader';
 import { ReportesStats, ReportesGrid, type BackendReportVisit } from '@widgets/reportes';
-import { MODALIDAD_NIVEL_MAP, RoleCode } from '@sistema-monitoreo/shared-contracts';
+import { MODALIDAD_NIVEL_MAP, RoleCode, Capability } from '@sistema-monitoreo/shared-contracts';
 import { useUser } from '@entities/model-user';
-import { useScope } from '@shared/auth';
+import { useScope, useCan } from '@shared/auth';
 import {
   reportesPropios,
   reportesVisibles,
@@ -31,8 +31,11 @@ export const ReportesPage = () => {
   // fichas, aunque no comparta con los monitores de campo el resto de reglas
   // (por ejemplo, sí decide sobre reprogramaciones y ellos no).
   const esAutorDeFichas = isMonitorCampo || user?.role === RoleCode.DIRECTOR_INSTITUCION;
+  
+  const { can } = useCan();
+  const canReadCronogramas = can(Capability.MONITOREO_READ);
 
-  const { cronogramas } = useCronogramasData();
+  const { cronogramas } = useCronogramasData(canReadCronogramas);
   const { data: plantillas = [] } = usePlantillasList();
   const { data: fichasCompletadasData } = useFichasCompletadas({ page: 1, limit: 50 });
 
@@ -82,6 +85,7 @@ export const ReportesPage = () => {
         monitorId: f.especialistaId,
         institucionId: f.institucionId,
         evaluadoId: f.evaluadoId,
+        correoEnviado: f.correoEnviado,
       }));
 
       // Visibilidad por identificador, no por nombre. Las reglas viven en

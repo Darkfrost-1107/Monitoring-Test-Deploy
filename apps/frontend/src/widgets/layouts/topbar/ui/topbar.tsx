@@ -6,14 +6,13 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  DropdownMenuSeparator,
   DropdownMenuLabel,
 } from '@shared/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@shared/ui/avatar';
 import { Button } from '@shared/ui/button';
 import { HelpCircle, LogOut, ChevronDown, Menu, ChevronRight } from 'lucide-react';
 import { NotificationsBell } from '@features/notifications';
-import { getPageTitle, ROOT_CRUMB } from '../config/breadcrumbs'; // Importamos la lógica
+import { getPageTitle, ROOT_CRUMB } from '../config/breadcrumbs';
 
 interface TopbarProps {
   onOpenMobileSidebar?: () => void;
@@ -104,7 +103,6 @@ export const Topbar = ({ onOpenMobileSidebar }: TopbarProps) => {
                 {user ? ROLE_LABELS[user.role] : ''}
               </p>
             </DropdownMenuLabel>
-            <DropdownMenuSeparator className="sm:hidden block" />
             <DropdownMenuItem
               onClick={logout}
               className="cursor-pointer text-destructive focus:bg-destructive/10 focus:text-destructive flex items-center gap-2"

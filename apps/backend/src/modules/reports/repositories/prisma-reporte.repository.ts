@@ -70,6 +70,13 @@ export class PrismaReporteRepository implements ReporteRepository {
               },
             },
           },
+          firmas: {
+            include: {
+              firmante: {
+                include: { persona: { select: { nombres: true, apellidos: true } } },
+              },
+            },
+          },
         },
         skip,
         take: limit,
@@ -174,6 +181,13 @@ export class PrismaReporteRepository implements ReporteRepository {
               include: { persona: { select: { nombres: true, apellidos: true } } },
             },
             monitor: {
+              include: { persona: { select: { nombres: true, apellidos: true } } },
+            },
+          },
+        },
+        firmas: {
+          include: {
+            firmante: {
               include: { persona: { select: { nombres: true, apellidos: true } } },
             },
           },

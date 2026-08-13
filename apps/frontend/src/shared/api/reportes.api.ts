@@ -31,4 +31,9 @@ export const reportesApi = {
     request<IReporteResumenIE[]>(`/api/reportes/resumen-ie?anio=${anio}`),
 
   fichaHTMLUrl: (id: string) => `${API_BASE_URL}/api/reportes/ficha/${id}/export-html`,
+  
+  enviarFichaCorreo: (id: string) =>
+    request<{ success: boolean; message: string }>(`/api/reportes/ficha/${id}/enviar-correo`, {
+      method: 'POST',
+    }),
 };

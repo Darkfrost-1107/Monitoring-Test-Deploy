@@ -17,9 +17,16 @@ export interface IReporteFicha {
   promedio: number;
   puntajeTotal: number;
   estado: EstadoFicha;
+  correoEnviado?: boolean;
   fechaEjecucion: string;
   modalidad: string;
   nivel: string;
+  firmas?: {
+    rolFirmante: string;
+    firmanteNombre: string;
+    imagenUrl: string;
+    fechaFirma: string;
+  }[];
 }
 
 export interface IReporteResumenIE {

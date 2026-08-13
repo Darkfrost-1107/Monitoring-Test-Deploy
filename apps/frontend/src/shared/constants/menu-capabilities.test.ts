@@ -121,13 +121,12 @@ describe('MENU_CAPABILITIES', () => {
 });
 
 describe('Discrepancias entre la matriz de menú y las capacidades', () => {
-  it('invitado ve cinco ítems que el backend le rechazaría', () => {
+  it('invitado ve cuatro ítems que el backend le rechazaría', () => {
     // Un invitado sólo tiene dashboard:read más las capacidades base. La matriz
-    // le concede además instituciones, docentes y especialistas: al hacer clic
+    // le concede además instituciones y sus sub-secciones: al hacer clic
     // recibe 403 de PermissionsGuard. Es la discrepancia real, y de impacto
     // visible: navegación rota para un rol de consulta.
     expect(concedidosSinRespaldo(RoleCode.INVITADO).sort()).toEqual([
-      'especialistas',
       'instituciones',
       'instituciones_coordinadores',
       'instituciones_docentes',
@@ -177,7 +176,7 @@ describe('Discrepancias entre la matriz de menú y las capacidades', () => {
 
     expect(resumen).toMatchInlineSnapshot(`
       {
-        "invitado": 5,
+        "invitado": 4,
         "jefe_area": 1,
       }
     `);

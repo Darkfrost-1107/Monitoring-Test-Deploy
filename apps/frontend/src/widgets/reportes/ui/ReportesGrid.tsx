@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { Cronograma } from '@/entities/model-cronogramas';
 import type { Plantilla } from '@/entities/model-plantillas';
 import { usePlantilla } from '@/entities/model-plantillas/use-plantillas-api';
@@ -10,6 +10,8 @@ import { FiltrosReportes } from './grid/FiltrosReportes';
 import { TarjetaReporte } from './grid/TarjetaReporte';
 import { TablaReportes } from './grid/TablaReportes';
 import { FichaNoDisponible, SinReportes } from './grid/EstadosDelListado';
+import { reportesApi } from '@/shared/api/reportes.api';
+import { toast } from 'sonner';
 
 /**
  * Listado de fichas de monitoreo completadas.
@@ -24,6 +26,7 @@ export interface BackendReportVisit extends Cronograma {
   nivelLogro?: string;
   promedio?: number;
   puntajeTotal?: number;
+  correoEnviado?: boolean;
 }
 
 interface ReportesGridProps {
@@ -54,6 +57,7 @@ export const ReportesGrid = ({
   ...filtros
 }: ReportesGridProps) => {
   const [visitaAbierta, setVisitaAbierta] = useState<BackendReportVisit | null>(null);
+  const queryClient = useQueryClient();
 
   const {
     data: fichaDelBackend,
@@ -106,6 +110,21 @@ export const ReportesGrid = ({
     setVisitaAbierta(visita);
   };
 
+  const [enviandoCorreoId, setEnviandoCorreoId] = useState<string | null>(null);
+  const handleEnviarCorreo = async (visita: BackendReportVisit, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEnviandoCorreoId(visita.id);
+    try {
+      await reportesApi.enviarFichaCorreo(visita.id);
+      toast.success('Correo enviado con éxito.');
+      await queryClient.invalidateQueries({ queryKey: ['reportes', 'fichas-completadas'] });
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'Error al enviar el correo.');
+    } finally {
+      setEnviandoCorreoId(null);
+    }
+  };
+
   const fichaLista = !!visitaAbierta && !!plantillaActiva && !!estadoDeLaFicha;
 
   return (
@@ -123,6 +142,8 @@ export const ReportesGrid = ({
               isEvaluatedView={isEvaluatedView}
               onAbrir={() => setVisitaAbierta(visita)}
               onDescargar={(e) => abrirParaDescargar(visita, e)}
+              onEnviarCorreo={(e) => handleEnviarCorreo(visita, e)}
+              isEnviandoCorreo={enviandoCorreoId === visita.id}
             />
           ))}
         </div>

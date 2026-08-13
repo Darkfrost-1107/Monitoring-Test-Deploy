@@ -64,4 +64,5 @@ export const MENU_CAPABILITIES: Record<MenuItem, Capability | null> = {
 
   // Pantalla de preferencias de la propia cuenta: no exige capacidad.
   configuracion: null,
+  mi_firma: null,
 };

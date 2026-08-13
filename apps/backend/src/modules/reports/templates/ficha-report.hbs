@@ -218,25 +218,26 @@
   </table>
 
   <!-- FIRMAS -->
-  <table class="signatures">
+  <div class="section-title text-center" style="margin-top: 40px;">FIRMAS DIGITALES:</div>
+  <table class="signatures" style="width: 100%; text-align: center; margin-top: 20px;">
     <tr>
-      <td width="33%">
-        <div class="signature-line">
-          Firma del Docente<br>
-          DNI: {{docente.dni}}
+      {{#each firmas}}
+      <td style="border: none; vertical-align: bottom; padding: 10px;">
+        <div style="margin-bottom: 5px;">
+          <img src="{{this.imagenB64}}" style="max-height: 100px; max-width: 200px; display: block; margin: 0 auto;" alt="Firma">
+        </div>
+        <div class="signature-line" style="border-top: 1px solid #000; width: 250px; margin: 0 auto; padding-top: 5px; font-size: 11px;">
+          <b>Firma del {{this.rolFirmante}}</b><br>
+          {{this.firmanteNombre}}<br>
+          <span style="font-size: 9px; color: #4b5563;">Firmado el {{this.fechaFirma}}</span>
         </div>
       </td>
-      <td width="34%">
-        <div class="signature-line">
-          Firma del Director(a) IE
-        </div>
+      {{/each}}
+      {{#unless firmas}}
+      <td style="border: none; padding: 20px;">
+        <span style="color: #6b7280; font-style: italic;">Sin firmas registradas.</span>
       </td>
-      <td width="33%">
-        <div class="signature-line">
-          Firma del Especialista UGEL<br>
-          DNI: {{monitor.dni}}
-        </div>
-      </td>
+      {{/unless}}
     </tr>
   </table>
 

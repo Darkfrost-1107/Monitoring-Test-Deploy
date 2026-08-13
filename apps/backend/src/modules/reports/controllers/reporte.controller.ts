@@ -9,6 +9,7 @@ import {
   Res,
   UseGuards,
   ForbiddenException,
+  Post,
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { ReporteService } from '../services/reporte.service.js';
@@ -55,6 +56,15 @@ export class ReporteController {
   ): Promise<void> {
     const html = await this.service.exportarFichaHTML(id, this.toSession(req));
     res.send(html);
+  }
+
+  @Post('ficha/:id/enviar-correo')
+  @RequirePermissions('reports:read')
+  async enviarFichaCorreo(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<{ success: boolean; message: string }> {
+    return this.service.enviarFichaPorCorreo(id, this.toSession(req));
   }
 
   @Get('ficha/:id/pdf')

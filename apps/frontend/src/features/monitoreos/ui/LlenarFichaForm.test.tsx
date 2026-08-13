@@ -1,6 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { UserProvider } from '@entities/model-user/context';
+import type { ReactNode } from 'react';
 import type { Cronograma } from '@entities/model-cronogramas';
 import type { Plantilla } from '@entities/model-plantillas';
 import type { DatosFicha } from '../lib/ficha-estado';
@@ -31,6 +34,20 @@ vi.mock('../hooks/use-docente-evaluado', () => ({
 }));
 
 vi.mock('react-to-print', () => ({ useReactToPrint: () => () => {} }));
+
+vi.mock('@/shared/api/firmas.api', () => ({
+  firmasApi: {
+    getFirmasDeFicha: vi.fn().mockResolvedValue({ firmas: [] }),
+    signFicha: vi.fn().mockResolvedValue({ success: true }),
+  },
+}));
+
+vi.mock('@/shared/api/auth.api', () => ({
+  authApi: {
+    logout: vi.fn().mockResolvedValue(undefined),
+    changePassword: vi.fn().mockResolvedValue({ ok: true }),
+  },
+}));
 
 const { LlenarFichaForm } = await import('./LlenarFichaForm');
 
@@ -96,21 +113,32 @@ const FICHA_COMPLETA: DatosFicha = {
   observacionesEjeItem: {},
 } as DatosFicha;
 
+const Wrapper = ({ children }: { children: ReactNode }) => {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return (
+    <QueryClientProvider client={queryClient}>
+      <UserProvider>{children}</UserProvider>
+    </QueryClientProvider>
+  );
+};
+
 const montar = (opciones: { initialState?: DatosFicha; visit?: Partial<Cronograma> } = {}) => {
   const onFinalize = vi.fn();
   const onSave = vi.fn();
   const onClose = vi.fn();
 
   render(
-    <LlenarFichaForm
-      isOpen
-      onClose={onClose}
-      visit={{ ...VISITA, ...opciones.visit }}
-      template={PLANTILLA}
-      onSave={onSave}
-      onFinalize={onFinalize}
-      initialState={opciones.initialState}
-    />,
+    <Wrapper>
+      <LlenarFichaForm
+        isOpen
+        onClose={onClose}
+        visit={{ ...VISITA, ...opciones.visit }}
+        template={PLANTILLA}
+        onSave={onSave}
+        onFinalize={onFinalize}
+        initialState={opciones.initialState}
+      />
+    </Wrapper>,
   );
 
   return { onFinalize, onSave, onClose };

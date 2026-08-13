@@ -13,6 +13,7 @@ import { SuperadminPanel } from '@/pages/superadmin/SuperadminPanel';
 import { SuperadminCreatePage } from '@/pages/superadmin/SuperadminCreatePage';
 import { ProtectedRoute } from '@shared/ui/ProtectedRoute';
 import { FocosAtencionPage } from '@/pages/focosAtencion/FocosAtencionPage';
+import { MiFirmaPage } from '@/features/firmas/ui/MiFirmaPage';
 
 export const router = createBrowserRouter([
   {
@@ -28,6 +29,10 @@ export const router = createBrowserRouter([
       {
         element: <ProtectedRoute permission="focos_atencion" />,
         children: [{ path: 'focos-atencion', element: <FocosAtencionPage /> }],
+      },
+      {
+        element: <ProtectedRoute permission="mi_firma" />,
+        children: [{ path: 'mi-firma', element: <MiFirmaPage /> }],
       },
       {
         path: 'superadmin',

@@ -122,7 +122,7 @@ export const Sidebar = () => {
                 return {
                   ...item,
                   label: 'Fichas Completadas',
-                  path: '/monitoreo/reportes',
+                  path: '/reportes',
                 };
               }
             }

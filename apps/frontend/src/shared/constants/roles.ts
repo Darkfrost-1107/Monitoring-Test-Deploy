@@ -40,9 +40,10 @@ export type MenuItem =
   | 'configuracion'
   | 'superadmin'
   | 'superadmin_director'
-  | 'superadmin_jefe';
+  | 'superadmin_jefe'
+  | 'mi_firma';
 
-const BASE_PERMISSIONS: MenuItem[] = ['reportes'];
+const BASE_PERMISSIONS: MenuItem[] = ['reportes', 'mi_firma'];
 
 // La entrada `admin` se retiró aquí: concedía 22 de los 28 ítems de menú —el
 // conjunto más amplio del sistema— a un rol que el backend nunca podía emitir.
@@ -69,9 +70,9 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
     'focos_atencion',
     'solicitudes_visita',
     'reportes',
-    'monitoreo_reportes',
     'instituciones_padron',
     'instituciones_docentes',
+    'mi_firma',
   ],
 
   jefe_area: [
@@ -81,9 +82,9 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
     'monitoreo_cronograma',
     'monitoreo_calendario',
     'focos_atencion',
-    'solicitudes_visita',
     'reportes',
     'monitoreo_reportes',
+    'mi_firma',
   ],
 
   coordinador_pedagogico: [
@@ -95,6 +96,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
     'plantillas',
     'plantillas_ies',
     'reportes',
+    'mi_firma',
   ],
 
   jefe_taller: [
@@ -106,15 +108,16 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
     'plantillas',
     'plantillas_ies',
     'reportes',
+    'mi_firma',
   ],
 
   especialista: [
     'monitoreo',
     'monitoreo_calendario',
     'focos_atencion',
-    'solicitudes_visita',
     'reportes',
     'monitoreo_reportes',
+    'mi_firma',
   ],
 
   director_institucion: [
@@ -128,9 +131,9 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
     'plantillas_ies',
     'instituciones_docentes',
     'instituciones_coordinadores',
-    'instituciones_jefes_taller',
     'monitoreo_reportes',
     'reportes',
+    'mi_firma',
   ],
 
   docente: [...BASE_PERMISSIONS],
@@ -148,9 +151,9 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
     'instituciones_padron',
     'instituciones_docentes',
     'instituciones_coordinadores',
-    'especialistas',
     'reportes',
     'configuracion',
+    'mi_firma',
   ],
   superusuario: ['superadmin', 'superadmin_director', 'superadmin_jefe'],
 };
