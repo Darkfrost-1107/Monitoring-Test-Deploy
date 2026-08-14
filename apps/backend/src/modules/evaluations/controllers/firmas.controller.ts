@@ -11,6 +11,7 @@ import {
   UploadedFile,
   ParseUUIDPipe,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -161,8 +162,9 @@ export class FirmasController {
     } else if (personaId === ficha.cronograma.monitor?.personaId) {
       rolFirmante = 'EVALUADOR';
     } else {
-      // Fallback al valor enviado por el cliente (ej. Director IE)
-      rolFirmante = dto.rolFirmante ?? 'EVALUADO';
+      throw new ForbiddenException(
+        'Solo el evaluador o el evaluado asignados a esta ficha tienen la potestad de firmarla.',
+      );
     }
 
     // 2. Insertar la firma en la base de datos

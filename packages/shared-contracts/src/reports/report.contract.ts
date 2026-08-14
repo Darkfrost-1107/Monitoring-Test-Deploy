@@ -19,6 +19,9 @@ export interface IReporteFicha {
   estado: EstadoFicha;
   correoEnviado?: boolean;
   fechaEjecucion: string;
+  fechaProgramada?: string;
+  horaInicio?: string;
+  horaFin?: string;
   modalidad: string;
   nivel: string;
   firmas?: {

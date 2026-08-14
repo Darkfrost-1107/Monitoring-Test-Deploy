@@ -303,3 +303,31 @@ describe('LlenarFichaForm — carga inicial', () => {
     expect(screen.getByRole('button', { name: /Finalizar/i })).toBeInTheDocument();
   });
 });
+
+describe('LlenarFichaForm — flujo de firmas en ficha completada', () => {
+  it('muestra botón para firmar cuando el usuario es el evaluado asignado', async () => {
+    localStorage.setItem(
+      'user',
+      JSON.stringify({ id: 'u-1', docenteId: 'doc-1', role: 'docente' }),
+    );
+    montar({ visit: { estado: 'COMPLETADO', evaluadoId: 'doc-1' }, initialState: FICHA_COMPLETA });
+
+    const btn = await screen.findByRole('button', { name: /Firmar Ficha/i });
+    expect(btn).toBeInTheDocument();
+    expect(btn).not.toBeDisabled();
+  });
+
+  it('no muestra el botón de firmar para un usuario ajeno a la visita', () => {
+    localStorage.setItem(
+      'user',
+      JSON.stringify({ id: 'u-99', role: 'jefe_gestion', especialistaId: 'esp-99' }),
+    );
+    montar({
+      visit: { estado: 'COMPLETADO', evaluadoId: 'doc-1', monitorId: 'esp-1' },
+      initialState: FICHA_COMPLETA,
+    });
+
+    expect(screen.queryByRole('button', { name: /Firmar Ficha/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Cerrar Consulta/i })).toBeInTheDocument();
+  });
+});

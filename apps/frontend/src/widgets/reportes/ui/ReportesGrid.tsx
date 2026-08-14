@@ -27,6 +27,8 @@ export interface BackendReportVisit extends Cronograma {
   promedio?: number;
   puntajeTotal?: number;
   correoEnviado?: boolean;
+  horaInicio?: string;
+  horaFin?: string;
 }
 
 interface ReportesGridProps {

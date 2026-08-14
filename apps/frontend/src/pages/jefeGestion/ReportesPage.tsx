@@ -86,6 +86,8 @@ export const ReportesPage = () => {
         institucionId: f.institucionId,
         evaluadoId: f.evaluadoId,
         correoEnviado: f.correoEnviado,
+        horaInicio: f.horaInicio,
+        horaFin: f.horaFin,
       }));
 
       // Visibilidad por identificador, no por nombre. Las reglas viven en
@@ -196,14 +198,14 @@ export const ReportesPage = () => {
         <div>
           <PageHeader
             title={
-              isMyReportsPath
+              isEvaluatedView
                 ? 'Mis Reportes de Monitoreo'
                 : esAutorDeFichas
                   ? 'Fichas de Monitoreo Completadas'
                   : 'Fichas Completadas en Cuadrícula'
             }
             description={
-              isMyReportsPath
+              isEvaluatedView
                 ? 'Bandeja para visualizar y descargar las fichas técnicas de los monitoreos realizados a su persona.'
                 : esAutorDeFichas
                   ? 'Bandeja consolidada para auditar y descargar las fichas técnicas de monitoreo completadas por usted.'

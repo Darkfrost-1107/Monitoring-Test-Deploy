@@ -42,6 +42,11 @@ export function fromPrismaFichaReporte(f: FichaReportePayload): IReporteFicha {
     estado: f.estado as EstadoFicha,
     correoEnviado: f.correoEnviado,
     fechaEjecucion: f.createdAt.toISOString(),
+    fechaProgramada: f.cronograma.fechaProgramada
+      ? f.cronograma.fechaProgramada.toISOString().split('T')[0]
+      : undefined,
+    horaInicio: f.cronograma.horaInicio ?? undefined,
+    horaFin: f.finalizadaAt ? f.finalizadaAt.toISOString() : undefined,
     modalidad: f.cronograma.modalidad,
     nivel: f.cronograma.nivelEducativo,
     firmas: f.firmas?.map((firma) => ({
