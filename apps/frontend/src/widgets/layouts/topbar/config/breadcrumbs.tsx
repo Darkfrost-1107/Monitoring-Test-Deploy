@@ -13,6 +13,7 @@ export const BREADCRUMBS_MAP: Record<string, string> = {
   '/especialistas': 'Especialistas',
   '/plantillas': 'Catálogo de Plantillas',
   '/plantillas/nuevo': 'Registrar Plantilla',
+  '/reportes/analisis': 'Análisis de Desempeño',
   '/reportes': 'Reportes',
   '/configuracion': 'Configuración',
   '/superadmin/director/nuevo': 'Registrar Director UGEL', // Más específico primero

@@ -115,7 +115,11 @@ export const FichaPrintable = forwardRef<HTMLDivElement, FichaPrintableProps>(
         <Consolidado template={template} estado={fichaState} />
         <Evidencias estado={fichaState} />
 
-        <Firmas visita={visit} directorNombre={director.nombre || 'Director Institución'} />
+        <Firmas
+          visita={visit}
+          directorNombre={director.nombre || 'Director Institución'}
+          plantillaId={template.id}
+        />
         <PieDeDocumento visitaId={visit.id} />
       </div>
     );

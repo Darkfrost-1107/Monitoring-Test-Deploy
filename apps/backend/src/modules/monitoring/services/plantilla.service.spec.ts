@@ -115,6 +115,65 @@ describe('PlantillaService - ILA-0046', () => {
       };
       await expect(service.create(dto, sesionJefe)).rejects.toThrow(BadRequestException);
     });
+
+    /**
+     * La Ficha Docente EIB es una lista de cotejo de tres valores: No,
+     * Parcialmente, Sí. Antes acá se exigían cuatro niveles para todos los
+     * instrumentos, así que la plantilla EIB sólo pasaba agregando un cuarto
+     * nivel inventado y una entrada de rúbrica que duplicaba «Sí». La cantidad
+     * ahora la declara `VALORACIONES_POR_TIPO` en el contrato compartido.
+     */
+    const dtoEib = (
+      niveles: { nivelRomano: string }[],
+      rubrica: { nivelRomano: string }[],
+    ): any => ({
+      tipoMonitoreo: 'DOCENTE_EIB',
+      anioAcademico: new Date().getFullYear(),
+      baremo: 'Porcentual',
+      niveles: niveles.map((n, i) => ({
+        ...n,
+        denominacion: `N${i + 1}`,
+        rangoMin: i * 50,
+        color: '#000000',
+        orden: i + 1,
+      })),
+      desempenos: [
+        {
+          id: 'd1',
+          nombre: 'D1',
+          descripcionCorta: '',
+          orden: 1,
+          aspectos: [{ id: 'a1', descripcion: 'X', orden: 1 }],
+          rubrica: rubrica.map((r) => ({ ...r, descripcion: '' })),
+        },
+      ],
+    });
+
+    const TRES = [{ nivelRomano: 'I' }, { nivelRomano: 'II' }, { nivelRomano: 'III' }];
+    const CUATRO = [...TRES, { nivelRomano: 'IV' }];
+
+    it('acepta una plantilla EIB con tres niveles', async () => {
+      repo.create.mockResolvedValue({
+        ...plantillaVigente,
+        id: 'plantilla-eib',
+        tipoMonitoreo: 'DOCENTE_EIB' as const,
+        baremo: 'Porcentual' as const,
+      });
+
+      await expect(service.create(dtoEib(TRES, TRES), sesionJefe)).resolves.toBeDefined();
+    });
+
+    it('rechaza una plantilla EIB con un cuarto nivel', async () => {
+      await expect(service.create(dtoEib(CUATRO, CUATRO), sesionJefe)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('rechaza una rubrica EIB con una cuarta entrada', async () => {
+      await expect(service.create(dtoEib(TRES, CUATRO), sesionJefe)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
   });
 
   describe('update (regla ILA-0046)', () => {

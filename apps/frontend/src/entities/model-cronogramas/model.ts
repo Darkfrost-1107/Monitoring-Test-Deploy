@@ -7,7 +7,7 @@ export interface Cronograma {
   especialistaInitials: string;
   institucion: string;
   docenteDirectivo: string;
-  tipo: 'DOCENTE' | 'DIRECTIVO';
+  tipo: import('@sistema-monitoreo/shared-contracts').TipoMonitoreo;
   nroVisita: string;
   /** Declarado en el contrato compartido; no se redeclara acá. */
   estado: EstadoVisita;

@@ -25,6 +25,8 @@ export const MENU_CAPABILITIES: Record<MenuItem, Capability | null> = {
   // ── Panel y reportes ───────────────────────────────────────────────────────
   dashboard: Capability.DASHBOARD_READ,
   reportes: Capability.REPORTS_READ,
+  reportes_fichas: Capability.REPORTS_READ,
+  reportes_analisis: Capability.REPORTS_READ,
   focos_atencion: Capability.DASHBOARD_READ,
 
   // ── Monitoreo ──────────────────────────────────────────────────────────────

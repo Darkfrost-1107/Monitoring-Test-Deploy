@@ -45,7 +45,6 @@ export class RubricaNivelInput {
   nivelRomano!: 'I' | 'II' | 'III' | 'IV';
 
   @IsString()
-  @IsNotEmpty()
   descripcion!: string;
 }
 
@@ -69,7 +68,6 @@ export class DesempenoInput {
 
   @IsString()
   @IsNotEmpty()
-  @MaxLength(255)
   nombre!: string;
 
   @IsOptional()
@@ -116,8 +114,8 @@ export class EjeItemInput {
 
 export class CreatePlantillaDto {
   @IsString()
-  @IsIn(['DOCENTE', 'DIRECTIVO'])
-  tipoMonitoreo!: 'DOCENTE' | 'DIRECTIVO';
+  @IsIn(['DOCENTE', 'DIRECTIVO', 'DOCENTE_EIB'])
+  tipoMonitoreo!: 'DOCENTE' | 'DIRECTIVO' | 'DOCENTE_EIB';
 
   @Type(() => Number)
   @IsInt()
@@ -132,8 +130,13 @@ export class CreatePlantillaDto {
   @IsString()
   descripcion?: string;
 
+  /**
+   * Piso de tres: la Ficha Docente EIB es una lista de cotejo de tres valores.
+   * La cantidad exacta que corresponde a cada instrumento la verifica
+   * `validarReglas`, que la consulta al contrato compartido.
+   */
   @IsArray()
-  @ArrayMinSize(4)
+  @ArrayMinSize(3)
   @ValidateNested({ each: true })
   @Type(() => NivelCalificacionInput)
   niveles!: NivelCalificacionInput[];

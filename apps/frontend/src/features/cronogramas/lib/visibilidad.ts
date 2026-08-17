@@ -49,7 +49,7 @@ export interface CronogramaVisible {
   institucion: string;
   institucionId: string;
   docenteDirectivo: string;
-  tipo: 'DOCENTE' | 'DIRECTIVO';
+  tipo: import('@sistema-monitoreo/shared-contracts').TipoMonitoreo;
   modalidad?: string;
   nivel: string;
   /** Especialista asignado a la visita. */

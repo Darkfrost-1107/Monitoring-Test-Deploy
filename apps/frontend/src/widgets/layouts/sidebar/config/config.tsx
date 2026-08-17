@@ -122,8 +122,10 @@ export const SIDEBAR_CONFIG: MenuCategory[] = [
     id: 'reportes',
     label: 'Reportes',
     icon: <BarChart3 className="h-[18px] w-[18px]" />,
-    path: '/reportes',
-    children: [],
+    children: [
+      { id: 'reportes_fichas', label: 'Fichas Completadas', path: '/reportes' },
+      { id: 'reportes_analisis', label: 'Análisis de Desempeño', path: '/reportes/analisis' },
+    ],
   },
   {
     id: 'mi_firma',

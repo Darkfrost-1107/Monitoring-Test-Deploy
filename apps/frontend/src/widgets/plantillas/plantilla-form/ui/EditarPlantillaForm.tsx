@@ -5,6 +5,7 @@ import { useLemaDelAnio } from '@entities/model-lemas';
 import { validarLema } from '@features/plantillas/lib/campo-lema';
 import { PlantillaCabecera } from './PlantillaCabecera';
 import { PlantillaDesempenos } from './PlantillaDesempenos';
+import { PlantillaEibItems } from './PlantillaEibItems';
 import { PlantillaEjesItems } from './PlantillaEjesItems';
 import type { PlantillaFormState } from './PlantillaForm';
 
@@ -86,14 +87,21 @@ export const EditarPlantillaForm = ({ initialData, onCancel, onSubmit, isLoading
         isEditMode={true}
       />
 
-      <PlantillaDesempenos
-        desempenos={form.desempenos}
-        niveles={form.niveles}
-        onChange={(desempenos) => patch({ desempenos })}
-      />
+      {form.tipoMonitoreo === 'Monitoreo Docente EIB' ? (
+        <PlantillaEibItems
+          criterios={form.desempenos}
+          onChange={(desempenos) => patch({ desempenos })}
+        />
+      ) : (
+        <PlantillaDesempenos
+          desempenos={form.desempenos}
+          niveles={form.niveles}
+          onChange={(desempenos) => patch({ desempenos })}
+        />
+      )}
 
-      {/* Sólo el instrumento docente lleva esta sección. */}
-      {form.tipoMonitoreo !== 'Monitoreo Directivo' && (
+      {/* Sólo el instrumento docente regular lleva esta sección. */}
+      {form.tipoMonitoreo === 'Monitoreo Docente' && (
         <PlantillaEjesItems
           ejeItems={form.ejeItems}
           onChange={(ejeItems) => patch({ ejeItems })}

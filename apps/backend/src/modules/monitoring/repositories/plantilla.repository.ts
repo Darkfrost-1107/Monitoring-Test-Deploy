@@ -25,7 +25,7 @@ export abstract class PlantillaRepository {
   abstract findAll(filters?: {
     search?: string;
     anioAcademico?: number;
-    tipoMonitoreo?: 'DOCENTE' | 'DIRECTIVO';
+    tipoMonitoreo?: import('@sistema-monitoreo/shared-contracts').TipoPlantilla;
     estado?: 'Borrador' | 'Vigente' | 'Historico';
     rolAutorAlCrear?: RolAutorPlantilla;
     institucionId?: string | null;

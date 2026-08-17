@@ -15,10 +15,10 @@ import { SelectorNumeroVisita } from './SelectorNumeroVisita';
 const OPCIONES_ESTADO = ESTADOS_VISITA.map((estado) => ({ value: estado, label: estado }));
 
 const TIPOS = [
-  { valor: 'DOCENTE', rotulo: 'Docente' },
+  { valor: 'DOCENTE' as const, rotulo: 'Docente' },
   // «Director», no «Directivo»: un solo nombre para el cargo en todo el
   // sistema —padrón, designación, focos de atención y avisos—.
-  { valor: 'DIRECTIVO', rotulo: 'Director' },
+  { valor: 'DIRECTIVO' as const, rotulo: 'Director' },
 ] as const;
 
 interface Props {

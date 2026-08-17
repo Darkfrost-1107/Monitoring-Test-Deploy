@@ -48,7 +48,8 @@ export async function buildPlantilla(
   return {
     lema,
     id: plantilla.id,
-    tipoMonitoreo: plantilla.tipoMonitoreo as 'DOCENTE' | 'DIRECTIVO',
+    tipoMonitoreo:
+      plantilla.tipoMonitoreo as import('@sistema-monitoreo/shared-contracts').TipoPlantilla,
     anioAcademico: plantilla.anioAcademico,
     version: plantilla.version,
     baremo: plantilla.baremo as 'Vigente' | 'Porcentual',

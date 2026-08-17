@@ -46,6 +46,10 @@ export const ReportesPage = lazy(() =>
   import('./ReportesPage').then((m) => ({ default: m.ReportesPage })),
 );
 
+export const AnalisisDesempenoPage = lazy(() =>
+  import('./AnalisisDesempenoPage').then((m) => ({ default: m.AnalisisDesempenoPage })),
+);
+
 export const SolicitudesVisitaPage = lazy(() =>
   import('./SolicitudesVisitaPage').then((m) => ({ default: m.SolicitudesVisitaPage })),
 );

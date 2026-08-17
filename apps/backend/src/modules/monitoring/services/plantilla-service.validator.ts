@@ -1,5 +1,6 @@
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import type { IPlantilla, RolAutorPlantilla } from '@sistema-monitoreo/shared-contracts';
+import { nivelesRomanosDe } from '@sistema-monitoreo/shared-contracts';
 import type { CreatePlantillaDto } from '../dto/create-plantilla.dto.js';
 import { RoleCode } from '../../../common/enums/role.enum.js';
 import type { SessionUser } from '../../../shared/types/session-user.js';
@@ -13,19 +14,31 @@ export function validarAnioAcademico(anioAcademico: number): void {
   }
 }
 
+/**
+ * Cuántos niveles debe declarar la plantilla, según su instrumento.
+ *
+ * Antes eran cuatro para todos. La Ficha Docente EIB es una lista de cotejo de
+ * tres valores —No, Parcialmente, Sí— y para pasar por acá se le agregaba un
+ * cuarto nivel inventado. La cantidad la declara el contrato compartido, que es
+ * lo que el frontend consulta también.
+ */
 export function validarReglas(dto: CreatePlantillaDto): void {
   validarAnioAcademico(dto.anioAcademico);
+
+  const esperados = nivelesRomanosDe(dto.tipoMonitoreo);
+  const rotulo = esperados.join(', ');
+
   const nivelesSet = new Set(dto.niveles.map((n) => n.nivelRomano));
-  if (nivelesSet.size !== 4) {
+  if (nivelesSet.size !== esperados.length) {
     throw new BadRequestException(
-      'La plantilla debe tener exactamente 4 niveles (I, II, III, IV).',
+      `La plantilla debe tener exactamente ${esperados.length} niveles (${rotulo}).`,
     );
   }
   for (const d of dto.desempenos) {
     const rubricaSet = new Set(d.rubrica.map((r) => r.nivelRomano));
-    if (rubricaSet.size !== 4) {
+    if (rubricaSet.size !== esperados.length) {
       throw new BadRequestException(
-        `El desempeno "${d.nombre}" debe tener rubrica para los 4 niveles (I, II, III, IV).`,
+        `El desempeno "${d.nombre}" debe tener rubrica para los ${esperados.length} niveles (${rotulo}).`,
       );
     }
   }

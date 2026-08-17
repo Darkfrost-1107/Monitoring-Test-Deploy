@@ -6,7 +6,11 @@ import { Spinner } from '@shared/ui/Spinner';
 import { EditarPlantillaForm } from '@widgets/plantillas';
 import type { PlantillaFormState } from '@widgets/plantillas';
 import { usePlantilla, useActualizarPlantilla } from '@entities/model-plantillas/use-plantillas-api';
-import { NIVELES_ROMANOS } from '@entities/model-plantillas';
+import {
+  descriptorPorDefecto,
+  normalizarEscala,
+  romanosDeInstrumento,
+} from '@entities/model-plantillas/escala-por-defecto';
 import { lemasApi } from '@entities/model-lemas';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -25,14 +29,17 @@ export const PlantillaEditPage = () => {
       anioAcademico: plantilla.anioAcademico,
       lema: plantilla.lema ?? '',
       baremo: plantilla.baremo,
-      niveles: plantilla.niveles,
+      niveles: normalizarEscala(plantilla.niveles, plantilla.tipoMonitoreo),
       desempenos: plantilla.desempenos.map((d) => ({
         ...d,
         preguntaExtra: d.preguntaExtra ?? '',
         rubrica:
           d.rubrica && d.rubrica.length > 0
             ? d.rubrica
-            : NIVELES_ROMANOS.map((nivel) => ({ nivel, descripcion: '' })),
+            : romanosDeInstrumento(plantilla.tipoMonitoreo).map((nivel) => ({
+                nivel,
+                descripcion: '',
+              })),
       })),
       ejeItems: (plantilla.ejesItems || []).map((item) => ({
         id: item.id,
@@ -76,17 +83,23 @@ export const PlantillaEditPage = () => {
               descripcionCorta: d.descripcionCorta,
               preguntaExtra: d.preguntaExtra || undefined,
               orden: i + 1,
-              aspectos: d.aspectos
-                .filter((a) => a.descripcion.trim() !== '')
+              aspectos: (d.aspectos ?? [])
+                .filter((a) => a && a.descripcion && a.descripcion.trim() !== '')
                 .map((a, ai) => ({
                   id: a.id,
                   descripcion: a.descripcion,
                   orden: ai + 1,
                 })),
-              rubrica: (d.rubrica ?? []).map((r) => ({
-                nivelRomano: r.nivel,
-                descripcion: r.descripcion,
-              })),
+              /** Una entrada por nivel que el instrumento otorga: ver `descriptorPorDefecto`. */
+              rubrica: romanosDeInstrumento(data.tipoMonitoreo).map((nivel) => {
+                const declarada = d.rubrica?.find((r) => r.nivel === nivel);
+                return {
+                  nivelRomano: nivel,
+                  descripcion:
+                    declarada?.descripcion?.trim() ||
+                    descriptorPorDefecto(data.tipoMonitoreo, nivel),
+                };
+              }),
             })),
           ejeItems: (data.ejeItems ?? []).map((item) => ({
             numero: item.numero,

@@ -1,3 +1,19 @@
+/**
+ * Tipo de una VISITA programada: a quién se monitorea.
+ *
+ * ── Por qué no incluye DOCENTE_EIB ──
+ * EIB no es una clase de visita, es un INSTRUMENTO. Un monitoreo docente puede
+ * llevar la ficha regular y/o la Ficha Docente EIB, de modo que el instrumento
+ * lo declara la plantilla de cada ficha —`TipoPlantilla`— y no el cronograma.
+ * El esquema ya lo dice así (`// DOCENTE | DIRECTIVO` en `cronogramas`) y la
+ * pantalla de programación sólo ofrece estos dos.
+ *
+ * Mientras este tipo admitía el tercer valor, nada distinguía «tipo de visita»
+ * de «instrumento»: el mismo campo significaba una cosa u otra según de dónde
+ * viniera el dato, y el código lo resolvía olfateando cadenas —`includes('EIB')`
+ * en catorce archivos, incluido el NOMBRE de la plantilla—. Quitarlo hace que el
+ * compilador marque cada sitio que confundía las dos cosas.
+ */
 export type TipoMonitoreo = 'DOCENTE' | 'DIRECTIVO';
 
 /**

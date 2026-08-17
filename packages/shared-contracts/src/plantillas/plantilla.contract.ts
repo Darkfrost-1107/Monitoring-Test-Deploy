@@ -1,4 +1,4 @@
-export type TipoPlantilla = 'DOCENTE' | 'DIRECTIVO';
+export type TipoPlantilla = 'DOCENTE' | 'DIRECTIVO' | 'DOCENTE_EIB';
 
 export type EstadoPlantilla = 'Borrador' | 'Vigente' | 'Historico';
 
@@ -7,6 +7,64 @@ export type NivelRomano = 'I' | 'II' | 'III' | 'IV';
 export type Baremo = 'Vigente' | 'Porcentual';
 
 export type ModoVersionado = 'IN_PLACE' | 'VERSIONADO';
+
+/**
+ * Cuántas valoraciones declara la escala de cada instrumento.
+ *
+ * ── Por qué no son cuatro siempre ──
+ * Las rúbricas docente y directiva puntúan de I a IV. La Ficha Docente EIB no
+ * puntúa: es una **lista de cotejo de tres valores** —No, Parcialmente, Sí—.
+ *
+ * Hasta ahora el sistema exigía cuatro niveles en cinco lugares distintos: el
+ * zod del formulario, los dos DTO de plantillas y las dos reglas de
+ * `validarReglas` (niveles y rúbrica de cada desempeño). La plantilla EIB no
+ * podía guardarse con tres, así que se le agregó un cuarto nivel inventado
+ * —«Destacado»— y una entrada de rúbrica que duplicaba «Sí».
+ *
+ * Ese relleno nunca fue visible ni editable: el editor de escala para EIB
+ * muestra tres filas fijas y la pantalla de calificación ofrece tres botones.
+ * Era un nivel que existía sólo para satisfacer a los validadores y que después
+ * había que filtrar en cada consolidado para que no apareciera con 0 ítems.
+ *
+ * De ahí que la cantidad se declare acá, del lado del contrato: es el único
+ * lugar que el backend y el frontend comparten, y las cinco validaciones ahora
+ * preguntan en vez de asumir.
+ */
+export const VALORACIONES_POR_TIPO: Record<TipoPlantilla, number> = {
+  DOCENTE: 4,
+  DIRECTIVO: 4,
+  DOCENTE_EIB: 3,
+};
+
+/** Los cuatro niveles romanos, en orden. El frontend tiene su propia copia. */
+const ROMANOS: readonly NivelRomano[] = ['I', 'II', 'III', 'IV'] as const;
+
+/**
+ * A quién se monitorea con este instrumento.
+ *
+ * El instrumento determina el tipo de visita sin ambigüedad: la ficha docente
+ * regular y la EIB son las dos de un monitoreo docente. Vive en el contrato
+ * porque la relación entre `TipoPlantilla` y `TipoMonitoreo` es del dominio, y
+ * la consultan los dos lados —el backend al validar qué plantilla sirve para una
+ * visita, el frontend al presentar las filas de reportes—.
+ */
+export function tipoDeVisitaDe(instrumento: TipoPlantilla | undefined): 'DOCENTE' | 'DIRECTIVO' {
+  return instrumento === 'DIRECTIVO' ? 'DIRECTIVO' : 'DOCENTE';
+}
+
+/** Cuántas valoraciones declara la escala de este instrumento. */
+export function valoracionesDe(tipo: TipoPlantilla): number {
+  return VALORACIONES_POR_TIPO[tipo] ?? ROMANOS.length;
+}
+
+/**
+ * Los niveles romanos que este instrumento puede otorgar, en orden.
+ *
+ * Para la EIB son I, II y III: el IV no es una valoración de la lista de cotejo.
+ */
+export function nivelesRomanosDe(tipo: TipoPlantilla): NivelRomano[] {
+  return ROMANOS.slice(0, valoracionesDe(tipo));
+}
 
 /**
  * Quién es dueño de la plantilla.

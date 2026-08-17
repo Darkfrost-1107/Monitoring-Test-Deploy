@@ -1,6 +1,72 @@
+import { nivelesRomanosDe, valoracionesDe } from '@sistema-monitoreo/shared-contracts';
+import type { NivelRomano as NivelRomanoContrato } from '@sistema-monitoreo/shared-contracts';
 import type { Baremo, NivelCalificacion } from './model';
 
 const esDirectivo = (tipoMonitoreo: string) => tipoMonitoreo === 'Monitoreo Directivo';
+
+const ES_EIB = 'Monitoreo Docente EIB';
+
+/**
+ * Cuántas valoraciones lleva la escala de este instrumento.
+ *
+ * Traduce el rótulo que usa el formulario al tipo del contrato, que es donde se
+ * declara la cantidad. El formulario trabaja con «Monitoreo Docente EIB» y el
+ * contrato con `DOCENTE_EIB`; el resto del frontend hace la misma traducción en
+ * `mapper.ts` y `seleccion.ts`.
+ */
+export function cantidadDeValoraciones(tipoMonitoreo: string): number {
+  return valoracionesDe(tipoMonitoreo === ES_EIB ? 'DOCENTE_EIB' : 'DOCENTE');
+}
+
+/** Los niveles romanos que este instrumento puede otorgar, en orden. */
+export function romanosDeInstrumento(tipoMonitoreo: string): NivelRomanoContrato[] {
+  return nivelesRomanosDe(tipoMonitoreo === ES_EIB ? 'DOCENTE_EIB' : 'DOCENTE');
+}
+
+/**
+ * La escala de una plantilla guardada, ajustada a lo que su instrumento otorga.
+ *
+ * ── Para qué ──
+ * Las plantillas EIB creadas antes de este cambio están persistidas con cuatro
+ * niveles, el cuarto con la denominación de relleno. Al abrirlas para editar hay
+ * que quedarse con las tres valoraciones reales, o el guardado sería rechazado
+ * por declarar más niveles de los que el instrumento tiene.
+ *
+ * Por eso no hace falta migrar la base: lo guardado se normaliza al leerlo, y se
+ * vuelve a guardar con la cantidad correcta.
+ *
+ * Una escala que no alcanza a cubrir los niveles esperados cae en la propuesta
+ * por defecto, que es lo que hacía el `length === 4` que había acá.
+ */
+export function normalizarEscala(
+  niveles: NivelCalificacion[] | undefined,
+  tipoMonitoreo: string,
+): NivelCalificacion[] {
+  const romanos = romanosDeInstrumento(tipoMonitoreo);
+  const ajustada = romanos
+    .map((romano) => (niveles ?? []).find((n) => n.nivel === romano))
+    .filter((n): n is NivelCalificacion => n !== undefined);
+
+  return ajustada.length === romanos.length ? ajustada : nivelesPorDefecto(tipoMonitoreo);
+}
+
+/**
+ * Rótulo de respaldo para una entrada de rúbrica que se dejó en blanco.
+ *
+ * En la EIB la rúbrica de cada criterio son las tres valoraciones de la lista de
+ * cotejo, de modo que el respaldo es la valoración misma. En los demás
+ * instrumentos la rúbrica describe el nivel y no hay texto que suplirle: se
+ * rotula con el nivel.
+ *
+ * Estaba escrito dos veces, con el mismo encadenado de ternarios, en
+ * `PlantillaCreatePage` y en `PlantillaEditPage`.
+ */
+export function descriptorPorDefecto(tipoMonitoreo: string, nivel: NivelRomanoContrato): string {
+  if (tipoMonitoreo !== ES_EIB) return `Nivel ${nivel}`;
+
+  const escala = nivelesPorDefecto(tipoMonitoreo).find((n) => n.nivel === nivel);
+  return escala?.denominacion ?? `Nivel ${nivel}`;
+}
 
 /**
  * Escala de calificación que se propone al registrar una plantilla.
@@ -79,6 +145,29 @@ const ESCALA_DIRECTIVO: readonly NivelCalificacion[] = [
 ];
 
 /**
+ * FICHA DOCENTE EIB — lista de cotejo de TRES valores, no una escala de puntaje.
+ *
+ * Cada criterio se marca No, Parcialmente o Sí. No se puntúa ni se promedia: su
+ * consolidado informa frecuencias (ver `resumen-cualitativo.ts`).
+ *
+ * ── Por qué antes tenía cuatro ──
+ * Llevaba un cuarto nivel inventado, «Destacado», con el mismo `rangoMin: 100`
+ * que «Sí». No salía del instrumento: existía porque cinco validaciones exigían
+ * cuatro niveles y sin él la plantilla no se podía guardar. Nunca fue visible ni
+ * editable —el editor de escala para EIB muestra estas tres filas y la pantalla
+ * de calificación ofrece tres botones—, y después había que filtrarlo en cada
+ * consolidado para que no apareciera con 0 ítems.
+ *
+ * Hoy la cantidad la declara `VALORACIONES_POR_TIPO` en el contrato compartido y
+ * las cinco validaciones la consultan, así que el relleno ya no hace falta.
+ */
+const ESCALA_EIB: readonly NivelCalificacion[] = [
+  { nivel: 'I', denominacion: 'No', rangoMin: 0, color: '#ef4444' },
+  { nivel: 'II', denominacion: 'Parcialmente', rangoMin: 50, color: '#f59e0b' },
+  { nivel: 'III', denominacion: 'Sí', rangoMin: 100, color: '#22c55e' },
+];
+
+/**
  * Escala propuesta para un tipo de monitoreo.
  *
  * Devuelve una copia nueva en cada llamada: el formulario la edita en sitio y
@@ -89,6 +178,9 @@ const ESCALA_DIRECTIVO: readonly NivelCalificacion[] = [
  * volvería a los umbrales fijos sin que nadie lo note.
  */
 export function nivelesPorDefecto(tipoMonitoreo: string): NivelCalificacion[] {
+  if (tipoMonitoreo === ES_EIB) {
+    return ESCALA_EIB.map((nivel) => ({ ...nivel }));
+  }
   const escala = esDirectivo(tipoMonitoreo) ? ESCALA_DIRECTIVO : ESCALA_DOCENTE;
 
   return escala.map((nivel) => ({ ...nivel }));
@@ -103,5 +195,8 @@ export function nivelesPorDefecto(tipoMonitoreo: string): NivelCalificacion[] {
  * 25·50·75·100.
  */
 export function baremoPorDefecto(tipoMonitoreo: string): Baremo {
+  if (tipoMonitoreo === ES_EIB) {
+    return 'Porcentual';
+  }
   return esDirectivo(tipoMonitoreo) ? 'Porcentual' : 'Vigente';
 }

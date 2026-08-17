@@ -36,6 +36,12 @@ export class ReporteController {
     return this.service.listFichasCompletadas(query, this.toSession(req));
   }
 
+  @Get('analisis-desempenos')
+  @RequirePermissions('reports:read')
+  async analisisDesempenos(@Query() query: any, @Req() req: AuthenticatedRequest) {
+    return this.service.analisisDesempenos(query, this.toSession(req));
+  }
+
   @Get('resumen-ie')
   @RequirePermissions('reports:read')
   async resumenIE(

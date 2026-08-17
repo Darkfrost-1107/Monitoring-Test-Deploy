@@ -1,6 +1,7 @@
 import type {
   IReporteFicha,
   IReporteResumenIE,
+  IAnalisisDesempenoCriterio,
   NivelLogro,
   TipoMonitoreo,
 } from '@sistema-monitoreo/shared-contracts';
@@ -38,6 +39,10 @@ export abstract class ReporteRepository {
     id: string,
     session: SessionScope,
   ): Promise<IReporteFicha | null>;
+  abstract findAnalisisDesempenos(
+    filters: QueryFichasCompletadas,
+    session: SessionScope,
+  ): Promise<IAnalisisDesempenoCriterio[]>;
 }
 
 export type SessionScope = SessionUser;

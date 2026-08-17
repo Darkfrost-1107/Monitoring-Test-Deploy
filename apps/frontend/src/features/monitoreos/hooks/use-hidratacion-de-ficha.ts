@@ -19,17 +19,28 @@ import type { FuenteDeEstado } from '../lib/estado-formulario';
 interface Opciones {
   abierta: boolean;
   visitaId?: string;
+  templateId?: string;
   /** Estado con el que abrir la ficha, si se reabre una ya cargada. */
   initialState?: FuenteDeEstado | null;
   hidratar: (fuente: FuenteDeEstado | null) => void;
 }
 
-export function useHidratacionDeFicha({ abierta, visitaId, initialState, hidratar }: Opciones) {
+export function useHidratacionDeFicha({
+  abierta,
+  visitaId,
+  templateId,
+  initialState,
+  hidratar,
+}: Opciones) {
   const [hidratadaPara, setHidratadaPara] = useState<string | null>(null);
+  const claveHidratacion = `${visitaId ?? ''}:${templateId ?? ''}`;
 
-  if (abierta && visitaId && hidratadaPara !== visitaId) {
-    setHidratadaPara(visitaId);
-    hidratar(initialState ?? leerEstadoGuardado(localStorage.getItem(claveEstadoLocal(visitaId))));
+  if (abierta && visitaId && hidratadaPara !== claveHidratacion) {
+    setHidratadaPara(claveHidratacion);
+    hidratar(
+      initialState ??
+        leerEstadoGuardado(localStorage.getItem(claveEstadoLocal(visitaId, templateId))),
+    );
   }
 
   // Al cerrar se olvida, para que la próxima apertura vuelva a cargar.

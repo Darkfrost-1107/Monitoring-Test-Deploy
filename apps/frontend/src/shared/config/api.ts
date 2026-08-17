@@ -50,6 +50,7 @@ export async function request<T>(
         cuerpo = errJson as Record<string, unknown>;
         const { message, code } = cuerpo as { message?: unknown; code?: unknown };
         if (typeof message === 'string') errMessage = message;
+        else if (Array.isArray(message)) errMessage = message.join(', ');
         else if (typeof code === 'string') errMessage = code;
       }
     } catch {

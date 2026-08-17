@@ -30,6 +30,25 @@ export const reportesApi = {
   resumenIE: (anio: number) =>
     request<IReporteResumenIE[]>(`/api/reportes/resumen-ie?anio=${anio}`),
 
+  analisisDesempenos: (query?: {
+    anioAcademico?: number;
+    institucionId?: string;
+    tipoMonitoreo?: TipoMonitoreo;
+    fechaDesde?: string;
+    fechaHasta?: string;
+  }) => {
+    const params = new URLSearchParams();
+    if (query) {
+      Object.entries(query).forEach(([k, v]) => {
+        if (v !== undefined && v !== null && v !== '') params.append(k, String(v));
+      });
+    }
+    const qs = params.toString();
+    return request<import('@sistema-monitoreo/shared-contracts').IAnalisisDesempenoCriterio[]>(
+      `/api/reportes/analisis-desempenos${qs ? '?' + qs : ''}`,
+    );
+  },
+
   fichaHTMLUrl: (id: string) => `${API_BASE_URL}/api/reportes/ficha/${id}/export-html`,
   
   enviarFichaCorreo: (id: string) =>

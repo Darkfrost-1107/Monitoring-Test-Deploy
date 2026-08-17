@@ -16,6 +16,7 @@
  * discrepancias cuando se agrega un campo en una y no en la otra.
  */
 export interface DatosFicha {
+  estado?: string;
   checkedAspects: Record<string, boolean>;
   selectedLevels: Record<string, string>;
   generalComments: string;
@@ -102,6 +103,7 @@ export const interpretarEvidenciaGeneral = (
  * `undefined` obligaría a normalizar en cada punto de llamada.
  */
 export interface FichaPersistida {
+  estado?: string | null;
   respuestasAspecto: readonly { aspectoId: string; marcado: boolean }[];
   respuestasDesempeno: readonly {
     desempenoId: string;
@@ -187,6 +189,7 @@ export function fichaAEstadoFormulario(ficha: FichaPersistida): DatosFicha {
   Object.assign(evidenciaUrls, interpretarEvidenciaGeneral(ficha.evidenciaGeneral));
 
   return {
+    estado: ficha.estado ?? 'FINALIZADO',
     checkedAspects,
     selectedLevels,
     generalComments: ficha.observaciones ?? '',

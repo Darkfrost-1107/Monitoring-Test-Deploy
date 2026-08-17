@@ -4,6 +4,7 @@ import { aFechaISOLocal } from '@shared/lib/fecha/fecha';
 
 const TIPO_MONITOREO_LABEL: Record<TipoPlantilla, string> = {
   DOCENTE: 'Monitoreo Docente',
+  DOCENTE_EIB: 'Monitoreo Docente EIB',
   DIRECTIVO: 'Monitoreo Directivo',
 };
 

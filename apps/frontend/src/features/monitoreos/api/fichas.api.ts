@@ -21,6 +21,12 @@ export const fichasApi = {
   findByVisita: (cronogramaId: string) =>
     request<IFichaMonitoreo | null>(`/api/fichas/visita/${cronogramaId}`),
 
+  findAllByVisita: (cronogramaId: string) =>
+    request<IFichaMonitoreo[]>(`/api/fichas/visita/${cronogramaId}/todas`),
+
+  findByVisitaYPlantilla: (cronogramaId: string, plantillaId: string) =>
+    request<IFichaMonitoreo | null>(`/api/fichas/visita/${cronogramaId}/plantilla/${plantillaId}`),
+
   findById: (id: string) => request<IFichaMonitoreo>(`/api/fichas/${id}`),
 
   create: (data: CreateFichaInput) =>

@@ -13,6 +13,25 @@ export async function findByVisitaId(
   return repository.findByVisitaId(cronogramaId);
 }
 
+export async function findByVisitaYPlantilla(
+  repository: FichaRepository,
+  cronogramaId: string,
+  plantillaId: string,
+  _session: SessionUser,
+): Promise<IFichaMonitoreo | null> {
+  void _session;
+  return repository.findByVisitaYPlantilla(cronogramaId, plantillaId);
+}
+
+export async function findAllByVisitaId(
+  repository: FichaRepository,
+  cronogramaId: string,
+  _session: SessionUser,
+): Promise<IFichaMonitoreo[]> {
+  void _session;
+  return repository.findAllByVisitaId(cronogramaId);
+}
+
 export async function findById(
   repository: FichaRepository,
   scopeFilter: ScopeFilter,

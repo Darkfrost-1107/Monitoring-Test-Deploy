@@ -57,6 +57,25 @@ export class FichaController {
     return this.service.findByVisitaId(cronogramaId, this.toSession(req));
   }
 
+  @Get('visita/:cronogramaId/todas')
+  @RequirePermissions('monitoreo:read')
+  async porVisitaTodas(
+    @Param('cronogramaId', new ParseUUIDPipe()) cronogramaId: string,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<IFichaMonitoreo[]> {
+    return this.service.findAllByVisitaId(cronogramaId, this.toSession(req));
+  }
+
+  @Get('visita/:cronogramaId/plantilla/:plantillaId')
+  @RequirePermissions('monitoreo:read')
+  async porVisitaYPlantilla(
+    @Param('cronogramaId', new ParseUUIDPipe()) cronogramaId: string,
+    @Param('plantillaId', new ParseUUIDPipe()) plantillaId: string,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<IFichaMonitoreo | null> {
+    return this.service.findByVisitaYPlantilla(cronogramaId, plantillaId, this.toSession(req));
+  }
+
   @Get('historial/:evaluadoId')
   @RequirePermissions('monitoreo:read')
   async historial(

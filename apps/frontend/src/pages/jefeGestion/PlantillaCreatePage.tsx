@@ -4,19 +4,29 @@ import { ArrowLeft } from 'lucide-react';
 import { PageHeader } from '@shared/ui/pageHeader';
 import { PlantillaForm, type PlantillaFormState } from '@widgets/plantillas';
 import { plantillasApi } from '@entities/model-plantillas/api/plantillas.api';
+import {
+  descriptorPorDefecto,
+  romanosDeInstrumento,
+} from '@entities/model-plantillas/escala-por-defecto';
 import { lemasApi } from '@entities/model-lemas';
 import { useQueryClient } from '@tanstack/react-query';
 import { ConfirmModal } from '@shared/ui/ConfirmModal';
 
-const toBackendTipo = (tipo: string): 'DOCENTE' | 'DIRECTIVO' =>
-  tipo.toUpperCase().includes('DIRECTIVO') ? 'DIRECTIVO' : 'DOCENTE';
+import type { TipoPlantilla } from '@sistema-monitoreo/shared-contracts';
+
+const toBackendTipo = (tipo: string): TipoPlantilla => {
+  const t = tipo.toUpperCase();
+  if (t.includes('DIRECTIVO')) return 'DIRECTIVO';
+  if (t.includes('EIB')) return 'DOCENTE_EIB';
+  return 'DOCENTE';
+};
 
 export const PlantillaCreatePage = () => {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [isSaving, setIsSaving] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [pendingArchive, setPendingArchive] = useState<{ plantillas: { id: string; anioAcademico: number; tipoMonitoreo: string }[]; data: PlantillaFormState; backendTipo: 'DOCENTE' | 'DIRECTIVO' } | null>(null);
+  const [pendingArchive, setPendingArchive] = useState<{ plantillas: { id: string; anioAcademico: number; tipoMonitoreo: string }[]; data: PlantillaFormState; backendTipo: TipoPlantilla } | null>(null);
 
   const handleSubmit = async (data: PlantillaFormState) => {
     setIsSaving(true);
@@ -58,7 +68,7 @@ export const PlantillaCreatePage = () => {
     }
   };
 
-  const executeCreate = async (data: PlantillaFormState, backendTipo: 'DOCENTE' | 'DIRECTIVO', toArchive: { id: string }[]) => {
+  const executeCreate = async (data: PlantillaFormState, backendTipo: TipoPlantilla, toArchive: { id: string }[]) => {
     try {
       // El lema va primero: la plantilla lo devuelve ya resuelto por su año, de
       // modo que crearla antes la dejaría con el encabezado en blanco hasta la
@@ -89,17 +99,26 @@ export const PlantillaCreatePage = () => {
             descripcionCorta: d.descripcionCorta,
             preguntaExtra: d.preguntaExtra || undefined,
             orden: i + 1,
-            aspectos: d.aspectos
-              .filter((a) => a.descripcion.trim() !== '')
+            aspectos: (d.aspectos ?? [])
+              .filter((a) => a && a.descripcion && a.descripcion.trim() !== '')
               .map((a, ai) => ({
                 id: a.id,
                 descripcion: a.descripcion,
                 orden: ai + 1,
               })),
-            rubrica: (d.rubrica ?? []).map((r) => ({
-              nivelRomano: r.nivel,
-              descripcion: r.descripcion,
-            })),
+            /**
+             * La rúbrica lleva una entrada por nivel que el instrumento otorga.
+             * Para la EIB son tres: antes se enviaba una cuarta que duplicaba
+             * «Sí» porque `validarReglas` exigía cuatro para todos.
+             */
+            rubrica: romanosDeInstrumento(data.tipoMonitoreo).map((nivel) => {
+              const declarada = d.rubrica?.find((r) => r.nivel === nivel);
+              return {
+                nivelRomano: nivel,
+                descripcion:
+                  declarada?.descripcion?.trim() || descriptorPorDefecto(data.tipoMonitoreo, nivel),
+              };
+            }),
           })),
         ejeItems: (data.ejeItems ?? []).map((item) => ({
           numero: item.numero,

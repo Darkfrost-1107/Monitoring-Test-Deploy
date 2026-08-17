@@ -45,7 +45,7 @@ interface OpcionesDeEvaluacionParams {
   institucionDelUsuarioId?: string;
   /** Institución elegida en el formulario, para quien sí la elige. */
   institucionElegidaId: string;
-  tipoDeVisita: 'DOCENTE' | 'DIRECTIVO';
+  tipoDeVisita: import('@sistema-monitoreo/shared-contracts').TipoMonitoreo;
   evaluadorElegidoId: string;
   evaluadoElegidoId: string;
 }

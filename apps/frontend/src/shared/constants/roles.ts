@@ -37,13 +37,15 @@ export type MenuItem =
   | 'focos_atencion'
   | 'solicitudes_visita'
   | 'reportes'
+  | 'reportes_fichas'
+  | 'reportes_analisis'
   | 'configuracion'
   | 'superadmin'
   | 'superadmin_director'
   | 'superadmin_jefe'
   | 'mi_firma';
 
-const BASE_PERMISSIONS: MenuItem[] = ['reportes', 'mi_firma'];
+const BASE_PERMISSIONS: MenuItem[] = ['reportes', 'reportes_fichas', 'mi_firma'];
 
 // La entrada `admin` se retiró aquí: concedía 22 de los 28 ítems de menú —el
 // conjunto más amplio del sistema— a un rol que el backend nunca podía emitir.
@@ -54,7 +56,9 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
     'dashboard',
     'focos_atencion',
     'reportes',
-    'monitoreo_reportes'
+    'reportes_fichas',
+    'reportes_analisis',
+    'monitoreo_reportes',
   ],
 
   jefe_gestion: [
@@ -70,6 +74,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
     'focos_atencion',
     'solicitudes_visita',
     'reportes',
+    'reportes_fichas',
+    'reportes_analisis',
     'instituciones_padron',
     'instituciones_docentes',
     'mi_firma',
@@ -83,6 +89,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
     'monitoreo_calendario',
     'focos_atencion',
     'reportes',
+    'reportes_fichas',
+    'reportes_analisis',
     'monitoreo_reportes',
     'mi_firma',
   ],
@@ -96,6 +104,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
     'plantillas',
     'plantillas_ies',
     'reportes',
+    'reportes_fichas',
+    'reportes_analisis',
     'mi_firma',
   ],
 
@@ -108,6 +118,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
     'plantillas',
     'plantillas_ies',
     'reportes',
+    'reportes_fichas',
+    'reportes_analisis',
     'mi_firma',
   ],
 
@@ -116,6 +128,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
     'monitoreo_calendario',
     'focos_atencion',
     'reportes',
+    'reportes_fichas',
+    'reportes_analisis',
     'monitoreo_reportes',
     'mi_firma',
   ],
@@ -133,6 +147,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
     'instituciones_coordinadores',
     'monitoreo_reportes',
     'reportes',
+    'reportes_fichas',
+    'reportes_analisis',
     'mi_firma',
   ],
 
@@ -152,6 +168,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
     'instituciones_docentes',
     'instituciones_coordinadores',
     'reportes',
+    'reportes_fichas',
+    'reportes_analisis',
     'configuracion',
     'mi_firma',
   ],

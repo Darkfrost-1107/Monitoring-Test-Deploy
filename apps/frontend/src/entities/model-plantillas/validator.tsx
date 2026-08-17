@@ -1,7 +1,16 @@
 import { z } from 'zod';
+import { cantidadDeValoraciones } from './escala-por-defecto';
 
 const nivelRomano = z.enum(['I', 'II', 'III', 'IV']);
 
+/**
+ * Cuántos niveles se exigen depende del instrumento.
+ *
+ * Antes eran cuatro fijo —`.length(4, 'Debe definir los 4 niveles de la escala')`—
+ * y la Ficha Docente EIB, que es una lista de cotejo de tres valores, no podía
+ * guardarse sin un cuarto nivel inventado. La cantidad la declara el contrato
+ * compartido y la resuelve `cantidadDeValoraciones`.
+ */
 export const plantillaSchema = z.object({
   tipoMonitoreo: z.string().min(3, 'El tipo de monitoreo es requerido'),
   anioAcademico: z
@@ -19,7 +28,7 @@ export const plantillaSchema = z.object({
         color: z.string(),
       }),
     )
-    .length(4, 'Debe definir los 4 niveles de la escala'),
+    .min(1, 'Debe definir la escala'),
   desempenos: z
     .array(
       z.object({
@@ -34,6 +43,17 @@ export const plantillaSchema = z.object({
       }),
     )
     .min(1, 'Agregue al menos un desempeño'),
-});
+})
+  .superRefine((data, ctx) => {
+    const esperados = cantidadDeValoraciones(data.tipoMonitoreo);
+
+    if (data.niveles.length !== esperados) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['niveles'],
+        message: `Debe definir los ${esperados} niveles de la escala`,
+      });
+    }
+  });
 
 export type PlantillaFormData = z.infer<typeof plantillaSchema>;

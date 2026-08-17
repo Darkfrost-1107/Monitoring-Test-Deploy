@@ -20,7 +20,7 @@ import {
  */
 
 const reporte = (over: Partial<ReporteMedible> = {}): ReporteMedible => ({
-  tipo: 'DOCENTE',
+  instrumento: 'DOCENTE',
   ...over,
 });
 
@@ -35,24 +35,140 @@ describe('NIVELES_SATISFACTORIOS', () => {
 });
 
 describe('calcularEstadisticas — conteos', () => {
-  it('cuenta el total y lo separa por tipo de monitoreo', () => {
+  it('cuenta las fichas y las separa por tipo de monitoreo', () => {
     const stats = calcularEstadisticas([
-      reporte({ tipo: 'DOCENTE' }),
-      reporte({ tipo: 'DOCENTE' }),
-      reporte({ tipo: 'DIRECTIVO' }),
+      reporte({ instrumento: 'DOCENTE' }),
+      reporte({ instrumento: 'DOCENTE' }),
+      reporte({ instrumento: 'DIRECTIVO' }),
     ]);
 
-    expect(stats.total).toBe(3);
-    expect(stats.docentes).toBe(2);
-    expect(stats.directivos).toBe(1);
+    expect(stats.fichas).toBe(3);
+    expect(stats.fichasDocentes).toBe(2);
+    expect(stats.fichasDirectivas).toBe(1);
   });
 
   it('devuelve ceros con la lista vacía', () => {
     const stats = calcularEstadisticas([]);
 
-    expect(stats.total).toBe(0);
-    expect(stats.docentes).toBe(0);
-    expect(stats.directivos).toBe(0);
+    expect(stats.fichas).toBe(0);
+    expect(stats.fichasDocentes).toBe(0);
+    expect(stats.fichasDirectivas).toBe(0);
+    expect(stats.visitasMonitoreadas).toBe(0);
+  });
+
+  it('cuenta la ficha EIB como ficha docente', () => {
+    const stats = calcularEstadisticas([
+      reporte({ instrumento: 'DOCENTE' }),
+      reporte({ instrumento: 'DOCENTE_EIB' }),
+    ]);
+
+    expect(stats.fichasDocentes).toBe(2);
+  });
+});
+
+/**
+ * ── Por qué las visitas se cuentan aparte de las fichas ──
+ * Hasta que se sumó la Ficha Docente EIB, un monitoreo programado daba
+ * exactamente una ficha: un solo número servía para «cuántos monitoreos se
+ * hicieron» y «cuántas fichas se llenaron». Hoy una visita docente puede llevar
+ * la ficha regular Y la EIB, de modo que los dos números se separan.
+ *
+ * `fichas` cuenta filas. `visitasMonitoreadas` cuenta cronogramas distintos: una
+ * visita con dos instrumentos sigue siendo UN monitoreo ejecutado, y contarla
+ * dos veces informaría más monitoreos de los que se hicieron.
+ */
+describe('calcularEstadisticas — visitas frente a fichas', () => {
+  it('una visita con dos instrumentos son dos fichas y un solo monitoreo', () => {
+    const stats = calcularEstadisticas([
+      reporte({ instrumento: 'DOCENTE', cronogramaId: 'visita-1' }),
+      reporte({ instrumento: 'DOCENTE_EIB', cronogramaId: 'visita-1' }),
+    ]);
+
+    expect(stats.fichas).toBe(2);
+    expect(stats.visitasMonitoreadas).toBe(1);
+  });
+
+  it('dos visitas distintas cuentan dos monitoreos', () => {
+    const stats = calcularEstadisticas([
+      reporte({ cronogramaId: 'visita-1' }),
+      reporte({ cronogramaId: 'visita-2' }),
+    ]);
+
+    expect(stats.visitasMonitoreadas).toBe(2);
+  });
+
+  /** Sin el identificador no se puede agrupar: cada ficha cuenta como su visita. */
+  it('cuenta la ficha como su propia visita si no trae cronograma', () => {
+    const stats = calcularEstadisticas([reporte({}), reporte({})]);
+
+    expect(stats.visitasMonitoreadas).toBe(2);
+  });
+
+  it('no mezcla las que traen identificador con las que no', () => {
+    const stats = calcularEstadisticas([
+      reporte({ cronogramaId: 'visita-1' }),
+      reporte({ cronogramaId: 'visita-1' }),
+      reporte({}),
+    ]);
+
+    expect(stats.fichas).toBe(3);
+    expect(stats.visitasMonitoreadas).toBe(2);
+  });
+});
+
+/**
+ * ── Por qué no hay un promedio único cuando se mezclan instrumentos ──
+ * Las tres escalas tienen máximos distintos: la rúbrica docente llega a 4, la
+ * lista de cotejo EIB a 3 —marca I, II o III— y la directiva se resuelve por
+ * porcentaje. Promediarlas entre sí no da un número impreciso: no da ningún
+ * número. Se informa por instrumento, y el promedio único queda nulo.
+ */
+describe('calcularEstadisticas — escalas no comparables', () => {
+  it('no promedia entre instrumentos distintos', () => {
+    const stats = calcularEstadisticas([
+      reporte({ instrumento: 'DOCENTE', promedio: 3.5, nivelLogro: 'LOGRO_ESPERADO' }),
+      reporte({ instrumento: 'DOCENTE_EIB', promedio: 2.8, nivelLogro: 'LOGRO_ESPERADO' }),
+    ]);
+
+    expect(stats.promedioGeneral).toBeNull();
+    expect(stats.satisfactionPercent).toBeNull();
+  });
+
+  it('sí promedia cuando todas las fichas son del mismo instrumento', () => {
+    const stats = calcularEstadisticas([
+      reporte({ instrumento: 'DOCENTE', promedio: 3.0 }),
+      reporte({ instrumento: 'DOCENTE', promedio: 4.0 }),
+    ]);
+
+    expect(stats.promedioGeneral).toBe(3.5);
+  });
+
+  it('desglosa cada instrumento por separado', () => {
+    const stats = calcularEstadisticas([
+      reporte({ instrumento: 'DOCENTE', promedio: 3.0, nivelLogro: 'LOGRO_ESPERADO' }),
+      reporte({ instrumento: 'DOCENTE', promedio: 4.0, nivelLogro: 'INICIO' }),
+      reporte({ instrumento: 'DOCENTE_EIB', promedio: 2.0, nivelLogro: 'LOGRO_ESPERADO' }),
+    ]);
+
+    expect(stats.porInstrumento).toEqual([
+      { tipo: 'DOCENTE', fichas: 2, promedioGeneral: 3.5, satisfactionPercent: 50 },
+      { tipo: 'DOCENTE_EIB', fichas: 1, promedioGeneral: 2, satisfactionPercent: 100 },
+    ]);
+  });
+
+  it('no lista un instrumento sin fichas', () => {
+    const stats = calcularEstadisticas([reporte({ instrumento: 'DIRECTIVO' })]);
+
+    expect(stats.porInstrumento.map((i) => i.tipo)).toEqual(['DIRECTIVO']);
+  });
+
+  it('con un solo instrumento el desglose coincide con el total', () => {
+    const stats = calcularEstadisticas([
+      reporte({ instrumento: 'DOCENTE', promedio: 3.0 }),
+      reporte({ instrumento: 'DOCENTE', promedio: 4.0 }),
+    ]);
+
+    expect(stats.porInstrumento[0].promedioGeneral).toBe(stats.promedioGeneral);
   });
 });
 

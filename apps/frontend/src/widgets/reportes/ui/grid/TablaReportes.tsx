@@ -1,10 +1,11 @@
-import { Download, Eye } from 'lucide-react';
+import { Download, Eye, Loader2 } from 'lucide-react';
 import { Button } from '@/shared/ui/button';
 import { Card } from '@/shared/ui/card';
 import { Badge } from '@/shared/ui/badge';
 import { formatearFechaEnPalabras } from '@shared/lib/fecha/fecha';
 import { medirVisita } from '@/features/reportes/lib/medicion-visita';
 import type { BackendReportVisit } from '../ReportesGrid';
+import { esInstrumentoEib } from '@/features/reportes/lib/instrumento';
 
 /**
  * Las fichas completadas, en vista de tabla.
@@ -27,9 +28,15 @@ interface TablaReportesProps {
   visitas: BackendReportVisit[];
   onAbrir: (visita: BackendReportVisit) => void;
   onDescargar: (visita: BackendReportVisit, e: React.MouseEvent) => void;
+  descargandoId?: string | null;
 }
 
-export const TablaReportes = ({ visitas, onAbrir, onDescargar }: TablaReportesProps) => (
+export const TablaReportes = ({
+  visitas,
+  onAbrir,
+  onDescargar,
+  descargandoId,
+}: TablaReportesProps) => (
   <Card className="border border-border bg-surface shadow-sm overflow-hidden rounded-xl">
     <div className="overflow-x-auto">
       <table className="w-full text-left text-xs border-collapse">
@@ -46,6 +53,11 @@ export const TablaReportes = ({ visitas, onAbrir, onDescargar }: TablaReportesPr
         <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
           {visitas.map((visita) => {
             const medicion = medirVisita(visita);
+            const isDescargando = descargandoId === visita.id;
+            // El instrumento llega tipado desde la plantilla de la ficha. Antes se
+            // deducia olfateando el tipo y hasta el NOMBRE de la plantilla.
+            const esEib = esInstrumentoEib(visita.instrumento);
+            const esDirectivo = visita.instrumento === 'DIRECTIVO';
 
             return (
               <tr
@@ -59,12 +71,14 @@ export const TablaReportes = ({ visitas, onAbrir, onDescargar }: TablaReportesPr
                 <td className="py-3.5 px-4">
                   <Badge
                     className={`font-black text-[9px] uppercase tracking-wider ${
-                      visita.tipo === 'DOCENTE'
-                        ? 'bg-blue-50 text-blue-700 border-blue-100'
-                        : 'bg-purple-50 text-purple-700 border-purple-100'
+                      esEib
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                        : esDirectivo
+                        ? 'bg-purple-50 text-purple-700 border-purple-100'
+                        : 'bg-blue-50 text-blue-700 border-blue-100'
                     }`}
                   >
-                    {visita.tipo}
+                    {esEib ? 'DOCENTE EIB' : esDirectivo ? 'DIRECTIVO' : 'DOCENTE'}
                   </Badge>
                 </td>
                 <td className="py-3.5 px-4 font-bold text-slate-700">{visita.docenteDirectivo}</td>
@@ -73,14 +87,22 @@ export const TablaReportes = ({ visitas, onAbrir, onDescargar }: TablaReportesPr
                   {formatearFechaEnPalabras(visita.fechaHora)}
                 </td>
                 <td className="py-3.5 px-4 font-bold text-slate-600">
-                  {medicion.calificacionCorta}
+                  {esEib ? 'Cualitativa (32 ítems)' : medicion.calificacionCorta}
                 </td>
                 <td className="py-3.5 px-4">
                   <Badge
                     variant="outline"
-                    className="text-[10px] font-black border-slate-200 bg-slate-50 text-slate-800"
+                    className={`text-[10px] font-black border-slate-200 ${
+                      esEib
+                        ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                        : 'bg-slate-50 text-slate-800'
+                    }`}
                   >
-                    {medicion.nivelRomano ? `Nivel ${medicion.nivelRomano}` : 'Sin calificar'}
+                    {esEib
+                      ? 'Cualitativo EIB'
+                      : medicion.nivelRomano
+                      ? `Nivel ${medicion.nivelRomano}`
+                      : 'Sin calificar'}
                   </Badge>
                 </td>
                 <td className="py-3.5 px-4 text-center">
@@ -99,10 +121,15 @@ export const TablaReportes = ({ visitas, onAbrir, onDescargar }: TablaReportesPr
                     </Button>
                     <button
                       onClick={(e) => onDescargar(visita, e)}
+                      disabled={isDescargando}
                       className="p-2 rounded-lg border border-slate-200 text-slate-500 hover:text-primary hover:bg-slate-50 transition-colors shadow-sm disabled:opacity-50 cursor-pointer"
                       title="Descargar PDF"
                     >
-                      <Download className="h-3.5 w-3.5" />
+                      {isDescargando ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                      ) : (
+                        <Download className="h-3.5 w-3.5" />
+                      )}
                     </button>
                   </div>
                 </td>

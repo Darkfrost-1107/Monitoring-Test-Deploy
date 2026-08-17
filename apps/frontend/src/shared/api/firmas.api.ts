@@ -31,9 +31,18 @@ export const firmasApi = {
 
   /**
    * Obtiene las firmas estampadas en una ficha específica.
+   *
+   * `plantillaId` hace falta cuando se pasa el id del CRONOGRAMA y la visita
+   * tiene más de una ficha —la regular y la EIB—: sin él el servidor no puede
+   * saber de cuál se piden las firmas y responde pidiéndolo.
    */
-  getFirmasDeFicha: async (fichaId: string): Promise<{ firmas: FichaFirmaResponse[] }> => {
-    return request<{ firmas: FichaFirmaResponse[] }>(`/api/fichas/${fichaId}/firmas`, {
+  getFirmasDeFicha: async (
+    fichaId: string,
+    plantillaId?: string,
+  ): Promise<{ firmas: FichaFirmaResponse[] }> => {
+    const query = plantillaId ? `?plantillaId=${encodeURIComponent(plantillaId)}` : '';
+
+    return request<{ firmas: FichaFirmaResponse[] }>(`/api/fichas/${fichaId}/firmas${query}`, {
       method: 'GET',
     });
   },

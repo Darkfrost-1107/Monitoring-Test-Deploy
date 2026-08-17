@@ -15,6 +15,8 @@ import {
   MODO_DISTRITAL,
   MODO_INSTITUCIONAL,
   TODOS,
+  DISTRITOS_DE_LAMPA,
+  extraerDistritos,
 } from './vista-del-mapa';
 
 /**
@@ -165,5 +167,25 @@ describe('constantes de la vista', () => {
 
   it('los dos modos de vista tienen nombres distintos', () => {
     expect(MODO_DISTRITAL).not.toBe(MODO_INSTITUCIONAL);
+  });
+
+  it('incluye los 10 distritos oficiales de la provincia de Lampa', () => {
+    expect(DISTRITOS_DE_LAMPA).toHaveLength(10);
+    expect(DISTRITOS_DE_LAMPA).toContain('LAMPA');
+    expect(DISTRITOS_DE_LAMPA).toContain('CABANILLA');
+  });
+});
+
+describe('extraerDistritos', () => {
+  it('extrae y ordena los distritos únicos de cobertura e instituciones', () => {
+    const i1 = ie({ distrito: 'Paratía' });
+    const i2 = ie({ distrito: 'Lampa' });
+    const distritos = extraerDistritos([i1, i2]);
+    expect(distritos).toEqual(['Lampa', 'Paratía']);
+  });
+
+  it('devuelve los distritos oficiales por defecto si no hay datos', () => {
+    const distritos = extraerDistritos([]);
+    expect(distritos).toEqual([...DISTRITOS_DE_LAMPA]);
   });
 });

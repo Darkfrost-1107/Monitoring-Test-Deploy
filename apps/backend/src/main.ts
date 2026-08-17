@@ -6,6 +6,7 @@ import { AppModule } from './app.module.js';
 import { Logger } from 'nestjs-pino';
 import { ConfigService } from '@nestjs/config';
 import { PrismaClientExceptionFilter } from './common/filters/prisma-client-exception.filter.js';
+import { esArchivoDeFirma } from './modules/evaluations/services/firmas.helper.js';
 
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
@@ -34,6 +35,29 @@ async function bootstrap() {
 
   app.use(helmet());
   app.use(cookieParser());
+
+  /**
+   * Las firmas dejan de ser públicas; el resto de `uploads/` sigue igual.
+   *
+   * `express.static` no pide sesión, así que toda firma manuscrita guardada en
+   * `uploads/firma-<uuid>.png` era descargable por cualquiera que conociera la
+   * URL —y el endpoint de firmas las entregaba a cualquier sesión—. Ahora se
+   * sirven por `GET /api/fichas/:id/firmas/:rol/imagen`, que exige sesión y
+   * aplica el mismo filtro de alcance que la ficha.
+   *
+   * El bloqueo va ANTES del estático y sólo sobre ese nombre: las evidencias
+   * (`uploads/evidencias/`) y los PDF de planes y reprogramaciones se cargan con
+   * `<img src>` y enlaces directos, y cerrarlos rompería esas pantallas. Se
+   * bloquea en vez de mover los archivos para no dejar sin firma a las fichas ya
+   * emitidas.
+   */
+  app.use('/uploads', (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    if (esArchivoDeFirma(req.path)) {
+      res.status(404).end();
+      return;
+    }
+    next();
+  });
   app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
   app.setGlobalPrefix('api');
 

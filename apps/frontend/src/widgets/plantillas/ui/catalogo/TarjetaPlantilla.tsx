@@ -97,7 +97,11 @@ export const TarjetaPlantilla = ({
 
         <div className="inline-flex">
           <span className="text-[9px] font-black tracking-wide uppercase px-2 py-0.5 rounded border bg-primary-light border-primary/10 text-primary">
-            {esDocente ? 'Ficha Docente' : 'Ficha Directiva'}
+            {plantilla.tipoMonitoreo === 'Monitoreo Docente EIB'
+              ? 'Ficha Docente EIB'
+              : esDocente
+                ? 'Ficha Docente'
+                : 'Ficha Directiva'}
           </span>
         </div>
 
@@ -163,9 +167,13 @@ export const TarjetaPlantilla = ({
         <div className="flex items-center justify-between">
           <span className="flex items-center gap-1">
             <List className="h-3.5 w-3.5 text-primary" />
-            <span>Desempeños / Criterios:</span>
+            <span>{plantilla.tipoMonitoreo === 'Monitoreo Docente EIB' ? 'Ítems Observables:' : 'Desempeños / Criterios:'}</span>
           </span>
-          <span className="text-slate-800 font-bold">{plantilla.desempenos.length} evaluados</span>
+          <span className="text-slate-800 font-bold">
+            {plantilla.tipoMonitoreo === 'Monitoreo Docente EIB'
+              ? `${plantilla.desempenos.length} ítems EIB`
+              : `${plantilla.desempenos.length} evaluados`}
+          </span>
         </div>
 
         <div className="flex items-center justify-between">
@@ -174,7 +182,9 @@ export const TarjetaPlantilla = ({
             <span>Calificación:</span>
           </span>
           <span className="text-slate-800">
-            Baremo {plantilla.baremo} ({plantilla.baremo === 'Vigente' ? '0-20' : '%'})
+            {plantilla.tipoMonitoreo === 'Monitoreo Docente EIB'
+              ? 'Cualitativa (Sí / Parcial / No)'
+              : `Baremo ${plantilla.baremo} (${plantilla.baremo === 'Vigente' ? '0-20' : '%'})`}
           </span>
         </div>
       </div>

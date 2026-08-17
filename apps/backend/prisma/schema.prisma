@@ -617,7 +617,7 @@ model NivelCalificacion {
 model DesempenoPlantilla {
   id               String  @id @default(uuid()) @db.Uuid
   plantillaId      String  @map("plantilla_id") @db.Uuid
-  nombre           String  @db.VarChar(255)
+  nombre           String  @db.Text
   descripcionCorta String? @map("descripcion_corta") @db.Text
   orden            Int
   preguntaExtra    String? @map("pregunta_extra") @db.Text
@@ -720,7 +720,7 @@ model Cronograma {
   plan        PlanMonitoreo?            @relation(fields: [planId], references: [id], onDelete: Restrict)
   creadoPor   Usuario?                  @relation("CronogramaCreador", fields: [creadoPorId], references: [id], onDelete: SetNull)
   solicitudes SolicitudReprogramacion[]
-  ficha       FichaMonitoreo?
+  fichas      FichaMonitoreo[]
 
   @@index([institucionId, fechaProgramada])
   @@index([monitorId, fechaProgramada])
@@ -761,7 +761,7 @@ model SolicitudReprogramacion {
 
 model FichaMonitoreo {
   id               String    @id @default(uuid()) @db.Uuid
-  cronogramaId     String    @unique @map("cronograma_id") @db.Uuid
+  cronogramaId     String    @map("cronograma_id") @db.Uuid
   plantillaId      String    @map("plantilla_id") @db.Uuid
   fichaContextoId  String    @unique @map("ficha_contexto_id") @db.Uuid
   anioAcademico    Int       @map("anio_academico")
@@ -789,6 +789,8 @@ model FichaMonitoreo {
   respuestasEjeItem   FichaRespuestaEjeItem[]
   firmas              FichaFirma[]
 
+  @@unique([cronogramaId, plantillaId], name: "uq_ficha_visita_plantilla")
+  @@index([cronogramaId])
   @@index([plantillaId])
   @@index([estado])
   @@index([anioAcademico, estado, nivelLogro], name: "idx_fichas_reporte")

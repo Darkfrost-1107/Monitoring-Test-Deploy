@@ -29,7 +29,7 @@ export interface FormularioCronograma {
   institucionId: string;
   /** Persona a la que se evalúa. Identificador, no nombre. */
   evaluadoId: string;
-  tipo: 'DOCENTE' | 'DIRECTIVO';
+  tipo: import('@sistema-monitoreo/shared-contracts').TipoMonitoreo;
   visita: string;
   estado: Cronograma['estado'];
   modalidad: string;

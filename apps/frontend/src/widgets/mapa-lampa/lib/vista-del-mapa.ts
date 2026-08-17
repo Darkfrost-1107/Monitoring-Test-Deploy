@@ -45,6 +45,47 @@ export const COBERTURA_LEYENDA = [
 
 export const NIVELES_DEL_FILTRO = [TODOS, 'Inicial', 'Primaria', 'Secundaria'] as const;
 
+export const DISTRITOS_DE_LAMPA = [
+  'CABANILLA',
+  'CALAPUJA',
+  'LAMPA',
+  'NICASIO',
+  'OCUVIRI',
+  'PALCA',
+  'PARATIA',
+  'PUCARA',
+  'SANTA LUCIA',
+  'VILAVILA',
+] as const;
+
+/**
+ * Obtiene la lista de nombres de distritos presentes en las instituciones o cobertura,
+ * ordenados alfabéticamente.
+ */
+export function extraerDistritos(
+  instituciones: readonly IUgelDashboardIeMapa[],
+  cobertura?: readonly IUgelDashboardDistrito[],
+): string[] {
+  const mapa = new Map<string, string>();
+  for (const c of cobertura ?? []) {
+    if (c.distrito) {
+      mapa.set(normDistrito(c.distrito), c.distrito);
+    }
+  }
+  for (const ie of instituciones) {
+    if (ie.distrito) {
+      const key = normDistrito(ie.distrito);
+      if (!mapa.has(key)) {
+        mapa.set(key, ie.distrito);
+      }
+    }
+  }
+  if (mapa.size === 0) {
+    return [...DISTRITOS_DE_LAMPA];
+  }
+  return Array.from(mapa.values()).sort((a, b) => a.localeCompare(b, 'es'));
+}
+
 /**
  * Color del distrito según su cobertura, o el de «sin registro» si no se midió.
  *

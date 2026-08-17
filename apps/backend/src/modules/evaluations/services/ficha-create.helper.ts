@@ -1,5 +1,6 @@
 import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
-import type { IFichaMonitoreo } from '@sistema-monitoreo/shared-contracts';
+import type { IFichaMonitoreo, TipoPlantilla } from '@sistema-monitoreo/shared-contracts';
+import { tipoDeVisitaDe } from '@sistema-monitoreo/shared-contracts';
 import type { FichaRepository } from '../repositories/ficha.repository.js';
 import type { CreateFichaDto } from '../dto/ficha.dto.js';
 import type { SessionUser } from '../../../shared/types/session-user.js';
@@ -12,11 +13,6 @@ export async function crear(
   const cronograma = await repository.findCronogramaBasicById(dto.cronogramaId);
   if (!cronograma) throw new NotFoundException(`Visita ${dto.cronogramaId} no encontrada.`);
 
-  const existente = await repository.findByVisitaId(dto.cronogramaId);
-  if (existente) {
-    throw new ConflictException(`Ya existe una ficha para esta visita (id=${existente.id}).`);
-  }
-
   const anio = cronograma.fechaProgramada.getFullYear();
 
   // Si el frontend indica la plantilla que el actor está usando (su propia
@@ -26,12 +22,24 @@ export async function crear(
   let plantilla = await (async () => {
     if (!dto.plantillaId) return null;
     const elegida = await repository.findPlantillaBasicById(dto.plantillaId);
-    return elegida &&
-      elegida.estado === 'Vigente' &&
-      elegida.tipoMonitoreo === cronograma.tipoMonitoreo &&
-      elegida.anioAcademico === anio
-      ? elegida
-      : null;
+    if (!elegida) return null;
+
+    if (elegida.estado.toLowerCase() !== 'vigente') {
+      return null;
+    }
+
+    /**
+     * La plantilla elegida tiene que servir para esta visita.
+     *
+     * Una visita DOCENTE admite la ficha regular y la EIB —son sus dos
+     * instrumentos— y una DIRECTIVA sólo la directiva. Antes esto eran cuatro
+     * banderas con `includes`, y las comparaciones contra 'DOCENTE_EIB' del lado
+     * de la VISITA no podían cumplirse nunca: un cronograma es DOCENTE o
+     * DIRECTIVO.
+     */
+    const instrumentoDeLaVisita = tipoDeVisitaDe(elegida.tipoMonitoreo as TipoPlantilla);
+
+    return instrumentoDeLaVisita === cronograma.tipoMonitoreo ? elegida : null;
   })();
   if (!plantilla) {
     plantilla = await repository.findPlantillaVigente(cronograma.tipoMonitoreo, anio);
@@ -42,7 +50,17 @@ export async function crear(
     );
   }
 
-  if (cronograma.tipoMonitoreo === 'DOCENTE') {
+  // Comprobar si ya existe una ficha con ESTA plantilla para esta visita
+  const existente = await repository.findByVisitaYPlantilla(dto.cronogramaId, plantilla.id);
+  if (existente) {
+    throw new ConflictException(
+      `Ya existe una ficha con esta plantilla para esta visita (id=${existente.id}).`,
+    );
+  }
+
+  const esDocente = cronograma.tipoMonitoreo === 'DOCENTE';
+
+  if (esDocente) {
     const missing: string[] = [];
     if (!dto.areaCurricular) missing.push('areaCurricular');
     if (!dto.grado) missing.push('grado');

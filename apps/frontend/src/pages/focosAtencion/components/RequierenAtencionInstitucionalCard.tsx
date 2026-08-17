@@ -7,6 +7,8 @@ import { SolicitarVisitaButton } from '@features/visit-requests';
 
 interface Props {
   items: IUgelDashboardCriticaIe[];
+  distritoFiltrado?: string | null;
+  onLimpiarDistrito?: () => void;
 }
 
 /**
@@ -14,14 +16,28 @@ interface Props {
  * con sus docentes/directivos en nivel crítico (INICIO) y las acciones de
  * notificar y solicitar visita por cada uno. Usado por el módulo Focos de Atención.
  */
-export const RequierenAtencionInstitucionalCard = ({ items }: Props) => {
+export const RequierenAtencionInstitucionalCard = ({
+  items,
+  distritoFiltrado,
+  onLimpiarDistrito,
+}: Props) => {
   const totalDocentes = items.reduce((acc, ie) => acc + ie.docentes.length, 0);
 
   return (
     <Card className="flex flex-col h-full border-border shadow-xs overflow-hidden">
-      <div className="p-4 border-b border-border flex items-center gap-2">
-        <AlertTriangle className="w-5 h-5 text-destructive" />
-        <h3 className="text-lg font-bold">Requieren atención</h3>
+      <div className="p-4 border-b border-border flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2">
+          <AlertTriangle className="w-5 h-5 text-destructive shrink-0" />
+          <h3 className="text-lg font-bold">Requieren atención</h3>
+        </div>
+        {distritoFiltrado && (
+          <Badge
+            variant="outline"
+            className="text-[10px] font-bold text-slate-600 uppercase border-slate-300"
+          >
+            {distritoFiltrado}
+          </Badge>
+        )}
         {totalDocentes > 0 && (
           <Badge variant="destructive" className="ml-auto font-bold">
             {totalDocentes}
@@ -32,7 +48,20 @@ export const RequierenAtencionInstitucionalCard = ({ items }: Props) => {
       {items.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center gap-2 p-8 text-center">
           <CheckCircle2 className="w-8 h-8 text-green-600" />
-          <p className="text-sm text-text-muted">Ningún docente en nivel crítico. Buen trabajo.</p>
+          <p className="text-sm text-text-muted">
+            {distritoFiltrado
+              ? `Ningún docente en nivel crítico en ${distritoFiltrado}.`
+              : 'Ningún docente en nivel crítico. Buen trabajo.'}
+          </p>
+          {distritoFiltrado && onLimpiarDistrito && (
+            <button
+              type="button"
+              onClick={onLimpiarDistrito}
+              className="text-xs text-primary font-bold hover:underline mt-2 cursor-pointer"
+            >
+              Ver todos los distritos
+            </button>
+          )}
         </div>
       ) : (
         <div className="flex-1 min-h-0 divide-y divide-border overflow-y-auto">

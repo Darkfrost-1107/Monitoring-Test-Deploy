@@ -1,5 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { baremoPorDefecto, nivelesPorDefecto } from './escala-por-defecto';
+import {
+  baremoPorDefecto,
+  cantidadDeValoraciones,
+  descriptorPorDefecto,
+  nivelesPorDefecto,
+  normalizarEscala,
+  romanosDeInstrumento,
+} from './escala-por-defecto';
+import type { NivelCalificacion } from './model';
 
 /**
  * Pruebas de la escala que se propone al registrar una plantilla.
@@ -12,6 +20,116 @@ import { baremoPorDefecto, nivelesPorDefecto } from './escala-por-defecto';
  * Ahora el motor honra esos números: la escala propuesta ES la que va a
  * clasificar las fichas, de modo que tiene que salir del documento correcto.
  */
+
+/**
+ * FICHA DOCENTE EIB — lista de cotejo de TRES valores: No, Parcialmente, Sí.
+ *
+ * ── Qué cambió ──
+ * La escala llevaba un cuarto nivel inventado, «Destacado», con el mismo
+ * `rangoMin` que «Sí». No salía del instrumento: existía porque cinco
+ * validaciones exigían cuatro niveles —el zod del formulario, los dos DTO y las
+ * dos reglas de `validarReglas`— y sin él la plantilla EIB no se podía guardar.
+ *
+ * Nunca fue visible ni editable: el editor de escala para EIB muestra tres filas
+ * y `getOpcionesEib` ofrece tres botones. Después había que filtrarlo en cada
+ * consolidado para que no apareciera con 0 ítems.
+ *
+ * Hoy la cantidad la declara `VALORACIONES_POR_TIPO` en el contrato compartido y
+ * las cinco validaciones la consultan.
+ */
+describe('nivelesPorDefecto — Monitoreo Docente EIB', () => {
+  const escala = nivelesPorDefecto('Monitoreo Docente EIB');
+
+  it('propone las tres valoraciones de la lista de cotejo', () => {
+    expect(escala.map((n) => n.denominacion)).toEqual(['No', 'Parcialmente', 'Sí']);
+  });
+
+  it('no lleva un cuarto nivel', () => {
+    expect(escala).toHaveLength(3);
+    expect(escala.some((n) => n.denominacion === 'Destacado')).toBe(false);
+  });
+
+  it('se resuelve por porcentaje, no por puntaje', () => {
+    expect(baremoPorDefecto('Monitoreo Docente EIB')).toBe('Porcentual');
+  });
+});
+
+describe('cantidadDeValoraciones', () => {
+  it('da tres para la lista de cotejo EIB', () => {
+    expect(cantidadDeValoraciones('Monitoreo Docente EIB')).toBe(3);
+  });
+
+  it('da cuatro para los instrumentos que puntúan', () => {
+    expect(cantidadDeValoraciones('Monitoreo Docente')).toBe(4);
+    expect(cantidadDeValoraciones('Monitoreo Directivo')).toBe(4);
+  });
+});
+
+describe('romanosDeInstrumento', () => {
+  it('la EIB no otorga el nivel IV', () => {
+    expect(romanosDeInstrumento('Monitoreo Docente EIB')).toEqual(['I', 'II', 'III']);
+  });
+
+  it('los instrumentos que puntúan otorgan de I a IV', () => {
+    expect(romanosDeInstrumento('Monitoreo Docente')).toEqual(['I', 'II', 'III', 'IV']);
+  });
+});
+
+/**
+ * La escala EIB de las plantillas creadas antes de este cambio está persistida
+ * con cuatro niveles. Se normaliza al leerla, y por eso no hace falta migrar la
+ * base de datos.
+ */
+describe('normalizarEscala', () => {
+  const ESCALA_EIB_HEREDADA: NivelCalificacion[] = [
+    { nivel: 'I', denominacion: 'No', rangoMin: 0, color: '#ef4444' },
+    { nivel: 'II', denominacion: 'Parcialmente', rangoMin: 50, color: '#f59e0b' },
+    { nivel: 'III', denominacion: 'Sí', rangoMin: 100, color: '#22c55e' },
+    { nivel: 'IV', denominacion: 'Destacado', rangoMin: 100, color: '#3b82f6' },
+  ];
+
+  it('recorta el cuarto nivel de una plantilla EIB ya guardada', () => {
+    const escala = normalizarEscala(ESCALA_EIB_HEREDADA, 'Monitoreo Docente EIB');
+
+    expect(escala.map((n) => n.denominacion)).toEqual(['No', 'Parcialmente', 'Sí']);
+  });
+
+  it('conserva las denominaciones que el usuario editó', () => {
+    const editada = ESCALA_EIB_HEREDADA.map((n) =>
+      n.nivel === 'II' ? { ...n, denominacion: 'En proceso' } : n,
+    );
+
+    expect(normalizarEscala(editada, 'Monitoreo Docente EIB')[1].denominacion).toBe('En proceso');
+  });
+
+  it('deja intacta una escala de cuatro de un instrumento que puntúa', () => {
+    const docente = nivelesPorDefecto('Monitoreo Docente');
+
+    expect(normalizarEscala(docente, 'Monitoreo Docente')).toEqual(docente);
+  });
+
+  it('cae en la propuesta por defecto si falta un nivel esperado', () => {
+    const incompleta = nivelesPorDefecto('Monitoreo Docente').slice(0, 2);
+
+    expect(normalizarEscala(incompleta, 'Monitoreo Docente')).toHaveLength(4);
+  });
+
+  it('tolera una escala ausente', () => {
+    expect(normalizarEscala(undefined, 'Monitoreo Docente EIB')).toHaveLength(3);
+  });
+});
+
+describe('descriptorPorDefecto', () => {
+  it('en la EIB el respaldo es la valoración misma', () => {
+    expect(descriptorPorDefecto('Monitoreo Docente EIB', 'I')).toBe('No');
+    expect(descriptorPorDefecto('Monitoreo Docente EIB', 'II')).toBe('Parcialmente');
+    expect(descriptorPorDefecto('Monitoreo Docente EIB', 'III')).toBe('Sí');
+  });
+
+  it('en los instrumentos que puntúan se rotula con el nivel', () => {
+    expect(descriptorPorDefecto('Monitoreo Docente', 'IV')).toBe('Nivel IV');
+  });
+});
 
 describe('nivelesPorDefecto — Monitoreo Docente', () => {
   const escala = nivelesPorDefecto('Monitoreo Docente');

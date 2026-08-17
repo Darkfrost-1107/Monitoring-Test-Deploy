@@ -1,5 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useReactToPrint } from 'react-to-print';
+import type { TipoPlantilla } from '@sistema-monitoreo/shared-contracts';
 import type { Cronograma } from '@/entities/model-cronogramas';
 import type { Plantilla } from '@/entities/model-plantillas';
 import { usePlantilla } from '@/entities/model-plantillas/use-plantillas-api';
@@ -10,6 +12,7 @@ import { FiltrosReportes } from './grid/FiltrosReportes';
 import { TarjetaReporte } from './grid/TarjetaReporte';
 import { TablaReportes } from './grid/TablaReportes';
 import { FichaNoDisponible, SinReportes } from './grid/EstadosDelListado';
+import { FichaPrintable } from './FichaPrintable';
 import { reportesApi } from '@/shared/api/reportes.api';
 import { toast } from 'sonner';
 
@@ -22,13 +25,34 @@ import { toast } from 'sonner';
  * devolvía una evaluación inventada cuando la ficha no llegaba.
  */
 
+import type { FiltroPeriodoTipo } from '@/features/reportes/lib/filtro-temporal';
+import { PLANTILLA_DE_INSTRUMENTO } from '@/features/reportes/lib/instrumento';
+
 export interface BackendReportVisit extends Cronograma {
+  /**
+   * La visita de la que salió la ficha. `id` es el de la FICHA.
+   *
+   * Una visita docente puede llevar la ficha regular y la EIB, así que dos filas
+   * pueden compartir cronograma. Ya viajaba en el objeto sin estar declarado.
+   */
+  cronogramaId?: string;
+  /**
+   * Instrumento con el que se llenó la ficha, tal como lo declara su plantilla.
+   *
+   * `tipo` dice a quién se monitorea (DOCENTE | DIRECTIVO) y nunca puede valer
+   * `DOCENTE_EIB`: EIB es un instrumento, no una clase de visita. Antes los dos
+   * significados compartían campo y había que olfatear cadenas para separarlos.
+   */
+  instrumento?: TipoPlantilla;
+  plantillaId?: string;
+  plantillaNombre?: string;
   nivelLogro?: string;
   promedio?: number;
   puntajeTotal?: number;
   correoEnviado?: boolean;
   horaInicio?: string;
   horaFin?: string;
+  anioAcademico?: number;
 }
 
 interface ReportesGridProps {
@@ -42,6 +66,12 @@ interface ReportesGridProps {
   setFilterNivel: (n: string) => void;
   filterAnio: string;
   setFilterAnio: (a: string) => void;
+  filterTipo?: string;
+  setFilterTipo?: (tipo: string) => void;
+  conteosTipo?: Record<string, number>;
+  filtroPeriodo: FiltroPeriodoTipo;
+  setFiltroPeriodo: (p: FiltroPeriodoTipo) => void;
+  conteosPeriodo?: Record<FiltroPeriodoTipo, number>;
   nivelesDisponibles: string[];
   añosDisponibles: string[];
   isAnyFilterActive: boolean;
@@ -86,18 +116,22 @@ export const ReportesGrid = ({
     if (!visitaAbierta) return null;
     if (plantillaDeLaFicha) return plantillaDeLaFicha;
 
-    const tipoBuscado =
-      visitaAbierta.tipo === 'DOCENTE' ? 'Monitoreo Docente' : 'Monitoreo Directivo';
-    return plantillas.find((p) => p.tipoMonitoreo === tipoBuscado) || plantillas[0] || null;
+    // El instrumento de la ficha nombra su plantilla. Antes se deducía con una
+    // cadena de ternarios sobre `tipo`, que no distingue la EIB de la regular.
+    const tipoBuscado = PLANTILLA_DE_INSTRUMENTO[visitaAbierta.instrumento ?? 'DOCENTE'];
+    return (
+      plantillas.find(
+        (p) =>
+          p.tipoMonitoreo === tipoBuscado ||
+          p.tipoMonitoreo.toUpperCase().includes(tipoBuscado.toUpperCase()),
+      ) ||
+      plantillas[0] ||
+      null
+    );
   }, [plantillaDeLaFicha, visitaAbierta, plantillas]);
 
   /**
    * El estado del formulario sale de la ficha del backend, o no sale.
-   *
-   * Antes, cuando la ficha no llegaba, se caía a `getFichaState`, que devolvía
-   * una evaluación **inventada**: treinta y cinco aspectos marcados, todos los
-   * niveles en III y IV y un párrafo de observaciones escrito a mano. Eso se le
-   * mostraba al usuario como si fuera la ficha real de esa visita.
    */
   const estadoDeLaFicha = useMemo(
     () => (fichaDelBackend ? fichaAEstadoFormulario(fichaDelBackend) : null),
@@ -106,10 +140,83 @@ export const ReportesGrid = ({
 
   const cerrarFicha = () => setVisitaAbierta(null);
 
-  // El PDF se genera desde el modal, que es donde se carga la ficha completa.
-  const abrirParaDescargar = (visita: BackendReportVisit, e: React.MouseEvent) => {
+  // Impresión directa del formato oficial (FichaPrintable)
+  const [visitaParaImprimir, setVisitaParaImprimir] = useState<BackendReportVisit | null>(null);
+  const printDirectRef = useRef<HTMLDivElement>(null);
+  const handlePrintDirect = useReactToPrint({ contentRef: printDirectRef });
+
+  const {
+    data: fichaParaImprimir,
+    isError: errorFichaImprimir,
+  } = useQuery({
+    queryKey: ['ficha-imprimir-directa', visitaParaImprimir?.id],
+    queryFn: () => {
+      if (!visitaParaImprimir) return null;
+      return 'nivelLogro' in visitaParaImprimir
+        ? fichasApi.findById(visitaParaImprimir.id)
+        : fichasApi.findByVisita(visitaParaImprimir.id);
+    },
+    enabled: !!visitaParaImprimir,
+  });
+
+  const plantillaDeLaFichaImprimir = usePlantilla(fichaParaImprimir?.plantillaId).data;
+
+  const plantillaImprimirActiva = useMemo(() => {
+    if (!visitaParaImprimir) return null;
+    if (plantillaDeLaFichaImprimir) return plantillaDeLaFichaImprimir;
+
+    const tipoBuscado = PLANTILLA_DE_INSTRUMENTO[visitaParaImprimir.instrumento ?? 'DOCENTE'];
+    return (
+      plantillas.find(
+        (p) =>
+          p.tipoMonitoreo === tipoBuscado ||
+          p.tipoMonitoreo.toUpperCase().includes(tipoBuscado.toUpperCase()),
+      ) ||
+      plantillas[0] ||
+      null
+    );
+  }, [plantillaDeLaFichaImprimir, visitaParaImprimir, plantillas]);
+
+  const estadoFichaImprimir = useMemo(
+    () => (fichaParaImprimir ? fichaAEstadoFormulario(fichaParaImprimir) : null),
+    [fichaParaImprimir],
+  );
+
+  useEffect(() => {
+    if (errorFichaImprimir) {
+      toast.error('No se pudo cargar la información de la ficha para exportar.');
+      const timer = setTimeout(() => {
+        setVisitaParaImprimir(null);
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [errorFichaImprimir]);
+
+  useEffect(() => {
+    if (
+      visitaParaImprimir &&
+      fichaParaImprimir &&
+      plantillaImprimirActiva &&
+      estadoFichaImprimir &&
+      printDirectRef.current
+    ) {
+      const timer = setTimeout(() => {
+        handlePrintDirect();
+        setVisitaParaImprimir(null);
+      }, 200);
+      return () => clearTimeout(timer);
+    }
+  }, [
+    visitaParaImprimir,
+    fichaParaImprimir,
+    plantillaImprimirActiva,
+    estadoFichaImprimir,
+    handlePrintDirect,
+  ]);
+
+  const handleDescargarPdf = (visita: BackendReportVisit, e: React.MouseEvent) => {
     e.stopPropagation();
-    setVisitaAbierta(visita);
+    setVisitaParaImprimir(visita);
   };
 
   const [enviandoCorreoId, setEnviandoCorreoId] = useState<string | null>(null);
@@ -128,10 +235,23 @@ export const ReportesGrid = ({
   };
 
   const fichaLista = !!visitaAbierta && !!plantillaActiva && !!estadoDeLaFicha;
+  const descargandoId = visitaParaImprimir?.id ?? null;
 
   return (
     <div className="space-y-6">
       <FiltrosReportes {...filtros} isEvaluatedView={isEvaluatedView} />
+
+      {/* Contenedor oculto para renderizar la Ficha Oficial para el diálogo de PDF */}
+      {visitaParaImprimir && plantillaImprimirActiva && estadoFichaImprimir && (
+        <div style={{ display: 'none' }}>
+          <FichaPrintable
+            ref={printDirectRef}
+            visit={visitaParaImprimir}
+            template={plantillaImprimirActiva}
+            fichaState={estadoFichaImprimir}
+          />
+        </div>
+      )}
 
       {filteredVisits.length === 0 ? (
         <SinReportes />
@@ -143,7 +263,8 @@ export const ReportesGrid = ({
               visita={visita}
               isEvaluatedView={isEvaluatedView}
               onAbrir={() => setVisitaAbierta(visita)}
-              onDescargar={(e) => abrirParaDescargar(visita, e)}
+              onDescargar={(e) => handleDescargarPdf(visita, e)}
+              isDescargando={descargandoId === visita.id}
               onEnviarCorreo={(e) => handleEnviarCorreo(visita, e)}
               isEnviandoCorreo={enviandoCorreoId === visita.id}
             />
@@ -153,7 +274,8 @@ export const ReportesGrid = ({
         <TablaReportes
           visitas={filteredVisits}
           onAbrir={setVisitaAbierta}
-          onDescargar={abrirParaDescargar}
+          onDescargar={(visita, e) => handleDescargarPdf(visita, e)}
+          descargandoId={descargandoId}
         />
       )}
 

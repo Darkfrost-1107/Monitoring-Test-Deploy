@@ -47,8 +47,31 @@ export const PanelDesempenos = ({
     [template, elegidoId],
   );
 
+  const esEib =
+    template.tipoMonitoreo === 'DOCENTE_EIB' ||
+    template.tipoMonitoreo.toUpperCase().includes('EIB');
+
+  const indiceActual = abierto
+    ? template.desempenos.findIndex((d) => d.id === abierto.id)
+    : 0;
+  const totalDesempenos = template.desempenos.length;
+  const tieneAnterior = indiceActual > 0;
+  const tieneSiguiente = indiceActual >= 0 && indiceActual < totalDesempenos - 1;
+
+  const totalEvaluados = useMemo(() => {
+    return template.desempenos.filter((d) => !!respuestas.niveles[d.id]).length;
+  }, [template.desempenos, respuestas.niveles]);
+
+  const onAnterior = tieneAnterior
+    ? () => setElegidoId(template.desempenos[indiceActual - 1].id)
+    : undefined;
+
+  const onSiguiente = tieneSiguiente
+    ? () => setElegidoId(template.desempenos[indiceActual + 1].id)
+    : undefined;
+
   return (
-    <div className="flex flex-col md:flex-row min-h-[300px]">
+    <div className="flex flex-col md:flex-row min-h-[300px] items-start border-b border-border bg-white">
       <ListaDesempenos
         desempenos={template.desempenos}
         seleccionadoId={abierto?.id ?? ''}
@@ -69,6 +92,12 @@ export const PanelDesempenos = ({
         onObservar={(texto) => abierto && onObservar(abierto.id, texto)}
         mostrarAspectos={mostrarAspectos}
         soloLectura={soloLectura}
+        esEib={esEib}
+        indiceActual={indiceActual}
+        totalDesempenos={totalDesempenos}
+        totalEvaluados={totalEvaluados}
+        onAnterior={onAnterior}
+        onSiguiente={onSiguiente}
       />
     </div>
   );

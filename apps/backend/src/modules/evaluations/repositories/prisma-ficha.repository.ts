@@ -42,11 +42,36 @@ export class PrismaFichaRepository implements FichaRepository {
   }
 
   async findByVisitaId(cronogramaId: string): Promise<IFichaMonitoreo | null> {
-    const ficha = await this.prisma.fichaMonitoreo.findUnique({
+    const ficha = await this.prisma.fichaMonitoreo.findFirst({
       where: { cronogramaId },
+      orderBy: { createdAt: 'desc' },
     });
     if (!ficha) return null;
     return this.buildFicha(ficha.id);
+  }
+
+  async findByVisitaYPlantilla(
+    cronogramaId: string,
+    plantillaId: string,
+  ): Promise<IFichaMonitoreo | null> {
+    const ficha = await this.prisma.fichaMonitoreo.findUnique({
+      where: {
+        uq_ficha_visita_plantilla: {
+          cronogramaId,
+          plantillaId,
+        },
+      },
+    });
+    if (!ficha) return null;
+    return this.buildFicha(ficha.id);
+  }
+
+  async findAllByVisitaId(cronogramaId: string): Promise<IFichaMonitoreo[]> {
+    const fichas = await this.prisma.fichaMonitoreo.findMany({
+      where: { cronogramaId },
+      orderBy: { createdAt: 'asc' },
+    });
+    return Promise.all(fichas.map((f) => this.buildFicha(f.id)));
   }
 
   async findById(id: string): Promise<IFichaMonitoreo | null> {

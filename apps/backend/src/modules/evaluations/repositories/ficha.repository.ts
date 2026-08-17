@@ -72,6 +72,11 @@ export interface PlantillaBasic {
 
 export abstract class FichaRepository {
   abstract findByVisitaId(cronogramaId: string): Promise<IFichaMonitoreo | null>;
+  abstract findByVisitaYPlantilla(
+    cronogramaId: string,
+    plantillaId: string,
+  ): Promise<IFichaMonitoreo | null>;
+  abstract findAllByVisitaId(cronogramaId: string): Promise<IFichaMonitoreo[]>;
   abstract findById(id: string): Promise<IFichaMonitoreo | null>;
   abstract create(data: CreateFichaData): Promise<IFichaMonitoreo>;
   abstract saveRespuestaDesempeno(data: SaveRespuestaData): Promise<IFichaRespuestaDesempeno>;

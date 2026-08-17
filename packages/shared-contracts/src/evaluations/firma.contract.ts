@@ -10,6 +10,16 @@ export interface ISignFichaRequest {
    * Debe ser true para procesar la firma.
    */
   consentimiento: boolean;
+
+  /**
+   * Instrumento de la ficha que se firma.
+   *
+   * Hace falta cuando la ruta lleva el id del CRONOGRAMA y la visita tiene más
+   * de una ficha: una visita docente puede llevar la ficha regular y la EIB, y
+   * sin esto el servidor no puede saber cuál se está firmando. Opcional porque
+   * quien pasa el id de la ficha ya es inequívoco.
+   */
+  plantillaId?: string;
 }
 
 export interface ISignFichaResponse {

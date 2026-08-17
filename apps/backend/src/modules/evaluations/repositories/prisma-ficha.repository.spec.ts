@@ -55,6 +55,7 @@ const montar = () => {
   const prisma = {
     fichaMonitoreo: {
       findUnique: jest.fn<() => Promise<unknown>>(),
+      findFirst: jest.fn<() => Promise<unknown>>(),
       findMany: jest.fn<() => Promise<unknown>>(),
       update: jest.fn<() => Promise<unknown>>().mockResolvedValue({}),
       count: jest.fn<() => Promise<unknown>>(),
@@ -74,7 +75,7 @@ describe('PrismaFichaRepository', () => {
   describe('búsqueda de fichas', () => {
     it('devuelve nulo cuando no existe ficha para la visita', async () => {
       const { repo, prisma } = montar();
-      prisma.fichaMonitoreo.findUnique.mockResolvedValue(null);
+      prisma.fichaMonitoreo.findFirst.mockResolvedValue(null);
 
       expect(await repo.findByVisitaId('c-x')).toBeNull();
     });
@@ -90,15 +91,15 @@ describe('PrismaFichaRepository', () => {
       // La búsqueda inicial trae sólo la fila; el detalle se recompone en una
       // segunda consulta con todos los `include`.
       const { repo, prisma } = montar();
-      prisma.fichaMonitoreo.findUnique
-        .mockResolvedValueOnce({ id: 'f-1' })
-        .mockResolvedValueOnce(fichaCompleta());
+      prisma.fichaMonitoreo.findFirst.mockResolvedValueOnce({ id: 'f-1' });
+      prisma.fichaMonitoreo.findUnique.mockResolvedValueOnce(fichaCompleta());
 
       const f = await repo.findByVisitaId('c-1');
 
       expect(f?.id).toBe('f-1');
       expect(f?.contexto.areaCurricular).toBe('Matemática');
-      expect(prisma.fichaMonitoreo.findUnique).toHaveBeenCalledTimes(2);
+      expect(prisma.fichaMonitoreo.findFirst).toHaveBeenCalledTimes(1);
+      expect(prisma.fichaMonitoreo.findUnique).toHaveBeenCalledTimes(1);
     });
 
     it('falla si la ficha desaparece entre las dos consultas', async () => {

@@ -1,5 +1,6 @@
 import type { Cronograma } from '@entities/model-cronogramas';
 import type { Plantilla } from '@entities/model-plantillas';
+import { esEscalaCualitativa, resumirPorNivel } from '@entities/model-plantillas';
 import { formatearFechaCorta } from '@shared/lib/fecha/fecha';
 import { consolidarFicha, puntajeDeDesempeno } from '@features/reportes/lib/consolidado-ficha';
 import { TituloDeSeccion } from './tabla';
@@ -59,6 +60,60 @@ export const Consolidado = ({
   template: Plantilla;
   estado: EstadoDeCierre;
 }) => {
+  if (esEscalaCualitativa(template.niveles)) {
+    const resumen = resumirPorNivel(
+      template.desempenos.map((des) => des.id),
+      template.niveles,
+      estado.selectedLevels,
+    );
+
+    return (
+      <div className="mt-8 break-inside-avoid">
+        <TituloDeSeccion>RESUMEN CUALITATIVO DE OBSERVACIÓN EN AULA:</TituloDeSeccion>
+        <table className="pdf-table" style={{ marginBottom: '20px' }}>
+          <thead>
+            <tr>
+              <th className="bg-gray text-left" style={{ padding: '6px 8px' }}>VALORACIÓN / CRITERIO</th>
+              <th className="bg-gray text-center w-36" style={{ padding: '6px 8px' }}>CANTIDAD DE ÍTEMS</th>
+              <th className="bg-gray text-center w-36" style={{ padding: '6px 8px' }}>DISTRIBUCIÓN (%)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {resumen.porNivel.map((conteo) => (
+              <tr key={conteo.nivel}>
+                <td className="font-bold" style={{ color: conteo.color }}>
+                  {conteo.denominacion}
+                </td>
+                <td className="text-center font-bold">{conteo.cantidad}</td>
+                <td className="text-center font-bold" style={{ color: conteo.color }}>
+                  {conteo.porcentaje}%
+                </td>
+              </tr>
+            ))}
+
+            {/* Un ítem sin marcar se informa como tal: la fila TOTAL escribía
+                100% a mano y cerraba el documento sobre un reparto incompleto. */}
+            {resumen.sinValorar.cantidad > 0 && (
+              <tr>
+                <td className="font-bold text-slate-500">Sin valorar</td>
+                <td className="text-center font-bold">{resumen.sinValorar.cantidad}</td>
+                <td className="text-center font-bold text-slate-500">
+                  {resumen.sinValorar.porcentaje}%
+                </td>
+              </tr>
+            )}
+
+            <tr className="bg-gray font-bold">
+              <td className="uppercase">TOTAL DE ÍTEMS EVALUADOS</td>
+              <td className="text-center text-sm">{resumen.total}</td>
+              <td className="text-center text-sm">{resumen.total > 0 ? '100%' : '—'}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    );
+  }
+
   const resultado = consolidarFicha(template.desempenos, estado.selectedLevels);
 
   // Planificación y diseño de evaluación existe sólo en el instrumento docente:
@@ -190,15 +245,24 @@ const FirmaImagen = ({ url }: { url: string | null | undefined }) => {
 export const Firmas = ({
   visita,
   directorNombre,
+  plantillaId,
 }: {
   visita: Cronograma;
   directorNombre: string;
+  /**
+   * Instrumento de la ficha que se imprime.
+   *
+   * `visita.id` es el de la FICHA cuando el listado viene del backend, y el del
+   * CRONOGRAMA cuando se armó desde los cronogramas. En ese segundo caso una
+   * visita docente puede tener dos fichas —la regular y la EIB— y sin la
+   * plantilla el servidor no sabe de cuál traer las firmas.
+   */
+  plantillaId?: string;
 }) => {
-  // El ID que se usa puede ser el de la ficha (BackendReportVisit.id) o el cronogramaId
   const fichaId = visita.id;
   const { data } = useQuery({
-    queryKey: ['ficha-firmas', fichaId],
-    queryFn: () => firmasApi.getFirmasDeFicha(fichaId),
+    queryKey: ['ficha-firmas', fichaId, plantillaId],
+    queryFn: () => firmasApi.getFirmasDeFicha(fichaId, plantillaId),
     enabled: !!fichaId,
     staleTime: 30_000,
   });

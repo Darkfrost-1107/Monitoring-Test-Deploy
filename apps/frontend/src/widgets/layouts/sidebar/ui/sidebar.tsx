@@ -117,14 +117,10 @@ export const Sidebar = () => {
                   ...item,
                   label: 'Mis Reportes',
                   path: '/reportes',
-                };
-              } else {
-                return {
-                  ...item,
-                  label: 'Fichas Completadas',
-                  path: '/reportes',
+                  children: [],
                 };
               }
+              return item;
             }
             return item;
           });
@@ -134,8 +130,12 @@ export const Sidebar = () => {
 
           // Lógica de estado activo por ruta (URL)
           const isActive =
-            (item.path && location.pathname.startsWith(item.path)) ||
-            visibleChildren.some((c) => location.pathname.startsWith(c.path));
+            (item.path && location.pathname === item.path) ||
+            visibleChildren.some((c) =>
+              c.path === '/reportes'
+                ? location.pathname === '/reportes'
+                : location.pathname.startsWith(c.path),
+            );
 
           // El padrón se rotula según desde dónde se mira: la UGEL ve la lista
           // de directores de institución; una institución ve a sus docentes.
@@ -199,20 +199,27 @@ export const Sidebar = () => {
                 {!collapsed && (
                   <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down">
                     <div className="pl-10 flex flex-col gap-0.5 mt-0.5 pb-1">
-                      {visibleChildren.map((child) => (
-                        <button
-                          key={child.id}
-                          onClick={() => navigate(child.path)}
-                          className={`
-                            flex items-center gap-2 px-3 py-2 rounded-lg border-none
-                            cursor-pointer text-left text-[0.82rem] transition-all bg-transparent outline-none
-                            ${location.pathname.startsWith(child.path) ? 'text-primary font-semibold' : 'text-text-muted hover:text-text hover:bg-bg'}
-                          `}
-                        >
-                          <span className="w-1.5 h-1.5 rounded-full bg-current flex-shrink-0" />
-                          {child.label}
-                        </button>
-                      ))}
+                      {visibleChildren.map((child) => {
+                        const isChildActive =
+                          child.path === '/reportes'
+                            ? location.pathname === '/reportes'
+                            : location.pathname.startsWith(child.path);
+
+                        return (
+                          <button
+                            key={child.id}
+                            onClick={() => navigate(child.path)}
+                            className={`
+                              flex items-center gap-2 px-3 py-2 rounded-lg border-none
+                              cursor-pointer text-left text-[0.82rem] transition-all bg-transparent outline-none
+                              ${isChildActive ? 'text-primary font-semibold' : 'text-text-muted hover:text-text hover:bg-bg'}
+                            `}
+                          >
+                            <span className="w-1.5 h-1.5 rounded-full bg-current flex-shrink-0" />
+                            {child.label}
+                          </button>
+                        );
+                      })}
                     </div>
                   </CollapsibleContent>
                 )}

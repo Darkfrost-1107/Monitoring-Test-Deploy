@@ -24,6 +24,7 @@ export interface ContextoDeAula {
 }
 
 export interface EstadoFormularioFicha {
+  estado?: string;
   checkedAspects: Record<string, boolean>;
   selectedLevels: Record<string, string>;
   generalComments: string;
@@ -46,6 +47,7 @@ const CONTEXTO_VACIO: ContextoDeAula = {
 };
 
 export const FORMULARIO_VACIO: EstadoFormularioFicha = {
+  estado: undefined,
   checkedAspects: {},
   selectedLevels: {},
   generalComments: '',
@@ -65,6 +67,7 @@ type ContextoPersistido = Partial<NonNullable<DatosFicha['contexto']>>;
 /** Fuente parcial del estado inicial: puede venir incompleta desde cualquier lado. */
 export type FuenteDeEstado = Partial<Omit<DatosFicha, 'contexto'>> & {
   contexto?: ContextoPersistido | null;
+  estado?: string;
 };
 
 /** Rellena con vacíos lo que la fuente no traiga. */
@@ -74,6 +77,7 @@ export function hidratarFormulario(
   if (!fuente) return FORMULARIO_VACIO;
 
   return {
+    estado: fuente.estado,
     checkedAspects: fuente.checkedAspects ?? {},
     selectedLevels: fuente.selectedLevels ?? {},
     generalComments: fuente.generalComments ?? '',
@@ -131,14 +135,14 @@ export const tieneContextoCargado = (contexto: ContextoPersistido | undefined | 
  */
 export function aDatosFicha(
   estado: EstadoFormularioFicha,
-  tipoVisita: 'DOCENTE' | 'DIRECTIVO',
+  tipoVisita: import('@sistema-monitoreo/shared-contracts').TipoMonitoreo,
 ): DatosFicha {
   const { contexto, ...respuestas } = estado;
 
   return {
     ...respuestas,
     contexto:
-      tipoVisita === 'DOCENTE'
+      tipoVisita !== 'DIRECTIVO'
         ? {
             areaCurricular: contexto.area,
             grado: contexto.grado,
@@ -151,4 +155,7 @@ export function aDatosFicha(
 }
 
 /** Clave con la que se guarda el borrador de una ficha en el navegador. */
-export const claveEstadoLocal = (visitId: string) => `sistema-monitoreo:ficha-state:${visitId}`;
+export const claveEstadoLocal = (visitId: string, plantillaId?: string) =>
+  plantillaId
+    ? `sistema-monitoreo:ficha-state:${visitId}:${plantillaId}`
+    : `sistema-monitoreo:ficha-state:${visitId}`;

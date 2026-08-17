@@ -1,13 +1,10 @@
 import { Sparkles, FileText, Download, X, Activity } from 'lucide-react';
 import { Button } from '@/shared/ui/button';
-import type { Cronograma } from '@/entities/model-cronogramas';
 import type { Plantilla } from '@/entities/model-plantillas';
-import { formatearFechaCorta, formatearHora } from '@/shared/lib/fecha/fecha';
 
 export type PestanaFicha = 'FICHA' | 'HISTORIAL';
 
 interface CabeceraFichaProps {
-  visit: Cronograma;
   template: Plantilla;
   soloLectura: boolean;
   /** Sin pestañas cuando la visita no tiene historial que mostrar. */
@@ -18,13 +15,12 @@ interface CabeceraFichaProps {
 }
 
 const PESTANAS = [
-  { clave: 'FICHA' as const, etiqueta: 'Rúbricas de Ficha', Icono: FileText },
-  { clave: 'HISTORIAL' as const, etiqueta: 'Historial Pedagógico', Icono: Activity },
+  { clave: 'FICHA' as const, etiqueta: 'Rúbricas', Icono: FileText },
+  { clave: 'HISTORIAL' as const, etiqueta: 'Historial', Icono: Activity },
 ];
 
-/** Encabezado del formulario: qué instrumento, sobre quién y en qué visita. */
+/** Encabezado fijo ultra compacto: título + selector pill + acciones en 1 sola fila. */
 export const CabeceraFicha = ({
-  visit,
   template,
   soloLectura,
   pestana,
@@ -32,75 +28,74 @@ export const CabeceraFicha = ({
   onImprimir,
   onCerrar,
 }: CabeceraFichaProps) => (
-  <>
-    <div className="p-5 border-b border-border bg-slate-50 flex items-center justify-between">
-      <div className="space-y-1">
-        <span className="text-[10px] font-black uppercase tracking-widest text-primary flex items-center gap-1">
-          <Sparkles className="h-3.5 w-3.5" />
-          Ejecución de Ficha de Monitoreo {soloLectura && '(Lectura)'}
-        </span>
-        <h2 className="text-lg font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
-          <FileText className="h-5 w-5 text-primary" />
-          {template.tipoMonitoreo} ({template.anioAcademico})
-        </h2>
+  <div className="shrink-0 bg-white border-b border-border px-4 sm:px-6 py-2.5 flex items-center justify-between gap-3">
+    {/* Título del instrumento */}
+    <div className="min-w-0 flex items-center gap-2.5">
+      <div className="h-8 w-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+        <Sparkles className="h-4 w-4" />
       </div>
-
-      <div className="flex items-center gap-3">
-        {soloLectura && (
-          <Button
-            variant="outline"
-            size="sm"
-            className="border-primary text-primary hover:bg-primary/5 text-xs font-bold gap-1.5 cursor-pointer shadow-sm"
-            onClick={onImprimir}
-          >
-            <Download className="h-4 w-4" />
-            Imprimir / PDF
-          </Button>
-        )}
-        <button
-          onClick={onCerrar}
-          className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition-colors cursor-pointer"
-        >
-          <X className="h-5 w-5" />
-        </button>
+      <div className="min-w-0">
+        <div className="flex items-center gap-2">
+          <h2 className="text-sm sm:text-base font-extrabold text-slate-800 tracking-tight truncate">
+            {template.tipoMonitoreo}
+          </h2>
+          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200 shrink-0">
+            {template.anioAcademico}
+          </span>
+          {soloLectura && (
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
+              Lectura
+            </span>
+          )}
+        </div>
       </div>
     </div>
 
-    <div className="px-6 py-3 bg-primary-light border-b border-primary/5 text-xs text-slate-600 font-bold grid grid-cols-2 md:grid-cols-4 gap-4">
-      <div>
-        Institución: <span className="text-slate-800">{visit.institucion}</span>
-      </div>
-      <div>
-        Evaluado: <span className="text-slate-800">{visit.docenteDirectivo}</span>
-      </div>
-      <div>
-        Especialista: <span className="text-slate-800">{visit.especialista}</span>
-      </div>
-      <div>
-        Fecha Programada:{' '}
-        <span className="text-slate-800">
-          {formatearFechaCorta(visit.fechaHora)} - {formatearHora(visit.fechaHora)}
-        </span>
-      </div>
-    </div>
-
+    {/* Selector de pestañas tipo pill (en el centro) */}
     {pestana && (
-      <div className="flex items-center gap-6 px-6 pt-3 border-b border-border bg-white">
-        {PESTANAS.map(({ clave, etiqueta, Icono }) => (
-          <button
-            key={clave}
-            onClick={() => onPestana(clave)}
-            className={`pb-3 text-sm font-bold flex items-center gap-2 border-b-2 transition-colors ${
-              pestana === clave
-                ? 'border-primary text-primary'
-                : 'border-transparent text-slate-500 hover:text-slate-700'
-            }`}
-          >
-            <Icono className="h-4.5 w-4.5" />
-            {etiqueta}
-          </button>
-        ))}
+      <div className="inline-flex p-0.5 bg-slate-100/90 rounded-xl border border-slate-200/80 shadow-2xs shrink-0">
+        {PESTANAS.map(({ clave, etiqueta, Icono }) => {
+          const activa = pestana === clave;
+          return (
+            <button
+              key={clave}
+              type="button"
+              onClick={() => onPestana(clave)}
+              className={`px-3 py-1 text-xs font-bold rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${
+                activa
+                  ? 'bg-white text-primary shadow-xs'
+                  : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200/40'
+              }`}
+            >
+              <Icono className="h-3.5 w-3.5" />
+              <span>{etiqueta}</span>
+            </button>
+          );
+        })}
       </div>
     )}
-  </>
+
+    {/* Botones de acción */}
+    <div className="flex items-center gap-2 shrink-0">
+      {soloLectura && (
+        <Button
+          variant="outline"
+          size="sm"
+          className="border-primary text-primary hover:bg-primary/5 text-xs font-bold gap-1.5 cursor-pointer shadow-xs h-7.5 px-2.5"
+          onClick={onImprimir}
+        >
+          <Download className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">Imprimir / PDF</span>
+          <span className="sm:hidden">PDF</span>
+        </Button>
+      )}
+      <button
+        onClick={onCerrar}
+        aria-label="Cerrar modal"
+        className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+      >
+        <X className="h-5 w-5" />
+      </button>
+    </div>
+  </div>
 );

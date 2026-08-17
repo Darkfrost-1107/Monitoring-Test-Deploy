@@ -15,6 +15,7 @@ import {
   PlantillaEditPage,
   PlantillasPage,
   ReportesPage,
+  AnalisisDesempenoPage,
   SolicitudesVisitaPage,
 } from './jefeGestion.lazy';
 
@@ -142,6 +143,14 @@ export const jefeGestionRoutes: RouteObject[] = [
         element: (
           <LazyLoader>
             <ReportesPage />
+          </LazyLoader>
+        ),
+      },
+      {
+        path: 'reportes/analisis',
+        element: (
+          <LazyLoader>
+            <AnalisisDesempenoPage />
           </LazyLoader>
         ),
       },

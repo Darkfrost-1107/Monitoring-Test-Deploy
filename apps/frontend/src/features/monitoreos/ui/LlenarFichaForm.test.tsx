@@ -279,7 +279,10 @@ describe('LlenarFichaForm — guardar borrador', () => {
 
 describe('LlenarFichaForm — ficha ya cerrada', () => {
   it('una visita completada no ofrece finalizar', () => {
-    montar({ visit: { estado: 'COMPLETADO' }, initialState: FICHA_COMPLETA });
+    montar({
+      visit: { estado: 'COMPLETADO' },
+      initialState: { ...FICHA_COMPLETA, estado: 'FINALIZADO' },
+    });
 
     expect(screen.queryByRole('button', { name: /Finalizar/i })).not.toBeInTheDocument();
   });
@@ -310,7 +313,10 @@ describe('LlenarFichaForm — flujo de firmas en ficha completada', () => {
       'user',
       JSON.stringify({ id: 'u-1', docenteId: 'doc-1', role: 'docente' }),
     );
-    montar({ visit: { estado: 'COMPLETADO', evaluadoId: 'doc-1' }, initialState: FICHA_COMPLETA });
+    montar({
+      visit: { estado: 'COMPLETADO', evaluadoId: 'doc-1' },
+      initialState: { ...FICHA_COMPLETA, estado: 'FINALIZADO' },
+    });
 
     const btn = await screen.findByRole('button', { name: /Firmar Ficha/i });
     expect(btn).toBeInTheDocument();
@@ -324,7 +330,7 @@ describe('LlenarFichaForm — flujo de firmas en ficha completada', () => {
     );
     montar({
       visit: { estado: 'COMPLETADO', evaluadoId: 'doc-1', monitorId: 'esp-1' },
-      initialState: FICHA_COMPLETA,
+      initialState: { ...FICHA_COMPLETA, estado: 'FINALIZADO' },
     });
 
     expect(screen.queryByRole('button', { name: /Firmar Ficha/i })).not.toBeInTheDocument();

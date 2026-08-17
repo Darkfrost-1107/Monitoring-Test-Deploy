@@ -1,6 +1,6 @@
 import type { Baremo, NivelRomano } from './model';
 
-export const TIPOS_MONITOREO = ['Monitoreo Docente', 'Monitoreo Directivo'] as const;
+export const TIPOS_MONITOREO = ['Monitoreo Docente', 'Monitoreo Docente EIB', 'Monitoreo Directivo'] as const;
 
 export const BAREMOS: { value: Baremo; label: string }[] = [
   { value: 'Vigente', label: 'Vigente (0-20)' },

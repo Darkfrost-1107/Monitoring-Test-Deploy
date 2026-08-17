@@ -164,5 +164,44 @@ describe('NotificationsBell', () => {
       expect(h.mutateLeida).toHaveBeenCalledWith('s1');
       expect(h.navigate).toHaveBeenCalledWith('/monitoreo/solicitudes-visita');
     });
+
+    it('navega a /focos-atencion?distrito=... para alertas de distrito crítico', async () => {
+      const user = userEvent.setup();
+      setData([
+        notif({
+          id: 'd1',
+          tipo: 'ALERTA_DISTRITO',
+          titulo: 'Distrito en nivel crítico: CALAPUJA',
+          leida: false,
+        }),
+      ]);
+      render(<NotificationsBell />);
+      await abrirPanel(user);
+
+      const accion = await screen.findByRole('button', { name: /Ver Focos de Atención/ });
+      await user.click(accion);
+      expect(h.mutateLeida).toHaveBeenCalledWith('d1');
+      expect(h.navigate).toHaveBeenCalledWith('/focos-atencion?distrito=CALAPUJA');
+    });
+
+    it('navega a /focos-atencion?institucionId=... para alertas de institución', async () => {
+      const user = userEvent.setup();
+      setData([
+        notif({
+          id: 'i1',
+          tipo: 'ALERTA_INSTITUCION',
+          titulo: 'Docente en nivel crítico',
+          institucionId: 'ie-123',
+          leida: false,
+        }),
+      ]);
+      render(<NotificationsBell />);
+      await abrirPanel(user);
+
+      const accion = await screen.findByRole('button', { name: /Ver Focos de Atención/ });
+      await user.click(accion);
+      expect(h.mutateLeida).toHaveBeenCalledWith('i1');
+      expect(h.navigate).toHaveBeenCalledWith('/focos-atencion?institucionId=ie-123');
+    });
   });
 });

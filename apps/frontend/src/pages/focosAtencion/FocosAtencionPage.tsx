@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useUgelDashboard } from '@features/dashboard';
 import { useUser } from '@entities/model-user';
 import { PageHeader } from '@shared/ui/pageHeader';
@@ -21,8 +22,10 @@ export const FocosAtencionPage = () => {
   const isDirectorUgel = user?.role === RoleCode.DIRECTOR_UGEL;
 
   const { data, isLoading, isError, error } = useUgelDashboard();
-  const [distrito, setDistrito] = useState<string | null>(null);
-  const [institucionSel, setInstitucionSel] = useState<string | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const distrito = searchParams.get('distrito') || null;
+  const institucionSel = searchParams.get('institucionId') || null;
 
   /**
    * Nivel educativo elegido en el mapa.
@@ -33,6 +36,30 @@ export const FocosAtencionPage = () => {
    */
   const [nivelFiltrado, setNivelFiltrado] = useState<string>('Todos');
 
+  const handleSelectDistrito = (nuevoDistrito: string | null) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (nuevoDistrito) {
+        next.set('distrito', nuevoDistrito);
+      } else {
+        next.delete('distrito');
+      }
+      next.delete('institucionId');
+      return next;
+    });
+  };
+
+  const handleSelectInstitucion = (ieId: string | null) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (ieId) {
+        next.set('institucionId', ieId);
+      } else {
+        next.delete('institucionId');
+      }
+      return next;
+    });
+  };
 
   const sel = distrito ? normDistrito(distrito) : null;
   const atencionDocente = sel
@@ -73,8 +100,8 @@ export const FocosAtencionPage = () => {
               coberturaPorDistrito={data?.coberturaPorDistrito ?? []}
               instituciones={data?.institucionesMapa ?? []}
               selected={distrito}
-              onSelectDistrito={setDistrito}
-              onSelectInstitucion={setInstitucionSel}
+              onSelectDistrito={handleSelectDistrito}
+              onSelectInstitucion={handleSelectInstitucion}
               selectedInstitucionId={institucionSel}
               onNivelChange={setNivelFiltrado}
             />
@@ -83,12 +110,16 @@ export const FocosAtencionPage = () => {
             {institucionSel ? (
               <InstitucionDetalleCard
                 institucionId={institucionSel}
-                onBack={() => setInstitucionSel(null)}
+                onBack={() => handleSelectInstitucion(null)}
               />
             ) : isDirectorUgel ? (
               <RequierenAtencionCard items={atencionDistrito} />
             ) : (
-              <RequierenAtencionInstitucionalCard items={atencionVisible} />
+              <RequierenAtencionInstitucionalCard
+                items={atencionVisible}
+                distritoFiltrado={distrito}
+                onLimpiarDistrito={() => handleSelectDistrito(null)}
+              />
             )}
           </div>
         </div>

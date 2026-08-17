@@ -33,6 +33,10 @@ export class ReporteService {
     return this.repository.findResumenPorIE(anioAcademico, session);
   }
 
+  async analisisDesempenos(filters: QueryFichasCompletadas, session: SessionScope) {
+    return this.repository.findAnalisisDesempenos(filters, session);
+  }
+
   async exportarFichaHTML(id: string, session: SessionScope): Promise<string> {
     const ficha = await this.repository.findFichaByIdParaExport(id, session);
     if (!ficha) throw new NotFoundException(`Ficha ${id} no encontrada o sin acceso.`);
@@ -94,9 +98,9 @@ export class ReporteService {
         puntajeTotal: f.puntajeTotal,
         promedio: f.promedio.toFixed(2),
         estado: f.estado,
-        observaciones: null, // Si IReporteFicha no lo tiene, podría agregarse o dejar en null
-        compromisos: null,
-        sugerencias: null,
+        observaciones: f.observaciones || null,
+        compromisos: f.compromisos || null,
+        sugerencias: f.sugerencias || null,
       },
       institucion: {
         nombre: f.institucionNombre,
@@ -106,8 +110,8 @@ export class ReporteService {
         nombres: f.evaluadoNombre,
         apellidoPaterno: '',
         apellidoMaterno: '',
-        dni: 'N/A',
-        telefono: 'N/A',
+        dni: f.evaluadoDni || 'N/A',
+        telefono: f.evaluadoTelefono || 'N/A',
       },
       monitor: {
         nombres: f.especialistaNombre,
@@ -116,15 +120,18 @@ export class ReporteService {
         dni: 'N/A',
       },
       fechaFormat: new Date(f.fechaEjecucion).toLocaleDateString('es-PE'),
-      respuestas: [
-        // Dummy data for now, ideally fetched from repository if needed in detail
-        { nombre: 'Evalúa los aprendizajes', nivel: 3, observaciones: 'Buen desempeño' },
-        { nombre: 'Promueve el razonamiento', nivel: 4, observaciones: 'Excelente' },
-      ],
+      respuestas:
+        f.respuestas && f.respuestas.length > 0
+          ? f.respuestas.map((r) => ({
+              nombre: r.nombre,
+              nivel: r.nivel,
+              observaciones: r.observaciones || '—',
+            }))
+          : [],
       firmas: await Promise.all(
         (f.firmas || []).map(async (firma) => {
           let base64 = null;
-          if (firma.imagenUrl.startsWith('/uploads/')) {
+          if (firma.imagenUrl && firma.imagenUrl.startsWith('/uploads/')) {
             try {
               const filePath = path.join(process.cwd(), firma.imagenUrl);
               const buffer = await fs.readFile(filePath);
@@ -191,7 +198,7 @@ export class ReporteService {
   <div class="field"><div class="label">Codigo Modular</div><div class="value">${this.escape(f.institucionCodigoModular)}</div></div>
   <div class="field"><div class="label">Evaluado</div><div class="value">${this.escape(f.evaluadoNombre)}</div></div>
   <div class="field"><div class="label">Especialista</div><div class="value">${this.escape(f.especialistaNombre)}</div></div>
-  <div class="field"><div class="label">Tipo de Monitoreo</div><div class="value">${f.tipoMonitoreo}</div></div>
+  <div class="field"><div class="label">Instrumento</div><div class="value">${this.escape(f.instrumento)}</div></div>
   <div class="field"><div class="label">Ano Academico</div><div class="value">${f.anioAcademico}</div></div>
 </div>
 <div class="result">

@@ -6,6 +6,7 @@ import { useLemaDelAnio } from '@entities/model-lemas';
 import { validarLema } from '@features/plantillas/lib/campo-lema';
 import { PlantillaCabecera } from './PlantillaCabecera';
 import { PlantillaDesempenos } from './PlantillaDesempenos';
+import { PlantillaEibItems } from './PlantillaEibItems';
 import { PlantillaEjesItems } from './PlantillaEjesItems';
 
 export interface PlantillaFormState {
@@ -41,6 +42,7 @@ export const PlantillaForm = ({ onCancel, onSubmit, isSaving = false }: Props) =
   const [errorDeLema, setErrorDeLema] = useState<string | null>(null);
 
   const esDirectivo = form.tipoMonitoreo === 'Monitoreo Directivo';
+  const esEib = form.tipoMonitoreo === 'Monitoreo Docente EIB';
 
   /**
    * Cambiar el tipo de monitoreo repone la escala y su modo de lectura.
@@ -62,10 +64,8 @@ export const PlantillaForm = ({ onCancel, onSubmit, isSaving = false }: Props) =
           ? {
               niveles: nivelesPorDefecto(p.tipoMonitoreo!),
               baremo: baremoPorDefecto(p.tipoMonitoreo!),
-              // La ficha directiva no lleva planificación y diseño de
-              // evaluación: conservar los ítems los dejaría guardados en una
-              // plantilla que nunca los va a mostrar.
-              ...(p.tipoMonitoreo === 'Monitoreo Directivo' ? { ejeItems: [] } : {}),
+              // Ni directivo ni EIB llevan la sección de ejes/ítems separada
+              ...(p.tipoMonitoreo !== 'Monitoreo Docente' ? { ejeItems: [] } : {}),
             }
           : {}),
       };
@@ -111,16 +111,21 @@ export const PlantillaForm = ({ onCancel, onSubmit, isSaving = false }: Props) =
         onChange={patch}
       />
 
-      <PlantillaDesempenos
-        desempenos={form.desempenos}
-        niveles={form.niveles}
-        onChange={(desempenos) => patch({ desempenos })}
-      />
+      {esEib ? (
+        <PlantillaEibItems
+          criterios={form.desempenos}
+          onChange={(desempenos) => patch({ desempenos })}
+        />
+      ) : (
+        <PlantillaDesempenos
+          desempenos={form.desempenos}
+          niveles={form.niveles}
+          onChange={(desempenos) => patch({ desempenos })}
+        />
+      )}
 
-      {/* Sólo el instrumento docente lleva esta sección. Antes se ofrecía
-          siempre y sólo lo advertía el título, de modo que una plantilla
-          directiva podía quedar con ítems que su ficha no muestra. */}
-      {!esDirectivo && (
+      {/* Sólo el instrumento docente regular lleva esta sección. */}
+      {!esDirectivo && !esEib && (
         <PlantillaEjesItems
           ejeItems={form.ejeItems}
           onChange={(ejeItems) => patch({ ejeItems })}

@@ -14,6 +14,16 @@ import {
   reportesVisibles,
 } from '@features/reportes/lib/visibilidad-reportes';
 import { calcularEstadisticas } from '@features/reportes/lib/estadisticas-reportes';
+import {
+  esInstrumentoEib,
+  instrumentoDe,
+  tipoDeVisitaDe,
+} from '@features/reportes/lib/instrumento';
+import {
+  coincideConPeriodo,
+  calcularConteosPorPeriodo,
+  type FiltroPeriodoTipo,
+} from '@features/reportes/lib/filtro-temporal';
 
 export const ReportesPage = () => {
   const location = useLocation();
@@ -47,6 +57,8 @@ export const ReportesPage = () => {
   const [filterModalidad, setFilterModalidad] = useState('Todos');
   const [filterNivel, setFilterNivel] = useState('Todos');
   const [filterAnio, setFilterAnio] = useState('Todos');
+  const [filterTipo, setFilterTipo] = useState('Todos');
+  const [filtroPeriodo, setFiltroPeriodo] = useState<FiltroPeriodoTipo>('TODOS');
 
   // Cascading Nivel
   const nivelesDisponibles = useMemo(() => {
@@ -65,6 +77,8 @@ export const ReportesPage = () => {
       const list = fichasCompletadasData.data.map((f) => ({
         id: f.id, // Ficha ID
         cronogramaId: f.cronogramaId,
+        plantillaId: f.plantillaId,
+        plantillaNombre: f.plantillaNombre,
         fechaHora: f.fechaEjecucion,
         especialista: f.especialistaNombre,
         especialistaInitials: f.especialistaNombre
@@ -74,7 +88,10 @@ export const ReportesPage = () => {
           .toUpperCase(),
         institucion: `${f.institucionNombre} - ${f.institucionCodigoModular}`,
         docenteDirectivo: f.evaluadoNombre,
-        tipo: f.tipoMonitoreo,
+        // `tipo` es a quién se monitorea y `instrumento` con qué ficha. Antes los
+        // dos salían del mismo campo del backend, que traía uno o el otro.
+        instrumento: f.instrumento,
+        tipo: tipoDeVisitaDe(f.instrumento),
         nroVisita: '1',
         estado: 'COMPLETADO' as const,
         modalidad: f.modalidad,
@@ -121,51 +138,91 @@ export const ReportesPage = () => {
     return Array.from(yearsSet).sort((a, b) => b.localeCompare(a));
   }, [completedVisits]);
 
-  const filteredVisits = useMemo(() => {
-    return completedVisits.filter((visit) => {
-      // Búsqueda por texto
-      if (searchQuery) {
-        const query = searchQuery.toLowerCase();
-        const matchIE = visit.institucion.toLowerCase().includes(query);
-        const matchDocente = visit.docenteDirectivo.toLowerCase().includes(query);
-        const matchEspecialista = visit.especialista.toLowerCase().includes(query);
-        if (!matchIE && !matchDocente && !matchEspecialista) return false;
-      }
+  const conteosPeriodo = useMemo(
+    () => calcularConteosPorPeriodo(completedVisits),
+    [completedVisits],
+  );
 
-      if (filterModalidad !== 'Todos' && visit.modalidad !== filterModalidad) return false;
-      if (filterNivel !== 'Todos' && visit.nivel !== filterNivel) return false;
-
-      if (filterAnio !== 'Todos') {
-        let visitYear = '';
-        try {
-          const d = new Date(visit.fechaHora);
-          if (!isNaN(d.getTime())) {
-            visitYear = d.getFullYear().toString();
-          } else {
-            const yearPart = visit.fechaHora.split('-')[0];
-            if (yearPart && yearPart.length === 4 && !isNaN(Number(yearPart))) {
-              visitYear = yearPart;
-            }
-          }
-        } catch {
-          // ignore
-        }
-        if (visitYear !== filterAnio) return false;
-      }
-
-      return true;
+  const conteosTipo = useMemo(() => {
+    let docentes = 0;
+    let docentesEib = 0;
+    let directivos = 0;
+    completedVisits.forEach((v) => {
+      if (v.instrumento === 'DIRECTIVO') directivos++;
+      else if (esInstrumentoEib(v.instrumento)) docentesEib++;
+      else docentes++;
     });
-  }, [completedVisits, searchQuery, filterModalidad, filterNivel, filterAnio]);
+    return {
+      Todos: completedVisits.length,
+      DOCENTE: docentes,
+      DOCENTE_EIB: docentesEib,
+      DIRECTIVO: directivos,
+    };
+  }, [completedVisits]);
+
+  const filteredVisits = useMemo(() => {
+    return completedVisits
+      .filter((visit) => {
+        // Filtro de período temporal (Hoy, Esta semana, Este mes, Todos)
+        if (!coincideConPeriodo(visit.fechaHora, filtroPeriodo)) return false;
+
+        // Filtro por tipo de monitoreo (Docente vs Docente EIB vs Directivo)
+        // El filtro es por instrumento, que es lo que la tarjeta muestra.
+        if (filterTipo !== 'Todos' && (visit.instrumento ?? 'DOCENTE') !== filterTipo) {
+          return false;
+        }
+
+        // Búsqueda por texto
+        if (searchQuery) {
+          const query = searchQuery.toLowerCase();
+          const matchIE = visit.institucion.toLowerCase().includes(query);
+          const matchDocente = visit.docenteDirectivo.toLowerCase().includes(query);
+          const matchEspecialista = visit.especialista.toLowerCase().includes(query);
+          if (!matchIE && !matchDocente && !matchEspecialista) return false;
+        }
+
+        if (filterModalidad !== 'Todos' && visit.modalidad !== filterModalidad) return false;
+        if (filterNivel !== 'Todos' && visit.nivel !== filterNivel) return false;
+
+        if (filterAnio !== 'Todos') {
+          let visitYear = '';
+          try {
+            const d = new Date(visit.fechaHora);
+            if (!isNaN(d.getTime())) {
+              visitYear = d.getFullYear().toString();
+            } else {
+              const yearPart = visit.fechaHora.split('-')[0];
+              if (yearPart && yearPart.length === 4 && !isNaN(Number(yearPart))) {
+                visitYear = yearPart;
+              }
+            }
+          } catch {
+            // ignore
+          }
+          if (visitYear !== filterAnio) return false;
+        }
+
+        return true;
+      })
+      .sort((a, b) => new Date(b.fechaHora).getTime() - new Date(a.fechaHora).getTime());
+  }, [completedVisits, filtroPeriodo, filterTipo, searchQuery, filterModalidad, filterNivel, filterAnio]);
 
   const handleClearFilters = () => {
     setSearchQuery('');
     setFilterModalidad('Todos');
     setFilterNivel('Todos');
     setFilterAnio('Todos');
+    setFilterTipo('Todos');
+    setFiltroPeriodo('TODOS');
   };
 
   const isAnyFilterActive =
-    searchQuery !== '' || filterModalidad !== 'Todos' || filterNivel !== 'Todos' || filterAnio !== 'Todos';
+    searchQuery !== '' ||
+    filterModalidad !== 'Todos' ||
+    filterNivel !== 'Todos' ||
+    filterAnio !== 'Todos' ||
+    filterTipo !== 'Todos' ||
+    filtroPeriodo !== 'TODOS';
 
   // ── Métricas Estadísticas (KPIs) ──
   const stats = useMemo(() => {
@@ -174,7 +231,11 @@ export const ReportesPage = () => {
     // `localStorage` y, cuando faltaba —lo normal, porque el borrador vive en
     // el navegador de quien llenó la ficha— caía a un relleno inventado con
     // todos los niveles en III y IV, que empujaba la métrica al 100 %.
-    const base = calcularEstadisticas(completedVisits);
+    // El instrumento decide el segmento; las filas del camino de respaldo lo
+    // derivan del tipo de la visita, que no puede ser EIB.
+    const base = calcularEstadisticas(
+      completedVisits.map((v) => ({ ...v, instrumento: instrumentoDe(v) })),
+    );
 
     // Nivel de logro más reciente (último por fechaHora)
     const masReciente = [...completedVisits].sort(
@@ -256,6 +317,12 @@ export const ReportesPage = () => {
         setFilterNivel={setFilterNivel}
         filterAnio={filterAnio}
         setFilterAnio={setFilterAnio}
+        filterTipo={filterTipo}
+        setFilterTipo={setFilterTipo}
+        conteosTipo={conteosTipo}
+        filtroPeriodo={filtroPeriodo}
+        setFiltroPeriodo={setFiltroPeriodo}
+        conteosPeriodo={conteosPeriodo}
         nivelesDisponibles={nivelesDisponibles}
         añosDisponibles={añosDisponibles}
         isAnyFilterActive={isAnyFilterActive}

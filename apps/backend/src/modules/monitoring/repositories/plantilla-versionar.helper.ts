@@ -181,7 +181,8 @@ export async function versionarConClon(
     return {
       lema,
       id: creada.id,
-      tipoMonitoreo: creada.tipoMonitoreo as 'DOCENTE' | 'DIRECTIVO',
+      tipoMonitoreo:
+        creada.tipoMonitoreo as import('@sistema-monitoreo/shared-contracts').TipoPlantilla,
       anioAcademico: creada.anioAcademico,
       version: creada.version,
       baremo: creada.baremo as 'Vigente' | 'Porcentual',

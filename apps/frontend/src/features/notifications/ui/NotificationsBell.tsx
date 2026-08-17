@@ -29,8 +29,13 @@ const tiempoRelativo = (iso: string): string => {
   return formatearFechaCorta(iso);
 };
 
-const getNotificationBadge = (tipo: string) => {
-  switch (tipo) {
+const getNotificationBadge = (n: {
+  tipo: string;
+  titulo?: string;
+  mensaje?: string;
+  institucionId?: string | null;
+}) => {
+  switch (n.tipo) {
     case 'SOLICITUD_REPROGRAMACION_CREADA':
       return {
         icon: Calendar,
@@ -77,17 +82,34 @@ const getNotificationBadge = (tipo: string) => {
         actionLabel: 'Ver Solicitudes de visita',
       };
     // Las tres alertas de desempeño llevan a Focos de Atención, que es donde
-    // están el mapa y la institución o el distrito señalado. Apuntaban a
-    // solicitudes de visita, que es otra bandeja y no tiene nada de esto.
-    case 'ALERTA_INSTITUCION':
-    case 'ALERTA_DISTRITO':
-    case 'IE_SIN_VISITA':
+    // están el mapa y la institución o el distrito señalado.
+    case 'ALERTA_DISTRITO': {
+      let actionUrl = '/focos-atencion';
+      if (n.titulo) {
+        const match = n.titulo.match(/Distrito en nivel crítico:\s*(.+)$/i);
+        if (match && match[1]) {
+          actionUrl = `/focos-atencion?distrito=${encodeURIComponent(match[1].trim())}`;
+        }
+      }
       return {
         icon: AlertTriangle,
         bg: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
-        actionUrl: '/focos-atencion',
+        actionUrl,
         actionLabel: 'Ver Focos de Atención',
       };
+    }
+    case 'ALERTA_INSTITUCION':
+    case 'IE_SIN_VISITA': {
+      const actionUrl = n.institucionId
+        ? `/focos-atencion?institucionId=${encodeURIComponent(n.institucionId)}`
+        : '/focos-atencion';
+      return {
+        icon: AlertTriangle,
+        bg: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
+        actionUrl,
+        actionLabel: 'Ver Focos de Atención',
+      };
+    }
     default:
       return {
         icon: FileText,
@@ -193,7 +215,7 @@ export const NotificationsBell = () => {
           ) : (
             itemsFiltrados.map((n) => {
               const abierta = expandida === n.id;
-              const badge = getNotificationBadge(n.tipo);
+              const badge = getNotificationBadge(n);
               const IconComp = badge.icon;
 
               return (

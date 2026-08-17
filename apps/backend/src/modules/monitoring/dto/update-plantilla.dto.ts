@@ -20,9 +20,10 @@ export class UpdatePlantillaDto {
   @IsString()
   descripcion?: string;
 
+  /** Piso de tres, como en la creación: ver `create-plantilla.dto.ts`. */
   @IsOptional()
   @IsArray()
-  @ArrayMinSize(4)
+  @ArrayMinSize(3)
   @ValidateNested({ each: true })
   @Type(() => NivelCalificacionInput)
   niveles?: NivelCalificacionInput[];

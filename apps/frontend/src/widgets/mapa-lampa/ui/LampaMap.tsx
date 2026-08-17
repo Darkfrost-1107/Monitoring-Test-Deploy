@@ -23,12 +23,13 @@ import {
   MODO_INSTITUCIONAL,
   TODOS,
   colorDeCobertura,
+  extraerDistritos,
   firmaDeCobertura,
   hayVariosNiveles,
   institucionesVisibles,
 } from '../lib/vista-del-mapa';
 import { CabeceraDelMapa } from './CabeceraDelMapa';
-import { LeyendaDeCobertura, FiltroDeEstado } from './LeyendaDelMapa';
+import { LeyendaDeCobertura, FiltrosDelMapa } from './LeyendaDelMapa';
 import { MarcadoresDeInstituciones } from './MarcadoresDeInstituciones';
 
 /**
@@ -93,6 +94,31 @@ export const LampaMap = ({
     onNivelChange?.(siguiente);
   };
   const [estado, setEstado] = useState<string>(TODOS);
+
+  const listaDistritos = useMemo(
+    () => extraerDistritos(instituciones, coberturaPorDistrito),
+    [instituciones, coberturaPorDistrito],
+  );
+
+  const conteoPorDistrito = useMemo(() => {
+    const conteo = new Map<string, number>();
+    for (const ie of instituciones) {
+      if (ie.distrito) {
+        const key = ie.distrito.toUpperCase();
+        conteo.set(key, (conteo.get(key) ?? 0) + 1);
+      }
+    }
+    return conteo;
+  }, [instituciones]);
+
+  const conteoPorEstado = useMemo(() => {
+    const conteo: Record<string, number> = {};
+    for (const ie of instituciones) {
+      if (selected && normDistrito(ie.distrito) !== normDistrito(selected)) continue;
+      conteo[ie.estado] = (conteo[ie.estado] ?? 0) + 1;
+    }
+    return conteo;
+  }, [instituciones, selected]);
 
   const porDistrito = useMemo(
     () => new Map(coberturaPorDistrito.map((d) => [normDistrito(d.distrito), d])),
@@ -192,7 +218,15 @@ export const LampaMap = ({
         {modo === MODO_DISTRITAL ? (
           <LeyendaDeCobertura />
         ) : (
-          <FiltroDeEstado estado={estado} onCambiar={setEstado} />
+          <FiltrosDelMapa
+            estado={estado}
+            onCambiarEstado={setEstado}
+            distrito={selected ?? null}
+            distritos={listaDistritos}
+            onCambiarDistrito={(d) => onSelectDistrito?.(d)}
+            conteoPorEstado={conteoPorEstado}
+            conteoPorDistrito={conteoPorDistrito}
+          />
         )}
       </div>
     </Card>

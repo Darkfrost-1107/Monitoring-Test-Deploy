@@ -8,13 +8,35 @@ const NIVEL_LOGRO_LABEL: Record<string, { label: string; color: string }> = {
   LOGRO_DESTACADO: { label: 'Logro Destacado', color: 'text-emerald-600' },
 };
 
+/** Rótulo corto de cada instrumento, para el desglose de las tarjetas. */
+const INSTRUMENTO_LABEL: Record<string, string> = {
+  DOCENTE: 'Docente',
+  DOCENTE_EIB: 'EIB',
+  DIRECTIVO: 'Directivo',
+};
+
+interface EstadisticaInstrumento {
+  tipo: string;
+  fichas: number;
+  satisfactionPercent: number | null;
+  promedioGeneral: number | null;
+}
+
 interface ReportesStatsProps {
   stats: {
-    total: number;
-    docentes: number;
-    directivos: number;
-    /** `null` cuando ninguna ficha trae nivel de logro: no hay qué informar. */
+    /** Fichas llenadas: una por instrumento aplicado. */
+    fichas: number;
+    /** Monitoreos ejecutados: una visita con dos instrumentos cuenta una vez. */
+    visitasMonitoreadas: number;
+    fichasDocentes: number;
+    fichasDirectivas: number;
+    /**
+     * `null` cuando ninguna ficha trae nivel de logro, y también cuando el
+     * conjunto mezcla instrumentos: sus escalas no son comparables, así que se
+     * muestra `porInstrumento` en su lugar.
+     */
     satisfactionPercent: number | null;
+    porInstrumento: EstadisticaInstrumento[];
     uniqueIEs: number;
     /** Solo para vista evaluado (docente) */
     promedioGeneral?: number | null;
@@ -23,6 +45,24 @@ interface ReportesStatsProps {
   };
   isEvaluatedView?: boolean;
 }
+
+/**
+ * Desglose compacto cuando el conjunto mezcla instrumentos.
+ *
+ * La rúbrica docente llega a 4, la lista de cotejo EIB a 3 y la directiva se
+ * resuelve por porcentaje: un número único entre las tres no significa nada.
+ */
+const DesglosePorInstrumento = ({
+  instrumentos,
+  valor,
+}: {
+  instrumentos: EstadisticaInstrumento[];
+  valor: (i: EstadisticaInstrumento) => string;
+}) => (
+  <span className="text-[10px] text-slate-500 font-semibold block mt-1 leading-tight">
+    {instrumentos.map((i) => `${INSTRUMENTO_LABEL[i.tipo] ?? i.tipo} ${valor(i)}`).join(' · ')}
+  </span>
+);
 
 export const ReportesStats = ({ stats, isEvaluatedView = false }: ReportesStatsProps) => {
   if (isEvaluatedView) {
@@ -41,10 +81,17 @@ export const ReportesStats = ({ stats, isEvaluatedView = false }: ReportesStatsP
             <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">
               Monitoreos Recibidos
             </span>
+            {/* La tarjeta dice «monitoreos», así que cuenta visitas. Antes
+                mostraba fichas: una visita con la ficha regular y la EIB se
+                informaba como dos monitoreos recibidos. */}
             <span className="text-xl font-black text-slate-800 block mt-0.5 leading-none">
-              {stats.total}
+              {stats.visitasMonitoreadas}
             </span>
-            <span className="text-[10px] text-slate-400 font-semibold">fichas completadas</span>
+            <span className="text-[10px] text-slate-400 font-semibold">
+              {stats.fichas === stats.visitasMonitoreadas
+                ? 'visitas con ficha completada'
+                : `visitas · ${stats.fichas} fichas completadas`}
+            </span>
           </div>
           <ArrowUpRight className="absolute top-3 right-3 h-4.5 w-4.5 text-slate-300 group-hover:text-slate-400 transition-colors" />
         </Card>
@@ -61,7 +108,21 @@ export const ReportesStats = ({ stats, isEvaluatedView = false }: ReportesStatsP
             <span className="text-xl font-black text-slate-800 block mt-0.5 leading-none">
               {stats.promedioGeneral != null ? stats.promedioGeneral.toFixed(2) : '—'}
             </span>
-            <span className="text-[10px] text-slate-400 font-semibold">sobre 4.00 pts</span>
+            {/* «sobre 4.00 pts» sólo vale para la rúbrica docente: la lista de
+                cotejo EIB llega a 3 y la directiva se resuelve por porcentaje.
+                Con más de un instrumento no hay promedio único que mostrar. */}
+            {stats.promedioGeneral != null ? (
+              <span className="text-[10px] text-slate-400 font-semibold">
+                {stats.porInstrumento[0]?.tipo === 'DOCENTE_EIB' ? 'sobre 3.00 pts' : 'sobre 4.00 pts'}
+              </span>
+            ) : stats.porInstrumento.length > 1 ? (
+              <DesglosePorInstrumento
+                instrumentos={stats.porInstrumento}
+                valor={(i) => (i.promedioGeneral != null ? i.promedioGeneral.toFixed(2) : '—')}
+              />
+            ) : (
+              <span className="text-[10px] text-slate-400 font-semibold">sin puntaje registrado</span>
+            )}
           </div>
           <ArrowUpRight className="absolute top-3 right-3 h-4.5 w-4.5 text-slate-300 group-hover:text-slate-400 transition-colors" />
         </Card>
@@ -115,8 +176,16 @@ export const ReportesStats = ({ stats, isEvaluatedView = false }: ReportesStatsP
             Fichas Finalizadas
           </span>
           <span className="text-xl font-black text-slate-800 block mt-0.5 leading-none">
-            {stats.total}
+            {stats.fichas}
           </span>
+          {/* Las dos unidades, cada una con su nombre. La leyenda sólo aparece
+              cuando difieren: mientras cada visita lleve una sola ficha, repetir
+              el mismo número es ruido. */}
+          {stats.fichas !== stats.visitasMonitoreadas && (
+            <span className="text-[10px] text-slate-400 font-semibold">
+              en {stats.visitasMonitoreadas} monitoreos
+            </span>
+          )}
         </div>
         <ArrowUpRight className="absolute top-3 right-3 h-4.5 w-4.5 text-slate-300 group-hover:text-slate-400 transition-colors" />
       </Card>
@@ -133,6 +202,14 @@ export const ReportesStats = ({ stats, isEvaluatedView = false }: ReportesStatsP
             {/* Sin fichas con nivel de logro no hay porcentaje que informar. */}
             {stats.satisfactionPercent !== null ? `${stats.satisfactionPercent}%` : '—'}
           </span>
+          {/* Con instrumentos mezclados el porcentaje único no se puede calcular:
+              cada escala mide algo distinto. Se muestra el de cada uno. */}
+          {stats.satisfactionPercent === null && stats.porInstrumento.length > 1 && (
+            <DesglosePorInstrumento
+              instrumentos={stats.porInstrumento}
+              valor={(i) => (i.satisfactionPercent != null ? `${i.satisfactionPercent}%` : '—')}
+            />
+          )}
         </div>
         <ArrowUpRight className="absolute top-3 right-3 h-4.5 w-4.5 text-slate-300 group-hover:text-slate-400 transition-colors" />
       </Card>
@@ -158,10 +235,13 @@ export const ReportesStats = ({ stats, isEvaluatedView = false }: ReportesStatsP
         </div>
         <div>
           <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">
-            Docentes vs Directivos
+            Fichas Docentes / Directivas
           </span>
+          {/* Cuenta fichas, no personas: un docente con la ficha regular y la EIB
+              aporta dos. El rótulo decía «Docentes vs Directivos», que se leía
+              como cantidad de personas evaluadas. */}
           <span className="text-xl font-black text-slate-800 block mt-0.5 leading-none">
-            {stats.docentes} / {stats.directivos}
+            {stats.fichasDocentes} / {stats.fichasDirectivas}
           </span>
         </div>
         <ArrowUpRight className="absolute top-3 right-3 h-4.5 w-4.5 text-slate-300 group-hover:text-slate-400 transition-colors" />

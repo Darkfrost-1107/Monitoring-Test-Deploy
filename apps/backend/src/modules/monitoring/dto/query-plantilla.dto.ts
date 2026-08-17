@@ -15,8 +15,8 @@ export class QueryPlantillaDto {
 
   @IsOptional()
   @IsString()
-  @IsIn(['DOCENTE', 'DIRECTIVO'])
-  tipoMonitoreo?: 'DOCENTE' | 'DIRECTIVO';
+  @IsIn(['DOCENTE', 'DIRECTIVO', 'DOCENTE_EIB'])
+  tipoMonitoreo?: 'DOCENTE' | 'DIRECTIVO' | 'DOCENTE_EIB';
 
   @IsOptional()
   @IsString()

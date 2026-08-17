@@ -24,6 +24,7 @@ import type { RolAutorPlantilla } from '@sistema-monitoreo/shared-contracts';
 /** Nombre del instrumento según a quién se evalúa. */
 export const TIPO_MONITOREO_POR_VISITA = {
   DOCENTE: 'Monitoreo Docente',
+  DOCENTE_EIB: 'Monitoreo Docente EIB',
   DIRECTIVO: 'Monitoreo Directivo',
 } as const;
 

@@ -50,7 +50,7 @@ export interface PadronDeFicha {
 }
 
 export interface VisitaDeFicha {
-  tipo: 'DOCENTE' | 'DIRECTIVO';
+  tipo: import('@sistema-monitoreo/shared-contracts').TipoMonitoreo;
   evaluadoId?: string;
   monitorId: string;
   institucionId: string;

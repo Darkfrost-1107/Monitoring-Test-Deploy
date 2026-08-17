@@ -31,6 +31,7 @@ import { ConsolidadoSeccion } from './ficha/ConsolidadoSeccion';
 import { PieDeFicha } from './ficha/PieDeFicha';
 import { VistaPreviaEvidencia } from './ficha/VistaPreviaEvidencia';
 import { CabeceraFicha, type PestanaFicha } from './ficha/CabeceraFicha';
+import { BannerDatosVisita } from './ficha/BannerDatosVisita';
 import { firmasApi } from '@/shared/api/firmas.api';
 import { toast } from 'sonner';
 
@@ -111,6 +112,7 @@ export const LlenarFichaForm = ({
   useHidratacionDeFicha({
     abierta: isOpen,
     visitaId: visit?.id,
+    templateId: template?.id,
     initialState,
     hidratar,
   });
@@ -118,6 +120,7 @@ export const LlenarFichaForm = ({
   const { docente: evaluadoDocente, areasSugeridas } = useDocenteEvaluado({
     activo: isOpen,
     visitId: visit?.id,
+    templateId: template?.id,
     evaluadoId: visit?.evaluadoId,
     initialState,
     onAutocompletarContexto: aplicarContextoSugerido,
@@ -131,13 +134,19 @@ export const LlenarFichaForm = ({
     onFinalize,
   });
 
-  const isCompleted = visit?.estado === 'COMPLETADO';
+  const isCompleted = initialState?.estado === 'FINALIZADO';
   const isDirectivo = template?.tipoMonitoreo.toUpperCase().includes('DIRECTIVO');
 
+  /**
+   * `visit.id` es el id del CRONOGRAMA, y una visita docente puede llevar la
+   * ficha regular y la EIB. Se manda la plantilla del formulario abierto para
+   * que el servidor sepa de qué instrumento se piden las firmas: sin ella
+   * resolvía a una ficha arbitraria de las dos.
+   */
   const { data: firmasData, refetch: refetchFirmas } = useQuery({
-    queryKey: ['ficha-firmas', visit?.id],
-    queryFn: () => firmasApi.getFirmasDeFicha(visit.id),
-    enabled: !!visit?.id && isCompleted,
+    queryKey: ['ficha-firmas', visit?.id, template?.id],
+    queryFn: () => firmasApi.getFirmasDeFicha(visit.id, template.id),
+    enabled: !!visit?.id && !!template?.id && isCompleted,
     staleTime: 30_000,
   });
 
@@ -186,9 +195,12 @@ export const LlenarFichaForm = ({
 
   const handleFirmar = async () => {
     try {
+      // La plantilla identifica el instrumento que se está firmando: la firma
+      // atesta el contenido de una ficha concreta, no de la visita.
       await firmasApi.signFicha(visit.id, {
         rolFirmante: rolEsperado,
         consentimiento: true,
+        plantillaId: template.id,
       });
       toast.success('Ficha firmada con éxito');
       refetchFirmas();
@@ -204,29 +216,29 @@ export const LlenarFichaForm = ({
       </div>
       <Card className="bg-surface w-full max-w-[1250px] border border-border rounded-2xl shadow-xl flex flex-col max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-200">
         <CabeceraFicha
-          visit={visit}
           template={template}
           soloLectura={isCompleted}
-          pestana={visit.tipo === 'DOCENTE' ? activeTab : null}
+          pestana={visit.tipo !== 'DIRECTIVO' ? activeTab : null}
           onPestana={setActiveTab}
           onImprimir={() => handlePrint()}
           onCerrar={onClose}
         />
 
-        {visit.tipo === 'DOCENTE' && (
-          <ContextoDeAulaSeccion
-            contexto={estado.contexto}
-            onCambiar={setContextoCampo}
-            sugerencias={{
-              areas: areasSugeridas,
-              secciones: evaluadoDocente?.secciones ?? [],
-            }}
-            soloLectura={isCompleted}
-          />
-        )}
-
-        {/* Contenedor con scroll interno — engloba cuerpo + comentarios + calificación */}
+        {/* Contenedor con scroll interno — engloba metadatos + cuerpo + comentarios + calificación */}
         <div className="flex-1 overflow-y-auto min-h-0">
+          <BannerDatosVisita visit={visit} />
+
+          {visit.tipo !== 'DIRECTIVO' && (
+            <ContextoDeAulaSeccion
+              contexto={estado.contexto}
+              onCambiar={setContextoCampo}
+              sugerencias={{
+                areas: areasSugeridas,
+                secciones: evaluadoDocente?.secciones ?? [],
+              }}
+              soloLectura={isCompleted}
+            />
+          )}
         
         {activeTab === 'HISTORIAL' && visit.evaluadoId && (
           <div className="p-6">
@@ -290,7 +302,7 @@ export const LlenarFichaForm = ({
             // Se persiste el estado completo: antes se armaba a mano y perdía
             // las observaciones de ejes y el contexto de aula.
             safeSetLocalStorage(
-              claveEstadoLocal(visit.id),
+              claveEstadoLocal(visit.id, template.id),
               JSON.stringify(aDatosFicha({ ...estado, evidenciaUrls: siguientes }, visit.tipo)),
             );
           }}

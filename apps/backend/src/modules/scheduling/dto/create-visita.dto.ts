@@ -22,6 +22,12 @@ export class CreateVisitaDto {
   @IsUUID()
   evaluadoId!: string;
 
+  /**
+   * A quién se monitorea. EIB no es una clase de visita sino un instrumento: la
+   * plantilla de cada ficha lo declara. Aceptar `DOCENTE_EIB` acá creaba
+   * cronogramas que ninguna pantalla podía representar —`use-cronogramas-data`
+   * los castea a DOCENTE | DIRECTIVO— y que el esquema tampoco contempla.
+   */
   @IsString()
   @IsIn(['DOCENTE', 'DIRECTIVO'])
   tipoMonitoreo!: 'DOCENTE' | 'DIRECTIVO';
