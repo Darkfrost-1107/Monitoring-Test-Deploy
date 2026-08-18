@@ -18,6 +18,7 @@ import {
   esInstrumentoEib,
   instrumentoDe,
   tipoDeVisitaDe,
+  type FiltroDeInstrumento,
 } from '@features/reportes/lib/instrumento';
 import {
   coincideConPeriodo,
@@ -57,7 +58,7 @@ export const ReportesPage = () => {
   const [filterModalidad, setFilterModalidad] = useState('Todos');
   const [filterNivel, setFilterNivel] = useState('Todos');
   const [filterAnio, setFilterAnio] = useState('Todos');
-  const [filterTipo, setFilterTipo] = useState('Todos');
+  const [filterTipo, setFilterTipo] = useState<FiltroDeInstrumento>('Todos');
   const [filtroPeriodo, setFiltroPeriodo] = useState<FiltroPeriodoTipo>('TODOS');
 
   // Cascading Nivel

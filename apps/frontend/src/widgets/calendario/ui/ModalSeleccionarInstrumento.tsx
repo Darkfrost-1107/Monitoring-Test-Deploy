@@ -74,10 +74,9 @@ export const ModalSeleccionarInstrumento = ({
 
           <div className="grid grid-cols-1 gap-3.5">
             {plantillas.map((plantilla) => {
-              const isEib =
-                plantilla.tipoMonitoreo === 'Monitoreo Docente EIB' ||
-                plantilla.tipoMonitoreo.toUpperCase().includes('EIB');
-              const isDirectivo = plantilla.tipoMonitoreo.toUpperCase().includes('DIRECTIVO');
+              // El instrumento viene tipado en la plantilla; el rótulo es para mostrar.
+              const isEib = plantilla.instrumento === 'DOCENTE_EIB';
+              const isDirectivo = plantilla.instrumento === 'DIRECTIVO';
 
               const fichaExistente = fichasExistentes.find((f) => f.plantillaId === plantilla.id);
               const estaCompletada = fichaExistente?.estado === 'FINALIZADO';

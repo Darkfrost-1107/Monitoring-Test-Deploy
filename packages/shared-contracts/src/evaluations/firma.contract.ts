@@ -1,9 +1,15 @@
 export interface ISignFichaRequest {
   /**
-   * Rol que está firmando la ficha en este momento.
-   * Debe coincidir con el rol del usuario autenticado respecto al cronograma.
+   * ── Por qué acá no viaja el rol ──
+   * Este cuerpo declaraba `rolFirmante`, el cliente lo enviaba y el servidor lo
+   * IGNORABA: el rol sale de comparar la persona autenticada contra las partes
+   * de la visita. Aceptarlo dejaría firmar como la contraparte, y anunciarlo en
+   * el contrato hacía creer que el cliente lo decide.
+   *
+   * Al sumarse la firma del director de la I.E. el campo quedó además
+   * incompleto —su enumeración no lo incluía—, de modo que se retira en vez de
+   * ampliarlo.
    */
-  rolFirmante: 'EVALUADOR' | 'EVALUADO';
 
   /**
    * Checkbox de consentimiento legal o aceptación digital de la ficha.

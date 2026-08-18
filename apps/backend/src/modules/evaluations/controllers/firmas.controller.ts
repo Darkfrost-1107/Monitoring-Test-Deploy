@@ -35,6 +35,7 @@ import type { AuthenticatedRequest } from '../../../shared/types/authenticated-r
 import {
   condicionDeFicha,
   debeFinalizarse,
+  elDirectorFirma,
   resolverFicha,
   rolFirmanteDe,
   rutaDeImagenDeFirma,
@@ -100,7 +101,7 @@ export class FirmasController {
     idFichaOCronograma: string,
     plantillaId: string | undefined,
     req: AuthenticatedRequest,
-  ): Promise<{ id: string; cronograma: PartesDeLaVisita } | null> {
+  ): Promise<{ id: string; partes: PartesDeLaVisita } | null> {
     const fichas = await this.prisma.fichaMonitoreo.findMany({
       where: {
         AND: [
@@ -110,10 +111,27 @@ export class FirmasController {
       },
       select: {
         id: true,
+        plantilla: { select: { tipoMonitoreo: true } },
         cronograma: {
           select: {
             evaluado: { select: { personaId: true } },
             monitor: { select: { personaId: true } },
+            /**
+             * El director de la I.E. no es parte del cronograma: se lo ubica por
+             * su cargo activo en la institución de la visita, igual que hacen
+             * `institucion-director.helper` y las notificaciones.
+             */
+            institucion: {
+              select: {
+                docentes: {
+                  where: {
+                    docenteCargos: { some: { cargo: { nombre: 'Director' }, fechaFin: null } },
+                  },
+                  select: { personaId: true },
+                  take: 1,
+                },
+              },
+            },
           },
         },
       },
@@ -128,7 +146,19 @@ export class FirmasController {
       );
     }
 
-    return resolucion.ficha;
+    const { ficha } = resolucion;
+    const director = ficha.cronograma.institucion?.docentes[0] ?? null;
+
+    return {
+      id: ficha.id,
+      partes: {
+        evaluado: ficha.cronograma.evaluado,
+        monitor: ficha.cronograma.monitor,
+        // En la ficha directiva el director ES el evaluado: no se le suma un
+        // segundo rol.
+        director: elDirectorFirma(ficha.plantilla?.tipoMonitoreo ?? 'DOCENTE') ? director : null,
+      },
+    };
   }
 
   /**
@@ -321,7 +351,7 @@ export class FirmasController {
      * firmar como la contraparte. La regla vive en `firmas.helper.ts`, con
      * pruebas.
      */
-    const rolFirmante = rolFirmanteDe(usuario.personaId, ficha.cronograma);
+    const rolFirmante = rolFirmanteDe(usuario.personaId, ficha.partes);
 
     if (!rolFirmante) {
       throw new ForbiddenException(

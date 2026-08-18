@@ -101,6 +101,16 @@ export const Sidebar = () => {
             ) {
               return false;
             }
+            /**
+             * El Análisis de Desempeño es sección propia sólo del lado de la
+             * institución. Para UGEL vive dentro del grupo «Reportes», que ahí
+             * conserva sus hijos: mostrarlo además arriba lo duplicaría.
+             *
+             * Al docente no le aparece por otra vía: no tiene el permiso.
+             */
+            if (item.id === 'reportes_analisis' && !isInstitution) {
+              return false;
+            }
             return has(item.id as string);
           });
 

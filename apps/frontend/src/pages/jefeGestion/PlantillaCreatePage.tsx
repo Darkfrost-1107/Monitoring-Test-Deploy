@@ -8,18 +8,12 @@ import {
   descriptorPorDefecto,
   romanosDeInstrumento,
 } from '@entities/model-plantillas/escala-por-defecto';
+import { instrumentoDeRotulo } from '@entities/model-plantillas/rotulo-de-instrumento';
 import { lemasApi } from '@entities/model-lemas';
 import { useQueryClient } from '@tanstack/react-query';
 import { ConfirmModal } from '@shared/ui/ConfirmModal';
 
 import type { TipoPlantilla } from '@sistema-monitoreo/shared-contracts';
-
-const toBackendTipo = (tipo: string): TipoPlantilla => {
-  const t = tipo.toUpperCase();
-  if (t.includes('DIRECTIVO')) return 'DIRECTIVO';
-  if (t.includes('EIB')) return 'DOCENTE_EIB';
-  return 'DOCENTE';
-};
 
 export const PlantillaCreatePage = () => {
   const navigate = useNavigate();
@@ -32,7 +26,7 @@ export const PlantillaCreatePage = () => {
     setIsSaving(true);
     setSubmitError(null);
 
-    const backendTipo = toBackendTipo(data.tipoMonitoreo);
+    const backendTipo = instrumentoDeRotulo(data.tipoMonitoreo);
 
     try {
       const existing = await plantillasApi.findAll({

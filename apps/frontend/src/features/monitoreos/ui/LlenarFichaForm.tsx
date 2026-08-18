@@ -16,6 +16,7 @@ import { safeSetLocalStorage } from '@/shared/lib/utils';
 import { useFormularioFicha } from '../hooks/use-formulario-ficha';
 import { useDocenteEvaluado } from '../hooks/use-docente-evaluado';
 import { resolverCalificacion } from '../lib/calificacion-presentacion';
+import { esDirectorDeLaVisita, rolDeFirma } from '../lib/rol-de-firma';
 import type { DatosFicha } from '../lib/ficha-estado';
 import type { ContextoDeAula } from '../lib/estado-formulario';
 import {
@@ -136,6 +137,7 @@ export const LlenarFichaForm = ({
 
   const isCompleted = initialState?.estado === 'FINALIZADO';
   const isDirectivo = template?.tipoMonitoreo.toUpperCase().includes('DIRECTIVO');
+  const esFichaDirectiva = !!isDirectivo;
 
   /**
    * `visit.id` es el id del CRONOGRAMA, y una visita docente puede llevar la
@@ -189,8 +191,15 @@ export const LlenarFichaForm = ({
     user?.id === visit?.evaluadoId ||
     user?.role === RoleCode.DOCENTE;
   const esEvaluador = puedeEvaluarVisita(user, visit);
-  const puedeFirmar = isCompleted && (esEvaluado || esEvaluador);
-  const rolEsperado = esEvaluado ? 'EVALUADO' : 'EVALUADOR';
+  /**
+   * El director de la I.E. firma la ficha docente al final, como visto bueno.
+   * No es parte del cronograma: se lo reconoce por su rol y por la institución
+   * de la visita. En la ficha directiva no corresponde —ahí es el evaluado—.
+   */
+  const esDirectorDeLaIE =
+    !esFichaDirectiva && esDirectorDeLaVisita(user, visit);
+  const rolEsperado = rolDeFirma({ esEvaluado, esEvaluador, esDirectorDeLaIE });
+  const puedeFirmar = isCompleted && rolEsperado !== null;
   const yaFirmo = firmasData?.firmas?.some((f) => f.rolFirmante === rolEsperado);
 
   const handleFirmar = async () => {
@@ -198,7 +207,6 @@ export const LlenarFichaForm = ({
       // La plantilla identifica el instrumento que se está firmando: la firma
       // atesta el contenido de una ficha concreta, no de la visita.
       await firmasApi.signFicha(visit.id, {
-        rolFirmante: rolEsperado,
         consentimiento: true,
         plantillaId: template.id,
       });

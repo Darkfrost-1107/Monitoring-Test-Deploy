@@ -9,6 +9,7 @@ import type { PaginatedFichas } from '../repositories/reporte.repository.js';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
+import { normalizarFiltrosDeReporte } from './filtros-de-reporte.helper.js';
 import { PdfGeneratorService } from './pdf-generator.service.js';
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import { MailerService } from '../../../shared/mailer/mailer.service.js';
@@ -26,7 +27,7 @@ export class ReporteService {
     filters: QueryFichasCompletadas,
     session: SessionScope,
   ): Promise<PaginatedFichas> {
-    return this.repository.findFichasCompletadas(filters, session);
+    return this.repository.findFichasCompletadas(normalizarFiltrosDeReporte(filters), session);
   }
 
   async resumenPorIE(anioAcademico: number, session: SessionScope): Promise<IReporteResumenIE[]> {
@@ -34,7 +35,7 @@ export class ReporteService {
   }
 
   async analisisDesempenos(filters: QueryFichasCompletadas, session: SessionScope) {
-    return this.repository.findAnalisisDesempenos(filters, session);
+    return this.repository.findAnalisisDesempenos(normalizarFiltrosDeReporte(filters), session);
   }
 
   async exportarFichaHTML(id: string, session: SessionScope): Promise<string> {

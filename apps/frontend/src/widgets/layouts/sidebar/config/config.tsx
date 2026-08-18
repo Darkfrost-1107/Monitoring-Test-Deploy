@@ -38,6 +38,22 @@ export const SIDEBAR_CONFIG: MenuCategory[] = [
     path: '/dashboard',
     children: [],
   },
+  /**
+   * Análisis de Desempeño como sección propia, del lado de la institución.
+   *
+   * Para los roles de UGEL vive dentro del grupo «Reportes». Ese grupo se
+   * colapsa en «Mis Reportes» para quien es evaluado —el personal de la I.E.—,
+   * y al vaciarle los hijos el análisis quedaba inalcanzable desde el menú
+   * aunque el rol tuviera el permiso. Acá recupera su entrada, junto al
+   * Dashboard, que es desde donde el director mira su institución.
+   */
+  {
+    id: 'reportes_analisis',
+    label: 'Análisis de Desempeño',
+    icon: <BarChart3 className="h-[18px] w-[18px]" />,
+    path: '/reportes/analisis',
+    children: [],
+  },
   {
     id: 'monitoreo',
     label: 'Monitoreo',

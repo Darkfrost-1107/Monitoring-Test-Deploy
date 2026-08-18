@@ -49,7 +49,7 @@ export const PanelDesempenos = ({
 
   const esEib =
     template.tipoMonitoreo === 'DOCENTE_EIB' ||
-    template.tipoMonitoreo.toUpperCase().includes('EIB');
+    template.instrumento === 'DOCENTE_EIB';
 
   const indiceActual = abierto
     ? template.desempenos.findIndex((d) => d.id === abierto.id)

@@ -1,6 +1,7 @@
 import {
   condicionDeFicha,
   debeFinalizarse,
+  elDirectorFirma,
   esArchivoDeFirma,
   resolverFicha,
   rolFirmanteDe,
@@ -19,6 +20,7 @@ import {
 const partes = {
   evaluado: { personaId: 'persona-docente' },
   monitor: { personaId: 'persona-especialista' },
+  director: { personaId: 'persona-director' },
 };
 
 describe('rolFirmanteDe', () => {
@@ -167,6 +169,79 @@ describe('debeFinalizarse', () => {
 
   it('tolera diferencias de caja en el rol guardado', () => {
     expect(debeFinalizarse(['evaluador', 'Evaluado'])).toBe(true);
+  });
+});
+
+/**
+ * El director de la I.E. firma la ficha docente al final del monitoreo, como
+ * visto bueno sobre una ficha ya cerrada por las dos partes.
+ */
+describe('rolFirmanteDe — director de la I.E.', () => {
+  it('reconoce al director de la institucion', () => {
+    expect(rolFirmanteDe('persona-director', partes)).toBe('DIRECTOR');
+  });
+
+  it('no le atribuye ese rol si la ficha no lo lleva', () => {
+    expect(rolFirmanteDe('persona-director', { ...partes, director: null })).toBeNull();
+  });
+
+  /**
+   * Un director puede monitorear a los docentes de su propia institución: el
+   * cargo trae `monitoreo:execute`. En esa ficha firma como EVALUADOR y no dos
+   * veces.
+   */
+  it('firma como evaluador cuando ademas fue el monitor', () => {
+    const dirigeYMonitorea = {
+      evaluado: { personaId: 'persona-docente' },
+      monitor: { personaId: 'persona-director' },
+      director: { personaId: 'persona-director' },
+    };
+
+    expect(rolFirmanteDe('persona-director', dirigeYMonitorea)).toBe('EVALUADOR');
+  });
+
+  /** Si el director fuera el evaluado, gana ese rol: es la ficha directiva. */
+  it('firma como evaluado cuando la ficha es sobre el', () => {
+    const esElEvaluado = {
+      evaluado: { personaId: 'persona-director' },
+      monitor: { personaId: 'persona-especialista' },
+      director: { personaId: 'persona-director' },
+    };
+
+    expect(rolFirmanteDe('persona-director', esElEvaluado)).toBe('EVALUADO');
+  });
+});
+
+/**
+ * En la ficha DIRECTIVA el director es el evaluado y ya firma con ese rol:
+ * sumarle el de director lo pondria dos veces en el mismo documento.
+ */
+describe('elDirectorFirma', () => {
+  it('firma la ficha docente regular y la EIB', () => {
+    expect(elDirectorFirma('DOCENTE')).toBe(true);
+    expect(elDirectorFirma('DOCENTE_EIB')).toBe(true);
+  });
+
+  it('no firma la ficha directiva', () => {
+    expect(elDirectorFirma('DIRECTIVO')).toBe(false);
+  });
+
+  it('tolera diferencias de caja y espacios', () => {
+    expect(elDirectorFirma(' directivo ')).toBe(false);
+    expect(elDirectorFirma('docente')).toBe(true);
+  });
+});
+
+/**
+ * La firma del director llega DESPUES del cierre: no participa de la decision.
+ */
+describe('debeFinalizarse con la firma del director', () => {
+  it('el director solo no cierra la ficha', () => {
+    expect(debeFinalizarse(['DIRECTOR'])).toBe(false);
+  });
+
+  it('el director y el evaluado tampoco, sin el evaluador', () => {
+    expect(debeFinalizarse(['DIRECTOR', 'EVALUADO'])).toBe(false);
   });
 });
 

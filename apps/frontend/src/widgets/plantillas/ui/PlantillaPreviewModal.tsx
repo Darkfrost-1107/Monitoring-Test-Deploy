@@ -37,7 +37,7 @@ export const PlantillaPreviewModal = ({ plantilla, onClose }: PlantillaPreviewMo
     return plantilla.desempenos.length > 0 ? plantilla.desempenos[0].id : '';
   });
 
-  const isEib = plantilla.tipoMonitoreo === 'Monitoreo Docente EIB';
+  const isEib = plantilla.instrumento === 'DOCENTE_EIB';
 
   const activeDesempeno = useMemo(() => {
     if (!selectedDesempenoId) return null;

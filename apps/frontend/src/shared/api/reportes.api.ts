@@ -2,7 +2,7 @@ import type {
   IPaginatedReportesFichas,
   IReporteResumenIE,
   NivelLogro,
-  TipoMonitoreo,
+  TipoPlantilla,
 } from '@sistema-monitoreo/shared-contracts';
 import { request, API_BASE_URL } from '../config/api.js';
 
@@ -10,7 +10,7 @@ export const reportesApi = {
   fichasCompletadas: (query?: {
     anioAcademico?: number;
     institucionId?: string;
-    tipoMonitoreo?: TipoMonitoreo;
+    tipoMonitoreo?: TipoPlantilla;
     nivelLogro?: NivelLogro;
     fechaDesde?: string;
     fechaHasta?: string;
@@ -33,7 +33,7 @@ export const reportesApi = {
   analisisDesempenos: (query?: {
     anioAcademico?: number;
     institucionId?: string;
-    tipoMonitoreo?: TipoMonitoreo;
+    tipoMonitoreo?: TipoPlantilla;
     fechaDesde?: string;
     fechaHasta?: string;
   }) => {

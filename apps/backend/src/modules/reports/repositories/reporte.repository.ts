@@ -3,14 +3,15 @@ import type {
   IReporteResumenIE,
   IAnalisisDesempenoCriterio,
   NivelLogro,
-  TipoMonitoreo,
+  TipoPlantilla,
 } from '@sistema-monitoreo/shared-contracts';
 import type { SessionUser } from '../../../shared/types/session-user.js';
 
 export interface QueryFichasCompletadas {
   anioAcademico?: number;
   institucionId?: string;
-  tipoMonitoreo?: TipoMonitoreo;
+  /** Instrumento: el repositorio lo aplica sobre `plantilla.tipoMonitoreo`. */
+  tipoMonitoreo?: TipoPlantilla;
   nivelLogro?: NivelLogro;
   fechaDesde?: string;
   fechaHasta?: string;

@@ -27,6 +27,7 @@ import { toast } from 'sonner';
 
 import type { FiltroPeriodoTipo } from '@/features/reportes/lib/filtro-temporal';
 import { PLANTILLA_DE_INSTRUMENTO } from '@/features/reportes/lib/instrumento';
+import type { FiltroDeInstrumento } from '@/features/reportes/lib/instrumento';
 
 export interface BackendReportVisit extends Cronograma {
   /**
@@ -66,8 +67,8 @@ interface ReportesGridProps {
   setFilterNivel: (n: string) => void;
   filterAnio: string;
   setFilterAnio: (a: string) => void;
-  filterTipo?: string;
-  setFilterTipo?: (tipo: string) => void;
+  filterTipo?: FiltroDeInstrumento;
+  setFilterTipo?: (tipo: FiltroDeInstrumento) => void;
   conteosTipo?: Record<string, number>;
   filtroPeriodo: FiltroPeriodoTipo;
   setFiltroPeriodo: (p: FiltroPeriodoTipo) => void;

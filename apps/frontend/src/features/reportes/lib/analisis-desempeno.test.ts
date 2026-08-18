@@ -5,6 +5,7 @@ import {
 } from './analisis-desempeno';
 import type { BackendReportVisit } from '@/widgets/reportes';
 import type { Plantilla } from '@/entities/model-plantillas';
+import { instrumentoDeRotulo } from '@/entities/model-plantillas';
 
 describe('normalizarNivelLogro', () => {
   it('normaliza strings con nombres estándar y romanos', () => {
@@ -180,6 +181,49 @@ describe('calcularAnalisisPorCriterios', () => {
   });
 
   /**
+   * ── El filtro se aplica sobre el INSTRUMENTO de la ficha ──
+   * Filtraba con `v.tipo === 'DOCENTE_EIB'`. Mientras `tipo` traía el instrumento
+   * eso funcionaba; al separarlo del tipo de visita —que sólo vale DOCENTE o
+   * DIRECTIVO— la comparación dejó de cumplirse nunca y el filtro EIB devolvía
+   * cero fichas en el camino de estimación.
+   */
+  describe('filtrado por instrumento', () => {
+    const mixtas = [
+      crearVisita({ id: 'r-1', instrumento: 'DOCENTE', tipo: 'DOCENTE' }),
+      crearVisita({ id: 'e-1', instrumento: 'DOCENTE_EIB', tipo: 'DOCENTE' }),
+      crearVisita({ id: 'e-2', instrumento: 'DOCENTE_EIB', tipo: 'DOCENTE' }),
+      crearVisita({ id: 'd-1', instrumento: 'DIRECTIVO', tipo: 'DIRECTIVO' }),
+    ];
+
+    it('cuenta solo las fichas EIB cuando se filtra por EIB', () => {
+      expect(calcularAnalisisPorCriterios([], mixtas, [], 'DOCENTE_EIB').totalEvaluaciones).toBe(2);
+    });
+
+    it('no mezcla la ficha EIB con la docente regular', () => {
+      expect(calcularAnalisisPorCriterios([], mixtas, [], 'DOCENTE').totalEvaluaciones).toBe(1);
+    });
+
+    it('cuenta solo las directivas cuando se filtra por directivo', () => {
+      expect(calcularAnalisisPorCriterios([], mixtas, [], 'DIRECTIVO').totalEvaluaciones).toBe(1);
+    });
+
+    it('las cuenta todas sin filtro', () => {
+      expect(calcularAnalisisPorCriterios([], mixtas, [], 'Todos').totalEvaluaciones).toBe(4);
+    });
+
+    /** Las filas del camino de respaldo no traen instrumento: se deriva del tipo. */
+    it('deriva el instrumento del tipo de visita cuando la fila no lo trae', () => {
+      const sinInstrumento = [
+        crearVisita({ id: 's-1', tipo: 'DIRECTIVO' }),
+        crearVisita({ id: 's-2', tipo: 'DOCENTE' }),
+      ];
+
+      expect(calcularAnalisisPorCriterios([], sinInstrumento, [], 'DIRECTIVO').totalEvaluaciones).toBe(1);
+      expect(calcularAnalisisPorCriterios([], sinInstrumento, [], 'DOCENTE').totalEvaluaciones).toBe(1);
+    });
+  });
+
+  /**
    * Regresión del bug de precedencia de `a016111`: `t === 'DOCENTE' ||
    * t.includes('DOCENTE') && !t.includes('EIB')` sin paréntesis hacía que toda
    * plantilla docente —EIB incluida— entrara por la primera rama.
@@ -188,6 +232,7 @@ describe('calcularAnalisisPorCriterios', () => {
     const plantilla = (tipoMonitoreo: string, nombreDesempeno: string): Plantilla => ({
       id: `p-${tipoMonitoreo}`,
       tipoMonitoreo,
+      instrumento: instrumentoDeRotulo(tipoMonitoreo),
       anioAcademico: 2026,
       lema: null,
       baremo: 'Vigente',
@@ -209,8 +254,11 @@ describe('calcularAnalisisPorCriterios', () => {
     });
 
     const catalogo = [
-      plantilla('DOCENTE_EIB', 'Criterio EIB'),
-      plantilla('DOCENTE', 'Criterio regular'),
+      // `Plantilla.tipoMonitoreo` del frontend guarda el RÓTULO con el que la
+      // registra el formulario, no el valor del contrato. El fixture usaba
+      // 'DOCENTE_EIB' y pasaba sólo porque la búsqueda era por `includes`.
+      plantilla('Monitoreo Docente EIB', 'Criterio EIB'),
+      plantilla('Monitoreo Docente', 'Criterio regular'),
     ];
 
     it('el filtro docente no toma la plantilla EIB', () => {

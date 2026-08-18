@@ -1,14 +1,10 @@
 import type { IPlantilla, INivelCalificacion, IDesempeno, IAspecto, IRubricaNivel, IEjeItem, TipoPlantilla, EstadoPlantilla, RolAutorPlantilla, NivelRomano, Baremo } from '@sistema-monitoreo/shared-contracts';
 import type { Plantilla, NivelCalificacion, Desempeno, AspectoEvaluado, RubricaNivel, EjeItem } from './model';
 import { aFechaISOLocal } from '@shared/lib/fecha/fecha';
+import { ROTULO_DE_INSTRUMENTO } from './rotulo-de-instrumento';
 
-const TIPO_MONITOREO_LABEL: Record<TipoPlantilla, string> = {
-  DOCENTE: 'Monitoreo Docente',
-  DOCENTE_EIB: 'Monitoreo Docente EIB',
-  DIRECTIVO: 'Monitoreo Directivo',
-};
-
-const labelTipoMonitoreo = (tipo: TipoPlantilla): string => TIPO_MONITOREO_LABEL[tipo] ?? tipo;
+const labelTipoMonitoreo = (tipo: TipoPlantilla): string =>
+  ROTULO_DE_INSTRUMENTO[tipo] ?? tipo;
 
 const mapNivel = (n: INivelCalificacion): NivelCalificacion => ({
   nivel: n.nivelRomano,
@@ -65,6 +61,7 @@ const aDiaLocal = (iso: string | undefined): string => (iso ? aFechaISOLocal(iso
 export const mapIPlantillaToPlantilla = (p: IPlantilla): Plantilla => ({
   id: p.id,
   tipoMonitoreo: labelTipoMonitoreo(p.tipoMonitoreo),
+  instrumento: p.tipoMonitoreo,
   anioAcademico: p.anioAcademico,
   lema: p.lema ?? null,
   baremo: p.baremo as Baremo,

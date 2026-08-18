@@ -124,12 +124,8 @@ export const CalendarioSidebar = ({
     return plantillas.filter((p) => {
       if (p.estado !== 'Vigente') return false;
       if (esDocente) {
-        return (
-          p.tipoMonitoreo === 'Monitoreo Docente' ||
-          p.tipoMonitoreo === 'Monitoreo Docente EIB' ||
-          p.tipoMonitoreo.toUpperCase().includes('DOCENTE') ||
-          p.tipoMonitoreo.toUpperCase().includes('EIB')
-        );
+        // Los dos instrumentos de una visita docente: la ficha regular y la EIB.
+        return p.instrumento === 'DOCENTE' || p.instrumento === 'DOCENTE_EIB';
       }
       return p.tipoMonitoreo.toUpperCase().includes('DIRECTIV');
     });

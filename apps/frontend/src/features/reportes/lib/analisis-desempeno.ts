@@ -1,4 +1,7 @@
 import type { IAnalisisDesempenoCriterio } from '@sistema-monitoreo/shared-contracts';
+import { instrumentoDe, PLANTILLA_DE_INSTRUMENTO } from './instrumento';
+export type { FiltroDeInstrumento } from './instrumento';
+import type { FiltroDeInstrumento } from './instrumento';
 import type { BackendReportVisit } from '@/widgets/reportes';
 import type { Plantilla } from '@/entities/model-plantillas';
 
@@ -133,6 +136,7 @@ export const normalizarNivelLogro = (
   return null;
 };
 
+
 /**
  * Calcula el análisis estadístico consolidado por Criterio / Desempeño a evaluar.
  */
@@ -140,7 +144,7 @@ export const calcularAnalisisPorCriterios = (
   criteriosData: IAnalisisDesempenoCriterio[] = [],
   visitas: BackendReportVisit[] = [],
   plantillas: Plantilla[] = [],
-  tipoFiltro: string = 'Todos',
+  filtro: FiltroDeInstrumento = 'Todos',
 ): AnalisisDesempenoCompleto => {
   // Si el backend ya devolvió los criterios consolidados con respuestas, usarlos directamente
   if (criteriosData && criteriosData.length > 0) {
@@ -162,16 +166,20 @@ export const calcularAnalisisPorCriterios = (
     };
   }
 
-  const esDirectivo = tipoFiltro === 'DIRECTIVO';
-  const esEib = tipoFiltro === 'DOCENTE_EIB' || tipoFiltro?.toUpperCase().includes('EIB');
+  const esDirectivo = filtro === 'DIRECTIVO';
+  const esEib = filtro === 'DOCENTE_EIB';
 
-  // Fallback / Estimación a partir de los desempeños de la plantilla y las fichas de visitas
-  const plantillaObjetivo = plantillas.find((p) => {
-    const t = (p.tipoMonitoreo || '').toUpperCase();
-    if (esDirectivo) return t.includes('DIRECTIVO');
-    if (esEib) return t.includes('EIB');
-    return t === 'DOCENTE' || (t.includes('DOCENTE') && !t.includes('EIB'));
-  });
+  /**
+   * Fallback / Estimación a partir de los desempeños de la plantilla.
+   *
+   * La plantilla se busca por su nombre exacto, que es el rótulo con el que el
+   * formulario la registra. Antes se comparaba con `includes` sobre el nombre en
+   * mayúsculas, y ahí vivía el bug de precedencia de `a016111`: sin paréntesis,
+   * `t === 'DOCENTE' || t.includes('DOCENTE') && !t.includes('EIB')` dejaba
+   * entrar la plantilla EIB por la primera rama.
+   */
+  const nombreDePlantilla = PLANTILLA_DE_INSTRUMENTO[filtro === 'Todos' ? 'DOCENTE' : filtro];
+  const plantillaObjetivo = plantillas.find((p) => p.tipoMonitoreo === nombreDePlantilla);
 
   const listaDesempenos =
     plantillaObjetivo && Array.isArray(plantillaObjetivo.desempenos) && plantillaObjetivo.desempenos.length > 0
@@ -202,13 +210,17 @@ export const calcularAnalisisPorCriterios = (
           id: `doc-${d.orden}`,
         }));
 
-  const visitasFiltradas = visitas.filter((v) => {
-    const t = (v.tipo || 'DOCENTE').toUpperCase();
-    if (esDirectivo) return t === 'DIRECTIVO';
-    if (esEib) return t === 'DOCENTE_EIB' || t.includes('EIB');
-    if (tipoFiltro === 'DOCENTE') return t === 'DOCENTE' && !t.includes('EIB');
-    return true;
-  });
+  /**
+   * El filtro se aplica sobre el INSTRUMENTO de cada ficha.
+   *
+   * Comparaba `v.tipo` contra 'DOCENTE_EIB'. Mientras `tipo` traía el
+   * instrumento eso funcionaba; al separarlo del tipo de visita —que sólo vale
+   * DOCENTE o DIRECTIVO— la comparación dejó de cumplirse nunca y el filtro EIB
+   * devolvía cero fichas.
+   */
+  const visitasFiltradas = visitas.filter(
+    (v) => filtro === 'Todos' || instrumentoDe(v) === filtro,
+  );
   const totalVisitas = visitasFiltradas.length;
 
   /**

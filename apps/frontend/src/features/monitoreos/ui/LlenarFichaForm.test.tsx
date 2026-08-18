@@ -69,6 +69,7 @@ const desempeno = (id: string, nombre: string): Plantilla['desempenos'][number] 
 const PLANTILLA: Plantilla = {
   id: 'pl-1',
   tipoMonitoreo: 'Monitoreo Docente',
+  instrumento: 'DOCENTE',
   anioAcademico: 2026,
   lema: null,
   baremo: 'Vigente',

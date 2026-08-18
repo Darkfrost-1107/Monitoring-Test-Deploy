@@ -46,7 +46,16 @@ export interface Desempeno {
 // La plantilla de monitoreo completa.
 export interface Plantilla {
   id: string;
-  tipoMonitoreo: string; // Ej. "Monitoreo Docente"
+  /** Rótulo del formulario. Ej. "Monitoreo Docente". Para comparar, usar `instrumento`. */
+  tipoMonitoreo: string;
+  /**
+   * El instrumento, tal como lo declara el contrato.
+   *
+   * `tipoMonitoreo` guarda el RÓTULO y es lo que la pantalla muestra; este es
+   * el VALOR y es con lo que se compara. Tenerlos separados evita deducir el
+   * instrumento con `includes('EIB')` sobre el rótulo.
+   */
+  instrumento: import('@sistema-monitoreo/shared-contracts').TipoPlantilla;
   anioAcademico: number;
   /**
    * Lema oficial del `anioAcademico`, resuelto por el servidor.

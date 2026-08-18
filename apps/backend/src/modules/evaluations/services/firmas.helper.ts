@@ -11,7 +11,7 @@
 
 import type { Prisma } from '../../../generated/prisma/client.js';
 
-export type RolFirmante = 'EVALUADO' | 'EVALUADOR';
+export type RolFirmante = 'EVALUADO' | 'EVALUADOR' | 'DIRECTOR';
 
 /**
  * Cómo se ubica la ficha a partir del identificador que llega por la ruta.
@@ -61,10 +61,30 @@ export function resolverFicha<T>(fichas: readonly T[]): ResolucionDeFicha<T> {
   return { estado: 'unica', ficha: fichas[0] };
 }
 
-/** Las dos partes de una visita, tal como llegan del cronograma. */
+/** Quiénes pueden estampar su firma en una ficha. */
 export interface PartesDeLaVisita {
   evaluado: { personaId: string } | null;
   monitor: { personaId: string } | null;
+  /**
+   * Director de la I.E., cuando le corresponde firmar.
+   *
+   * Firma la ficha docente al final del monitoreo, como visto bueno sobre una
+   * ficha ya cerrada por las dos partes. Quien arma esto pasa `null` cuando no
+   * corresponde —ver `elDirectorFirma`—, de modo que este helper decida sólo
+   * identidad y la regla del instrumento viva en un lugar.
+   */
+  director?: { personaId: string } | null;
+}
+
+/**
+ * Si el director de la I.E. firma este instrumento.
+ *
+ * Firma la ficha docente, regular o EIB. En la ficha DIRECTIVA no: ahí el
+ * director ES el evaluado y ya firma con ese rol. Atribuirle además el de
+ * director lo pondría dos veces en el mismo documento.
+ */
+export function elDirectorFirma(instrumento: string): boolean {
+  return instrumento.trim().toUpperCase() !== 'DIRECTIVO';
 }
 
 /**
@@ -81,8 +101,14 @@ export function rolFirmanteDe(
 ): RolFirmante | null {
   if (!personaId) return null;
 
+  /**
+   * El orden importa. Un director puede monitorear a los docentes de su propia
+   * institución —el cargo trae `monitoreo:execute`—, y en esa ficha firma como
+   * EVALUADOR, no dos veces. Ser parte de la visita gana sobre el visto bueno.
+   */
   if (partes.evaluado?.personaId === personaId) return 'EVALUADO';
   if (partes.monitor?.personaId === personaId) return 'EVALUADOR';
+  if (partes.director?.personaId === personaId) return 'DIRECTOR';
 
   return null;
 }

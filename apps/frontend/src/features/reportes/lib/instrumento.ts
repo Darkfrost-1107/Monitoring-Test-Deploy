@@ -16,6 +16,14 @@ import type { TipoMonitoreo, TipoPlantilla } from '@sistema-monitoreo/shared-con
  * antes vivían repetidas en ternarios: rótulo y nombre de plantilla.
  */
 
+/**
+ * Instrumento por el que se segmenta un listado o un análisis, o todos juntos.
+ *
+ * Los filtros lo declaraban como `string`, así que nada garantizaba que sus
+ * valores coincidieran con los del contrato y cada uso los interpretaba a mano.
+ */
+export type FiltroDeInstrumento = TipoPlantilla | 'Todos';
+
 /** Si la ficha se llenó con la Ficha Docente EIB. */
 export function esInstrumentoEib(instrumento: TipoPlantilla | undefined): boolean {
   return instrumento === 'DOCENTE_EIB';
@@ -56,12 +64,8 @@ export const ETIQUETA_DE_INSTRUMENTO: Record<TipoPlantilla, string> = {
 /**
  * Nombre de la plantilla que corresponde a cada instrumento.
  *
- * Es el rótulo que usa el formulario (`TIPOS_MONITOREO`) y con el que se busca
- * la plantilla en el catálogo. Estaba escrito como cadena de ternarios en
- * `ReportesGrid`, dos veces.
+ * Se reexporta de la entidad, que es dueña del modelo: la tabla estaba escrita
+ * dos veces —acá y como `TIPO_MONITOREO_LABEL` en el mapeador— y dos copias de
+ * la misma traducción se separan sin que nadie lo note.
  */
-export const PLANTILLA_DE_INSTRUMENTO: Record<TipoPlantilla, string> = {
-  DOCENTE: 'Monitoreo Docente',
-  DOCENTE_EIB: 'Monitoreo Docente EIB',
-  DIRECTIVO: 'Monitoreo Directivo',
-};
+export { ROTULO_DE_INSTRUMENTO as PLANTILLA_DE_INSTRUMENTO } from '@/entities/model-plantillas/rotulo-de-instrumento';

@@ -5,13 +5,17 @@ import { usePlantillasList } from '@entities/model-plantillas/use-plantillas-api
 import { useCronogramasData } from '@features/cronogramas/hooks/use-cronogramas-data';
 import { useCan, Capability } from '@shared/auth';
 import { PageHeader } from '@shared/ui/pageHeader';
-import { MODALIDAD_NIVEL_MAP, type TipoMonitoreo } from '@sistema-monitoreo/shared-contracts';
+import { MODALIDAD_NIVEL_MAP } from '@sistema-monitoreo/shared-contracts';
 import {
   reportesVisibles,
   type ReporteVisible,
 } from '@features/reportes/lib/visibilidad-reportes';
-import { calcularAnalisisPorCriterios } from '@features/reportes/lib/analisis-desempeno';
+import {
+  calcularAnalisisPorCriterios,
+  type FiltroDeInstrumento,
+} from '@features/reportes/lib/analisis-desempeno';
 import { esInstrumentoEib, tipoDeVisitaDe } from '@features/reportes/lib/instrumento';
+import { aniosDeFiltro } from '@features/reportes/lib/anios-de-filtro';
 import {
   coincideConPeriodo,
   calcularConteosPorPeriodo,
@@ -23,6 +27,9 @@ import { GraficoComparativoCriterios } from '@/widgets/reportes/ui/analisis/Graf
 import { ListaCriteriosDesempeno } from '@/widgets/reportes/ui/analisis/ListaCriteriosDesempeno';
 import type { BackendReportVisit } from '@/widgets/reportes';
 
+/** El año en curso, que es donde arranca el análisis. */
+const ANIO_ACTUAL = new Date().getFullYear();
+
 export const AnalisisDesempenoPage = () => {
   const { user } = useUser();
   const { can } = useCan();
@@ -31,13 +38,25 @@ export const AnalisisDesempenoPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterModalidad, setFilterModalidad] = useState('Todos');
   const [filterNivel, setFilterNivel] = useState('Todos');
-  const [filterAnio, setFilterAnio] = useState('Todos');
-  const [filterTipo, setFilterTipo] = useState('Todos');
+  /**
+   * El análisis siempre mira un año concreto.
+   *
+   * Sus criterios los define la plantilla vigente de ese año, y las plantillas
+   * cambian de un año a otro: agregarlos pondría criterios distintos en el
+   * mismo eje, uno al lado del otro, como si fueran comparables.
+   */
+  const [filterAnio, setFilterAnio] = useState(String(ANIO_ACTUAL));
+  // Tipado: el analisis segmenta por instrumento, no por una cadena libre.
+  const [filterTipo, setFilterTipo] = useState<FiltroDeInstrumento>('Todos');
   const [filtroPeriodo, setFiltroPeriodo] = useState<FiltroPeriodoTipo>('TODOS');
 
   // Datos
-  const anioNumero = filterAnio !== 'Todos' ? parseInt(filterAnio, 10) : undefined;
-  const tipoMonitoreoParam = filterTipo !== 'Todos' ? (filterTipo as TipoMonitoreo) : undefined;
+  // Esta pantalla siempre tiene un año elegido: no ofrece «Todos los años».
+  const anioNumero = parseInt(filterAnio, 10);
+  // El backend filtra por `plantilla.tipoMonitoreo`, o sea el INSTRUMENTO. El
+  // parámetro conserva su nombre en el cable; lo que se corrige es el tipo,
+  // que decía `TipoMonitoreo` y por lo tanto excluía DOCENTE_EIB.
+  const tipoMonitoreoParam = filterTipo !== 'Todos' ? filterTipo : undefined;
 
   const { data: criteriosBackend } = useAnalisisDesempenos({
     anioAcademico: anioNumero,
@@ -123,7 +142,8 @@ export const AnalisisDesempenoPage = () => {
         // ignore
       }
     });
-    return Array.from(yearsSet).sort((a, b) => b.localeCompare(a));
+    // El año en curso siempre se ofrece, tenga fichas o no: el filtro arranca ahí.
+    return aniosDeFiltro([...yearsSet], ANIO_ACTUAL);
   }, [completedVisits]);
 
   const conteosPeriodo = useMemo(
@@ -152,7 +172,7 @@ export const AnalisisDesempenoPage = () => {
     searchQuery.trim() !== '' ||
     filterModalidad !== 'Todos' ||
     filterNivel !== 'Todos' ||
-    filterAnio !== 'Todos' ||
+    filterAnio !== String(ANIO_ACTUAL) ||
     filterTipo !== 'Todos' ||
     filtroPeriodo !== 'TODOS';
 
@@ -160,7 +180,7 @@ export const AnalisisDesempenoPage = () => {
     setSearchQuery('');
     setFilterModalidad('Todos');
     setFilterNivel('Todos');
-    setFilterAnio('Todos');
+    setFilterAnio(String(ANIO_ACTUAL));
     setFilterTipo('Todos');
     setFiltroPeriodo('TODOS');
   };
@@ -240,6 +260,7 @@ export const AnalisisDesempenoPage = () => {
         setFilterNivel={setFilterNivel}
         filterAnio={filterAnio}
         setFilterAnio={setFilterAnio}
+        permitirTodosLosAnios={false}
         filterTipo={filterTipo}
         setFilterTipo={setFilterTipo}
         conteosTipo={conteosTipo}

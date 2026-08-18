@@ -146,6 +146,19 @@ export const jefeGestionRoutes: RouteObject[] = [
           </LazyLoader>
         ),
       },
+    ],
+  },
+  {
+    /**
+     * El análisis pide su propio permiso, no el del grupo «Reportes».
+     *
+     * Con `permission="reportes"` alcanzaba al docente, que lo tiene entre sus
+     * permisos base: no veía la entrada en el menú, pero escribiendo la URL
+     * entraba. El análisis agrega resultados de varias personas y no es algo
+     * que el evaluado deba mirar.
+     */
+    element: <ProtectedRoute permission="reportes_analisis" />,
+    children: [
       {
         path: 'reportes/analisis',
         element: (
