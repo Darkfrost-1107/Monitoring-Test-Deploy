@@ -10,6 +10,7 @@ import { PlantillaRepository } from '../repositories/plantilla.repository.js';
 import type { CreatePlantillaDto } from '../dto/create-plantilla.dto.js';
 import type { UpdatePlantillaDto, PatchEstadoPlantillaDto } from '../dto/update-plantilla.dto.js';
 import type { QueryPlantillaDto } from '../dto/query-plantilla.dto.js';
+import { PrerrequisitosDirectorService } from './prerrequisitos-director.service.js';
 import { RoleCode } from '../../../common/enums/role.enum.js';
 import type { SessionUser } from '../../../shared/types/session-user.js';
 import {
@@ -23,7 +24,10 @@ import {
 
 @Injectable()
 export class PlantillaService {
-  constructor(private readonly repository: PlantillaRepository) {}
+  constructor(
+    private readonly repository: PlantillaRepository,
+    private readonly prerrequisitos: PrerrequisitosDirectorService,
+  ) {}
 
   private isSchoolStaff(session: SessionUser): boolean {
     return (
@@ -98,6 +102,9 @@ export class PlantillaService {
   }
 
   async create(dto: CreatePlantillaDto, session: SessionUser): Promise<IPlantilla> {
+    // El coordinador y el jefe de taller no crean su plantilla hasta que el
+    // director de la I.E. sentó las bases (plan anual + plantilla vigente).
+    await this.prerrequisitos.asegurar(session);
     validarReglas(dto);
     const { rolAutorAlCrear, institucionId } = resolveAutor(session);
     return this.repository.create({

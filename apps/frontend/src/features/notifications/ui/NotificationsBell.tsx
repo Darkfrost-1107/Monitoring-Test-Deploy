@@ -19,6 +19,8 @@ import {
 import { Button } from '@shared/ui/button';
 import { useNotificaciones, useMarcarLeida, useMarcarTodasLeidas } from '../api/use-notifications-api';
 import { formatearFechaCorta } from '@shared/lib/fecha/fecha';
+import { useUser } from '@entities/model-user';
+import { hasPermission } from '@shared/constants/roles';
 
 const tiempoRelativo = (iso: string): string => {
   const diffMin = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
@@ -29,12 +31,20 @@ const tiempoRelativo = (iso: string): string => {
   return formatearFechaCorta(iso);
 };
 
-const getNotificationBadge = (n: {
-  tipo: string;
-  titulo?: string;
-  mensaje?: string;
-  institucionId?: string | null;
-}) => {
+// Focos de Atención es una vista de la UGEL. El Director de I.E. recibe la misma
+// alerta —para actuar sobre sus docentes— pero no tiene acceso a esa pantalla ni
+// un foco propio, así que su enlace lo lleva a su dashboard, no a Focos.
+const DESTINO_SIN_FOCOS = { actionUrl: '/dashboard', actionLabel: 'Ver Dashboard' } as const;
+
+const getNotificationBadge = (
+  n: {
+    tipo: string;
+    titulo?: string;
+    mensaje?: string;
+    institucionId?: string | null;
+  },
+  puedeVerFocos: boolean,
+) => {
   switch (n.tipo) {
     case 'SOLICITUD_REPROGRAMACION_CREADA':
       return {
@@ -84,6 +94,10 @@ const getNotificationBadge = (n: {
     // Las tres alertas de desempeño llevan a Focos de Atención, que es donde
     // están el mapa y la institución o el distrito señalado.
     case 'ALERTA_DISTRITO': {
+      const bg = 'bg-amber-500/10 text-amber-600 dark:text-amber-400';
+      if (!puedeVerFocos) {
+        return { icon: AlertTriangle, bg, ...DESTINO_SIN_FOCOS };
+      }
       let actionUrl = '/focos-atencion';
       if (n.titulo) {
         const match = n.titulo.match(/Distrito en nivel crítico:\s*(.+)$/i);
@@ -93,19 +107,23 @@ const getNotificationBadge = (n: {
       }
       return {
         icon: AlertTriangle,
-        bg: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
+        bg,
         actionUrl,
         actionLabel: 'Ver Focos de Atención',
       };
     }
     case 'ALERTA_INSTITUCION':
     case 'IE_SIN_VISITA': {
+      const bg = 'bg-amber-500/10 text-amber-600 dark:text-amber-400';
+      if (!puedeVerFocos) {
+        return { icon: AlertTriangle, bg, ...DESTINO_SIN_FOCOS };
+      }
       const actionUrl = n.institucionId
         ? `/focos-atencion?institucionId=${encodeURIComponent(n.institucionId)}`
         : '/focos-atencion';
       return {
         icon: AlertTriangle,
-        bg: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
+        bg,
         actionUrl,
         actionLabel: 'Ver Focos de Atención',
       };
@@ -122,6 +140,8 @@ const getNotificationBadge = (n: {
 
 export const NotificationsBell = () => {
   const navigate = useNavigate();
+  const { user } = useUser();
+  const puedeVerFocos = user ? hasPermission(user.role, 'focos_atencion') : false;
   const { data } = useNotificaciones();
   const marcarLeida = useMarcarLeida();
   const marcarTodas = useMarcarTodasLeidas();
@@ -215,7 +235,7 @@ export const NotificationsBell = () => {
           ) : (
             itemsFiltrados.map((n) => {
               const abierta = expandida === n.id;
-              const badge = getNotificationBadge(n);
+              const badge = getNotificationBadge(n, puedeVerFocos);
               const IconComp = badge.icon;
 
               return (

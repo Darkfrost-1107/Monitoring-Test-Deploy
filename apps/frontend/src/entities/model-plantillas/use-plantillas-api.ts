@@ -12,7 +12,10 @@ import { mapIPlantillaListToPlantillaList, mapIPlantillaToPlantilla } from './ma
  * `./mapper`.
  */
 
-export const usePlantillasList = (filters?: { anioAcademico?: number; estado?: EstadoPlantilla; tipoMonitoreo?: TipoPlantilla; institucionId?: string }) =>
+export const usePlantillasList = (
+  filters?: { anioAcademico?: number; estado?: EstadoPlantilla; tipoMonitoreo?: TipoPlantilla; institucionId?: string },
+  options?: { enabled?: boolean },
+) =>
   useQuery({
     queryKey: ['plantillas', filters],
     queryFn: async () => {
@@ -21,6 +24,9 @@ export const usePlantillasList = (filters?: { anioAcademico?: number; estado?: E
     },
     staleTime: 5_000,
     refetchOnMount: true,
+    // El catálogo de plantillas es dato del personal que arma/filtra reportes; no
+    // se pide en vistas donde el usuario solo ve las fichas hechas a su persona.
+    enabled: options?.enabled ?? true,
   });
 
 export const usePlantilla = (id: string | undefined) =>

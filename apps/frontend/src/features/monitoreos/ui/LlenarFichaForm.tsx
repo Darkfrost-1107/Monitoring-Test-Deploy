@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
-import { RoleCode } from '@sistema-monitoreo/shared-contracts';
+import { RoleCode, Capability } from '@sistema-monitoreo/shared-contracts';
+import { useCan } from '@shared/auth';
 import { useUser } from '@entities/model-user';
 import { Card } from '@/shared/ui/card';
 import { AvisoDeError } from '@shared/ui/AvisoDeError';
@@ -118,8 +119,12 @@ export const LlenarFichaForm = ({
     hidratar,
   });
 
+  // Autocompletar el contexto del aula lee el docente por id (`docentes:read`),
+  // capacidad que el propio evaluado no tiene. Un docente que abre su ficha ya
+  // finalizada no necesita ese autocompletado: sin la guarda solo obtendría 403.
+  const { can } = useCan();
   const { docente: evaluadoDocente, areasSugeridas } = useDocenteEvaluado({
-    activo: isOpen,
+    activo: isOpen && can(Capability.DOCENTES_READ),
     visitId: visit?.id,
     templateId: template?.id,
     evaluadoId: visit?.evaluadoId,

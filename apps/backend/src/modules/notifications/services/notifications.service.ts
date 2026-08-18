@@ -10,6 +10,7 @@ import { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import { MailerService } from '../../../shared/mailer/mailer.service.js';
 import { CrearAlertaDistritoDto, CrearAlertaInstitucionDto } from '../dto/crear-alerta.dto.js';
 import { RoleCode } from '../../../common/enums/role.enum.js';
+import { separarAutonotificacion } from './autonotificacion.helper.js';
 
 /** Destinatario de notificación resuelto (usuario + su correo para el canal best-effort). */
 type NotifRecipient = { usuarioId: string; correo?: string | null };
@@ -27,6 +28,8 @@ interface Destinatario {
   usuarioId: string | null;
   nombre: string;
   correo: string | null;
+  /** El docente al que corresponde el destinatario, si es una persona monitoreable (Director de I.E.). */
+  docenteId?: string | null;
 }
 
 @Injectable()
@@ -54,11 +57,29 @@ export class NotificationsService {
     const resultados: IResultadoNotificacion[] = [];
 
     for (const rol of new Set(dto.destinatarios)) {
-      const destinatarios = await this.resolverDestinatarios(
+      const resueltos = await this.resolverDestinatarios(
         rol,
         dto.institucionId,
         institucion.nivelEducativo,
       );
+
+      // No se notifica a alguien sobre sí mismo: cuando el señalado es el propio
+      // Director de I.E., el destinatario coincide con el docente de la alerta.
+      const { notificables: destinatarios, omitidosPorSerElMismo } = separarAutonotificacion(
+        resueltos,
+        dto.docenteId,
+      );
+      if (omitidosPorSerElMismo.length > 0 && destinatarios.length === 0) {
+        resultados.push({
+          rol,
+          nombre: omitidosPorSerElMismo[0].nombre,
+          inApp: false,
+          email: false,
+          motivo: 'No se notifica al Director sobre su propio caso.',
+        });
+        continue;
+      }
+
       if (destinatarios.length === 0) {
         resultados.push({
           rol,
@@ -498,6 +519,7 @@ export class NotificationsService {
           docenteCargos: { some: { cargo: { nombre: 'Director' }, fechaFin: null } },
         },
         select: {
+          id: true,
           persona: {
             select: {
               nombres: true,
@@ -516,6 +538,7 @@ export class NotificationsService {
           usuarioId: p.usuario?.id ?? null,
           nombre: `${p.nombres} ${p.apellidos}`.trim(),
           correo: p.correo,
+          docenteId: docente.id,
         },
       ];
     }

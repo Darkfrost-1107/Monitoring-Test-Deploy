@@ -50,7 +50,21 @@ export const ConfirmModal = ({
         </AlertDialogHeader>
         <AlertDialogFooter className="mt-4">
           <AlertDialogCancel onClick={onCancel}>{cancelLabel}</AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm} variant={danger ? 'destructive' : 'default'}>
+          {/*
+            `AlertDialogAction` de Radix cierra el diálogo al hacer click, de
+            forma sincrónica. Para una acción asíncrona que puede fallar —como
+            reactivar un plan que choca con otro ya activo— eso desmontaba el
+            modal antes de que llegara el error, y el aviso no se veía nunca.
+            Se evita el cierre automático: el diálogo queda montado y quien lo usa
+            decide cerrarlo cuando la operación tiene éxito.
+          */}
+          <AlertDialogAction
+            onClick={(e) => {
+              e.preventDefault();
+              onConfirm();
+            }}
+            variant={danger ? 'destructive' : 'default'}
+          >
             {confirmLabel}
           </AlertDialogAction>
         </AlertDialogFooter>

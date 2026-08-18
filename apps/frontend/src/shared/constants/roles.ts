@@ -145,6 +145,12 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
     'plantillas_ies',
     'instituciones_docentes',
     'instituciones_coordinadores',
+    // El director de I.E. gestiona a su Coordinador Pedagógico Y a su Jefe de
+    // Taller: los dos cargos de institución, ambos sólo en Secundaria. Este
+    // segundo se había perdido en el PR de firmas (#70), que no era de permisos.
+    // El menú lo oculta igual en las I.E. que no son Secundaria (ver el filtro
+    // por `institucionNivel` en `sidebar.tsx`).
+    'instituciones_jefes_taller',
     'monitoreo_reportes',
     'reportes',
     'reportes_fichas',

@@ -56,7 +56,13 @@ interface FichaPrintableProps {
 export const FichaPrintable = forwardRef<HTMLDivElement, FichaPrintableProps>(
   ({ visit, template, fichaState }, ref) => {
     const { can } = useCan();
-    const { docentes, especialistas, instituciones } = useCronogramasData(can(Capability.MONITOREO_READ));
+    // El padrón (docentes/especialistas/instituciones) sale de endpoints de gestión
+    // que exigen `monitoreo:execute`, no `:read`. Pedirlo con solo lectura —como un
+    // docente que imprime su propia ficha— solo produce 403; la ficha ya trae los
+    // nombres que necesita mostrar.
+    const { docentes, especialistas, instituciones } = useCronogramasData(
+      can(Capability.MONITOREO_EXECUTE),
+    );
 
     // La hora de cierre sólo existe en la ficha finalizada del backend.
     const { data: fichaDelBackend } = useQuery({

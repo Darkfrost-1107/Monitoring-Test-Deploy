@@ -9,11 +9,18 @@ const h = vi.hoisted(() => ({
   mutateLeida: vi.fn(),
   mutateTodas: vi.fn(),
   navigate: vi.fn(),
+  // Rol del usuario en sesión; decide si las alertas enlazan a Focos o al panel.
+  role: 'jefe_gestion' as string,
 }));
 
 vi.mock('react-router-dom', async (orig) => {
   const actual = await orig<typeof import('react-router-dom')>();
   return { ...actual, useNavigate: () => h.navigate };
+});
+
+vi.mock('@entities/model-user', async (orig) => {
+  const actual = await orig<typeof import('@entities/model-user')>();
+  return { ...actual, useUser: () => ({ user: { role: h.role } }) };
 });
 
 vi.mock('../api/use-notifications-api', () => ({
@@ -50,6 +57,7 @@ beforeEach(() => {
   h.mutateLeida.mockClear();
   h.mutateTodas.mockClear();
   h.navigate.mockClear();
+  h.role = 'jefe_gestion';
 });
 
 describe('NotificationsBell', () => {
@@ -202,6 +210,26 @@ describe('NotificationsBell', () => {
       await user.click(accion);
       expect(h.mutateLeida).toHaveBeenCalledWith('i1');
       expect(h.navigate).toHaveBeenCalledWith('/focos-atencion?institucionId=ie-123');
+    });
+
+    it('un rol sin Focos (director de I.E.) enlaza al panel, no a Focos', async () => {
+      const user = userEvent.setup();
+      h.role = 'director_institucion';
+      setData([
+        notif({
+          id: 'i2',
+          tipo: 'ALERTA_INSTITUCION',
+          titulo: 'Docente en nivel crítico',
+          institucionId: 'ie-123',
+          leida: false,
+        }),
+      ]);
+      render(<NotificationsBell />);
+      await abrirPanel(user);
+
+      expect(screen.queryByRole('button', { name: /Ver Focos de Atención/ })).toBeNull();
+      await user.click(await screen.findByRole('button', { name: /Ver Dashboard/ }));
+      expect(h.navigate).toHaveBeenCalledWith('/dashboard');
     });
   });
 });

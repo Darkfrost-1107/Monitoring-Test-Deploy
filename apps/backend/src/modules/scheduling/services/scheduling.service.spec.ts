@@ -3,6 +3,7 @@ import { Test } from '@nestjs/testing';
 import { jest } from '@jest/globals';
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { SchedulingService } from './scheduling.service.js';
+import { PrerrequisitosDirectorService } from '../../monitoring/services/prerrequisitos-director.service.js';
 import {
   CronogramaRepository,
   SolicitudReprogramacionRepository,
@@ -86,6 +87,10 @@ describe('SchedulingService - Reprogramaciones', () => {
         {
           provide: EventEmitter2,
           useValue: { emit: jest.fn<any>() },
+        },
+        {
+          provide: PrerrequisitosDirectorService,
+          useValue: { asegurar: jest.fn<any>().mockResolvedValue(undefined) },
         },
         {
           provide: PrismaService,

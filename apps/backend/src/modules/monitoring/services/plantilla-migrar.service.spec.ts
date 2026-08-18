@@ -2,6 +2,7 @@ import { Test } from '@nestjs/testing';
 import { jest } from '@jest/globals';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { PlantillaService } from './plantilla.service.js';
+import { PrerrequisitosDirectorService } from './prerrequisitos-director.service.js';
 import { PlantillaRepository } from '../repositories/plantilla.repository.js';
 import { RoleCode } from '../../../common/enums/role.enum.js';
 
@@ -30,6 +31,10 @@ describe('PlantillaService - ILA-0046 Versionado', () => {
     const module = await Test.createTestingModule({
       providers: [
         PlantillaService,
+        {
+          provide: PrerrequisitosDirectorService,
+          useValue: { asegurar: jest.fn<any>().mockResolvedValue(undefined) },
+        },
         {
           provide: PlantillaRepository,
           useValue: {

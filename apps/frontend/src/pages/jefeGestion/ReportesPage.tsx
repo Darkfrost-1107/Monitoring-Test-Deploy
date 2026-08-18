@@ -44,10 +44,16 @@ export const ReportesPage = () => {
   const esAutorDeFichas = isMonitorCampo || user?.role === RoleCode.DIRECTOR_INSTITUCION;
   
   const { can } = useCan();
-  const canReadCronogramas = can(Capability.MONITOREO_READ);
+  // La vista «mis reportes» (isEvaluatedView) se sirve solo de `fichasCompletadas`,
+  // que ya trae el nombre de la plantilla y del especialista. El cronograma y el
+  // catálogo de plantillas son datos de gestión que el evaluado —p. ej. un
+  // docente— no puede leer: pedirlos solo produce 403 de fondo.
+  const necesitaDatosDeGestion = can(Capability.MONITOREO_EXECUTE) && !isEvaluatedView;
 
-  const { cronogramas } = useCronogramasData(canReadCronogramas);
-  const { data: plantillas = [] } = usePlantillasList();
+  const { cronogramas } = useCronogramasData(necesitaDatosDeGestion);
+  const { data: plantillas = [] } = usePlantillasList(undefined, {
+    enabled: necesitaDatosDeGestion,
+  });
   const { data: fichasCompletadasData } = useFichasCompletadas({ page: 1, limit: 50 });
 
   // ── Estados de Vista e Interacción ──

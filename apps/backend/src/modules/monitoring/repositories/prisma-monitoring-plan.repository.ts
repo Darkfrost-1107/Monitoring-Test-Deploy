@@ -104,6 +104,27 @@ export class PrismaMonitoringPlanRepository implements MonitoringPlanRepository 
     return this.buildResponse(plan);
   }
 
+  async contarDependencias(
+    planId: string,
+    institucionId: string | null | undefined,
+    anioAcademico: number,
+  ): Promise<{ plantillasVigentes: number; cronogramas: number }> {
+    const [plantillasVigentes, cronogramas] = await Promise.all([
+      // Las plantillas no referencian al plan: cuelgan de la institución y el año.
+      institucionId
+        ? this.prisma.plantillaMonitoreo.count({
+            where: { institucionId, anioAcademico, estado: 'Vigente', deleted: false },
+          })
+        : Promise.resolve(0),
+      // Los cronogramas sí apuntan al plan. No cuentan los que ya no están en
+      // juego: un cronograma anulado o cancelado no lo sostiene.
+      this.prisma.cronograma.count({
+        where: { planId, estado: { notIn: ['ANULADO', 'CANCELADO'] } },
+      }),
+    ]);
+    return { plantillasVigentes, cronogramas };
+  }
+
   async hardDelete(id: string): Promise<boolean> {
     const existing = await this.prisma.planMonitoreo.findUnique({ where: { id } });
     if (!existing) {

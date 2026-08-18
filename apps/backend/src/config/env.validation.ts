@@ -79,6 +79,16 @@ export class EnvironmentVariables {
   @IsString()
   SMTP_PASS?: string;
 
+  /**
+   * Desactiva la validación de certificados TLS del SMTP. Sólo `'true'` la apaga.
+   *
+   * Para el servidor de correo local, que trae un certificado autofirmado. No se
+   * declara en producción: ahí los certificados se validan.
+   */
+  @IsOptional()
+  @IsString()
+  SMTP_TLS_INSECURE?: string;
+
   @IsOptional()
   @IsString()
   EMAIL_FROM?: string = 'no-reply@ugel-lampa.gob.pe';

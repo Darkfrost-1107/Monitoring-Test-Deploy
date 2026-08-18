@@ -20,13 +20,32 @@ export class MailerService {
 
       const auth = user && pass ? { user, pass } : undefined;
 
+      /**
+       * Se validan los certificados TLS por defecto.
+       *
+       * Estaba fijo en `rejectUnauthorized: false` «para certificados
+       * autofirmados en local», pero regía también en producción: aceptaba
+       * cualquier certificado, y con eso un intermediario en la red entre el
+       * servidor y el SMTP podía interceptar los correos.
+       *
+       * Aflojarlo queda detrás de una variable explícita —`SMTP_TLS_INSECURE`—
+       * para el servidor de correo local, que suele traer un certificado
+       * autofirmado. En producción no se declara y la validación sigue activa.
+       */
+      const tlsInseguro = this.configService.get<string>('SMTP_TLS_INSECURE') === 'true';
+      if (tlsInseguro) {
+        this.logger.warn(
+          'SMTP_TLS_INSECURE=true: no se validan los certificados TLS. Sólo para desarrollo.',
+        );
+      }
+
       this.transporter = nodemailer.createTransport({
         host,
         port,
         secure: port === 465, // True for 465, false for others
         auth,
         tls: {
-          rejectUnauthorized: false, // Permite certificados autofirmados en local
+          rejectUnauthorized: !tlsInseguro,
         },
       });
     } else {

@@ -20,6 +20,11 @@ export abstract class MonitoringPlanRepository {
   abstract findById(id: string): Promise<IMonitoringPlanResponse | null>;
   abstract create(data: CreatePlanData): Promise<IMonitoringPlanResponse>;
   abstract softDelete(id: string): Promise<IMonitoringPlanResponse>;
+  abstract contarDependencias(
+    planId: string,
+    institucionId: string | null | undefined,
+    anioAcademico: number,
+  ): Promise<{ plantillasVigentes: number; cronogramas: number }>;
   abstract hardDelete(id: string): Promise<boolean>;
   abstract restore(id: string): Promise<IMonitoringPlanResponse>;
   abstract findCobertura(planId: string): Promise<IPlanInstitucionCubierta[]>;

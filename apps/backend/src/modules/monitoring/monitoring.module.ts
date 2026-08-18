@@ -3,6 +3,7 @@ import { MonitoringPlanController } from './controllers/monitoring-plan.controll
 import { PlantillaController } from './controllers/plantilla.controller.js';
 import { MonitoringPlanService } from './services/monitoring-plan.service.js';
 import { PlantillaService } from './services/plantilla.service.js';
+import { PrerrequisitosDirectorService } from './services/prerrequisitos-director.service.js';
 import { MonitoringPlanRepository } from './repositories/monitoring-plan.repository.js';
 import { PrismaMonitoringPlanRepository } from './repositories/prisma-monitoring-plan.repository.js';
 import { PlantillaRepository } from './repositories/plantilla.repository.js';
@@ -24,6 +25,7 @@ import { AuthModule } from '../auth/auth.module.js';
       useClass: PrismaMonitoringPlanRepository,
     },
     PlantillaService,
+    PrerrequisitosDirectorService,
     {
       provide: PlantillaRepository,
       useClass: PrismaPlantillaRepository,
@@ -36,6 +38,7 @@ import { AuthModule } from '../auth/auth.module.js';
   ],
   exports: [
     MonitoringPlanService,
+    PrerrequisitosDirectorService,
     MonitoringPlanRepository,
     PlantillaService,
     PlantillaRepository,

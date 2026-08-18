@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { SchedulingController } from './controllers/scheduling.controller.js';
 import { SchedulingService } from './services/scheduling.service.js';
+import { MonitoringModule } from '../monitoring/monitoring.module.js';
 import {
   CronogramaRepository,
   SolicitudReprogramacionRepository,
@@ -16,7 +17,7 @@ import { AlertCronService } from './services/alert-cron.service.js';
 import { ScopeFilter } from '../../shared/auth/scope-filter.js';
 
 @Module({
-  imports: [PrismaModule, AuthModule, MailerModule],
+  imports: [PrismaModule, AuthModule, MailerModule, MonitoringModule],
   controllers: [SchedulingController],
   providers: [
     SchedulingService,

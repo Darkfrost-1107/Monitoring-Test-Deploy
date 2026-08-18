@@ -3,6 +3,7 @@ import { Test } from '@nestjs/testing';
 import { jest } from '@jest/globals';
 import { ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { MonitoringPlanService } from './monitoring-plan.service.js';
+import { PrerrequisitosDirectorService } from './prerrequisitos-director.service.js';
 import type { SessionUser } from '../../../shared/types/session-user.js';
 import { MonitoringPlanRepository } from '../repositories/monitoring-plan.repository.js';
 import type { IMonitoringPlanResponse } from '@sistema-monitoreo/shared-contracts';
@@ -56,16 +57,72 @@ describe('MonitoringPlanService', () => {
       findById: jest.fn<any>(),
       create: jest.fn<any>(),
       softDelete: jest.fn<any>(),
+      contarDependencias: jest
+        .fn<any>()
+        .mockResolvedValue({ plantillasVigentes: 0, cronogramas: 0 }),
       restore: jest.fn<any>(),
       findCobertura: jest.fn<any>(),
       addCobertura: jest.fn<any>(),
       removeCobertura: jest.fn<any>(),
     };
     const moduleRef = await Test.createTestingModule({
-      providers: [MonitoringPlanService, { provide: MonitoringPlanRepository, useValue: mockRepo }],
+      providers: [
+        MonitoringPlanService,
+        { provide: MonitoringPlanRepository, useValue: mockRepo },
+        {
+          provide: PrerrequisitosDirectorService,
+          useValue: { asegurar: jest.fn<any>().mockResolvedValue(undefined) },
+        },
+      ],
     }).compile();
     service = moduleRef.get(MonitoringPlanService);
     repo = moduleRef.get(MonitoringPlanRepository);
+  });
+
+  /**
+   * El listado de planes se acota por institución para TODO el personal de I.E.
+   *
+   * El bug: sólo se acotaba para el Director. El Coordinador Pedagógico y el
+   * Jefe de Taller —que también son personal de I.E.— caían en la rama que no
+   * filtraba, de modo que veían los planes de instituciones a las que no
+   * pertenecen. El repositorio ya honra `institucionId` (planes de esa IE más
+   * los de UGEL); lo que faltaba era pasárselo.
+   */
+  describe('findAll con scoping por institucion', () => {
+    it('acota al Director a su institucion', async () => {
+      await service.findAll(undefined, sesionDirector);
+      expect(repo.findAll).toHaveBeenCalledWith(expect.objectContaining({ institucionId: 'ie-1' }));
+    });
+
+    it('acota al Coordinador Pedagogico a su institucion', async () => {
+      await service.findAll(undefined, sesionCoordinador);
+      expect(repo.findAll).toHaveBeenCalledWith(expect.objectContaining({ institucionId: 'ie-1' }));
+    });
+
+    it('acota al Jefe de Taller a su institucion', async () => {
+      await service.findAll(undefined, sesionJefeTaller);
+      expect(repo.findAll).toHaveBeenCalledWith(expect.objectContaining({ institucionId: 'ie-1' }));
+    });
+
+    it('el Jefe de Area solo ve planes UGEL', async () => {
+      await service.findAll(undefined, { id: 'u', role: RoleCode.JEFE_AREA });
+      expect(repo.findAll).toHaveBeenCalledWith(expect.objectContaining({ tipoEntidad: 'UGEL' }));
+    });
+
+    /** El Jefe de Gestion es de la UGEL: ve los planes de todas las II.EE. */
+    it('no acota al Jefe de Gestion', async () => {
+      await service.findAll(undefined, sesionJefe);
+      const arg = repo.findAll.mock.calls[0][0];
+      expect(arg?.institucionId).toBeUndefined();
+      expect(arg?.tipoEntidad).toBeUndefined();
+    });
+
+    /** Personal de I.E. sin institucion en el token: no ve nada ajeno por defecto. */
+    it('no acota si el personal de I.E. no trae institucion', async () => {
+      await service.findAll(undefined, { id: 'u', role: RoleCode.COORDINADOR_PEDAGOGICO });
+      const arg = repo.findAll.mock.calls[0][0];
+      expect(arg?.institucionId).toBeUndefined();
+    });
   });
 
   describe('findById conスコoping', () => {
@@ -80,15 +137,52 @@ describe('MonitoringPlanService', () => {
       expect(p.id).toBe('plan-1');
     });
 
-    it('Director IE NO ve plan UGEL', async () => {
-      repo.findById.mockResolvedValue({ ...planBase, tipoEntidad: 'UGEL' });
-      await expect(service.findById('plan-1', sesionDirector)).rejects.toThrow(ForbiddenException);
+    /**
+     * El Director SÍ ve los planes de la UGEL: el listado ya se los mostraba
+     * —el repositorio agrega los de tipoEntidad UGEL a los de la institución—.
+     * `findById` se los negaba, una incoherencia entre las dos vistas del mismo
+     * dato. Ahora ambas dicen lo mismo.
+     */
+    it('Director IE ve plan UGEL', async () => {
+      repo.findById.mockResolvedValue({ ...planBase, tipoEntidad: 'UGEL', institucionId: null });
+      const p = await service.findById('plan-1', sesionDirector);
+      expect(p.tipoEntidad).toBe('UGEL');
     });
 
-    it('Director IE ve plan IE', async () => {
-      repo.findById.mockResolvedValue({ ...planBase, tipoEntidad: 'IE' });
+    it('Director IE ve plan IE de su institucion', async () => {
+      repo.findById.mockResolvedValue({ ...planBase, tipoEntidad: 'IE', institucionId: 'ie-1' });
       const p = await service.findById('plan-1', sesionDirector);
       expect(p.tipoEntidad).toBe('IE');
+    });
+
+    /**
+     * El listado ya se acota por institución, pero `findById` es la puerta de
+     * atrás: `GET /planes/:id/archivo` descarga el PDF por id. Sin este control,
+     * el personal de una I.E. abría el plan de otra institución conociendo su id.
+     */
+    it('el personal de I.E. NO ve el plan IE de otra institucion', async () => {
+      repo.findById.mockResolvedValue({ ...planBase, tipoEntidad: 'IE', institucionId: 'ie-2' });
+
+      await expect(service.findById('plan-1', sesionDirector)).rejects.toThrow(ForbiddenException);
+      await expect(service.findById('plan-1', sesionCoordinador)).rejects.toThrow(
+        ForbiddenException,
+      );
+      await expect(service.findById('plan-1', sesionJefeTaller)).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('el Coordinador ve el plan IE de su propia institucion', async () => {
+      repo.findById.mockResolvedValue({ ...planBase, tipoEntidad: 'IE', institucionId: 'ie-1' });
+      const p = await service.findById('plan-1', sesionCoordinador);
+      expect(p.tipoEntidad).toBe('IE');
+    });
+
+    /** El plan de la UGEL lo ve todo el personal de I.E. */
+    it('el personal de I.E. ve los planes de la UGEL', async () => {
+      repo.findById.mockResolvedValue({ ...planBase, tipoEntidad: 'UGEL', institucionId: null });
+      const p = await service.findById('plan-1', sesionCoordinador);
+      expect(p.tipoEntidad).toBe('UGEL');
     });
   });
 
@@ -168,11 +262,75 @@ describe('MonitoringPlanService', () => {
       );
     });
 
+    /**
+     * El mismo hueco que en `findById`, pero peor porque MUTA: el Coordinador
+     * caía en la rama que no comprobaba institución y podía cambiar el estado
+     * del plan de otra I.E. conociendo su id.
+     */
+    it('el personal de I.E. no puede modificar el plan de otra institucion', async () => {
+      repo.findById.mockResolvedValue({ ...planBase, tipoEntidad: 'IE', institucionId: 'ie-2' });
+      await expect(service.toggleEstado('plan-1', sesionCoordinador)).rejects.toThrow(
+        ForbiddenException,
+      );
+      await expect(service.toggleEstado('plan-1', sesionJefeTaller)).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
     it('Jefe Gestion puede activar/desactivar cualquier plan', async () => {
       repo.findById.mockResolvedValue({ ...planBase, estado: 'Inactivo' });
       repo.softDelete.mockResolvedValue({ ...planBase, estado: 'Activo' });
       const p = await service.toggleEstado('plan-1', sesionJefe);
       expect(p.estado).toBe('Activo');
+    });
+
+    /**
+     * No se inactiva un plan activo que sostiene monitoreo en curso: sus
+     * plantillas vigentes y cronogramas quedarían sin plan activo, y la regla
+     * del prerrequisito volvería a bloquear al personal de la I.E.
+     */
+    const planActivoIE = {
+      ...planBase,
+      estado: 'Activo',
+      tipoEntidad: 'IE',
+      institucionId: 'ie-1',
+    };
+
+    it('no inactiva un plan con plantillas vigentes o cronogramas', async () => {
+      repo.findById.mockResolvedValue(planActivoIE);
+      repo.contarDependencias.mockResolvedValue({ plantillasVigentes: 2, cronogramas: 0 });
+
+      await expect(service.toggleEstado('plan-1', sesionDirector)).rejects.toThrow(
+        ConflictException,
+      );
+      expect(repo.softDelete).not.toHaveBeenCalled();
+    });
+
+    it('bloquea la inactivacion tambien cuando lo que cuelga son cronogramas', async () => {
+      repo.findById.mockResolvedValue(planActivoIE);
+      repo.contarDependencias.mockResolvedValue({ plantillasVigentes: 0, cronogramas: 3 });
+
+      await expect(service.toggleEstado('plan-1', sesionDirector)).rejects.toThrow(
+        ConflictException,
+      );
+    });
+
+    it('inactiva el plan cuando nada depende de el', async () => {
+      repo.findById.mockResolvedValue(planActivoIE);
+      repo.contarDependencias.mockResolvedValue({ plantillasVigentes: 0, cronogramas: 0 });
+      repo.softDelete.mockResolvedValue({ ...planActivoIE, estado: 'Inactivo' });
+
+      const p = await service.toggleEstado('plan-1', sesionDirector);
+      expect(p.estado).toBe('Inactivo');
+    });
+
+    /** Reactivar no consulta dependencias: esa via la gobierna el duplicado. */
+    it('reactivar no verifica dependencias', async () => {
+      repo.findById.mockResolvedValue({ ...planBase, estado: 'Inactivo' });
+      repo.softDelete.mockResolvedValue({ ...planBase, estado: 'Activo' });
+
+      await service.toggleEstado('plan-1', sesionJefe);
+      expect(repo.contarDependencias).not.toHaveBeenCalled();
     });
   });
 

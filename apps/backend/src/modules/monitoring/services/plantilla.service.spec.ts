@@ -3,6 +3,7 @@ import { Test } from '@nestjs/testing';
 import { jest } from '@jest/globals';
 import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { PlantillaService } from './plantilla.service.js';
+import { PrerrequisitosDirectorService } from './prerrequisitos-director.service.js';
 import { PlantillaRepository } from '../repositories/plantilla.repository.js';
 
 describe('PlantillaService - ILA-0046', () => {
@@ -53,7 +54,14 @@ describe('PlantillaService - ILA-0046', () => {
       clone: jest.fn<any>(),
     };
     const moduleRef = await Test.createTestingModule({
-      providers: [PlantillaService, { provide: PlantillaRepository, useValue: mockRepo }],
+      providers: [
+        PlantillaService,
+        { provide: PlantillaRepository, useValue: mockRepo },
+        {
+          provide: PrerrequisitosDirectorService,
+          useValue: { asegurar: jest.fn<any>().mockResolvedValue(undefined) },
+        },
+      ],
     }).compile();
     service = moduleRef.get(PlantillaService);
     repo = moduleRef.get(PlantillaRepository);

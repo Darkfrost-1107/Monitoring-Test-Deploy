@@ -1,0 +1,12 @@
+{
+  "name": "e2e-navegador",
+  "private": true,
+  "type": "module",
+  "description": "Suite e2e de navegador (Playwright) contra un stack aislado.",
+  "scripts": {
+    "test": "node run.mjs"
+  },
+  "dependencies": {
+    "playwright-core": "^1.48.0"
+  }
+}

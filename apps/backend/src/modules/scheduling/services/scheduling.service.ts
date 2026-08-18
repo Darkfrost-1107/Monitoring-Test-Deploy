@@ -28,6 +28,7 @@ import {
 } from './scheduling-solicitud.helper.js';
 
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { PrerrequisitosDirectorService } from '../../monitoring/services/prerrequisitos-director.service.js';
 
 @Injectable()
 export class SchedulingService {
@@ -37,6 +38,7 @@ export class SchedulingService {
     @Inject(STORAGE_SERVICE) private readonly storage: StorageService,
     private readonly scopeFilter: ScopeFilter,
     private readonly eventEmitter: EventEmitter2,
+    private readonly prerrequisitos: PrerrequisitosDirectorService,
   ) {}
 
   async findAllVisitas(
@@ -51,6 +53,9 @@ export class SchedulingService {
   }
 
   async crearVisita(dto: CreateVisitaDto, session: SessionUser): Promise<IVisita> {
+    // El coordinador y el jefe de taller no programan cronograma hasta que el
+    // director de la I.E. subió su plan anual y definió su plantilla.
+    await this.prerrequisitos.asegurar(session);
     return crearVisita(this.cronogramaRepo, this.scopeFilter, dto, session);
   }
 
