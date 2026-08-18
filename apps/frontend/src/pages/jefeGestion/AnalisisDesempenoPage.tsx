@@ -63,15 +63,20 @@ export const AnalisisDesempenoPage = () => {
     tipoMonitoreo: tipoMonitoreoParam,
   });
 
-  const { data: plantillas = [] } = usePlantillasList();
+  // El catálogo de plantillas y el cronograma salen de endpoints de gestión que
+  // exigen `monitoreo:execute` (no `:read`). Un actor con sólo lectura —p. ej. un
+  // Jefe de Área sin cargo de monitoreo— llega a esta pantalla por su permiso de
+  // reportes; pedir esos datos solo produce 403 de fondo. El análisis se arma con
+  // `criteriosBackend` y `fichasCompletadas`, que ese actor sí puede leer.
+  const puedeVerGestion = can(Capability.MONITOREO_EXECUTE);
+
+  const { data: plantillas = [] } = usePlantillasList(undefined, { enabled: puedeVerGestion });
 
   const { data: fichasCompletadasData, isLoading } = useFichasCompletadas({
     limit: 1000,
   });
 
-  const { cronogramas, isLoading: cargandoCronogramas } = useCronogramasData(
-    can(Capability.MONITOREO_READ),
-  );
+  const { cronogramas, isLoading: cargandoCronogramas } = useCronogramasData(puedeVerGestion);
 
   const completedVisits = useMemo((): BackendReportVisit[] => {
     if (fichasCompletadasData?.data && fichasCompletadasData.data.length > 0) {
