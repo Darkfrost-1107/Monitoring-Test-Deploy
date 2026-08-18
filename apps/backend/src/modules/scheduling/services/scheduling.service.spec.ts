@@ -175,6 +175,7 @@ describe('SchedulingService - Reprogramaciones', () => {
         institucion: true,
         monitor: true,
         evaluado: true,
+        monitorEsDirectorUgel: false,
         evaluadoEsDirector: true,
       });
     });
@@ -208,6 +209,7 @@ describe('SchedulingService - Reprogramaciones', () => {
         institucion: true,
         monitor: true,
         evaluado: true,
+        monitorEsDirectorUgel: false,
         evaluadoEsDirector: false,
       });
       cronogramaRepo.create.mockResolvedValue(visitaBase);
@@ -215,6 +217,36 @@ describe('SchedulingService - Reprogramaciones', () => {
       const r = await service.crearVisita(visitaPara('DOCENTE') as any, sesionEspecialista);
 
       expect(r.id).toBe('vis-1');
+    });
+  });
+
+  describe('crearVisita - el Director de UGEL no monitorea', () => {
+    it('rechaza asignar a un Director de UGEL como monitor', async () => {
+      cronogramaRepo.findPlanVigentePara.mockResolvedValue('plan-ugel-2026');
+      cronogramaRepo.validateEntidadesActivas.mockResolvedValue({
+        institucion: true,
+        monitor: true,
+        evaluado: true,
+        evaluadoEsDirector: false,
+        monitorEsDirectorUgel: true,
+      });
+
+      await expect(
+        service.crearVisita(
+          {
+            monitorId: 'esp-ugel',
+            institucionId: 'ie-1',
+            evaluadoId: 'doc-1',
+            tipoMonitoreo: 'DOCENTE',
+            numeroVisita: 1,
+            fechaProgramada: '2099-05-01',
+            horaInicio: '09:00:00',
+            modalidad: 'EBR',
+            nivelEducativo: 'Primaria',
+          } as any,
+          sesionEspecialista,
+        ),
+      ).rejects.toThrow(/Director de UGEL no realiza visitas/i);
     });
   });
 

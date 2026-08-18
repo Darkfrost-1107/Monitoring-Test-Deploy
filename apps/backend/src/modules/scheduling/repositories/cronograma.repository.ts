@@ -100,6 +100,7 @@ export abstract class CronogramaRepository {
     monitor: boolean;
     evaluado: boolean;
     monitorCargo?: string;
+    monitorEsDirectorUgel: boolean;
     evaluadoEsDirector: boolean;
   }>;
   abstract countPendientesByMonitor(monitorId: string): Promise<number>;

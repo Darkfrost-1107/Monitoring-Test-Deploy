@@ -1,6 +1,7 @@
 import type { Prisma } from '../../../generated/prisma/client.js';
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
+import { RoleCode } from '../../../common/enums/role.enum.js';
 import type {
   IVisita,
   ISolicitudReprogramacion,
@@ -141,11 +142,20 @@ export class PrismaCronogramaRepository implements CronogramaRepository {
     monitor: boolean;
     evaluado: boolean;
     monitorCargo?: string;
+    monitorEsDirectorUgel: boolean;
     evaluadoEsDirector: boolean;
   }> {
     const [ie, monitor, evaluado] = await Promise.all([
       this.prisma.institucionEducativa.findUnique({ where: { id: institucionId } }),
-      this.prisma.especialista.findUnique({ where: { id: monitorId } }),
+      this.prisma.especialista.findUnique({
+        where: { id: monitorId },
+        // Se trae el rol del usuario del monitor: un Director de UGEL no realiza
+        // visitas, y sin este dato no hay forma de distinguirlo de un especialista
+        // (su cargo de especialista no lo revela).
+        include: {
+          persona: { select: { usuario: { select: { rol: { select: { codigo: true } } } } } },
+        },
+      }),
       this.prisma.docente.findUnique({
         where: { id: evaluadoId },
         // La designación abierta es la que manda: quien fue director y cesó ya
@@ -165,6 +175,7 @@ export class PrismaCronogramaRepository implements CronogramaRepository {
       monitor: monitor?.estado === 'Activo',
       evaluado: evaluado?.estado === 'Activo',
       monitorCargo: monitor?.cargo,
+      monitorEsDirectorUgel: monitor?.persona?.usuario?.rol?.codigo === RoleCode.DIRECTOR_UGEL,
       evaluadoEsDirector: (evaluado?.docenteCargos?.length ?? 0) > 0,
     };
   }

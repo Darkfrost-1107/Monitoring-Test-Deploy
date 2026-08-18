@@ -209,6 +209,14 @@ export async function crearVisita(
       'Los Jefes de Área no pueden realizar visitas (rol no evaluador).',
     );
   }
+  // El Director de UGEL conduce la unidad, no hace monitoreo de campo: no debe
+  // ser monitor de una visita, porque quien monitorea firma la ficha y él no
+  // tiene esa potestad. Sin esta regla la ficha quedaría sin poder cerrarse.
+  if (activas.monitorEsDirectorUgel) {
+    throw new ForbiddenException(
+      'El Director de UGEL no realiza visitas de monitoreo: seleccione un especialista.',
+    );
+  }
   if (!activas.evaluado) {
     throw new BadRequestException('El evaluado (docente/director) seleccionado no está activo.');
   }

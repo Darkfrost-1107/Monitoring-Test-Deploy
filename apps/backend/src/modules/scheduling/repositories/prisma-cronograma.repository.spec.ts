@@ -53,6 +53,7 @@ describe('PrismaCronogramaRepository', () => {
         monitor: true,
         evaluado: true,
         monitorCargo: 'Especialista',
+        monitorEsDirectorUgel: false,
         evaluadoEsDirector: false,
       });
     });
@@ -141,7 +142,9 @@ describe('PrismaCronogramaRepository', () => {
       expect(prisma.institucionEducativa.findUnique).toHaveBeenCalledWith({
         where: { id: 'ie-1' },
       });
-      expect(prisma.especialista.findUnique).toHaveBeenCalledWith({ where: { id: 'm-1' } });
+      expect(prisma.especialista.findUnique).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: 'm-1' } }),
+      );
       expect(prisma.docente.findUnique).toHaveBeenCalledWith(
         expect.objectContaining({ where: { id: 'd-1' } }),
       );
