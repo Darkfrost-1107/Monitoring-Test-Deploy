@@ -101,7 +101,9 @@ export abstract class CronogramaRepository {
     evaluado: boolean;
     monitorCargo?: string;
     monitorEsDirectorUgel: boolean;
+    monitorEspecialidades: string[];
     evaluadoEsDirector: boolean;
+    evaluadoEspecialidades: string[];
   }>;
   abstract countPendientesByMonitor(monitorId: string): Promise<number>;
   abstract findVisitaExistente(

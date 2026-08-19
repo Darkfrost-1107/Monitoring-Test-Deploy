@@ -54,7 +54,9 @@ describe('PrismaCronogramaRepository', () => {
         evaluado: true,
         monitorCargo: 'Especialista',
         monitorEsDirectorUgel: false,
+        monitorEspecialidades: [],
         evaluadoEsDirector: false,
+        evaluadoEspecialidades: [],
       });
     });
 

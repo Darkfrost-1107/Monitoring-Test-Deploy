@@ -67,7 +67,10 @@ export const mapApiDocenteToFrontend = (apiDoc: IDocenteResponse): Docente => {
     condicion: (cargoName === 'Director' && (!apiDoc.condicionLaboral || apiDoc.condicionLaboral === 'Nombrado')
       ? 'Designado'
       : (apiDoc.condicionLaboral || 'Nombrado')) as Docente['condicion'],
-    especialidad: apiDoc.cursoAsignado || 'General',
+    // La especialidad canónica es la relación `docente_especialidades` (lo que
+    // el backend valida al programar en Secundaria), que viaja en `especialidad`.
+    // `cursoAsignado` queda de respaldo para registros que aún no la tienen.
+    especialidad: apiDoc.especialidad || apiDoc.cursoAsignado || 'General',
     cargaHoraria: CARGA_HORARIA.DOCENTE,
     secciones:
       apiDoc.docenteSecciones?.map((ds) => ({
@@ -119,6 +122,11 @@ export const useDocenteService = () => {
         gradoAcademico: 'Licenciado',
         nivelEducativo: toTitleCase(formData.nivelEducativo),
         cursoAsignado: formData.especialidad?.trim() || 'General',
+        // Se envía también como especialidad para mantener sincronizada la
+        // relación `docente_especialidades`: sin esto, editar un docente la
+        // borraba (el helper de update la reescribe desde este campo) y en
+        // Secundaria el monitoreo por área dejaba de reconocerlo.
+        especialidad: formData.especialidad?.trim() || undefined,
         cargoId: dbCargo.id,
         condicionLaboral: formData.condicion,
         escalaMagisterial: escalaANumero(formData.escala) ?? undefined,
@@ -170,6 +178,11 @@ export const useDocenteService = () => {
         gradoAcademico: 'Licenciado',
         nivelEducativo: toTitleCase(formData.nivelEducativo),
         cursoAsignado: formData.especialidad?.trim() || 'General',
+        // Se envía también como especialidad para mantener sincronizada la
+        // relación `docente_especialidades`: sin esto, editar un docente la
+        // borraba (el helper de update la reescribe desde este campo) y en
+        // Secundaria el monitoreo por área dejaba de reconocerlo.
+        especialidad: formData.especialidad?.trim() || undefined,
         cargoId: dbCargo.id,
         condicionLaboral: formData.condicion,
         escalaMagisterial: escalaANumero(formData.escala) ?? undefined,

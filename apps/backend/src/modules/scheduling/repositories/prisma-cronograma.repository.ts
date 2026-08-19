@@ -143,7 +143,9 @@ export class PrismaCronogramaRepository implements CronogramaRepository {
     evaluado: boolean;
     monitorCargo?: string;
     monitorEsDirectorUgel: boolean;
+    monitorEspecialidades: string[];
     evaluadoEsDirector: boolean;
+    evaluadoEspecialidades: string[];
   }> {
     const [ie, monitor, evaluado] = await Promise.all([
       this.prisma.institucionEducativa.findUnique({ where: { id: institucionId } }),
@@ -151,21 +153,25 @@ export class PrismaCronogramaRepository implements CronogramaRepository {
         where: { id: monitorId },
         // Se trae el rol del usuario del monitor: un Director de UGEL no realiza
         // visitas, y sin este dato no hay forma de distinguirlo de un especialista
-        // (su cargo de especialista no lo revela).
+        // (su cargo de especialista no lo revela). Y sus especialidades: en
+        // Secundaria el monitoreo es por área.
         include: {
           persona: { select: { usuario: { select: { rol: { select: { codigo: true } } } } } },
+          especialidades: { select: { especialidad: { select: { nombre: true } } } },
         },
       }),
       this.prisma.docente.findUnique({
         where: { id: evaluadoId },
         // La designación abierta es la que manda: quien fue director y cesó ya
-        // no lo es, y se lo monitorea como al resto.
+        // no lo es, y se lo monitorea como al resto. Sus especialidades sirven
+        // para comprobar que comparte área con el monitor en Secundaria.
         include: {
           docenteCargos: {
             where: { fechaFin: null, cargo: { nombre: 'Director' } },
             select: { id: true },
             take: 1,
           },
+          docenteEspecialidades: { select: { especialidad: { select: { nombre: true } } } },
         },
       }),
     ]);
@@ -176,7 +182,11 @@ export class PrismaCronogramaRepository implements CronogramaRepository {
       evaluado: evaluado?.estado === 'Activo',
       monitorCargo: monitor?.cargo,
       monitorEsDirectorUgel: monitor?.persona?.usuario?.rol?.codigo === RoleCode.DIRECTOR_UGEL,
+      monitorEspecialidades: (monitor?.especialidades ?? []).map((e) => e.especialidad.nombre),
       evaluadoEsDirector: (evaluado?.docenteCargos?.length ?? 0) > 0,
+      evaluadoEspecialidades: (evaluado?.docenteEspecialidades ?? []).map(
+        (e) => e.especialidad.nombre,
+      ),
     };
   }
 

@@ -7,6 +7,10 @@ import type {
 } from '../repositories/cronograma.repository.js';
 import type { CreateVisitaDto, UpdateVisitaDto } from '../dto/create-visita.dto.js';
 import { RoleCode } from '../../../common/enums/role.enum.js';
+import {
+  requiereEspecialidadCompartida,
+  compartenEspecialidad,
+} from './especialidad-monitoreo.helper.js';
 import { ScopeFilter, ScopeContext } from '../../../shared/auth/scope-filter.js';
 import type { SessionUser } from '../../../shared/types/session-user.js';
 
@@ -230,6 +234,18 @@ export async function crearVisita(
     throw new BadRequestException(
       'El evaluado dirige la institución y solo puede monitorearse con la ficha directiva. ' +
         'Seleccione el tipo de monitoreo DIRECTIVO.',
+    );
+  }
+
+  // En Secundaria el monitoreo es por área: el especialista sólo evalúa a docentes
+  // de una especialidad que él maneja.
+  if (
+    requiereEspecialidadCompartida(dto.nivelEducativo, dto.tipoMonitoreo) &&
+    !compartenEspecialidad(activas.monitorEspecialidades, activas.evaluadoEspecialidades)
+  ) {
+    throw new BadRequestException(
+      'En Secundaria el monitoreo es por área: el especialista y el docente deben compartir ' +
+        'especialidad. Seleccione un docente de un área que el especialista maneje.',
     );
   }
 

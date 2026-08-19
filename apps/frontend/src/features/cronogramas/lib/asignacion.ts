@@ -188,3 +188,39 @@ export function institucionesAsignables<T extends InstitucionAsignable>(
       (institucion.estado === 'Activa' || institucion.activo === true),
   );
 }
+
+/** Nombre de especialidad comparable: sin tildes, sin mayúsculas, sin bordes. */
+const normalizarEspecialidad = (s: string): string =>
+  s
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .trim()
+    .toLowerCase();
+
+/** El campo de especialidad del docente puede traer una lista separada por comas. */
+export function especialidadesDelDocente(especialidad: string | null | undefined): string[] {
+  return (especialidad ?? '')
+    .split(',')
+    .map((e) => e.trim())
+    .filter(Boolean);
+}
+
+/**
+ * ¿El especialista puede evaluar a este docente?
+ *
+ * En Secundaria el monitoreo es por área: sólo si comparten al menos una
+ * especialidad. Fuera de Secundaria la regla no aplica y el docente pasa. La
+ * misma decisión la reafirma el backend al programar; acá evita ofrecer en el
+ * selector a quien luego sería rechazado.
+ */
+export function docenteEvaluablePorEspecialista(
+  especialidadDocente: string | null | undefined,
+  especialidadesEspecialista: readonly string[],
+  esSecundaria: boolean,
+): boolean {
+  if (!esSecundaria) return true;
+  const delEspecialista = new Set(especialidadesEspecialista.map(normalizarEspecialidad));
+  return especialidadesDelDocente(especialidadDocente).some((e) =>
+    delEspecialista.has(normalizarEspecialidad(e)),
+  );
+}

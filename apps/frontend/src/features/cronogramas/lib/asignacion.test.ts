@@ -5,6 +5,8 @@ import {
   institucionesAsignables,
   modalidadesPermitidas,
   nivelesPermitidos,
+  docenteEvaluablePorEspecialista,
+  especialidadesDelDocente,
   type EspecialistaAsignable,
   type InstitucionAsignable,
   type UsuarioAsignador,
@@ -245,5 +247,37 @@ describe('institucionesAsignables', () => {
 
     const resultado = institucionesAsignables([porEstado, porBandera], 'EBR', 'Primaria');
     expect(resultado.map((i) => i.id).sort()).toEqual(['a', 'b']);
+  });
+});
+
+describe('especialidadesDelDocente', () => {
+  it('separa una lista por comas y descarta vacíos', () => {
+    expect(especialidadesDelDocente('Matematica, Comunicacion')).toEqual([
+      'Matematica',
+      'Comunicacion',
+    ]);
+    expect(especialidadesDelDocente('  ')).toEqual([]);
+    expect(especialidadesDelDocente(null)).toEqual([]);
+  });
+});
+
+describe('docenteEvaluablePorEspecialista', () => {
+  it('fuera de Secundaria evalúa a cualquier docente', () => {
+    expect(docenteEvaluablePorEspecialista('Comunicacion', ['Matematica'], false)).toBe(true);
+  });
+
+  it('en Secundaria exige compartir área', () => {
+    expect(docenteEvaluablePorEspecialista('Comunicacion', ['Matematica'], true)).toBe(false);
+    expect(
+      docenteEvaluablePorEspecialista('Comunicacion', ['Matematica', 'Comunicacion'], true),
+    ).toBe(true);
+  });
+
+  it('compara sin tildes ni mayúsculas', () => {
+    expect(docenteEvaluablePorEspecialista('COMUNICACION', ['Comunicación'], true)).toBe(true);
+  });
+
+  it('en Secundaria, sin especialidades del especialista no ofrece a nadie', () => {
+    expect(docenteEvaluablePorEspecialista('Matematica', [], true)).toBe(false);
   });
 });

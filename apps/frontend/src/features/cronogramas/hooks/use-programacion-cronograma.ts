@@ -92,6 +92,12 @@ export function useProgramacionCronograma({
     [form.evaluadoId, docentes],
   );
 
+  /** Especialidades del especialista elegido; en Secundaria acotan a los docentes. */
+  const especialidadesDelEvaluador = useMemo(
+    () => especialistas.find((e) => e.id === form.monitorId)?.especialidades ?? [],
+    [especialistas, form.monitorId],
+  );
+
   const { evaluados, esSecundaria, opcionesDeEvaluado, opcionesDeEvaluador } =
     useOpcionesDeEvaluacion({
       docentes,
@@ -103,6 +109,7 @@ export function useProgramacionCronograma({
       tipoDeVisita: form.tipo,
       evaluadorElegidoId: form.monitorId,
       evaluadoElegidoId: form.evaluadoId,
+      especialidadesDelEvaluador,
     });
 
   useSincronizacionFormulario({

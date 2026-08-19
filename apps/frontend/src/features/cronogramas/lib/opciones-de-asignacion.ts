@@ -27,6 +27,8 @@ export interface EspecialistaOfrecible {
   id: string;
   nombre: string;
   cargo?: string;
+  /** Áreas que maneja; en Secundaria es lo que decide a qué docentes evalúa. */
+  especialidades?: string[];
 }
 
 /** Une los rasgos que distinguen a una institución de sus homónimas. */
@@ -63,16 +65,19 @@ export const opcionesDeInstitucion = (
     label: etiquetaDeInstitucion(institucion, instituciones),
   }));
 
-/** El cargo distingue a dos especialistas de igual nombre. */
+/** El cargo distingue a dos especialistas de igual nombre; el área, qué monitorea. */
 export const opcionesDeEspecialista = (
   especialistas: readonly EspecialistaOfrecible[],
 ): Opcion[] =>
-  especialistas.map((especialista) => ({
-    value: especialista.id,
-    label: especialista.cargo
+  especialistas.map((especialista) => {
+    const base = especialista.cargo
       ? `${especialista.nombre} (${especialista.cargo})`
-      : especialista.nombre,
-  }));
+      : especialista.nombre;
+    const area = especialista.especialidades?.length
+      ? ` · ${especialista.especialidades.join(', ')}`
+      : '';
+    return { value: especialista.id, label: `${base}${area}` };
+  });
 
 /** Docente de una I.E. habilitado para levantar ficha: director, coordinador o jefe de taller. */
 export interface EvaluadorInterno {

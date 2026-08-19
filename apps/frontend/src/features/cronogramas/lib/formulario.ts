@@ -58,6 +58,9 @@ const DEPENDIENTES: Partial<Record<keyof FormularioCronograma, (keyof Formulario
   // se evalúe a un docente o a un directivo.
   institucionId: ['evaluadoId'],
   tipo: ['evaluadoId'],
+  // En Secundaria los docentes ofrecidos dependen del área del especialista, así
+  // que cambiar de especialista puede dejar elegido a uno que ya no corresponde.
+  monitorId: ['evaluadoId'],
 };
 
 /**

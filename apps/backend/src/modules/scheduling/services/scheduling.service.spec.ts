@@ -56,7 +56,10 @@ describe('SchedulingService - Reprogramaciones', () => {
         institucion: true,
         monitor: true,
         evaluado: true,
+        monitorEsDirectorUgel: false,
+        monitorEspecialidades: [],
         evaluadoEsDirector: false,
+        evaluadoEspecialidades: [],
       }),
       countPendientesByMonitor: jest.fn<any>().mockResolvedValue(0),
       findVisitasMonitorPorFecha: jest.fn<any>().mockResolvedValue([]),
@@ -176,7 +179,9 @@ describe('SchedulingService - Reprogramaciones', () => {
         monitor: true,
         evaluado: true,
         monitorEsDirectorUgel: false,
+        monitorEspecialidades: [],
         evaluadoEsDirector: true,
+        evaluadoEspecialidades: [],
       });
     });
 
@@ -210,7 +215,9 @@ describe('SchedulingService - Reprogramaciones', () => {
         monitor: true,
         evaluado: true,
         monitorEsDirectorUgel: false,
+        monitorEspecialidades: [],
         evaluadoEsDirector: false,
+        evaluadoEspecialidades: [],
       });
       cronogramaRepo.create.mockResolvedValue(visitaBase);
 
@@ -229,6 +236,8 @@ describe('SchedulingService - Reprogramaciones', () => {
         evaluado: true,
         evaluadoEsDirector: false,
         monitorEsDirectorUgel: true,
+        monitorEspecialidades: [],
+        evaluadoEspecialidades: [],
       });
 
       await expect(
@@ -247,6 +256,55 @@ describe('SchedulingService - Reprogramaciones', () => {
           sesionEspecialista,
         ),
       ).rejects.toThrow(/Director de UGEL no realiza visitas/i);
+    });
+  });
+
+  describe('crearVisita - Secundaria monitorea por área', () => {
+    const visitaSecundaria = () => ({
+      monitorId: 'esp-1',
+      institucionId: 'ie-1',
+      evaluadoId: 'doc-1',
+      tipoMonitoreo: 'DOCENTE',
+      numeroVisita: 1,
+      fechaProgramada: '2099-06-01',
+      horaInicio: '09:00:00',
+      modalidad: 'EBR',
+      nivelEducativo: 'Secundaria',
+    });
+
+    it('rechaza si el especialista y el docente no comparten especialidad', async () => {
+      cronogramaRepo.findPlanVigentePara.mockResolvedValue('plan-ugel-2026');
+      cronogramaRepo.validateEntidadesActivas.mockResolvedValue({
+        institucion: true,
+        monitor: true,
+        evaluado: true,
+        monitorEsDirectorUgel: false,
+        monitorEspecialidades: ['Matematica'],
+        evaluadoEsDirector: false,
+        evaluadoEspecialidades: ['Comunicacion'],
+      });
+
+      await expect(
+        service.crearVisita(visitaSecundaria() as any, sesionEspecialista),
+      ).rejects.toThrow(/deben compartir/i);
+    });
+
+    it('acepta cuando comparten al menos una especialidad', async () => {
+      cronogramaRepo.findPlanVigentePara.mockResolvedValue('plan-ugel-2026');
+      cronogramaRepo.validateEntidadesActivas.mockResolvedValue({
+        institucion: true,
+        monitor: true,
+        evaluado: true,
+        monitorEsDirectorUgel: false,
+        monitorEspecialidades: ['Matematica', 'Comunicacion'],
+        evaluadoEsDirector: false,
+        evaluadoEspecialidades: ['Comunicacion'],
+      });
+      cronogramaRepo.create.mockResolvedValue(visitaBase);
+
+      const r = await service.crearVisita(visitaSecundaria() as any, sesionEspecialista);
+
+      expect(r.id).toBe('vis-1');
     });
   });
 
