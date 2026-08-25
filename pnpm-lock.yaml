@@ -69,6 +69,9 @@ importers:
       '@sistema-monitoreo/shared-contracts':
         specifier: workspace:*
         version: link:../../packages/shared-contracts
+      '@sistema-monitoreo/shared-validation':
+        specifier: workspace:*
+        version: link:../../packages/shared-validation
       bcrypt:
         specifier: ^5.1.1
         version: 5.1.1

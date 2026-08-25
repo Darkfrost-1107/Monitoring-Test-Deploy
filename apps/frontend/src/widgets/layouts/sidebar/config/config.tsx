@@ -12,6 +12,7 @@ import {
   CalendarClock,
   AlertTriangle,
   PenTool,
+  FolderOpen,
 } from 'lucide-react';
 import type { MenuItem } from '@shared/constants/roles';
 
@@ -142,6 +143,13 @@ export const SIDEBAR_CONFIG: MenuCategory[] = [
       { id: 'reportes_fichas', label: 'Fichas Completadas', path: '/reportes' },
       { id: 'reportes_analisis', label: 'Análisis de Desempeño', path: '/reportes/analisis' },
     ],
+  },
+  {
+    id: 'carpeta_pedagogica',
+    label: 'Mi Carpeta Pedagógica',
+    icon: <FolderOpen className="h-[18px] w-[18px]" />,
+    path: '/carpeta-pedagogica',
+    children: [],
   },
   {
     id: 'mi_firma',

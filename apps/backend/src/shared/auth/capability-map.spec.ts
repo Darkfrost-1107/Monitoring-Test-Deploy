@@ -24,7 +24,7 @@ describe('capability-map', () => {
   });
 
   describe('computeEffectivePermissions', () => {
-    it('un director_ugel tiene dashboard/instituciones:read, notificaciones:send y visitas:solicitar (+ base)', () => {
+    it('un director_ugel tiene dashboard/instituciones:read, notificaciones:send, visitas:solicitar y carpeta_pedagogica:read (+ base)', () => {
       const perms = computeEffectivePermissions(RoleCode.DIRECTOR_UGEL, null, []);
       expect(new Set(perms)).toEqual(
         new Set([
@@ -33,14 +33,22 @@ describe('capability-map', () => {
           'instituciones:read',
           'notificaciones:send',
           'visitas:solicitar',
+          'carpeta_pedagogica:read',
         ]),
       );
     });
 
-    it('un docente sin cargos activos ve reports:read y monitoreo:read', () => {
+    it('un docente sin cargos activos ve reports:read, monitoreo:read y su carpeta pedagogica', () => {
+      // `carpeta_pedagogica:write` es la unica capacidad de escritura de un
+      // docente sin cargo, y no le alcanza para tocar la carpeta de otro: el
+      // endpoint resuelve el docente desde la sesion.
       const perms = computeEffectivePermissions(RoleCode.DOCENTE, null, []);
-      expect(perms).toEqual(expect.arrayContaining(['reports:read', 'monitoreo:read']));
-      expect(perms).toHaveLength(2);
+      expect(new Set(perms)).toEqual(new Set([...BASE_CAPABILITIES, 'carpeta_pedagogica:write']));
+    });
+
+    it('un docente sin cargos NO puede leer la carpeta pedagogica de otros', () => {
+      const perms = computeEffectivePermissions(RoleCode.DOCENTE, null, []);
+      expect(perms).not.toContain('carpeta_pedagogica:read');
     });
 
     it('un docente con cargo Director tiene acceso a instituciones:write y docentes:write', () => {

@@ -6,11 +6,17 @@
  * nada: ni modal, ni aviso, ni rastro. Y el catálogo de plantillas arranca
  * vacío en cada montaje —`refetchOnMount`—, así que la ventana no era rara:
  * era la normal.
+ *
+ * El mensaje nombra el AÑO porque los instrumentos son por año lectivo. Sin el
+ * año, quien lee ve el catálogo lleno de plantillas y concluye que la pantalla
+ * miente; con el año entiende que falta la de ESE año y sabe qué pedir.
  */
 
 export interface EstadoDelCatalogo {
   cargando: boolean;
   fallo: boolean;
+  /** Año lectivo de la visita, para nombrarlo en el aviso. */
+  anioVisita?: number;
 }
 
 export function motivoSinInstrumento(
@@ -22,5 +28,6 @@ export function motivoSinInstrumento(
   if (catalogo.fallo) {
     return 'No se pudo cargar el instrumento de monitoreo. Reintente en unos momentos.';
   }
-  return 'No hay una plantilla vigente para este tipo de visita. Solicite a la Jefatura de Gestión Pedagógica que publique una.';
+  const delAnio = catalogo.anioVisita ? ` del año ${catalogo.anioVisita}` : '';
+  return `No hay una plantilla vigente para este tipo de visita${delAnio}. Solicite a la Jefatura de Gestión Pedagógica que publique una.`;
 }

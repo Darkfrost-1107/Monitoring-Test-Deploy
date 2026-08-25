@@ -55,6 +55,16 @@ export const Capability = {
   VISITAS_GESTIONAR: 'visitas:gestionar',
   /** Asignar altos cargos (Jefe de Gestión y Director UGEL). */
   SUPERADMIN_ACCESS: 'superadmin:access',
+  /**
+   * Registrar el enlace de la carpeta pedagógica PROPIA.
+   *
+   * La capacidad habilita la pantalla; NO decide sobre qué carpeta se escribe.
+   * El endpoint resuelve al docente desde la sesión y solo toca la carpeta de
+   * esa persona, igual que el monitor asignado y su ficha.
+   */
+  CARPETA_PEDAGOGICA_WRITE: 'carpeta_pedagogica:write',
+  /** Consultar la carpeta pedagógica de los docentes que se monitorean. */
+  CARPETA_PEDAGOGICA_READ: 'carpeta_pedagogica:read',
 } as const;
 
 export type Capability = (typeof Capability)[keyof typeof Capability];
@@ -78,6 +88,8 @@ export const CAPABILITY_LABELS: Record<Capability, string> = {
   [Capability.VISITAS_SOLICITAR]: 'Solicitar visitas',
   [Capability.VISITAS_GESTIONAR]: 'Gestionar solicitudes de visita',
   [Capability.SUPERADMIN_ACCESS]: 'Asignar altos cargos',
+  [Capability.CARPETA_PEDAGOGICA_WRITE]: 'Registrar mi carpeta pedagógica',
+  [Capability.CARPETA_PEDAGOGICA_READ]: 'Ver carpetas pedagógicas',
 };
 
 /** Verifica en tiempo de ejecución que una cadena sea una capacidad conocida. */

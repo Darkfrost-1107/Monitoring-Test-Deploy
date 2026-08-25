@@ -29,6 +29,12 @@ vi.mock('./HistorialChart', () => ({
   HistorialChart: () => <div data-testid="historial" />,
 }));
 
+vi.mock('@features/carpeta-pedagogica', () => ({
+  CarpetaDelDocente: ({ anio }: { anio: number }) => (
+    <div data-testid="carpeta">carpeta {anio}</div>
+  ),
+}));
+
 vi.mock('../hooks/use-docente-evaluado', () => ({
   useDocenteEvaluado: () => ({ docente: null, areasSugeridas: [] }),
 }));
@@ -346,5 +352,44 @@ describe('LlenarFichaForm — flujo de firmas en ficha completada', () => {
 
     expect(screen.queryByRole('button', { name: /Firmar Ficha/i })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Cerrar Consulta/i })).toBeInTheDocument();
+  });
+
+  describe('pestana de la carpeta pedagogica', () => {
+    /** Deja en sesión un usuario con las capacidades indicadas. */
+    const conCapacidades = (permissions: string[]) => {
+      localStorage.setItem(
+        'user',
+        JSON.stringify({ id: 'u-1', nombres: 'Ana', apellidos: 'Torres', permissions }),
+      );
+    };
+
+    beforeEach(() => localStorage.clear());
+
+    it('no ofrece la pestana a quien no puede consultar carpetas', () => {
+      // Ocultar el boton no es el control —el backend responde 403 igual—, pero
+      // ofrecer una pestana que va a fallar es prometer algo incumplible.
+      conCapacidades(['monitoreo:execute']);
+      montar();
+
+      expect(screen.queryByRole('button', { name: /Carpeta/i })).toBeNull();
+    });
+
+    it('no ofrece la pestana cuando la visita no tiene docente evaluado', () => {
+      conCapacidades(['carpeta_pedagogica:read']);
+      montar({ visit: { evaluadoId: undefined } });
+
+      expect(screen.queryByRole('button', { name: /Carpeta/i })).toBeNull();
+    });
+
+    it('muestra la carpeta del ano de la VISITA, no del ano en curso', async () => {
+      // La visita de prueba es de 2026: reabrir la ficha en 2028 debe seguir
+      // mostrando el portafolio que se evaluo.
+      conCapacidades(['carpeta_pedagogica:read']);
+      montar();
+
+      await userEvent.click(screen.getByRole('button', { name: /Carpeta/i }));
+
+      expect(screen.getByTestId('carpeta')).toHaveTextContent('carpeta 2026');
+    });
   });
 });

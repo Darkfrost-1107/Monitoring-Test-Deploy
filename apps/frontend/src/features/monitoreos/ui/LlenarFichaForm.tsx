@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { RoleCode, Capability } from '@sistema-monitoreo/shared-contracts';
 import { useCan } from '@shared/auth';
+import { CarpetaDelDocente } from '@features/carpeta-pedagogica';
 import { useUser } from '@entities/model-user';
 import { Card } from '@/shared/ui/card';
 import { AvisoDeError } from '@shared/ui/AvisoDeError';
@@ -192,6 +193,24 @@ export const LlenarFichaForm = ({
 
   const currentFichaState = aDatosFicha(estado, visit.tipo);
 
+  /**
+   * Si se ofrece la pestaña de la carpeta pedagógica.
+   *
+   * Exige las dos cosas: que la visita tenga un docente evaluado —el portafolio
+   * es suyo— y que quien mira pueda consultarlo. Sin la capacidad, el backend
+   * responde 403 y la pestaña sería una promesa incumplible.
+   */
+  const puedeVerCarpeta =
+    !!visit.evaluadoId && can(Capability.CARPETA_PEDAGOGICA_READ);
+
+  /**
+   * Año escolar de la visita, no el año en curso.
+   *
+   * Una visita de 2026 evalúa el portafolio de 2026, aunque la ficha se reabra
+   * más adelante para consultarla.
+   */
+  const anioDeLaVisita = new Date(visit.fechaHora).getFullYear();
+
 
   const esEvaluado =
     (!!user?.docenteId && !!visit?.evaluadoId && user.docenteId === visit.evaluadoId) ||
@@ -246,6 +265,7 @@ export const LlenarFichaForm = ({
           soloLectura={isCompleted}
           pestana={visit.tipo !== 'DIRECTIVO' ? activeTab : null}
           onPestana={setActiveTab}
+          conCarpeta={puedeVerCarpeta}
           onImprimir={() => handlePrint()}
           onCerrar={onClose}
         />
@@ -269,6 +289,12 @@ export const LlenarFichaForm = ({
         {activeTab === 'HISTORIAL' && visit.evaluadoId && (
           <div className="p-6">
             <HistorialChart evaluadoId={visit.evaluadoId} />
+          </div>
+        )}
+
+        {activeTab === 'CARPETA' && puedeVerCarpeta && visit.evaluadoId && (
+          <div className="p-6">
+            <CarpetaDelDocente docenteId={visit.evaluadoId} anio={anioDeLaVisita} />
           </div>
         )}
 

@@ -6,7 +6,7 @@ import { puedeEvaluarVisita, type Cronograma } from '@entities/model-cronogramas
 import { useUser } from '@/entities/model-user';
 import { useScope } from '@shared/auth';
 import { puedeDecidirReprogramacion } from '@entities/model-reprogramaciones';
-import { seleccionarPlantillaActiva } from '@/entities/model-plantillas';
+import { plantillasAplicables, seleccionarPlantillaActiva } from '@/entities/model-plantillas';
 import { usePlantillasList } from '@/entities/model-plantillas/use-plantillas-api';
 import { claveDeHoy } from '@/shared/lib/calendario/grid';
 import { motivoSinInstrumento } from '../lib/instrumento';
@@ -115,29 +115,40 @@ export const CalendarioSidebar = ({
     [filteredVisits, selectedDateStr],
   );
 
-  // Todas las plantillas vigentes compatibles con la visita seleccionada
+  /**
+   * Instrumentos que se le ofrecen al evaluador para esta visita.
+   *
+   * La regla vive en `plantillasAplicables`, junto a la cascada que elige el
+   * instrumento por defecto. Antes se filtraba acá a mano por estado y tipo, sin
+   * mirar el ÁMBITO, de modo que a una especialista de UGEL se le ofrecían
+   * también las copias que otra institución había hecho de la ficha oficial. El
+   * clon conserva el rótulo del original: elegir el equivocado no da ningún
+   * aviso, sólo una ficha evaluada con el instrumento de otra institución.
+   */
   const plantillasCandidatas = useMemo(() => {
-    if (!selectedVisit) return [];
-    // Una visita es DOCENTE o DIRECTIVO. Que lleve la ficha regular, la EIB o
-    // las dos lo decide el instrumento, y por eso el modal ofrece ambas.
-    const esDocente = selectedVisit.tipo === 'DOCENTE';
-    return plantillas.filter((p) => {
-      if (p.estado !== 'Vigente') return false;
-      if (esDocente) {
-        // Los dos instrumentos de una visita docente: la ficha regular y la EIB.
-        return p.instrumento === 'DOCENTE' || p.instrumento === 'DOCENTE_EIB';
-      }
-      return p.tipoMonitoreo.toUpperCase().includes('DIRECTIV');
+    if (!selectedVisit || !user) return [];
+    return plantillasAplicables(plantillas, {
+      tipoVisita: selectedVisit.tipo,
+      usuarioId: user.id,
+      institucionUsuarioId: user.institucion,
+      esInstitucion: isInstitution,
+      esMonitorCampo: isMonitorCampo,
+      // El año de la VISITA, no el del calendario: una visita de 2026 que se
+      // completa en 2027 se evalúa con el instrumento de 2026.
+      anioVisita: new Date(selectedVisit.fechaHora).getFullYear(),
     });
-  }, [selectedVisit, plantillas]);
+  }, [selectedVisit, plantillas, user, isInstitution, isMonitorCampo]);
 
   // Instrumento activo: si el monitor seleccionó uno explícitamente se honra, si no se calcula por cascada
   const activeTemplate = useMemo(() => {
     if (!selectedVisit || !user) return null;
     if (selectedTemplateOverride) return selectedTemplateOverride;
 
+    // La cascada corre sobre las plantillas YA acotadas por ámbito, no sobre
+    // todas. Su último recurso es «cualquier vigente del tipo pedido», y sobre
+    // el catálogo completo eso podía caer en la copia de otra institución.
     return (
-      seleccionarPlantillaActiva(plantillas, {
+      seleccionarPlantillaActiva(plantillasCandidatas, {
         tipoVisita: selectedVisit.tipo,
         usuarioId: user.id,
         institucionUsuarioId: user.institucion,
@@ -149,7 +160,6 @@ export const CalendarioSidebar = ({
     );
   }, [
     selectedVisit,
-    plantillas,
     user,
     isInstitution,
     isMonitorCampo,
@@ -160,6 +170,7 @@ export const CalendarioSidebar = ({
   const instrumentoNoDisponible = motivoSinInstrumento(activeTemplate !== null, {
     cargando: cargandoPlantillas,
     fallo: fallaronPlantillas,
+    anioVisita: selectedVisit ? new Date(selectedVisit.fechaHora).getFullYear() : undefined,
   });
 
   const isEvaluadorAutorizado = useMemo(

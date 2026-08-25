@@ -1,8 +1,8 @@
-import { Sparkles, FileText, Download, X, Activity } from 'lucide-react';
+import { Sparkles, FileText, Download, X, Activity, FolderOpen } from 'lucide-react';
 import { Button } from '@/shared/ui/button';
 import type { Plantilla } from '@/entities/model-plantillas';
 
-export type PestanaFicha = 'FICHA' | 'HISTORIAL';
+export type PestanaFicha = 'FICHA' | 'HISTORIAL' | 'CARPETA';
 
 interface CabeceraFichaProps {
   template: Plantilla;
@@ -10,6 +10,14 @@ interface CabeceraFichaProps {
   /** Sin pestañas cuando la visita no tiene historial que mostrar. */
   pestana: PestanaFicha | null;
   onPestana: (pestana: PestanaFicha) => void;
+  /**
+   * Si se ofrece la carpeta pedagógica del docente evaluado.
+   *
+   * Depende de la capacidad de quien mira y de que la visita tenga evaluado:
+   * ofrecer una pestaña que el backend va a rechazar es prometer algo que no se
+   * puede cumplir.
+   */
+  conCarpeta: boolean;
   onImprimir: () => void;
   onCerrar: () => void;
 }
@@ -19,12 +27,19 @@ const PESTANAS = [
   { clave: 'HISTORIAL' as const, etiqueta: 'Historial', Icono: Activity },
 ];
 
+const PESTANA_CARPETA = {
+  clave: 'CARPETA' as const,
+  etiqueta: 'Carpeta',
+  Icono: FolderOpen,
+};
+
 /** Encabezado fijo ultra compacto: título + selector pill + acciones en 1 sola fila. */
 export const CabeceraFicha = ({
   template,
   soloLectura,
   pestana,
   onPestana,
+  conCarpeta,
   onImprimir,
   onCerrar,
 }: CabeceraFichaProps) => (
@@ -54,7 +69,7 @@ export const CabeceraFicha = ({
     {/* Selector de pestañas tipo pill (en el centro) */}
     {pestana && (
       <div className="inline-flex p-0.5 bg-slate-100/90 rounded-xl border border-slate-200/80 shadow-2xs shrink-0">
-        {PESTANAS.map(({ clave, etiqueta, Icono }) => {
+        {[...PESTANAS, ...(conCarpeta ? [PESTANA_CARPETA] : [])].map(({ clave, etiqueta, Icono }) => {
           const activa = pestana === clave;
           return (
             <button

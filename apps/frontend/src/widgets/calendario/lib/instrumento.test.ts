@@ -29,4 +29,36 @@ describe('motivoSinInstrumento', () => {
   it('una plantilla ya resuelta gana aunque el catálogo esté refrescando', () => {
     expect(motivoSinInstrumento(true, { cargando: true, fallo: true })).toBeNull();
   });
+
+  describe('el ano del instrumento', () => {
+    it('nombra el ano de la visita cuando no hay plantilla', () => {
+      // Los instrumentos son por ano lectivo. Sin el ano, quien lee ve el
+      // catalogo lleno y concluye que la pantalla miente.
+      const motivo = motivoSinInstrumento(false, {
+        cargando: false,
+        fallo: false,
+        anioVisita: 2027,
+      });
+
+      expect(motivo).toContain('del año 2027');
+      expect(motivo).toContain('Jefatura de Gestión Pedagógica');
+    });
+
+    it('omite el ano si no se conoce, en vez de escribir undefined', () => {
+      const motivo = motivoSinInstrumento(false, { cargando: false, fallo: false });
+
+      expect(motivo).not.toContain('undefined');
+      expect(motivo).toContain('Jefatura de Gestión Pedagógica');
+    });
+
+    it('el ano no aparece mientras el catalogo carga', () => {
+      const motivo = motivoSinInstrumento(false, {
+        cargando: true,
+        fallo: false,
+        anioVisita: 2027,
+      });
+
+      expect(motivo).toBe('Cargando el instrumento de monitoreo…');
+    });
+  });
 });

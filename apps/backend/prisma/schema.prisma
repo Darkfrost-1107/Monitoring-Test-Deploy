@@ -116,6 +116,7 @@ model Usuario {
   notificacionesEnviadas     Notificacion[]            @relation("NotificacionEmisor")
   solicitudesVisita          SolicitudVisita[]         @relation("SolicitudVisitaSolicitante")
   solicitudesVisitaResueltas SolicitudVisita[]         @relation("SolicitudVisitaResolutor")
+  carpetasPedagogicas        CarpetaPedagogica[]       @relation("CarpetaPedagogicaActualizadaPor")
 
   // Firmas
   firmaUrl String?      @map("firma_url") @db.Text
@@ -294,9 +295,38 @@ model Docente {
   docentesAevaluar      AsignacionEvaluador[] @relation("EvaluadorRel")
   cronogramas           Cronograma[]
   solicitudesVisita     SolicitudVisita[]
+  carpetasPedagogicas   CarpetaPedagogica[]
 
   @@index([institucionId])
   @@map("docentes")
+}
+
+/// Enlace al portafolio pedagógico del docente en Google Drive.
+///
+/// El sistema NO almacena los archivos del portafolio: guarda la referencia.
+/// El almacenamiento propio no da abasto para varios documentos por docente y
+/// por año, y la carpeta ya vive en Drive de todos modos.
+///
+/// Es un enlace por docente y por año escolar: la organización interna de la
+/// carpeta la decide el docente.
+model CarpetaPedagogica {
+  id               String   @id @default(uuid()) @db.Uuid
+  docenteId        String   @map("docente_id") @db.Uuid
+  anioEscolar      Int      @map("anio_escolar")
+  /// URL https de Google Drive o Google Docs. Validada contra lista blanca de hosts.
+  url              String   @db.VarChar(2048)
+  descripcion      String?  @db.VarChar(500)
+  /// Usuario que registró o reemplazó el enlace por última vez.
+  actualizadoPorId String?  @map("actualizado_por_id") @db.Uuid
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @default(now()) @updatedAt @map("updated_at")
+
+  docente        Docente  @relation(fields: [docenteId], references: [id], onDelete: Cascade)
+  actualizadoPor Usuario? @relation("CarpetaPedagogicaActualizadaPor", fields: [actualizadoPorId], references: [id], onDelete: SetNull)
+
+  @@unique([docenteId, anioEscolar])
+  @@index([anioEscolar])
+  @@map("carpetas_pedagogicas")
 }
 
 model DocenteSeccion {

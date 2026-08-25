@@ -43,7 +43,8 @@ export type MenuItem =
   | 'superadmin'
   | 'superadmin_director'
   | 'superadmin_jefe'
-  | 'mi_firma';
+  | 'mi_firma'
+  | 'carpeta_pedagogica';
 
 const BASE_PERMISSIONS: MenuItem[] = ['reportes', 'reportes_fichas', 'mi_firma'];
 
@@ -107,6 +108,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
     'reportes_fichas',
     'reportes_analisis',
     'mi_firma',
+    'carpeta_pedagogica',
   ],
 
   jefe_taller: [
@@ -121,6 +123,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
     'reportes_fichas',
     'reportes_analisis',
     'mi_firma',
+    'carpeta_pedagogica',
   ],
 
   especialista: [
@@ -156,9 +159,10 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
     'reportes_fichas',
     'reportes_analisis',
     'mi_firma',
+    'carpeta_pedagogica',
   ],
 
-  docente: [...BASE_PERMISSIONS],
+  docente: [...BASE_PERMISSIONS, 'carpeta_pedagogica'],
 
   invitado: [
     'dashboard',

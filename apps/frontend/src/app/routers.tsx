@@ -14,6 +14,7 @@ import { SuperadminCreatePage } from '@/pages/superadmin/SuperadminCreatePage';
 import { ProtectedRoute } from '@shared/ui/ProtectedRoute';
 import { FocosAtencionPage } from '@/pages/focosAtencion/FocosAtencionPage';
 import { MiFirmaPage } from '@/features/firmas/ui/MiFirmaPage';
+import { MiCarpetaPedagogicaPage } from '@/features/carpeta-pedagogica';
 
 export const router = createBrowserRouter([
   {
@@ -33,6 +34,10 @@ export const router = createBrowserRouter([
       {
         element: <ProtectedRoute permission="mi_firma" />,
         children: [{ path: 'mi-firma', element: <MiFirmaPage /> }],
+      },
+      {
+        element: <ProtectedRoute permission="carpeta_pedagogica" />,
+        children: [{ path: 'carpeta-pedagogica', element: <MiCarpetaPedagogicaPage /> }],
       },
       {
         path: 'superadmin',

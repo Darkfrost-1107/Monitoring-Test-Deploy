@@ -7,3 +7,4 @@ export * from './seleccion';
 export * from './factories';
 export * from './validator';
 
+export * from './aplicables';

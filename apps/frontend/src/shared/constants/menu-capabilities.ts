@@ -64,6 +64,11 @@ export const MENU_CAPABILITIES: Record<MenuItem, Capability | null> = {
   superadmin_director: Capability.SUPERADMIN_ACCESS,
   superadmin_jefe: Capability.SUPERADMIN_ACCESS,
 
+  // ── Carpeta pedagógica ─────────────────────────────────────────────────────
+  // La capacidad abre la pantalla; la carpeta sobre la que se escribe la elige
+  // la identidad de la sesión, no el menú.
+  carpeta_pedagogica: Capability.CARPETA_PEDAGOGICA_WRITE,
+
   // Pantalla de preferencias de la propia cuenta: no exige capacidad.
   configuracion: null,
   mi_firma: null,

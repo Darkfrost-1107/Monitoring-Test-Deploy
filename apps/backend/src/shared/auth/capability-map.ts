@@ -56,6 +56,7 @@ export const ROL_CAPABILITIES: Record<RoleCode, readonly Capability[]> = {
     Capability.INSTITUCIONES_READ,
     Capability.NOTIFICACIONES_SEND,
     Capability.VISITAS_SOLICITAR,
+    Capability.CARPETA_PEDAGOGICA_READ,
   ],
   [RoleCode.JEFE_GESTION]: [
     Capability.ESPECIALISTAS_READ,
@@ -69,6 +70,7 @@ export const ROL_CAPABILITIES: Record<RoleCode, readonly Capability[]> = {
     Capability.NOTIFICACIONES_SEND,
     Capability.VISITAS_GESTIONAR,
     Capability.VISITAS_SOLICITAR,
+    Capability.CARPETA_PEDAGOGICA_READ,
   ],
   [RoleCode.JEFE_AREA]: [
     Capability.ESPECIALISTAS_READ,
@@ -79,6 +81,7 @@ export const ROL_CAPABILITIES: Record<RoleCode, readonly Capability[]> = {
     Capability.DASHBOARD_READ,
     Capability.NOTIFICACIONES_SEND,
     Capability.VISITAS_SOLICITAR,
+    Capability.CARPETA_PEDAGOGICA_READ,
   ],
   [RoleCode.ESPECIALISTA]: [
     Capability.MONITOREO_EXECUTE,
@@ -88,6 +91,7 @@ export const ROL_CAPABILITIES: Record<RoleCode, readonly Capability[]> = {
     Capability.DASHBOARD_READ,
     Capability.NOTIFICACIONES_SEND,
     Capability.VISITAS_SOLICITAR,
+    Capability.CARPETA_PEDAGOGICA_READ,
   ],
   [RoleCode.DIRECTOR_INSTITUCION]: [
     Capability.DASHBOARD_READ,
@@ -96,20 +100,26 @@ export const ROL_CAPABILITIES: Record<RoleCode, readonly Capability[]> = {
     Capability.MONITOREO_EXECUTE,
     Capability.ESPECIALISTAS_READ,
     Capability.INSTITUCIONES_READ,
+    Capability.CARPETA_PEDAGOGICA_READ,
+    Capability.CARPETA_PEDAGOGICA_WRITE,
   ],
   [RoleCode.COORDINADOR_PEDAGOGICO]: [
     Capability.MONITOREO_EXECUTE,
     Capability.DOCENTES_READ,
     Capability.ESPECIALISTAS_READ,
     Capability.INSTITUCIONES_READ,
+    Capability.CARPETA_PEDAGOGICA_READ,
+    Capability.CARPETA_PEDAGOGICA_WRITE,
   ],
   [RoleCode.JEFE_TALLER]: [
     Capability.MONITOREO_EXECUTE,
     Capability.DOCENTES_READ,
     Capability.ESPECIALISTAS_READ,
     Capability.INSTITUCIONES_READ,
+    Capability.CARPETA_PEDAGOGICA_READ,
+    Capability.CARPETA_PEDAGOGICA_WRITE,
   ],
-  [RoleCode.DOCENTE]: [],
+  [RoleCode.DOCENTE]: [Capability.CARPETA_PEDAGOGICA_WRITE],
   [RoleCode.INVITADO]: [Capability.DASHBOARD_READ],
   [RoleCode.SUPERUSUARIO]: [
     Capability.SUPERADMIN_ACCESS,

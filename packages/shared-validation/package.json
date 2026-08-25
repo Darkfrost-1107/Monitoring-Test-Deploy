@@ -9,6 +9,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./enlace-drive": {
+      "types": "./dist/enlace-drive.d.ts",
+      "default": "./dist/enlace-drive.js"
     }
   },
   "scripts": {
