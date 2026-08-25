@@ -1,0 +1,305 @@
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import {
+  CargoBeneficiario,
+  INSTRUMENTOS_SOLICITABLES,
+  type EstadoSolicitudPlantilla,
+  type ICrearSolicitudPlantillaRequest,
+  type ISolicitudPlantilla,
+  type ISolicitudesPlantillaResponse,
+  type TipoPlantilla,
+} from '@sistema-monitoreo/shared-contracts';
+import { PrismaService } from '../../../shared/prisma/prisma.service.js';
+import { RoleCode } from '../../../common/enums/role.enum.js';
+import type { SessionUser } from '../../../shared/types/session-user.js';
+
+/**
+ * Pedido de una I.E. para poder crear plantillas propias.
+ *
+ * El catálogo oficial son las tres fichas de la UGEL. Una institución que
+ * necesita un instrumento propio lo pide antes con un PDF que lo justifica, y
+ * el Jefe de Gestión aprueba o rechaza el paquete completo.
+ *
+ * ── Por qué sólo el director emite ──
+ * En la institución, el Jefe de Taller y el Coordinador Pedagógico le piden al
+ * director y él tramita. Es una regla de la organización, no una comodidad de
+ * pantalla, y por eso la sostiene el servidor: cada ítem declara para qué cargo
+ * es, y el pedido lleva una sola firma.
+ */
+
+const CARGOS_VALIDOS: readonly string[] = Object.values(CargoBeneficiario);
+
+/** Fila con lo que la respuesta necesita. */
+interface FilaSolicitud {
+  id: string;
+  institucionId: string;
+  anioEscolar: number;
+  justificacionUrl: string;
+  estado: string;
+  comentario: string | null;
+  resueltaAt: Date | null;
+  createdAt: Date;
+  institucion: { nombre: string };
+  solicitante: { persona: { nombres: string; apellidos: string } };
+  resueltaPor: { persona: { nombres: string; apellidos: string } } | null;
+  items: {
+    id: string;
+    instrumento: string;
+    cargoBeneficiario: string;
+    descripcion: string;
+    plantillaId: string | null;
+  }[];
+}
+
+const INCLUDE = {
+  institucion: { select: { nombre: true } },
+  solicitante: { select: { persona: { select: { nombres: true, apellidos: true } } } },
+  resueltaPor: { select: { persona: { select: { nombres: true, apellidos: true } } } },
+  items: {
+    select: {
+      id: true,
+      instrumento: true,
+      cargoBeneficiario: true,
+      descripcion: true,
+      plantillaId: true,
+    },
+  },
+} as const;
+
+const nombreDe = (p: { persona: { nombres: string; apellidos: string } } | null): string | null =>
+  p ? `${p.persona.nombres} ${p.persona.apellidos}`.trim() : null;
+
+@Injectable()
+export class SolicitudesPlantillaService {
+  constructor(private readonly prisma: PrismaService) {}
+
+  /** Alta del pedido. El PDF ya fue validado y guardado por el controlador. */
+  async crear(
+    session: SessionUser,
+    dto: ICrearSolicitudPlantillaRequest,
+    justificacionUrl: string,
+  ): Promise<ISolicitudPlantilla> {
+    const institucionId = this.institucionDelDirector(session);
+    this.validarItems(dto.items);
+
+    // Dos pedidos abiertos a la vez dejan al Jefe de Gestión decidiendo sobre
+    // información que se contradice, y duplican los cupos si aprueba los dos.
+    const abierta = await this.prisma.solicitudPlantilla.findFirst({
+      where: { institucionId, anioEscolar: dto.anioEscolar, estado: 'PENDIENTE' },
+      select: { id: true },
+    });
+    if (abierta) {
+      throw new ConflictException(
+        'Su institución ya tiene una solicitud pendiente para ese año. Espere la respuesta de la Jefatura de Gestión.',
+      );
+    }
+
+    const fila = await this.prisma.solicitudPlantilla.create({
+      data: {
+        // De qué institución es el pedido lo decide la SESIÓN, nunca el cuerpo.
+        institucionId,
+        solicitanteId: session.id,
+        anioEscolar: dto.anioEscolar,
+        justificacionUrl,
+        items: { create: dto.items },
+      },
+      include: INCLUDE,
+    });
+
+    return this.aContrato(fila);
+  }
+
+  /** Bandeja del Jefe de Gestión. */
+  async listar(estado?: string): Promise<ISolicitudesPlantillaResponse> {
+    return this.buscar(estado ? { estado } : {}, estado);
+  }
+
+  /** Seguimiento de los pedidos de la propia institución. */
+  async mias(session: SessionUser, estado?: string): Promise<ISolicitudesPlantillaResponse> {
+    const institucionId = this.institucionDelDirector(session);
+    return this.buscar({ institucionId, ...(estado ? { estado } : {}) }, estado);
+  }
+
+  async aprobar(
+    id: string,
+    session: SessionUser,
+    comentario?: string,
+  ): Promise<ISolicitudPlantilla> {
+    return this.resolver(id, session, 'APROBADA', comentario?.trim() || null);
+  }
+
+  /**
+   * Rechaza el pedido. El motivo es obligatorio.
+   *
+   * Un rechazo sin explicación obliga al director a adivinar qué corregir, y el
+   * trámite vuelve igual: no ahorra tiempo, lo gasta dos veces.
+   */
+  async rechazar(
+    id: string,
+    session: SessionUser,
+    comentario?: string,
+  ): Promise<ISolicitudPlantilla> {
+    const motivo = comentario?.trim();
+    if (!motivo) {
+      throw new BadRequestException('Indique el motivo del rechazo.');
+    }
+    return this.resolver(id, session, 'RECHAZADA', motivo);
+  }
+
+  /**
+   * Ruta del PDF de justificación, si esta sesión puede verlo.
+   *
+   * El archivo NO puede servirse como estático: `uploads/` no exige sesión, así
+   * que cualquiera con la URL se lo llevaría. Es el mismo agujero que ya se
+   * cerró para las firmas manuscritas, y este documento —donde una institución
+   * explica sus necesidades internas— merece el mismo trato.
+   *
+   * Ante una solicitud ajena responde «no encontrada» y no «prohibido»: un 403
+   * confirmaría que esa solicitud existe. Mismo criterio que las solicitudes de
+   * visita.
+   */
+  async rutaDeJustificacion(
+    id: string,
+    quien: { userId: string; esGestor: boolean; institucionId?: string | null },
+  ): Promise<string> {
+    if (!quien.esGestor && !quien.institucionId) {
+      throw new NotFoundException('Solicitud no encontrada.');
+    }
+
+    const fila = await this.prisma.solicitudPlantilla.findFirst({
+      // El gestor ve la bandeja completa; el resto, sólo lo de su institución.
+      where: quien.esGestor ? { id } : { id, institucionId: quien.institucionId! },
+      select: { justificacionUrl: true },
+    });
+
+    if (!fila) throw new NotFoundException('Solicitud no encontrada.');
+    return fila.justificacionUrl;
+  }
+
+  // ── Internos ───────────────────────────────────────────────────────────────
+
+  /**
+   * Aplica la decisión sobre una solicitud que siga pendiente.
+   *
+   * La condición `estado: 'PENDIENTE'` viaja en el UPDATE y no sólo en una
+   * lectura previa: dos decisiones simultáneas sobre la misma solicitud leerían
+   * el mismo estado, y sólo una debe poder resolverla.
+   */
+  private async resolver(
+    id: string,
+    session: SessionUser,
+    estado: EstadoSolicitudPlantilla,
+    comentario: string | null,
+  ): Promise<ISolicitudPlantilla> {
+    const { count } = await this.prisma.solicitudPlantilla.updateMany({
+      where: { id, estado: 'PENDIENTE' },
+      data: { estado, comentario, resueltaPorId: session.id, resueltaAt: new Date() },
+    });
+
+    if (count === 0) {
+      throw new ConflictException(
+        'La solicitud no existe o ya fue resuelta. Actualice la bandeja.',
+      );
+    }
+
+    const fila = await this.prisma.solicitudPlantilla.findUnique({
+      where: { id },
+      include: INCLUDE,
+    });
+    if (!fila) throw new NotFoundException('Solicitud no encontrada.');
+
+    return this.aContrato(fila);
+  }
+
+  private async buscar(
+    where: Record<string, unknown>,
+    estado?: string,
+  ): Promise<ISolicitudesPlantillaResponse> {
+    const [filas, pendientes] = await Promise.all([
+      this.prisma.solicitudPlantilla.findMany({
+        where,
+        include: INCLUDE,
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.solicitudPlantilla.count({
+        where: { ...where, estado: 'PENDIENTE' },
+      }),
+    ]);
+
+    void estado;
+    return {
+      solicitudes: (filas as FilaSolicitud[]).map((f) => this.aContrato(f)),
+      pendientes,
+    };
+  }
+
+  /**
+   * Institución del director que firma, o 403.
+   *
+   * Es el único punto donde se decide de qué institución es un pedido: no se
+   * lee del cuerpo, que lo controla quien envía.
+   */
+  private institucionDelDirector(session: SessionUser): string {
+    if (session.role !== RoleCode.DIRECTOR_INSTITUCION) {
+      throw new ForbiddenException(
+        'Sólo el director de la institución educativa presenta solicitudes de plantilla.',
+      );
+    }
+    if (!session.institucionId) {
+      throw new ForbiddenException('La sesión no tiene una institución educativa asociada.');
+    }
+    return session.institucionId;
+  }
+
+  private validarItems(items: ICrearSolicitudPlantillaRequest['items']): void {
+    if (!Array.isArray(items) || items.length === 0) {
+      throw new BadRequestException('Indique al menos una plantilla en la solicitud.');
+    }
+
+    for (const item of items) {
+      if (!INSTRUMENTOS_SOLICITABLES.includes(item.instrumento)) {
+        // La ficha directiva la aplica el especialista de la UGEL. Admitirla acá
+        // abriría una puerta que el negocio no tiene.
+        throw new BadRequestException(
+          `Una institución no puede solicitar una plantilla de tipo ${item.instrumento}.`,
+        );
+      }
+      if (!CARGOS_VALIDOS.includes(item.cargoBeneficiario)) {
+        throw new BadRequestException(
+          `El cargo "${item.cargoBeneficiario}" no corresponde a un cargo de la institución.`,
+        );
+      }
+      if (!item.descripcion?.trim()) {
+        throw new BadRequestException('Cada plantilla solicitada necesita una descripción.');
+      }
+    }
+  }
+
+  private aContrato(f: FilaSolicitud): ISolicitudPlantilla {
+    return {
+      id: f.id,
+      institucionId: f.institucionId,
+      institucionNombre: f.institucion.nombre,
+      solicitante: nombreDe(f.solicitante) ?? 'Director de I.E.',
+      anioEscolar: f.anioEscolar,
+      justificacionUrl: f.justificacionUrl,
+      estado: f.estado as EstadoSolicitudPlantilla,
+      comentario: f.comentario,
+      resueltaPor: nombreDe(f.resueltaPor),
+      resueltaAt: f.resueltaAt ? f.resueltaAt.toISOString() : null,
+      createdAt: f.createdAt.toISOString(),
+      items: f.items.map((i) => ({
+        id: i.id,
+        instrumento: i.instrumento as TipoPlantilla,
+        cargoBeneficiario: i.cargoBeneficiario as CargoBeneficiario,
+        descripcion: i.descripcion,
+        plantillaId: i.plantillaId,
+      })),
+    };
+  }
+}

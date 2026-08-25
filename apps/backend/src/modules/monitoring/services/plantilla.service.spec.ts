@@ -4,6 +4,7 @@ import { jest } from '@jest/globals';
 import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { PlantillaService } from './plantilla.service.js';
 import { PrerrequisitosDirectorService } from './prerrequisitos-director.service.js';
+import { ValePlantillaService } from '../../solicitudes-plantilla/services/vale-plantilla.service.js';
 import { PlantillaRepository } from '../repositories/plantilla.repository.js';
 
 describe('PlantillaService - ILA-0046', () => {
@@ -60,6 +61,16 @@ describe('PlantillaService - ILA-0046', () => {
         {
           provide: PrerrequisitosDirectorService,
           useValue: { asegurar: jest.fn<any>().mockResolvedValue(undefined) },
+        },
+        {
+          // Estas pruebas montan sesiones de UGEL, que no necesitan cupo: el
+          // doble devuelve `null` y el servicio sigue de largo. La regla del
+          // cupo tiene sus propias pruebas en `vale-plantilla.service.spec.ts`.
+          provide: ValePlantillaService,
+          useValue: {
+            consumirParaCrear: jest.fn<any>().mockResolvedValue(null),
+            marcarConsumido: jest.fn<any>().mockResolvedValue(undefined),
+          },
         },
       ],
     }).compile();

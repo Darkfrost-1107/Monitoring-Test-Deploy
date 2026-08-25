@@ -65,6 +65,15 @@ export const Capability = {
   CARPETA_PEDAGOGICA_WRITE: 'carpeta_pedagogica:write',
   /** Consultar la carpeta pedagógica de los docentes que se monitorean. */
   CARPETA_PEDAGOGICA_READ: 'carpeta_pedagogica:read',
+  /**
+   * Pedir autorización para crear plantillas propias de la institución.
+   *
+   * Sólo el director de la I.E. La tramita también en nombre del Jefe de Taller
+   * y del Coordinador Pedagógico, que no emiten pedidos por su cuenta.
+   */
+  SOLICITUDES_PLANTILLA_SOLICITAR: 'solicitudes_plantilla:solicitar',
+  /** Aprobar o rechazar los pedidos de plantilla de las instituciones. */
+  SOLICITUDES_PLANTILLA_GESTIONAR: 'solicitudes_plantilla:gestionar',
 } as const;
 
 export type Capability = (typeof Capability)[keyof typeof Capability];
@@ -90,6 +99,8 @@ export const CAPABILITY_LABELS: Record<Capability, string> = {
   [Capability.SUPERADMIN_ACCESS]: 'Asignar altos cargos',
   [Capability.CARPETA_PEDAGOGICA_WRITE]: 'Registrar mi carpeta pedagógica',
   [Capability.CARPETA_PEDAGOGICA_READ]: 'Ver carpetas pedagógicas',
+  [Capability.SOLICITUDES_PLANTILLA_SOLICITAR]: 'Solicitar plantillas propias',
+  [Capability.SOLICITUDES_PLANTILLA_GESTIONAR]: 'Aprobar solicitudes de plantilla',
 };
 
 /** Verifica en tiempo de ejecución que una cadena sea una capacidad conocida. */

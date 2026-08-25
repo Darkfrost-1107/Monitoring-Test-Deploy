@@ -18,6 +18,7 @@ export * from './constants/roles.constants.js';
 export * from './constants/capabilities.constants.js';
 export * from './jefes-area/jefes-area.contract.js';
 export * from './monitoring/monitoring-plan.contract.js';
+export * from './monitoring/solicitud-plantilla.contract.js';
 export * from './scheduling/index.js';
 export * from './plantillas/index.js';
 export * from './evaluations/index.js';

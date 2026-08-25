@@ -15,6 +15,10 @@ import { ProtectedRoute } from '@shared/ui/ProtectedRoute';
 import { FocosAtencionPage } from '@/pages/focosAtencion/FocosAtencionPage';
 import { MiFirmaPage } from '@/features/firmas/ui/MiFirmaPage';
 import { MiCarpetaPedagogicaPage } from '@/features/carpeta-pedagogica';
+import {
+  BandejaSolicitudesPlantillaPage,
+  MisSolicitudesPlantillaPage,
+} from '@/features/solicitudes-plantilla';
 
 export const router = createBrowserRouter([
   {
@@ -38,6 +42,18 @@ export const router = createBrowserRouter([
       {
         element: <ProtectedRoute permission="carpeta_pedagogica" />,
         children: [{ path: 'carpeta-pedagogica', element: <MiCarpetaPedagogicaPage /> }],
+      },
+      {
+        element: <ProtectedRoute permission="plantillas_solicitudes" />,
+        children: [
+          { path: 'plantillas/solicitudes', element: <BandejaSolicitudesPlantillaPage /> },
+        ],
+      },
+      {
+        element: <ProtectedRoute permission="plantillas_mis_solicitudes" />,
+        children: [
+          { path: 'plantillas/mis-solicitudes', element: <MisSolicitudesPlantillaPage /> },
+        ],
       },
       {
         path: 'superadmin',

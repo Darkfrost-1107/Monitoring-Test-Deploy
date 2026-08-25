@@ -11,6 +11,7 @@ import type { CreatePlantillaDto } from '../dto/create-plantilla.dto.js';
 import type { UpdatePlantillaDto, PatchEstadoPlantillaDto } from '../dto/update-plantilla.dto.js';
 import type { QueryPlantillaDto } from '../dto/query-plantilla.dto.js';
 import { PrerrequisitosDirectorService } from './prerrequisitos-director.service.js';
+import { ValePlantillaService } from '../../solicitudes-plantilla/services/vale-plantilla.service.js';
 import { RoleCode } from '../../../common/enums/role.enum.js';
 import type { SessionUser } from '../../../shared/types/session-user.js';
 import {
@@ -27,6 +28,7 @@ export class PlantillaService {
   constructor(
     private readonly repository: PlantillaRepository,
     private readonly prerrequisitos: PrerrequisitosDirectorService,
+    private readonly vales: ValePlantillaService,
   ) {}
 
   private isSchoolStaff(session: SessionUser): boolean {
@@ -112,13 +114,25 @@ export class PlantillaService {
     // director de la I.E. sentó las bases (plan anual + plantilla vigente).
     await this.prerrequisitos.asegurar(session);
     validarReglas(dto);
+
+    // El catálogo oficial son las tres fichas de la UGEL. Una institución sólo
+    // crea un instrumento propio con una solicitud aprobada que lo declare, y
+    // cada cupo de esa solicitud alcanza para una sola plantilla.
+    const vale = await this.vales.consumirParaCrear(session, dto.tipoMonitoreo, dto.anioAcademico);
+
     const { rolAutorAlCrear, institucionId } = resolveAutor(session);
-    return this.repository.create({
+    const creada = await this.repository.create({
       data: dto,
       autorId: session.id,
       rolAutorAlCrear,
       institucionId,
     });
+
+    // El cupo se marca DESPUÉS de crear: si la creación fallara, una
+    // autorización se habría gastado sin que exista la plantilla que la usó.
+    if (vale) await this.vales.marcarConsumido(vale.id, creada.id);
+
+    return creada;
   }
 
   async update(
@@ -270,7 +284,13 @@ export class PlantillaService {
         'Solo Jefe de Gestion, Directores IE, Coordinadores o Jefes de Taller pueden duplicar plantillas.',
       );
     }
-    return this.repository.clone(
+
+    // Duplicar es la otra puerta para tener una plantilla propia, y por eso
+    // exige el mismo cupo que crear desde cero. Guardar sólo `create` dejaría
+    // la regla abierta por el camino que, de hecho, es el más usado.
+    const vale = await this.vales.consumirParaCrear(session, original.tipoMonitoreo, targetAnio);
+
+    const clon = await this.repository.clone(
       id,
       session.id,
       rolAutorAlCrear,
@@ -278,6 +298,10 @@ export class PlantillaService {
       descripcion,
       targetAnio,
     );
+
+    if (vale) await this.vales.marcarConsumido(vale.id, clon.id);
+
+    return clon;
   }
 }
 

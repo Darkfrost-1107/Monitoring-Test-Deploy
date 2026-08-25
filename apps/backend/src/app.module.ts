@@ -24,6 +24,7 @@ import { DashboardModule } from './modules/dashboard/dashboard.module.js';
 import { NotificationsModule } from './modules/notifications/notifications.module.js';
 import { VisitRequestsModule } from './modules/visit-requests/visit-requests.module.js';
 import { CarpetaPedagogicaModule } from './modules/carpeta-pedagogica/carpeta-pedagogica.module.js';
+import { SolicitudesPlantillaModule } from './modules/solicitudes-plantilla/solicitudes-plantilla.module.js';
 
 @Module({
   imports: [
@@ -66,6 +67,7 @@ import { CarpetaPedagogicaModule } from './modules/carpeta-pedagogica/carpeta-pe
     NotificationsModule,
     VisitRequestsModule,
     CarpetaPedagogicaModule,
+    SolicitudesPlantillaModule,
   ],
   providers: [
     {

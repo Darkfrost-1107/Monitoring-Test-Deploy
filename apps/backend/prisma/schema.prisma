@@ -99,24 +99,26 @@ model Usuario {
   createdAt           DateTime  @default(now()) @map("created_at")
   updatedAt           DateTime  @default(now()) @updatedAt @map("updated_at")
 
-  persona                    Persona                   @relation(fields: [personaId], references: [id])
-  rol                        Role                      @relation(fields: [rolId], references: [id])
-  sesionesAuth               SesionAuth[]
-  tokensRecuperacion         TokenRecuperacion[]
-  logsAuditoria              LogAuditoria[]
-  planesAutor                PlanMonitoreo[]
-  plantillasAutor            PlantillaMonitoreo[]
-  lemasAnualesCargados       LemaAnual[]
-  cronogramasCreados         Cronograma[]              @relation("CronogramaCreador")
-  solicitudesCreadas         SolicitudReprogramacion[] @relation("SolicitudSolicitante")
-  solicitudesResueltas       SolicitudReprogramacion[] @relation("SolicitudResolutor")
-  fichasCreadas              FichaMonitoreo[]          @relation("FichaCreador")
-  fichasFinalizadas          FichaMonitoreo[]          @relation("FichaFinalizador")
-  notificacionesRecibidas    Notificacion[]            @relation("NotificacionDestinatario")
-  notificacionesEnviadas     Notificacion[]            @relation("NotificacionEmisor")
-  solicitudesVisita          SolicitudVisita[]         @relation("SolicitudVisitaSolicitante")
-  solicitudesVisitaResueltas SolicitudVisita[]         @relation("SolicitudVisitaResolutor")
-  carpetasPedagogicas        CarpetaPedagogica[]       @relation("CarpetaPedagogicaActualizadaPor")
+  persona                       Persona                   @relation(fields: [personaId], references: [id])
+  rol                           Role                      @relation(fields: [rolId], references: [id])
+  sesionesAuth                  SesionAuth[]
+  tokensRecuperacion            TokenRecuperacion[]
+  logsAuditoria                 LogAuditoria[]
+  planesAutor                   PlanMonitoreo[]
+  plantillasAutor               PlantillaMonitoreo[]
+  lemasAnualesCargados          LemaAnual[]
+  cronogramasCreados            Cronograma[]              @relation("CronogramaCreador")
+  solicitudesCreadas            SolicitudReprogramacion[] @relation("SolicitudSolicitante")
+  solicitudesResueltas          SolicitudReprogramacion[] @relation("SolicitudResolutor")
+  fichasCreadas                 FichaMonitoreo[]          @relation("FichaCreador")
+  fichasFinalizadas             FichaMonitoreo[]          @relation("FichaFinalizador")
+  notificacionesRecibidas       Notificacion[]            @relation("NotificacionDestinatario")
+  notificacionesEnviadas        Notificacion[]            @relation("NotificacionEmisor")
+  solicitudesVisita             SolicitudVisita[]         @relation("SolicitudVisitaSolicitante")
+  solicitudesVisitaResueltas    SolicitudVisita[]         @relation("SolicitudVisitaResolutor")
+  carpetasPedagogicas           CarpetaPedagogica[]       @relation("CarpetaPedagogicaActualizadaPor")
+  solicitudesPlantilla          SolicitudPlantilla[]      @relation("SolicitudPlantillaSolicitante")
+  solicitudesPlantillaResueltas SolicitudPlantilla[]      @relation("SolicitudPlantillaResolutor")
 
   // Firmas
   firmaUrl String?      @map("firma_url") @db.Text
@@ -256,14 +258,15 @@ model InstitucionEducativa {
   createdAt         DateTime  @default(now()) @map("created_at")
   updatedAt         DateTime  @default(now()) @updatedAt @map("updated_at")
 
-  nivelEducativoRel NivelEducativo?      @relation(fields: [nivelEducativoId], references: [id], onDelete: SetNull)
-  docentes          Docente[]
-  planCobertura     PlanCoberturaIe[]
-  planes            PlanMonitoreo[]      @relation("PlanInstitucion")
-  plantillas        PlantillaMonitoreo[]
-  cronogramas       Cronograma[]
-  notificaciones    Notificacion[]
-  solicitudesVisita SolicitudVisita[]
+  nivelEducativoRel    NivelEducativo?      @relation(fields: [nivelEducativoId], references: [id], onDelete: SetNull)
+  docentes             Docente[]
+  planCobertura        PlanCoberturaIe[]
+  planes               PlanMonitoreo[]      @relation("PlanInstitucion")
+  plantillas           PlantillaMonitoreo[]
+  cronogramas          Cronograma[]
+  notificaciones       Notificacion[]
+  solicitudesPlantilla SolicitudPlantilla[]
+  solicitudesVisita    SolicitudVisita[]
 
   @@map("instituciones_educativas")
 }
@@ -592,13 +595,15 @@ model PlantillaMonitoreo {
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @default(now()) @updatedAt @map("updated_at")
 
-  autor               Usuario               @relation(fields: [autorId], references: [id], onDelete: Restrict)
-  institucion         InstitucionEducativa? @relation(fields: [institucionId], references: [id], onDelete: Restrict)
-  ugel                Ugel?                 @relation(fields: [ugelId], references: [id], onDelete: Restrict)
+  autor               Usuario                 @relation(fields: [autorId], references: [id], onDelete: Restrict)
+  institucion         InstitucionEducativa?   @relation(fields: [institucionId], references: [id], onDelete: Restrict)
+  ugel                Ugel?                   @relation(fields: [ugelId], references: [id], onDelete: Restrict)
   nivelesCalificacion NivelCalificacion[]
   desempenos          DesempenoPlantilla[]
   ejesItems           EjeItemPlantilla[]
   fichas              FichaMonitoreo[]
+  /// Vale de solicitud que autorizó esta plantilla. Nulo en las de la UGEL.
+  valeDeSolicitud     SolicitudPlantillaItem?
 
   @@unique([tipoMonitoreo, anioAcademico, version])
   @@index([estado])
@@ -945,4 +950,74 @@ model FichaFirma {
 
   @@unique([fichaId, rolFirmante])
   @@map("ficha_firmas")
+}
+
+// ==========================================
+// 13. SOLICITUDES DE PLANTILLA (feature/solicitud-plantillas)
+// ==========================================
+
+/// Pedido de una I.E. para poder crear plantillas propias.
+///
+/// El catálogo oficial son las tres fichas de la UGEL. Una institución que
+/// necesita un instrumento propio no lo crea y avisa después: lo pide antes,
+/// con un PDF que lo justifica, y el Jefe de Gestión aprueba o rechaza.
+///
+/// El director de la I.E. es la única boca. Tramita tanto lo suyo como lo del
+/// Jefe de Taller o el Coordinador Pedagógico, y por eso cada ítem declara para
+/// qué cargo es.
+model SolicitudPlantilla {
+  id               String    @id @default(uuid()) @db.Uuid
+  institucionId    String    @map("institucion_id") @db.Uuid
+  /// Director de la I.E. que firma el pedido.
+  solicitanteId    String    @map("solicitante_id") @db.Uuid
+  anioEscolar      Int       @map("anio_escolar")
+  /// PDF con la justificación. Es el documento que el Jefe de Gestión lee para decidir.
+  justificacionUrl String    @map("justificacion_url") @db.VarChar(500)
+  /// PENDIENTE | APROBADA | RECHAZADA
+  estado           String    @default("PENDIENTE") @db.VarChar(20)
+  resueltaPorId    String?   @map("resuelta_por_id") @db.Uuid
+  resueltaAt       DateTime? @map("resuelta_at")
+  /// Motivo del rechazo o nota de la aprobación.
+  comentario       String?   @db.Text
+  createdAt        DateTime  @default(now()) @map("created_at")
+
+  institucion InstitucionEducativa     @relation(fields: [institucionId], references: [id], onDelete: Cascade)
+  solicitante Usuario                  @relation("SolicitudPlantillaSolicitante", fields: [solicitanteId], references: [id], onDelete: Restrict)
+  resueltaPor Usuario?                 @relation("SolicitudPlantillaResolutor", fields: [resueltaPorId], references: [id], onDelete: SetNull)
+  items       SolicitudPlantillaItem[]
+
+  @@index([estado])
+  @@index([institucionId, anioEscolar])
+  @@map("solicitudes_plantilla")
+}
+
+/// Una plantilla pedida dentro de una solicitud.
+///
+/// Es el vale: mientras la solicitud está aprobada y el ítem no tiene plantilla
+/// asociada, la institución puede crear UNA plantilla de ese instrumento para
+/// ese cargo. Al crearla se consume, y un vale consumido no se reusa.
+///
+/// Va en tabla aparte y no como JSON dentro de la solicitud porque el sistema
+/// necesita preguntar «qué vales libres tiene esta institución» en cada intento
+/// de creación, y eso es una consulta, no un recorrido en memoria.
+model SolicitudPlantillaItem {
+  id                String  @id @default(uuid()) @db.Uuid
+  solicitudId       String  @map("solicitud_id") @db.Uuid
+  /// DOCENTE | DOCENTE_EIB. La ficha directiva es sólo del especialista.
+  instrumento       String  @db.VarChar(20)
+  /// Cargo al que servirá la plantilla: Director | Jefe de Taller | Coordinador Pedagógico.
+  ///
+  /// Se declara por CARGO y no por persona: los cargos rotan durante el año y
+  /// la plantilla dura el año entero.
+  cargoBeneficiario String  @map("cargo_beneficiario") @db.VarChar(50)
+  /// Qué plantilla se piensa armar, en una línea.
+  descripcion       String  @db.VarChar(300)
+  /// Plantilla creada al amparo de este vale. Nulo mientras el vale está libre.
+  plantillaId       String? @unique @map("plantilla_id") @db.Uuid
+
+  solicitud SolicitudPlantilla  @relation(fields: [solicitudId], references: [id], onDelete: Cascade)
+  plantilla PlantillaMonitoreo? @relation(fields: [plantillaId], references: [id], onDelete: SetNull)
+
+  @@index([solicitudId])
+  @@map("solicitud_plantilla_items")
 }

@@ -13,10 +13,11 @@ import { LemaAnualService } from './services/lema-anual.service.js';
 import { LemaAnualRepository } from './repositories/lema-anual.repository.js';
 import { PrismaLemaAnualRepository } from './repositories/prisma-lema-anual.repository.js';
 import { PrismaModule } from '../../shared/prisma/prisma.module.js';
+import { SolicitudesPlantillaModule } from '../solicitudes-plantilla/solicitudes-plantilla.module.js';
 import { AuthModule } from '../auth/auth.module.js';
 
 @Module({
-  imports: [PrismaModule, AuthModule],
+  imports: [PrismaModule, AuthModule, SolicitudesPlantillaModule],
   controllers: [MonitoringPlanController, PlantillaController, LemaAnualController],
   providers: [
     MonitoringPlanService,

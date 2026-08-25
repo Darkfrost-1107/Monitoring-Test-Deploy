@@ -71,6 +71,7 @@ export const ROL_CAPABILITIES: Record<RoleCode, readonly Capability[]> = {
     Capability.VISITAS_GESTIONAR,
     Capability.VISITAS_SOLICITAR,
     Capability.CARPETA_PEDAGOGICA_READ,
+    Capability.SOLICITUDES_PLANTILLA_GESTIONAR,
   ],
   [RoleCode.JEFE_AREA]: [
     Capability.ESPECIALISTAS_READ,
@@ -102,6 +103,7 @@ export const ROL_CAPABILITIES: Record<RoleCode, readonly Capability[]> = {
     Capability.INSTITUCIONES_READ,
     Capability.CARPETA_PEDAGOGICA_READ,
     Capability.CARPETA_PEDAGOGICA_WRITE,
+    Capability.SOLICITUDES_PLANTILLA_SOLICITAR,
   ],
   [RoleCode.COORDINADOR_PEDAGOGICO]: [
     Capability.MONITOREO_EXECUTE,
@@ -153,6 +155,9 @@ export const DOCENTE_CARGO_CAPABILITIES: Record<CargoNombre, readonly Capability
     Capability.INSTITUCIONES_WRITE,
     Capability.DOCENTES_WRITE,
     Capability.MONITOREO_EXECUTE,
+    // El director de la I.E. es la única boca de su institución para pedir
+    // plantillas propias, tramite lo suyo o lo del taller y la coordinación.
+    Capability.SOLICITUDES_PLANTILLA_SOLICITAR,
   ],
   [CargoNombre.SUBDIRECTOR]: [Capability.DOCENTES_WRITE, Capability.MONITOREO_EXECUTE],
   [CargoNombre.COORDINADOR_PEDAGOGICO]: [Capability.MONITOREO_EXECUTE],

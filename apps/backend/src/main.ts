@@ -7,6 +7,7 @@ import { Logger } from 'nestjs-pino';
 import { ConfigService } from '@nestjs/config';
 import { PrismaClientExceptionFilter } from './common/filters/prisma-client-exception.filter.js';
 import { esArchivoDeFirma } from './modules/evaluations/services/firmas.helper.js';
+import { esJustificacionDeSolicitud } from './modules/solicitudes-plantilla/services/justificacion.helper.js';
 
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
@@ -52,7 +53,7 @@ async function bootstrap() {
    * emitidas.
    */
   app.use('/uploads', (req: express.Request, res: express.Response, next: express.NextFunction) => {
-    if (esArchivoDeFirma(req.path)) {
+    if (esArchivoDeFirma(req.path) || esJustificacionDeSolicitud(req.path)) {
       res.status(404).end();
       return;
     }

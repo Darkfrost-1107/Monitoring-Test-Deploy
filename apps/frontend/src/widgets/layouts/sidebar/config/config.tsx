@@ -119,6 +119,12 @@ export const SIDEBAR_CONFIG: MenuCategory[] = [
     children: [
       { id: 'plantillas_ugel', label: 'UGEL', path: '/plantillas?filtro=ugel' },
       { id: 'plantillas_ies', label: 'Instituciones', path: '/plantillas?filtro=ie' },
+      { id: 'plantillas_solicitudes', label: 'Solicitudes', path: '/plantillas/solicitudes' },
+      {
+        id: 'plantillas_mis_solicitudes',
+        label: 'Mis Solicitudes',
+        path: '/plantillas/mis-solicitudes',
+      },
     ],
   },
   {

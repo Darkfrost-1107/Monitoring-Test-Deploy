@@ -42,6 +42,11 @@ export const MENU_CAPABILITIES: Record<MenuItem, Capability | null> = {
   plantillas: Capability.MONITOREO_READ,
   plantillas_ugel: Capability.MONITOREO_READ,
   plantillas_ies: Capability.MONITOREO_READ,
+  // La bandeja es del Jefe de Gestión; el seguimiento, del director de la I.E.
+  // Son dos ítems y no uno porque exigen capacidades distintas y nadie tiene
+  // las dos: ofrecer el destino del otro sería prometer un 403.
+  plantillas_solicitudes: Capability.SOLICITUDES_PLANTILLA_GESTIONAR,
+  plantillas_mis_solicitudes: Capability.SOLICITUDES_PLANTILLA_SOLICITAR,
 
   // ── Instituciones y padrón ─────────────────────────────────────────────────
   instituciones: Capability.INSTITUCIONES_READ,

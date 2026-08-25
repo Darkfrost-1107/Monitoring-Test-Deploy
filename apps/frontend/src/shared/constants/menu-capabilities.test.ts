@@ -41,6 +41,7 @@ const CAPACIDADES_POR_ROL: Record<string, readonly Capability[]> = {
     Capability.VISITAS_GESTIONAR,
     Capability.VISITAS_SOLICITAR,
     Capability.CARPETA_PEDAGOGICA_READ,
+    Capability.SOLICITUDES_PLANTILLA_GESTIONAR,
   ],
   [RoleCode.JEFE_AREA]: [
     Capability.ESPECIALISTAS_READ,
@@ -72,6 +73,7 @@ const CAPACIDADES_POR_ROL: Record<string, readonly Capability[]> = {
     Capability.INSTITUCIONES_READ,
     Capability.CARPETA_PEDAGOGICA_READ,
     Capability.CARPETA_PEDAGOGICA_WRITE,
+    Capability.SOLICITUDES_PLANTILLA_SOLICITAR,
   ],
   [RoleCode.COORDINADOR_PEDAGOGICO]: [
     Capability.MONITOREO_EXECUTE,

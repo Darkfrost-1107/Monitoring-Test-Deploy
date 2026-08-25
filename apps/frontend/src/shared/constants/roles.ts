@@ -25,6 +25,8 @@ export type MenuItem =
   | 'plantillas'
   | 'plantillas_ugel'
   | 'plantillas_ies'
+  | 'plantillas_solicitudes'
+  | 'plantillas_mis_solicitudes'
   | 'instituciones'
   | 'instituciones_padron'
   | 'instituciones_padron_lista'
@@ -80,6 +82,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
     'instituciones_padron',
     'instituciones_docentes',
     'mi_firma',
+    'plantillas_solicitudes',
   ],
 
   jefe_area: [
@@ -160,6 +163,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
     'reportes_analisis',
     'mi_firma',
     'carpeta_pedagogica',
+    'plantillas_mis_solicitudes',
   ],
 
   docente: [...BASE_PERMISSIONS, 'carpeta_pedagogica'],
