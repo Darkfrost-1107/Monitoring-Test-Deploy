@@ -1,6 +1,7 @@
-import { AlertCircle, Calendar, Clock, GraduationCap, Hash, User } from 'lucide-react';
+import { AlertCircle, Calendar, Clock, GraduationCap, Hash, User, UploadCloud } from 'lucide-react';
 import { Button } from '@/shared/ui/button';
 import type { Cronograma } from '@/entities/model-cronogramas';
+import { useVisitasPendientes } from '@features/offline/use-visitas-pendientes';
 import { formatearFechaLarga, formatearHoraVisita } from '../../lib/visita-presentacion';
 import {
   AccionVerDetalles,
@@ -26,7 +27,11 @@ export const VistaLista = ({
   hayFiltroActivo,
   onSeleccionarVisita,
   onLimpiarFiltros,
-}: VistaListaProps) => (
+}: VistaListaProps) => {
+  // Visitas cuya ficha/firma quedó en la cola de envío offline.
+  const pendientes = useVisitasPendientes();
+
+  return (
   <div className="space-y-4">
     <EncabezadoDeListado
       titulo="Lista de Visitas Filtradas (Cronológico)"
@@ -51,7 +56,18 @@ export const VistaLista = ({
             >
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="space-y-2 flex-1">
-                  <EncabezadoVisita visita={visita} />
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <EncabezadoVisita visita={visita} />
+                    {pendientes.has(visita.id) && (
+                      <span
+                        title="La ficha se guardó sin conexión y se enviará al recuperar internet"
+                        className="flex items-center gap-1 rounded-md bg-amber-50 px-2 py-0.5 text-[0.65rem] font-bold uppercase text-amber-700"
+                      >
+                        <UploadCloud className="h-3 w-3" />
+                        Pendiente de envío
+                      </span>
+                    )}
+                  </div>
 
                   <div className="text-xs text-text-muted grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 pt-0.5">
                     <span className="flex items-center gap-1.5 font-medium">
@@ -135,4 +151,5 @@ export const VistaLista = ({
       </EstadoVacio>
     )}
   </div>
-);
+  );
+};

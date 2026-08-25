@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { PlusCircle } from 'lucide-react';
 import { Button } from '@shared/ui/button';
 import { PAGINATION } from '@shared/config/constants';
@@ -29,11 +29,6 @@ export const InstitucionesPage = () => {
     Promise.resolve().then(() => loadInstituciones());
   }, []);
 
-  const distritosOptions = useMemo(
-    () => [...new Set(instituciones.map((i) => i.distrito))].sort((a, b) => a.localeCompare(b)),
-    [instituciones],
-  );
-
   if (loading) {
     return (
       <div className="w-full h-[60vh] flex flex-col justify-center items-center gap-3">
@@ -63,7 +58,7 @@ export const InstitucionesPage = () => {
       <InstitutionsStatsWidget instituciones={instituciones} />
 
       {/* 2. Barra de Filtros (Controlador de la URL) */}
-      <FilterInstitutions distritosOptions={distritosOptions} />
+      <FilterInstitutions />
 
       <InstitutionsTableWidget
         instituciones={instituciones}

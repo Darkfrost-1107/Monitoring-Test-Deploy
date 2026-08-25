@@ -42,7 +42,9 @@ export class PlantillaService {
     if (session) {
       if (this.isSchoolStaff(session) && session.institucionId) {
         scopedFilters.institucionId = session.institucionId;
-        scopedFilters.tipoMonitoreo = 'DOCENTE';
+        // Ven las docentes —regular y EIB— para poder clonarlas; el directivo es
+        // de la UGEL y se excluye más abajo. Antes se forzaba sólo 'DOCENTE', de
+        // modo que la EIB ni aparecía y no se podía copiar a la I.E.
       } else if (session.role === RoleCode.JEFE_AREA) {
         scopedFilters.rolAutorAlCrear = 'jefe_gestion'; // Solo plantillas UGEL
       }
@@ -64,6 +66,10 @@ export class PlantillaService {
           (p) => !(esAutorDeInstitucion(p.rolAutorAlCrear) && p.estado === 'Borrador'),
         );
       } else if (this.isSchoolStaff(session)) {
+        // El personal de IE monitorea docentes (regular y EIB), no directivos:
+        // el instrumento directivo es competencia de la UGEL.
+        plantillas = plantillas.filter((p) => p.tipoMonitoreo !== 'DIRECTIVO');
+
         // IE no debe ver plantillas 'Borrador' de la UGEL
         plantillas = plantillas.filter(
           (p) => !(p.rolAutorAlCrear === 'jefe_gestion' && p.estado === 'Borrador'),

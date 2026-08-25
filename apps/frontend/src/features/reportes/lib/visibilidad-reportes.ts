@@ -29,8 +29,13 @@ export interface UsuarioDeReportes {
   docenteId?: string;
   /** Registro de Especialista: la identifica como **evaluadora**. */
   especialistaId?: string;
-  /** Institución a la que pertenece, si aplica. */
-  institucionId?: string;
+  /**
+   * Institución a la que pertenece, si aplica. El nombre del campo debe coincidir
+   * con el del objeto `User` del frontend (`institucion`, no `institucionId`): al
+   * no coincidir, esta propiedad llegaba siempre `undefined` y el director de
+   * institución no veía ninguna ficha de su colegio.
+   */
+  institucion?: string;
 }
 
 export interface ReporteVisible {
@@ -93,8 +98,8 @@ export function reportesVisibles<T extends ReporteVisible>(
   }
 
   if (usuario.role === RoleCode.DIRECTOR_INSTITUCION) {
-    if (!usuario.institucionId) return [];
-    return ajenos.filter((r) => r.institucionId === usuario.institucionId);
+    if (!usuario.institucion) return [];
+    return ajenos.filter((r) => r.institucionId === usuario.institucion);
   }
 
   return ajenos;

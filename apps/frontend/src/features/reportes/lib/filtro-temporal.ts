@@ -72,6 +72,37 @@ export function coincideConPeriodo(
 }
 
 /**
+ * Rango de fechas [desde, hasta] que corresponde a un período, para filtrar en el
+ * servidor. Usa los MISMOS límites locales que `coincideConPeriodo`/las píldoras,
+ * así el conteo del análisis coincide con lo que muestran los badges. Se devuelve
+ * como ISO (UTC) porque el backend compara contra un timestamp (`createdAt`).
+ */
+export function rangoDePeriodo(
+  filtro: FiltroPeriodoTipo,
+  ahora: Date = new Date(),
+): { fechaDesde?: string; fechaHasta?: string } {
+  if (filtro === 'TODOS') return {};
+
+  let inicio: Date;
+  let fin: Date;
+
+  if (filtro === 'HOY') {
+    inicio = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate(), 0, 0, 0, 0);
+    fin = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate(), 23, 59, 59, 999);
+  } else if (filtro === 'ESTA_SEMANA') {
+    const diasDesdeLunes = (ahora.getDay() + 6) % 7;
+    inicio = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate() - diasDesdeLunes, 0, 0, 0, 0);
+    fin = new Date(inicio.getFullYear(), inicio.getMonth(), inicio.getDate() + 6, 23, 59, 59, 999);
+  } else {
+    // ESTE_MES: del día 1 al último día del mes (día 0 del mes siguiente).
+    inicio = new Date(ahora.getFullYear(), ahora.getMonth(), 1, 0, 0, 0, 0);
+    fin = new Date(ahora.getFullYear(), ahora.getMonth() + 1, 0, 23, 59, 59, 999);
+  }
+
+  return { fechaDesde: inicio.toISOString(), fechaHasta: fin.toISOString() };
+}
+
+/**
  * Calcula los conteos de visitas por cada período para alimentar los badges de las píldoras.
  */
 export function calcularConteosPorPeriodo(

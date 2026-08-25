@@ -28,6 +28,7 @@ export const docenteSchema = z.object({
   nivelEducativo: z.string().min(1, 'El nivel educativo es requerido'),
   condicion: z.enum(['Nombrado', 'Contratado', 'Designado', 'Encargado', 'Por Función']),
   especialidad: z.string().optional().or(z.literal('')),
+  especialidadesExtras: z.array(z.string()).optional(),
   cargaHoraria: cargaHoraria(1, 40),
   secciones: z.array(seccionDocenteSchema).default([]),
   escala: escalaMagisterial(),

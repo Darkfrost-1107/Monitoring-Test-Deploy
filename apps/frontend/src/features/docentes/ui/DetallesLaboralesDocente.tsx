@@ -9,6 +9,7 @@ import {
   condicionesDelCargo,
   especialidadesDelNivel,
 } from '../lib/grados-y-secciones';
+import { EspecialidadesExtrasDocente } from './EspecialidadesExtrasDocente';
 
 /**
  * Los datos laborales de un docente: institución, cargo, condición, nivel,
@@ -133,6 +134,18 @@ export const DetallesLaboralesDocente = ({
         disabled={bloqueado}
       />
     </div>
+
+    {form.nivelEducativo === 'SECUNDARIA' && (
+      <div style={{ marginTop: 18 }}>
+        <EspecialidadesExtrasDocente
+          nivel={form.nivelEducativo}
+          principal={form.especialidad}
+          extras={form.especialidadesExtras ?? []}
+          onCambiar={(extras) => onChange('especialidadesExtras', extras)}
+          disabled={bloqueado}
+        />
+      </div>
+    )}
 
     <div style={{ marginTop: 18, maxWidth: 'calc(50% - 9px)', minWidth: 240 }}>
       <TextField

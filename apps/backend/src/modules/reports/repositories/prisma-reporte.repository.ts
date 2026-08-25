@@ -50,6 +50,10 @@ export class PrismaReporteRepository implements ReporteRepository {
     // el objeto declarado como `any` nadie lo advertía. Ver H-29 del plan.
     const porCronograma: Prisma.CronogramaWhereInput = {};
     if (filters.institucionId) porCronograma.institucionId = filters.institucionId;
+    if (filters.modalidad) porCronograma.modalidad = filters.modalidad;
+    if (filters.nivelEducativo) porCronograma.nivelEducativo = filters.nivelEducativo;
+    if (filters.docenteId) porCronograma.evaluadoId = filters.docenteId;
+    if (filters.numeroVisita) porCronograma.numeroVisita = filters.numeroVisita;
     if (Object.keys(porCronograma).length > 0) where.cronograma = porCronograma;
     if (filters.tipoMonitoreo) where.plantilla = { tipoMonitoreo: filters.tipoMonitoreo };
     if (filters.nivelLogro) where.nivelLogro = filters.nivelLogro;
@@ -172,22 +176,26 @@ export class PrismaReporteRepository implements ReporteRepository {
       let sumaPromedios = 0;
       let docentesCount = 0;
       let directivosCount = 0;
+      let conNota = 0;
       for (const f of grupo) {
-        dist[f.nivelLogro] = (dist[f.nivelLogro] ?? 0) + 1;
-        sumaPromedios += Number(f.promedio);
         if (
           f.cronograma?.tipoMonitoreo === 'DOCENTE' ||
           f.cronograma?.tipoMonitoreo === 'DOCENTE_EIB'
         )
           docentesCount++;
         else if (f.cronograma?.tipoMonitoreo === 'DIRECTIVO') directivosCount++;
+        // El EIB informativo no tiene nivel ni promedio: no entra en la
+        // distribución, el promedio ni la satisfacción.
+        if (f.nivelLogro === null || f.promedio === null) continue;
+        dist[f.nivelLogro] = (dist[f.nivelLogro] ?? 0) + 1;
+        sumaPromedios += Number(f.promedio);
+        conNota++;
       }
       const totalFichas = grupo.length;
-      const promedioInstitucional =
-        totalFichas > 0 ? Number((sumaPromedios / totalFichas).toFixed(2)) : 0;
+      const promedioInstitucional = conNota > 0 ? Number((sumaPromedios / conNota).toFixed(2)) : 0;
       const totalNivelesAltos = dist.LOGRO_ESPERADO + dist.LOGRO_DESTACADO;
       const porcentajeSatisfaccion =
-        totalFichas > 0 ? Math.round((totalNivelesAltos / totalFichas) * 100) : 0;
+        conNota > 0 ? Math.round((totalNivelesAltos / conNota) * 100) : 0;
 
       resumen.push({
         institucionId: institucion.id,
@@ -275,11 +283,35 @@ export class PrismaReporteRepository implements ReporteRepository {
     if (filters.institucionId) {
       porCronograma.institucionId = filters.institucionId;
     }
+    if (filters.modalidad) {
+      porCronograma.modalidad = filters.modalidad;
+    }
+    if (filters.nivelEducativo) {
+      porCronograma.nivelEducativo = filters.nivelEducativo;
+    }
+    if (filters.docenteId) {
+      porCronograma.evaluadoId = filters.docenteId;
+    }
+    if (filters.numeroVisita) {
+      porCronograma.numeroVisita = filters.numeroVisita;
+    }
     if (Object.keys(porCronograma).length > 0) {
       whereFicha.cronograma = porCronograma;
     }
     if (filters.tipoMonitoreo) {
       whereFicha.plantilla = { tipoMonitoreo: filters.tipoMonitoreo };
+    }
+
+    // Acota el análisis a una sola plantilla: sus criterios sólo son comparables
+    // dentro de la misma rúbrica (la oficial UGEL y los clones de IE difieren).
+    // Un plantillaId que no es UUID (p. ej. un id de respaldo del front para una
+    // plantilla aún inexistente) no debe reventar Prisma: se resuelve como «sin
+    // resultados», que es lo correcto —esa plantilla no tiene fichas—.
+    if (filters.plantillaId) {
+      const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      whereFicha.plantillaId = UUID.test(filters.plantillaId)
+        ? filters.plantillaId
+        : '00000000-0000-0000-0000-000000000000';
     }
 
     if (filters.fechaDesde || filters.fechaHasta) {

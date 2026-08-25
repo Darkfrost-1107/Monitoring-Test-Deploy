@@ -51,12 +51,12 @@ export const StatCard = ({
     success: 'border-b-[6px] border-b-green-500',
     destructive: 'border-b-[6px] border-b-destructive',
   };
-  const finalCardClass = `p-5 shadow-xs flex flex-col justify-between h-full border ${cardClasses[variant]} ${bottomAccent ? accentClasses[bottomAccent] : ''}`;
+  const finalCardClass = `p-4 shadow-xs flex flex-col justify-between h-full border ${cardClasses[variant]} ${bottomAccent ? accentClasses[bottomAccent] : ''}`;
 
   return (
     <Card className={finalCardClass}>
       <div>
-        <div className="flex justify-between items-center mb-3">
+        <div className="flex justify-between items-center mb-2">
           <span className={`text-xs font-bold uppercase tracking-wider ${titleClasses}`}>
             {title}
           </span>
@@ -65,7 +65,7 @@ export const StatCard = ({
         <div className={`${valueClassName} font-extrabold tracking-tight ${valueClasses}`}>{value}</div>
       </div>
 
-      <div className="mt-3">
+      <div className="mt-2">
         {progressValue !== undefined ? (
           <div>
             <div className={`h-2 w-full rounded-full overflow-hidden ${isSolid ? 'bg-black/20' : 'bg-muted'}`}>

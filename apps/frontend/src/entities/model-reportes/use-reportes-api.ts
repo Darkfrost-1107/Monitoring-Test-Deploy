@@ -25,15 +25,24 @@ export const useResumenIE = (anio: number) =>
     staleTime: 60_000,
   });
 
-export const useAnalisisDesempenos = (filters?: {
-  anioAcademico?: number;
-  institucionId?: string;
-  tipoMonitoreo?: TipoPlantilla;
-  fechaDesde?: string;
-  fechaHasta?: string;
-}) =>
+export const useAnalisisDesempenos = (
+  filters?: {
+    anioAcademico?: number;
+    institucionId?: string;
+    modalidad?: string;
+    nivelEducativo?: string;
+    docenteId?: string;
+    numeroVisita?: number;
+    tipoMonitoreo?: TipoPlantilla;
+    plantillaId?: string;
+    fechaDesde?: string;
+    fechaHasta?: string;
+  },
+  options?: { enabled?: boolean },
+) =>
   useQuery({
     queryKey: ['reportes', 'analisis-desempenos', filters],
     queryFn: () => reportesApi.analisisDesempenos(filters),
     staleTime: 60_000,
+    enabled: options?.enabled ?? true,
   });

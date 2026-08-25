@@ -31,6 +31,8 @@ const ESPECIALIDADES_POR_NIVEL: Record<string, readonly string[]> = {
     'Inglés',
     'Educación Religiosa',
     'Educación para el Trabajo',
+    'Castellano como Segunda Lengua Materna',
+    'Tutoría',
   ],
 };
 

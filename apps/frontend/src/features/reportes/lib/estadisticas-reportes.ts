@@ -99,12 +99,15 @@ function medir(reportes: readonly ReporteMedible[]): {
   satisfactionPercent: number | null;
   promedioGeneral: number | null;
 } {
-  const conNivel = reportes.filter((r) => !!r.nivelLogro);
+  // El monitoreo EIB es informativo (No/Parcial/Sí): registra la práctica pero no
+  // produce nota ni nivel de logro, así que no entra en promedio ni satisfacción.
+  const medibles = reportes.filter((r) => r.instrumento !== 'DOCENTE_EIB');
+  const conNivel = medibles.filter((r) => !!r.nivelLogro);
   const satisfactorios = conNivel.filter((r) =>
     (NIVELES_SATISFACTORIOS as readonly string[]).includes(r.nivelLogro as string),
   );
 
-  const conPromedio = reportes.filter((r) => typeof r.promedio === 'number');
+  const conPromedio = medibles.filter((r) => typeof r.promedio === 'number');
   const sumaPromedios = conPromedio.reduce((acc, r) => acc + (r.promedio ?? 0), 0);
 
   return {

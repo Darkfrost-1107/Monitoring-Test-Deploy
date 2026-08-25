@@ -70,6 +70,11 @@ export const EditDocenteCard = ({
     );
   }
 
+  // `especialidad` viaja como lista unida con la principal primero; el formulario
+  // separa la principal (para su selector) de las extras (para sus chips).
+  const especialidadesExtras = docente.especialidadesExtras ?? [];
+  const especialidadPrincipal = (docente.especialidad ?? '').split(',')[0]?.trim() || '';
+
   const initialData: DocenteFormData = {
     nombres: docente.nombres,
     apellidos: docente.apellidos,
@@ -78,7 +83,8 @@ export const EditDocenteCard = ({
     celular: docente.celular,
     nivelEducativo: docente.nivelEducativo,
     condicion: docente.condicion as DocenteFormData['condicion'],
-    especialidad: docente.especialidad,
+    especialidad: especialidadPrincipal,
+    especialidadesExtras,
     cargaHoraria: docente.cargaHoraria,
     secciones: docente.secciones || [],
     // El formulario exige escala: es un campo obligatorio y visible, así que

@@ -9,7 +9,7 @@ import {
   checkDirectorConflict,
   checkPersonaYaEsDirector,
   upsertCurso,
-  upsertEspecialidad,
+  sincronizarEspecialidadesDocente,
   syncEspecialista,
   resolveRoleCode,
 } from './docente-shared.helper.js';
@@ -126,8 +126,15 @@ export async function createDocenteWithTransaction(
       await upsertCurso(tx, prisma, dto.cursoAsignado, dto.nivelEducativo, docente.id);
     }
 
-    if (dto.especialidad) {
-      await upsertEspecialidad(tx, prisma, dto.especialidad, dto.nivelEducativo, docente.id);
+    if (dto.especialidad || dto.especialidadesExtras?.length) {
+      await sincronizarEspecialidadesDocente(
+        tx,
+        prisma,
+        dto.especialidad,
+        dto.especialidadesExtras,
+        dto.nivelEducativo,
+        docente.id,
+      );
     }
 
     await tx.docenteCargo.create({

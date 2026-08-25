@@ -21,6 +21,7 @@ export function normalizarFiltrosDeReporte(
   return {
     ...filtros,
     anioAcademico: aNumero(filtros.anioAcademico),
+    numeroVisita: aNumero(filtros.numeroVisita),
     page: aNumero(filtros.page),
     limit: aNumero(filtros.limit),
   };

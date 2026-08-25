@@ -26,9 +26,10 @@ export interface IReporteFicha {
    */
   instrumento: TipoPlantilla;
   anioAcademico: number;
-  nivelLogro: NivelLogro;
-  promedio: number;
-  puntajeTotal: number;
+  /** Nulos cuando el instrumento es informativo (EIB): no produce nivel ni puntaje. */
+  nivelLogro: NivelLogro | null;
+  promedio: number | null;
+  puntajeTotal: number | null;
   estado: EstadoFicha;
   observaciones?: string | null;
   compromisos?: string | null;
@@ -40,6 +41,8 @@ export interface IReporteFicha {
   horaFin?: string;
   modalidad: string;
   nivel: string;
+  /** Número de visita del cronograma (1er monitoreo, 2do, …). */
+  numeroVisita: number;
   respuestas?: {
     nombre: string;
     orden?: number;

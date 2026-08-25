@@ -54,12 +54,17 @@ export interface CronogramaBasic {
   tipoMonitoreo: string;
   fechaProgramada: Date;
   evaluadoId: string;
+  /** Especialista asignado como monitor de la visita. Decide quién puede
+   * registrar o modificar su ficha (se compara con `session.especialistaId`). */
+  monitorId: string;
 }
 
 /** Los cortes de una plantilla y cómo se leen. */
 export interface EscalaDePlantilla {
   modo: ModoDeBaremo;
   tramos: TramoDeEscala[];
+  /** Tipo del instrumento; el EIB (DOCENTE_EIB) es informativo y no se baremiza. */
+  tipoMonitoreo: string;
 }
 
 export interface PlantillaBasic {
@@ -84,9 +89,9 @@ export abstract class FichaRepository {
   abstract saveRespuestaEjeItem(data: SaveRespuestaEjeItemData): Promise<IFichaRespuestaEjeItem>;
   abstract finalizar(
     fichaId: string,
-    puntajeTotal: number,
-    promedio: number,
-    nivelLogro: NivelLogro,
+    puntajeTotal: number | null,
+    promedio: number | null,
+    nivelLogro: NivelLogro | null,
     finalizadaPorId: string,
     observaciones?: string,
     sugerencias?: string,
@@ -125,5 +130,8 @@ export abstract class FichaRepository {
     oldAspectos: Array<{ id: string; marcado: boolean }>,
   ): Promise<IFichaMonitoreo>;
   abstract existsWithScope(id: string, scopeWhere: Record<string, unknown>): Promise<boolean>;
-  abstract getHistorial(evaluadoId: string): Promise<IHistorialPedagogicoResponse>;
+  abstract getHistorial(
+    evaluadoId: string,
+    tipoMonitoreo?: string,
+  ): Promise<IHistorialPedagogicoResponse>;
 }

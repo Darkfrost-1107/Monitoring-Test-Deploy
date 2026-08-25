@@ -71,6 +71,7 @@ export const mapApiDocenteToFrontend = (apiDoc: IDocenteResponse): Docente => {
     // el backend valida al programar en Secundaria), que viaja en `especialidad`.
     // `cursoAsignado` queda de respaldo para registros que aún no la tienen.
     especialidad: apiDoc.especialidad || apiDoc.cursoAsignado || 'General',
+    especialidadesExtras: apiDoc.especialidadesExtras ?? [],
     cargaHoraria: CARGA_HORARIA.DOCENTE,
     secciones:
       apiDoc.docenteSecciones?.map((ds) => ({
@@ -127,6 +128,10 @@ export const useDocenteService = () => {
         // borraba (el helper de update la reescribe desde este campo) y en
         // Secundaria el monitoreo por área dejaba de reconocerlo.
         especialidad: formData.especialidad?.trim() || undefined,
+        // Áreas adicionales (Secundaria): el docente que cubre más de una área.
+        especialidadesExtras: (formData.especialidadesExtras ?? [])
+          .map((e) => e.trim())
+          .filter(Boolean),
         cargoId: dbCargo.id,
         condicionLaboral: formData.condicion,
         escalaMagisterial: escalaANumero(formData.escala) ?? undefined,
@@ -183,6 +188,10 @@ export const useDocenteService = () => {
         // borraba (el helper de update la reescribe desde este campo) y en
         // Secundaria el monitoreo por área dejaba de reconocerlo.
         especialidad: formData.especialidad?.trim() || undefined,
+        // Áreas adicionales (Secundaria): el docente que cubre más de una área.
+        especialidadesExtras: (formData.especialidadesExtras ?? [])
+          .map((e) => e.trim())
+          .filter(Boolean),
         cargoId: dbCargo.id,
         condicionLaboral: formData.condicion,
         escalaMagisterial: escalaANumero(formData.escala) ?? undefined,

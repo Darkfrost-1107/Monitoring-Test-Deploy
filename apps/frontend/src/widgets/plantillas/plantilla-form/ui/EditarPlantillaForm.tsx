@@ -57,7 +57,13 @@ export const EditarPlantillaForm = ({ initialData, onCancel, onSubmit, isLoading
     }
 
     setErrors({});
-    onSubmit({ ...form, lema: lemaVigente.trim() });
+    // Los ejes/ítems son opcionales; se descartan los que quedaron sin describir
+    // (p. ej. uno agregado por error) y se renumeran, para no enviar al backend un
+    // eje vacío que rechaza con 400.
+    const ejeItems = form.ejeItems
+      .filter((it) => it.descripcion.trim() !== '')
+      .map((it, i) => ({ ...it, numero: i + 1 }));
+    onSubmit({ ...form, ejeItems, lema: lemaVigente.trim() });
   };
 
   return (
@@ -96,6 +102,7 @@ export const EditarPlantillaForm = ({ initialData, onCancel, onSubmit, isLoading
         <PlantillaDesempenos
           desempenos={form.desempenos}
           niveles={form.niveles}
+          esDirectivo={form.tipoMonitoreo === 'Monitoreo Directivo'}
           onChange={(desempenos) => patch({ desempenos })}
         />
       )}

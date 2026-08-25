@@ -230,9 +230,9 @@ export class PrismaFichaRepository implements FichaRepository {
 
   async finalizar(
     fichaId: string,
-    puntajeTotal: number,
-    promedio: number,
-    nivelLogro: NivelLogro,
+    puntajeTotal: number | null,
+    promedio: number | null,
+    nivelLogro: NivelLogro | null,
     finalizadaPorId: string,
     observaciones?: string,
     sugerencias?: string,
@@ -288,6 +288,7 @@ export class PrismaFichaRepository implements FichaRepository {
         tipoMonitoreo: true,
         fechaProgramada: true,
         evaluadoId: true,
+        monitorId: true,
       },
     });
     return c;
@@ -317,7 +318,7 @@ export class PrismaFichaRepository implements FichaRepository {
     const [plantilla, niveles] = await Promise.all([
       this.prisma.plantillaMonitoreo.findUnique({
         where: { id: plantillaId },
-        select: { baremo: true },
+        select: { baremo: true, tipoMonitoreo: true },
       }),
       this.prisma.nivelCalificacion.findMany({
         where: { plantillaId },
@@ -332,6 +333,7 @@ export class PrismaFichaRepository implements FichaRepository {
 
     return {
       modo: plantilla?.baremo === 'Porcentual' ? 'Porcentual' : 'Vigente',
+      tipoMonitoreo: plantilla?.tipoMonitoreo ?? 'DOCENTE',
       tramos: niveles.map((n) => ({
         nivelRomano: n.nivelRomano as 'I' | 'II' | 'III' | 'IV',
         rangoMin: n.rangoMin,
@@ -436,11 +438,21 @@ export class PrismaFichaRepository implements FichaRepository {
     return result !== null;
   }
 
-  async getHistorial(evaluadoId: string): Promise<IHistorialPedagogicoResponse> {
+  async getHistorial(
+    evaluadoId: string,
+    tipoMonitoreo?: string,
+  ): Promise<IHistorialPedagogicoResponse> {
     const fichas = await this.prisma.fichaMonitoreo.findMany({
       where: {
         cronograma: { evaluadoId },
         estado: 'FINALIZADO',
+        // El historial es una progresión numérica: el EIB informativo (promedio
+        // nulo) no aporta un punto a la serie.
+        promedio: { not: null },
+        // El historial es la evolución dentro de UNA rúbrica: un docente evaluado
+        // con la ficha regular y la EIB tiene dos series distintas, no una sola
+        // mezclada. Sin este filtro se pintaban juntas y la numeración salía mal.
+        ...(tipoMonitoreo ? { plantilla: { tipoMonitoreo } } : {}),
       },
       select: {
         id: true,
@@ -448,18 +460,21 @@ export class PrismaFichaRepository implements FichaRepository {
         nivelLogro: true,
         observaciones: true,
         cronograma: {
-          select: { fechaProgramada: true },
+          select: { fechaProgramada: true, numeroVisita: true },
         },
       },
+      // Por número de visita: es la ronda real (1er monitoreo, 2do…), no la fecha
+      // de programación, que puede no reflejar el orden de las rondas.
       orderBy: {
-        cronograma: { fechaProgramada: 'asc' },
+        cronograma: { numeroVisita: 'asc' },
       },
     });
 
     return fichas.map((f) => ({
       id: f.id,
+      // El filtro `promedio: not null` garantiza que estos no son nulos.
       promedio: Number(f.promedio),
-      nivelLogro: f.nivelLogro,
+      nivelLogro: f.nivelLogro ?? '',
       observaciones: f.observaciones,
       // Columna @db.Date: viaja como fecha de calendario, sin hora ni zona.
       fecha: aFechaDeCalendario(f.cronograma.fechaProgramada),

@@ -18,6 +18,7 @@ export interface DocenteEntity {
   nivelEducativo: string;
   modalidad?: string | null;
   especialidad?: string | null;
+  especialidadesExtras?: string[];
   cursoAsignado: string | null;
   condicionLaboral?: string | null;
   escalaMagisterial?: number | null;

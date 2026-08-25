@@ -1,9 +1,8 @@
 import { useNavigate } from 'react-router-dom';
 import { Card } from '@shared/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@shared/ui/table';
-import { Badge } from '@shared/ui/badge';
 import { Avatar, AvatarFallback } from '@shared/ui/avatar';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, CalendarDays } from 'lucide-react';
 
 export interface MonitoringRow {
   id: string | number;
@@ -17,8 +16,11 @@ export interface MonitoringRow {
   specialistInitials: string;
   date: string;
   status: string;
-  score: number;
+  /** Nulo cuando el instrumento es informativo (EIB): no hay nota que mostrar. */
+  score: number | null;
   statusVariant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'success' | 'warning';
+  /** El monitoreo EIB es informativo: se muestra sin insignia de nota. */
+  esInformativo?: boolean;
 }
 
 const mockData: MonitoringRow[] = [
@@ -72,6 +74,39 @@ interface RecentMonitoringsTableProps {
   detailPath?: string;
 }
 
+/** Color del punto y de la pastilla según la variante del estado de logro. */
+const ESTILO_ESTADO: Record<string, { punto: string; pastilla: string }> = {
+  success: { punto: 'bg-emerald-500', pastilla: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  warning: { punto: 'bg-amber-500', pastilla: 'bg-amber-50 text-amber-700 border-amber-200' },
+  destructive: { punto: 'bg-red-500', pastilla: 'bg-red-50 text-red-700 border-red-200' },
+  secondary: { punto: 'bg-slate-400', pastilla: 'bg-slate-100 text-slate-600 border-slate-200' },
+  default: { punto: 'bg-slate-400', pastilla: 'bg-slate-50 text-slate-600 border-slate-200' },
+};
+
+/** Insignia de estado de logro: punto de color + nota + nivel (o «Informativo»). */
+const EstadoLogroPill = ({ row }: { row: MonitoringRow }) => {
+  const clasesBase =
+    'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide';
+  if (row.esInformativo) {
+    const e = ESTILO_ESTADO.secondary;
+    return (
+      <span className={`${clasesBase} ${e.pastilla}`}>
+        <span className={`h-1.5 w-1.5 rounded-full ${e.punto}`} />
+        Informativo
+      </span>
+    );
+  }
+  const e = ESTILO_ESTADO[row.statusVariant ?? 'default'] ?? ESTILO_ESTADO.default;
+  return (
+    <span className={`${clasesBase} ${e.pastilla}`}>
+      <span className={`h-1.5 w-1.5 rounded-full ${e.punto}`} />
+      {row.score != null && <span className="tabular-nums font-black">{row.score}</span>}
+      <span className="opacity-30">·</span>
+      {row.status}
+    </span>
+  );
+};
+
 export const RecentMonitoringsTable = ({
   rows,
   firstColumnLabel = 'Institución Educativa',
@@ -97,51 +132,57 @@ export const RecentMonitoringsTable = ({
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
-            <TableRow className="hover:bg-transparent">
-              <TableHead className="text-xs font-bold uppercase tracking-wider">{firstColumnLabel}</TableHead>
-              <TableHead className="text-xs font-bold uppercase tracking-wider">Nivel / Distrito</TableHead>
-              <TableHead className="text-xs font-bold uppercase tracking-wider">Especialista Responsable</TableHead>
-              <TableHead className="text-xs font-bold uppercase tracking-wider">Fecha Visita</TableHead>
-              <TableHead className="text-xs font-bold uppercase tracking-wider text-right">Estado Logro</TableHead>
+            <TableRow className="hover:bg-transparent border-b border-border bg-slate-50/70">
+              <TableHead className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 py-3">{firstColumnLabel}</TableHead>
+              <TableHead className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 py-3">Nivel / Distrito</TableHead>
+              <TableHead className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 py-3">Especialista Responsable</TableHead>
+              <TableHead className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 py-3">Fecha Visita</TableHead>
+              <TableHead className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 py-3 text-right">Estado Logro</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {data.length === 0 && (
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-sm text-text-muted py-8">
+                <TableCell colSpan={5} className="text-center text-sm text-text-muted py-10">
                   {emptyLabel}
                 </TableCell>
               </TableRow>
             )}
             {data.map((row) => (
-              <TableRow key={row.id}>
-                <TableCell>
-                  <div className="font-bold">{row.school}</div>
+              <TableRow
+                key={row.id}
+                className="border-b border-border/50 last:border-0 hover:bg-primary/[0.03] transition-colors"
+              >
+                <TableCell className="py-3.5">
+                  <div className="font-bold text-slate-800 leading-tight">{row.school}</div>
                   {row.codModular && (
-                    <div className="text-xs text-text-muted">Cód. Modular: {row.codModular}</div>
+                    <div className="text-[11px] text-slate-400 mt-0.5">Cód. Modular: {row.codModular}</div>
                   )}
                 </TableCell>
-                <TableCell>
-                  <div className="font-medium text-text">{row.level}</div>
+                <TableCell className="py-3.5">
+                  <span className="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">
+                    {row.level}
+                  </span>
                   {row.district && (
-                    <div className="text-xs text-text-muted uppercase">{row.district}</div>
+                    <div className="text-[10px] text-slate-400 uppercase tracking-wide mt-1">{row.district}</div>
                   )}
                 </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <Avatar className="w-7 h-7 bg-primary/10 text-primary">
-                      <AvatarFallback className="text-[10px] font-bold">{row.specialistInitials}</AvatarFallback>
+                <TableCell className="py-3.5">
+                  <div className="flex items-center gap-2.5">
+                    <Avatar className="w-8 h-8 bg-gradient-to-br from-primary/15 to-primary/5 text-primary ring-2 ring-primary/10 shrink-0">
+                      <AvatarFallback className="text-[10px] font-black bg-transparent">{row.specialistInitials}</AvatarFallback>
                     </Avatar>
-                    <span className="text-sm text-text-muted">{row.specialist}</span>
+                    <span className="text-sm font-medium text-slate-600">{row.specialist}</span>
                   </div>
                 </TableCell>
-                <TableCell className="text-sm text-text-muted">
-                  {row.date}
+                <TableCell className="py-3.5">
+                  <div className="inline-flex items-center gap-1.5 text-sm text-slate-500">
+                    <CalendarDays className="h-3.5 w-3.5 text-slate-300 shrink-0" />
+                    <span className="tabular-nums">{row.date}</span>
+                  </div>
                 </TableCell>
-                <TableCell className="text-right">
-                  <Badge variant={row.statusVariant ?? 'default'} className="uppercase font-bold tracking-wider text-[10px] px-2 py-1">
-                    {row.score} - {row.status}
-                  </Badge>
+                <TableCell className="py-3.5 text-right">
+                  <EstadoLogroPill row={row} />
                 </TableCell>
               </TableRow>
             ))}

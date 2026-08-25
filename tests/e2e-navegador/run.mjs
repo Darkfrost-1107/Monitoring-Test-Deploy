@@ -17,6 +17,7 @@ const JORNADAS = [
   ['J2', './journeys/j2-crear-cronograma.mjs'],
   ['J3', './journeys/j3-llenar-ficha.mjs'],
   ['J4', './journeys/j4-firmar.mjs'],
+  ['J7', './journeys/j7-offline.mjs'],
 ];
 
 const resultados = [];

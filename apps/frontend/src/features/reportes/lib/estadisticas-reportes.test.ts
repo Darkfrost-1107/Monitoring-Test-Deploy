@@ -150,9 +150,10 @@ describe('calcularEstadisticas — escalas no comparables', () => {
       reporte({ instrumento: 'DOCENTE_EIB', promedio: 2.0, nivelLogro: 'LOGRO_ESPERADO' }),
     ]);
 
+    // El EIB es informativo: cuenta sus fichas pero no reporta nota ni nivel.
     expect(stats.porInstrumento).toEqual([
       { tipo: 'DOCENTE', fichas: 2, promedioGeneral: 3.5, satisfactionPercent: 50 },
-      { tipo: 'DOCENTE_EIB', fichas: 1, promedioGeneral: 2, satisfactionPercent: 100 },
+      { tipo: 'DOCENTE_EIB', fichas: 1, promedioGeneral: null, satisfactionPercent: null },
     ]);
   });
 

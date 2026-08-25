@@ -9,6 +9,9 @@ export interface SessionUser {
   id: string;
   role: RoleCode;
   institucionId?: string | null;
+  /** Id del especialista vinculado (si lo hay). Es contra quién se compara la
+   * asignación de una visita: `monitorId` de un cronograma apunta a este id. */
+  especialistaId?: string | null;
   especialistaNivel?: string | null;
   especialistaEspecialidades?: string[] | null;
 }

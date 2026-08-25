@@ -9,6 +9,7 @@ import {
   AlertTriangle,
   XCircle,
   Layers,
+  ClipboardList,
   MessageSquareQuote,
 } from 'lucide-react';
 import { Button } from '@shared/ui/button';
@@ -258,6 +259,29 @@ export const PlantillaPreviewModal = ({ plantilla, onClose }: PlantillaPreviewMo
                     </div>
                   );
                 })}
+              </div>
+            )}
+
+            {/* Planificación y Diseño de Evaluación (ejes/ítems): sólo el
+                instrumento docente regular la lleva; el preview también debe
+                reflejarla, no sólo los desempeños. */}
+            {!isEib && plantilla.ejesItems && plantilla.ejesItems.length > 0 && (
+              <div className="pt-4 mt-2 border-t border-slate-200 space-y-2">
+                <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                  <ClipboardList className="w-3.5 h-3.5 text-primary" />
+                  Planificación y Diseño de Evaluación
+                </span>
+                {plantilla.ejesItems.map((item) => (
+                  <div
+                    key={item.id}
+                    className="p-2.5 border border-border rounded-xl bg-surface flex items-start gap-2.5 shadow-2xs text-slate-600"
+                  >
+                    <span className="h-5 w-5 rounded-full shrink-0 flex items-center justify-center text-[10px] font-black bg-slate-100 text-slate-500 border border-slate-200">
+                      {item.numero}
+                    </span>
+                    <div className="text-[11px] leading-snug">{item.descripcion}</div>
+                  </div>
+                ))}
               </div>
             )}
           </div>

@@ -48,9 +48,10 @@ export interface IFichaMonitoreo {
   plantillaVersion: number;
   fichaContextoId: string;
   anioAcademico: number;
-  puntajeTotal: number;
-  promedio: number;
-  nivelLogro: NivelLogro;
+  /** Nulos cuando el instrumento es informativo (EIB): no produce puntaje ni nivel. */
+  puntajeTotal: number | null;
+  promedio: number | null;
+  nivelLogro: NivelLogro | null;
   estado: EstadoFicha;
   contexto: IFichaContexto;
   respuestasDesempeno: IFichaRespuestaDesempeno[];

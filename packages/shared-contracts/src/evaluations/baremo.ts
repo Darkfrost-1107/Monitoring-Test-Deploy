@@ -136,6 +136,14 @@ const NIVEL_LOGRO_POR_ROMANO: Record<'I' | 'II' | 'III' | 'IV', NivelLogro> = {
   IV: 'LOGRO_DESTACADO',
 };
 
+/** Numeral romano de cada nivel de logro, para buscar su denominación en la escala. */
+const ROMANO_POR_NIVEL_LOGRO: Record<NivelLogro, 'I' | 'II' | 'III' | 'IV'> = {
+  INICIO: 'I',
+  EN_PROCESO: 'II',
+  LOGRO_ESPERADO: 'III',
+  LOGRO_DESTACADO: 'IV',
+};
+
 export interface ResultadoBaremo {
   puntajeTotal: number;
   /** Puntaje máximo alcanzable con la cantidad de desempeños evaluados. */
@@ -182,28 +190,41 @@ export function calcularResultadoBaremo(
   const porcentaje = puntajeMaximo > 0 ? Math.round((puntajeTotal / puntajeMaximo) * 100) : 0;
 
   /**
-   * Qué número se compara contra los cortes.
+   * El nivel de logro es INDEPENDIENTE de cuántos desempeños tenga la ficha.
    *
-   * La rúbrica directiva se resuelve por porcentaje de avance —cada nivel vale
-   * 25·50·75·100— y no por puntaje absoluto. Sus rangos absolutos (00-08,
-   * 09-16, 17-20, 21-24) están calculados sobre 24 puntos, que son seis
-   * rúbricas de cuatro niveles; la ficha vigente tiene cinco, de modo que sobre
-   * el puntaje crudo el nivel más alto quedaría fuera de alcance. El porcentaje
-   * no depende de cuántas rúbricas tenga la ficha.
+   * Se decide sobre el promedio (escala 1–4), que es el puntaje ya normalizado
+   * por la cantidad de desempeños —equivale a clasificar por el porcentaje del
+   * máximo, porque `promedio = puntajeTotal / puntajeMáximo × 4`—. Antes el modo
+   * `Vigente` cortaba sobre el puntaje absoluto contra los rangos de la escala,
+   * calibrados para un techo fijo (la rúbrica docente, 5·8·13·18 sobre 20); una
+   * plantilla con menos desempeños nunca alcanzaba los tramos altos y una ficha
+   * perfecta caía en «en proceso».
+   *
+   * El modo `Porcentual` (rúbrica directiva) conserva sus propios umbrales sobre
+   * el porcentaje de avance —25·50·75·100—, que ya son independientes del conteo.
+   *
+   * En ambos casos la escala de la plantilla sólo aporta el NOMBRE del nivel; el
+   * puntaje total (0–20 en docente) y el promedio no cambian.
    */
-  const valorClasificado = modo === 'Porcentual' ? porcentaje : puntajeTotal;
-  const tramo = nivelPorEscala(valorClasificado, escala);
+  let nivelLogro: NivelLogro;
+  let denominacion: string;
 
-  // Sin escala declarada se conservan los umbrales sobre el promedio: una
-  // plantilla vieja sin niveles cargados debe seguir clasificando sus fichas.
-  const nivelLogro = tramo ? NIVEL_LOGRO_POR_ROMANO[tramo.nivelRomano] : calcularNivelLogro(promedio);
+  if (modo === 'Porcentual' && escala.length > 0) {
+    const tramo = nivelPorEscala(porcentaje, escala);
+    nivelLogro = tramo ? NIVEL_LOGRO_POR_ROMANO[tramo.nivelRomano] : calcularNivelLogro(promedio);
+    denominacion = tramo?.denominacion ?? NIVEL_LOGRO_LABELS[nivelLogro];
+  } else {
+    nivelLogro = calcularNivelLogro(promedio);
+    const tramo = escala.find((t) => t.nivelRomano === ROMANO_POR_NIVEL_LOGRO[nivelLogro]);
+    denominacion = tramo?.denominacion ?? NIVEL_LOGRO_LABELS[nivelLogro];
+  }
 
   return {
     puntajeTotal,
     puntajeMaximo,
     promedio,
     nivelLogro,
-    denominacion: tramo?.denominacion ?? NIVEL_LOGRO_LABELS[nivelLogro],
+    denominacion,
     porcentaje,
   };
 }

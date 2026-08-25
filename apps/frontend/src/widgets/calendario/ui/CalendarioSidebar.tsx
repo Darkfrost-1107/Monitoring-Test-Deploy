@@ -220,8 +220,15 @@ export const CalendarioSidebar = ({
     plantillaElegida: Plantilla,
     fichaExistente?: IFichaMonitoreo,
   ) => {
-    setSelectedTemplateOverride(plantillaElegida);
     setShowSeleccionarInstrumentoModal(false);
+
+    // Quien no es el monitor asignado sólo puede consultar fichas finalizadas.
+    // Una ficha sin finalizar no se abre a evaluar (el modal ya la deshabilita;
+    // esto es la barrera de fondo por si se la evade).
+    const esFinalizada = fichaExistente?.estado === 'FINALIZADO';
+    if (!isEvaluadorAutorizado && !esFinalizada) return;
+
+    setSelectedTemplateOverride(plantillaElegida);
 
     if (fichaExistente) {
       await abrirFichaLlena(selectedVisit!.id, plantillaElegida.id);
@@ -316,6 +323,7 @@ export const CalendarioSidebar = ({
           plantillas={plantillasCandidatas}
           fichasExistentes={fichasDeVisita}
           onSeleccionar={handleSeleccionarInstrumento}
+          puedeLlenar={isEvaluadorAutorizado}
         />
       )}
 

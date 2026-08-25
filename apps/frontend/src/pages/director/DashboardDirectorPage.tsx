@@ -1,12 +1,10 @@
 import { Building2, FileCheck2, FileWarning, BarChart4 } from 'lucide-react';
 import { StatCard } from '@shared/ui/Stat-Card';
-import { useDirectorDashboard, nivelLogroUi, iniciales } from '@features/dashboard';
+import { useDirectorDashboard } from '@features/dashboard';
 import { EvaluationStateCard } from '../directorUgel/components/EvaluationStateCard';
-import {
-  RecentMonitoringsTable,
-  type MonitoringRow,
-} from '../directorUgel/components/RecentMonitoringsTable';
-import { formatearFechaCorta } from '@shared/lib/fecha/fecha';
+import { FocosDeAtencion } from './components/FocosDeAtencion';
+import { ActividadReciente } from './components/ActividadReciente';
+import { DocentesDestacados } from './components/DocentesDestacados';
 
 export const DashboardDirectorPage = () => {
   const { data, isLoading, isError, error } = useDirectorDashboard();
@@ -29,28 +27,12 @@ export const DashboardDirectorPage = () => {
 
   const kpis = data?.kpis;
   const semaforo = data?.semaforo;
-
-  const rows: MonitoringRow[] = (data?.monitoreosRecientes ?? []).map((m) => {
-    const ui = nivelLogroUi(m.nivelLogro);
-    return {
-      id: m.fichaId,
-      school: m.docenteNombre,
-      level: m.nivelEducativo,
-      specialist: m.especialistaNombre,
-      specialistInitials: iniciales(m.especialistaNombre),
-      date: formatearFechaCorta(m.fecha),
-      status: ui.label,
-      score: Number(m.promedio.toFixed(1)),
-      statusVariant: ui.variant as MonitoringRow['statusVariant'],
-    };
-  });
-
   const nivelPromedio = kpis?.nivelPromedio ?? 0;
 
   return (
-    <div className="flex flex-col gap-6 h-full">
+    <div className="flex flex-col gap-4 lg:h-full lg:min-h-0">
       {data?.institucion && (
-        <div>
+        <div className="shrink-0">
           <h1 className="text-2xl font-bold">{data.institucion.nombre}</h1>
           <p className="text-sm text-text-muted">
             {data.institucion.nivelEducativo} · {data.institucion.distrito} · Cód. Modular{' '}
@@ -60,7 +42,7 @@ export const DashboardDirectorPage = () => {
       )}
 
       {/* KPI Cards Row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 shrink-0">
         <StatCard
           title="Total Docentes"
           icon={<Building2 className="w-5 h-5" />}
@@ -86,9 +68,10 @@ export const DashboardDirectorPage = () => {
         />
       </div>
 
-      {/* Estado de evaluación (semáforo). El mapa se incorpora en una fase posterior. */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-[450px]">
-        <div className="lg:col-span-1">
+      {/* Bento que llena el alto restante: cada tarjeta scrollea internamente si su
+          lista es larga, de modo que la página nunca scrollea. */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 lg:grid-rows-2 gap-4 lg:flex-1 lg:min-h-0">
+        <div className="lg:col-span-1 min-h-0">
           <EvaluationStateCard
             data={{
               critico: semaforo?.critico ?? 0,
@@ -99,12 +82,16 @@ export const DashboardDirectorPage = () => {
             }}
           />
         </div>
-        <div className="lg:col-span-2">
-          <RecentMonitoringsTable
-            rows={rows}
-            firstColumnLabel="Docente"
-            emptyLabel="Aún no hay monitoreos finalizados en tu institución."
-          />
+        <div className="lg:col-span-2 min-h-0">
+          <FocosDeAtencion focos={data?.focosDeAtencion ?? []} />
+        </div>
+
+        {/* Segunda fila: qué pasó (actividad) y el contrapeso positivo (destacados). */}
+        <div className="lg:col-span-2 min-h-0">
+          <ActividadReciente recientes={data?.monitoreosRecientes ?? []} />
+        </div>
+        <div className="lg:col-span-1 min-h-0">
+          <DocentesDestacados destacados={data?.docentesDestacados ?? []} />
         </div>
       </div>
     </div>

@@ -4,12 +4,14 @@ import { useQueryClient } from '@tanstack/react-query';
 import type { Cronograma } from '@entities/model-cronogramas';
 import { FEATURES } from '@shared/config/features';
 import { safeSetLocalStorage } from '@/shared/lib/utils';
+import { fichaAEstadoFormulario, type DatosFicha } from '../lib/ficha-estado';
 import {
-  aNivelNumerico,
-  extraerEvidenciasGenerales,
-  fichaAEstadoFormulario,
-  type DatosFicha,
-} from '../lib/ficha-estado';
+  finalizarFichaCompleta,
+  guardarBorradorFicha,
+  type PayloadFinalizarFicha,
+} from '../lib/ficha-envio';
+import { encolar } from '@features/offline/outbox';
+import { esErrorDeRed } from '@features/offline/errores';
 
 /** Qué se consiguió al recuperar la ficha cerrada de una visita. */
 export type ResultadoFichaLlena = 'cargada' | 'sin-respaldo' | 'error';
@@ -80,56 +82,24 @@ export function useFichaPersistence({
   );
 
   /**
-   * Escribe las tres colecciones de respuestas, creando la ficha si hace falta.
-   * Devuelve el identificador de la ficha para que quien llame pueda cerrarla.
+   * Guarda la ficha en la cola de envío para subirla al recuperar la conexión, y
+   * deja el estado local como si ya se hubiera enviado. El especialista sigue
+   * trabajando sin perder nada.
    */
-  const escribirRespuestas = useCallback(
-    async (visitId: string, datos: DatosFicha, incluirPreguntaExtra: boolean) => {
-      const { fichasApi } = await import('@/features/monitoreos/api/fichas.api');
-
-      const ficha =
-        (plantillaId
-          ? await fichasApi.findByVisitaYPlantilla(visitId, plantillaId)
-          : await fichasApi.findByVisita(visitId)) ??
-        (await fichasApi.create({
-          cronogramaId: visitId,
-          // La ficha queda vinculada a la plantilla que realmente se usó, para
-          // que sus respuestas coincidan al renderizarla o reportarla.
-          plantillaId,
-          areaCurricular: datos.contexto?.areaCurricular,
-          grado: datos.contexto?.grado,
-          seccion: datos.contexto?.seccion,
-          cantidadEstudiantes: datos.contexto?.cantidadEstudiantes,
-          cantidadEstudiantesNee: datos.contexto?.cantidadEstudiantesNee,
-        }));
-
-      for (const [desempenoId, romano] of Object.entries(datos.selectedLevels)) {
-        await fichasApi.saveRespuestaDesempeno(
-          ficha.id,
-          desempenoId,
-          aNivelNumerico(romano),
-          datos.rubricComments?.[desempenoId],
-          incluirPreguntaExtra ? datos.preguntaExtraAnswers?.[desempenoId] : undefined,
-        );
-      }
-
-      for (const [aspectoId, marcado] of Object.entries(datos.checkedAspects)) {
-        await fichasApi.saveRespuestaAspecto(ficha.id, aspectoId, marcado);
-      }
-
-      for (const [ejeItemId, nivel] of Object.entries(datos.respuestasEjeItem ?? {})) {
-        await fichasApi.saveRespuestaEjeItem(
-          ficha.id,
-          ejeItemId,
-          nivel,
-          datos.evidenciaUrls?.[ejeItemId],
-          datos.observacionesEjeItem?.[ejeItemId],
-        );
-      }
-
-      return { ficha, fichasApi };
+  const encolarEnvio = useCallback(
+    async (payload: PayloadFinalizarFicha, estadoLocal: 'BORRADOR' | 'FINALIZADO') => {
+      await encolar('finalizar-ficha', payload);
+      safeSetLocalStorage(
+        claveEstadoLocal(payload.visitId, plantillaId),
+        JSON.stringify({ ...payload.datos, estado: estadoLocal }),
+      );
+      marcarEstadoVisita(payload.visitId, estadoLocal === 'FINALIZADO' ? 'COMPLETADO' : 'EN_PROCESO');
+      toast.info('Sin conexión: la ficha quedó guardada y se enviará al recuperar internet.', {
+        duration: 8000,
+      });
+      onPersistido();
     },
-    [plantillaId],
+    [marcarEstadoVisita, onPersistido, plantillaId],
   );
 
   /**
@@ -164,9 +134,10 @@ export function useFichaPersistence({
   const guardarBorrador = useCallback(
     async (visitId: string, datos: DatosFicha) => {
       marcarEstadoVisita(visitId, 'EN_PROCESO');
+      const payload: PayloadFinalizarFicha = { visitId, plantillaId, datos };
 
       try {
-        await escribirRespuestas(visitId, datos, false);
+        await guardarBorradorFicha(payload);
         if (!FEATURES.apiOnly) {
           safeSetLocalStorage(
             claveEstadoLocal(visitId, plantillaId),
@@ -177,25 +148,20 @@ export function useFichaPersistence({
         await qc.invalidateQueries({ queryKey: ['cronogramas'] });
         onPersistido();
       } catch (error) {
-        manejarFallo(error, visitId, 'guardar borrador');
+        // Sin señal, no es un fallo: la ficha se encola y se envía al reconectar.
+        if (esErrorDeRed(error)) await encolarEnvio(payload, 'BORRADOR');
+        else manejarFallo(error, visitId, 'guardar borrador');
       }
     },
-    [escribirRespuestas, manejarFallo, marcarEstadoVisita, onPersistido, plantillaId, qc],
+    [encolarEnvio, manejarFallo, marcarEstadoVisita, onPersistido, plantillaId, qc],
   );
 
   const finalizar = useCallback(
     async (visitId: string, datos: DatosFicha) => {
-      try {
-        const { ficha, fichasApi } = await escribirRespuestas(visitId, datos, true);
+      const payload: PayloadFinalizarFicha = { visitId, plantillaId, datos };
 
-        const generales = extraerEvidenciasGenerales(datos.evidenciaUrls);
-        await fichasApi.finalizar(
-          ficha.id,
-          datos.generalComments,
-          datos.sugerencias,
-          datos.compromisos,
-          Object.keys(generales).length > 0 ? JSON.stringify(generales) : undefined,
-        );
+      try {
+        await finalizarFichaCompleta(payload);
         safeSetLocalStorage(
           claveEstadoLocal(visitId, plantillaId),
           JSON.stringify({ ...datos, estado: 'FINALIZADO' }),
@@ -205,10 +171,11 @@ export function useFichaPersistence({
         await qc.invalidateQueries({ queryKey: ['cronogramas'] });
         onPersistido();
       } catch (error) {
-        manejarFallo(error, visitId, 'finalizar la ficha');
+        if (esErrorDeRed(error)) await encolarEnvio(payload, 'FINALIZADO');
+        else manejarFallo(error, visitId, 'finalizar la ficha');
       }
     },
-    [escribirRespuestas, manejarFallo, marcarEstadoVisita, onPersistido, plantillaId, qc],
+    [encolarEnvio, manejarFallo, marcarEstadoVisita, onPersistido, plantillaId, qc],
   );
 
   /**

@@ -1,4 +1,4 @@
-import { Search, Filter, Calendar, Users } from 'lucide-react';
+import { Search, Filter, Calendar, Users, FileText, Building2, SlidersHorizontal } from 'lucide-react';
 import { Button } from '@/shared/ui/button';
 import { Card } from '@/shared/ui/card';
 import { SelectField } from '@/shared/ui/form-controls';
@@ -18,6 +18,19 @@ const FILTROS_TIPO = [
   { id: 'DOCENTE_EIB', label: 'Docente EIB' },
   { id: 'DIRECTIVO', label: 'Directivo' },
 ] as const;
+
+/** Una rúbrica elegible: una plantilla concreta con su rótulo y cuántas fichas tiene. */
+export interface OpcionPlantilla {
+  id: string;
+  label: string;
+  conteo: number;
+}
+
+/** Las rúbricas partidas por origen: la oficial UGEL y las que crean las IE. */
+export interface GruposDePlantilla {
+  ugel: OpcionPlantilla[];
+  institucional: OpcionPlantilla[];
+}
 
 interface BuscadorProps {
   etiqueta: string;
@@ -44,9 +57,70 @@ const Buscador = ({ etiqueta, marcador, valor, onCambiar }: BuscadorProps) => (
   </div>
 );
 
+/** Una opción de un grupo segmentado; el conteo es opcional. */
+interface OpcionSegmento {
+  id: string;
+  label: string;
+  conteo?: number;
+}
+
+/**
+ * Grupo de selección única con estilo «segmented control»: los botones viven
+ * unidos dentro de una cápsula gris y el activo se resalta. Se lee como una sola
+ * decisión (a diferencia de píldoras sueltas), y su rótulo va arriba.
+ */
+const GrupoSegmentado = ({
+  etiqueta,
+  icono,
+  opciones,
+  seleccionada,
+  onSeleccionar,
+}: {
+  etiqueta: string;
+  icono: import('react').ReactNode;
+  opciones: OpcionSegmento[];
+  seleccionada?: string;
+  onSeleccionar?: (id: string) => void;
+}) => (
+  <div className="flex flex-col gap-1.5">
+    <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider flex items-center gap-1 px-0.5">
+      {icono} {etiqueta}
+    </span>
+    <div className="inline-flex flex-wrap items-center gap-0.5 rounded-xl bg-slate-100 p-1 border border-slate-200 w-fit">
+      {opciones.map((o) => {
+        const activo = seleccionada === o.id;
+        return (
+          <button
+            key={o.id}
+            type="button"
+            onClick={() => onSeleccionar?.(o.id)}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              activo
+                ? 'bg-primary text-primary-foreground shadow-sm'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-white/70'
+            }`}
+          >
+            <span>{o.label}</span>
+            {o.conteo !== undefined && (
+              <span
+                className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                  activo ? 'bg-white/25 text-white' : 'bg-slate-200 text-slate-600'
+                }`}
+              >
+                {o.conteo}
+              </span>
+            )}
+          </button>
+        );
+      })}
+    </div>
+  </div>
+);
+
 interface FiltrosReportesProps {
-  searchQuery: string;
-  setSearchQuery: (q: string) => void;
+  /** Búsqueda por texto (opcional). Si no se pasa `setSearchQuery`, no se muestra. */
+  searchQuery?: string;
+  setSearchQuery?: (q: string) => void;
   filterModalidad: string;
   setFilterModalidad: (m: string) => void;
   filterNivel: string;
@@ -60,6 +134,31 @@ interface FiltrosReportesProps {
   setFiltroPeriodo: (p: FiltroPeriodoTipo) => void;
   conteosPeriodo?: Record<FiltroPeriodoTipo, number>;
   nivelesDisponibles: string[];
+  /**
+   * Instituciones para filtrar (opcional). Cuando se pasan, se muestra el
+   * selector de Institución, que cascadea con modalidad/nivel: cada nivel y cada
+   * institución tienen sus propios docentes.
+   */
+  filterInstitucion?: string;
+  setFilterInstitucion?: (id: string) => void;
+  institucionesDisponibles?: { id: string; nombre: string }[];
+  /**
+   * Rúbricas elegibles agrupadas por origen (opcional). Reemplaza a las píldoras
+   * de Tipo: el análisis por criterio sólo es coherente dentro de una misma
+   * plantilla, así que se elige una —oficial UGEL o institucional— y nunca se
+   * mezclan. Sin «Todas», a propósito.
+   */
+  gruposDePlantilla?: GruposDePlantilla;
+  plantillaSeleccionada?: string;
+  onSeleccionarPlantilla?: (id: string) => void;
+  /** Docentes para filtrar (opcional). Cascadea con institución/nivel/modalidad. */
+  filterDocente?: string;
+  setFilterDocente?: (id: string) => void;
+  docentesDisponibles?: { id: string; nombre: string }[];
+  /** Nº de monitoreo (1er, 2do, …) opcional. Se muestra si se pasa el setter. */
+  filterNumeroVisita?: string;
+  setFilterNumeroVisita?: (n: string) => void;
+  numerosDeVisitaDisponibles?: number[];
   añosDisponibles: string[];
   isAnyFilterActive: boolean;
   handleClearFilters: () => void;
@@ -70,9 +169,40 @@ interface FiltrosReportesProps {
    * a otro, de modo que agregarlos pone criterios distintos en el mismo eje.
    */
   permitirTodosLosAnios?: boolean;
+  /**
+   * Si el filtro de Tipo admite «Todos». El Análisis de Desempeño no lo permite:
+   * mezclar instrumentos pone rúbricas con distinta cantidad de criterios en el
+   * mismo eje. Los reportes que son listas sí lo permiten (default).
+   */
+  permitirTipoTodos?: boolean;
+  /**
+   * Fija el ámbito Modalidad/Nivel/Institución. El director de institución mira
+   * siempre su propio colegio: esos tres no varían para él, así que llegan
+   * precargados y bloqueados y sólo mueve el docente (y período/tipo/año).
+   */
+  bloquearAmbito?: boolean;
   /** El docente evaluado ve una versión reducida: sólo búsqueda y año. */
   isEvaluatedView: boolean;
 }
+
+/**
+ * Ámbito fijo (Modalidad · Nivel · Institución) mostrado como contexto de sólo
+ * lectura, no como selects deshabilitados: el personal de una I.E. siempre mira
+ * su propio colegio, y tres dropdowns grises parecen rotos en vez de fijos.
+ */
+const ContextoDeAmbito = ({ modalidad, nivel, institucion }: { modalidad: string; nivel: string; institucion: string }) => {
+  const partes = [institucion, nivel, modalidad].filter((p) => p && p !== TODOS);
+  if (partes.length === 0) return null;
+  return (
+    <div className="flex items-center gap-2 rounded-xl border border-primary/15 bg-primary/5 px-3.5 py-2.5">
+      <Building2 className="h-4 w-4 text-primary shrink-0" />
+      <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 shrink-0">
+        Ámbito:
+      </span>
+      <span className="text-xs font-bold text-slate-700 truncate">{partes.join('  ·  ')}</span>
+    </div>
+  );
+};
 
 export const FiltrosReportes = ({
   searchQuery,
@@ -90,12 +220,30 @@ export const FiltrosReportes = ({
   setFiltroPeriodo,
   conteosPeriodo,
   nivelesDisponibles,
+  filterInstitucion,
+  setFilterInstitucion,
+  institucionesDisponibles = [],
+  gruposDePlantilla,
+  plantillaSeleccionada,
+  onSeleccionarPlantilla,
+  filterDocente,
+  setFilterDocente,
+  docentesDisponibles = [],
+  filterNumeroVisita,
+  setFilterNumeroVisita,
+  numerosDeVisitaDisponibles = [],
   añosDisponibles,
   isAnyFilterActive,
   handleClearFilters,
   isEvaluatedView,
   permitirTodosLosAnios = true,
+  permitirTipoTodos = true,
+  bloquearAmbito = false,
 }: FiltrosReportesProps) => {
+  const opcionesDeTipo = permitirTipoTodos
+    ? FILTROS_TIPO
+    : FILTROS_TIPO.filter((t) => t.id !== 'Todos');
+
   const selectorDeAnio = (
     <SelectField
       label="Año"
@@ -128,80 +276,57 @@ export const FiltrosReportes = ({
         )}
       </div>
 
-      {/* Fila de Filtros Rápidos (Período y Tipo de Monitoreo) */}
-      <div className="flex flex-wrap items-center gap-y-3 gap-x-6 pt-0.5">
-        {/* Píldoras por Período */}
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1 mr-1">
-            <Calendar className="w-3.5 h-3.5 text-primary" /> Período:
-          </span>
-          {FILTROS_PERIODO.map((item) => {
-            const activo = filtroPeriodo === item.id;
-            const conteo = conteosPeriodo ? conteosPeriodo[item.id] : undefined;
-            return (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => setFiltroPeriodo(item.id)}
-                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer border ${
-                  activo
-                    ? 'bg-primary text-primary-foreground border-primary shadow-xs'
-                    : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100 hover:text-slate-900'
-                }`}
-              >
-                <span>{item.label}</span>
-                {conteo !== undefined && (
-                  <span
-                    className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                      activo
-                        ? 'bg-white/20 text-white'
-                        : 'bg-slate-200 text-slate-700'
-                    }`}
-                  >
-                    {conteo}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
+      {/* Filtros rápidos como controles segmentados: Período (cuándo), y la
+          rúbrica (qué se mide) en UGEL / Institucional. Cada grupo es una sola
+          decisión, con su rótulo arriba. */}
+      <div className="flex flex-wrap items-start gap-x-6 gap-y-4 pt-0.5">
+        <GrupoSegmentado
+          etiqueta="Período"
+          icono={<Calendar className="w-3 h-3 text-primary" />}
+          opciones={FILTROS_PERIODO.map((item) => ({
+            id: item.id,
+            label: item.label,
+            conteo: conteosPeriodo ? conteosPeriodo[item.id] : undefined,
+          }))}
+          seleccionada={filtroPeriodo}
+          onSeleccionar={(id) => setFiltroPeriodo(id as FiltroPeriodoTipo)}
+        />
 
-        {/* Píldoras por Tipo de Monitoreo (Docente vs Directivo) */}
-        {!isEvaluatedView && setFilterTipo && (
-          <div className="flex flex-wrap items-center gap-2 border-l border-slate-200 pl-4 sm:pl-6">
-            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1 mr-1">
-              <Users className="w-3.5 h-3.5 text-primary" /> Tipo:
-            </span>
-            {FILTROS_TIPO.map((item) => {
-              const activo = (filterTipo || 'Todos') === item.id;
-              const conteo = conteosTipo ? conteosTipo[item.id] : undefined;
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => setFilterTipo(item.id)}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer border ${
-                    activo
-                      ? 'bg-primary text-primary-foreground border-primary shadow-xs'
-                      : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100 hover:text-slate-900'
-                  }`}
-                >
-                  <span>{item.label}</span>
-                  {conteo !== undefined && (
-                    <span
-                      className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                        activo
-                          ? 'bg-white/20 text-white'
-                          : 'bg-slate-200 text-slate-700'
-                      }`}
-                    >
-                      {conteo}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
+        {/* Tipo de instrumento: sólo en las vistas que no eligen plantilla
+            concreta (Fichas Completadas). El Análisis usa UGEL/Institucional. */}
+        {!isEvaluatedView && setFilterTipo && !gruposDePlantilla && (
+          <GrupoSegmentado
+            etiqueta="Tipo"
+            icono={<Users className="w-3 h-3 text-primary" />}
+            opciones={opcionesDeTipo.map((item) => ({
+              id: item.id,
+              label: item.label,
+              conteo: conteosTipo ? conteosTipo[item.id] : undefined,
+            }))}
+            seleccionada={filterTipo || 'Todos'}
+            onSeleccionar={(id) => setFilterTipo(id as FiltroDeInstrumento)}
+          />
+        )}
+
+        {/* Rúbrica: UGEL (oficial) e Institucional (los clones de las IE). Se
+            elige una y el análisis nunca mezcla rúbricas. */}
+        {gruposDePlantilla && gruposDePlantilla.ugel.length > 0 && (
+          <GrupoSegmentado
+            etiqueta="Rúbrica · UGEL"
+            icono={<FileText className="w-3 h-3 text-primary" />}
+            opciones={gruposDePlantilla.ugel}
+            seleccionada={plantillaSeleccionada}
+            onSeleccionar={onSeleccionarPlantilla}
+          />
+        )}
+        {gruposDePlantilla && gruposDePlantilla.institucional.length > 0 && (
+          <GrupoSegmentado
+            etiqueta="Rúbrica · Institucional"
+            icono={<FileText className="w-3 h-3 text-primary" />}
+            opciones={gruposDePlantilla.institucional}
+            seleccionada={plantillaSeleccionada}
+            onSeleccionar={onSeleccionarPlantilla}
+          />
         )}
       </div>
 
@@ -210,44 +335,117 @@ export const FiltrosReportes = ({
           <Buscador
             etiqueta="Buscar por IE o Especialista"
             marcador="Nombre de la IE o del especialista..."
-            valor={searchQuery}
-            onCambiar={setSearchQuery}
+            valor={searchQuery ?? ''}
+            onCambiar={setSearchQuery ?? (() => {})}
           />
           {selectorDeAnio}
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-          <Buscador
-            etiqueta="Búsqueda Rápida"
-            marcador="IE, especialista o docente..."
-            valor={searchQuery}
-            onCambiar={setSearchQuery}
-          />
+        <div className="space-y-3">
+          {/* Ámbito fijo del personal de I.E.: contexto de sólo lectura. */}
+          {bloquearAmbito && (
+            <ContextoDeAmbito
+              modalidad={filterModalidad}
+              nivel={filterNivel}
+              institucion={
+                institucionesDisponibles.find((i) => i.id === filterInstitucion)?.nombre ?? ''
+              }
+            />
+          )}
 
-          <SelectField
-            label="Modalidad"
-            value={filterModalidad}
-            onChange={setFilterModalidad}
-            placeholder="Todas las modalidades"
-            options={[
-              { value: TODOS, label: 'Todas las modalidades' },
-              ...MODALIDADES.map((m) => ({ value: m, label: m })),
-            ]}
-          />
+          {/* Encabezado del bloque de refinamiento: separa «qué rúbrica / período»
+              (arriba) de «afinar el recorte» (abajo). */}
+          <div className="flex items-center gap-1.5 pt-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+            <SlidersHorizontal className="h-3 w-3 text-primary" />
+            Afinar resultados
+          </div>
 
-          <SelectField
-            label="Nivel Educativo"
-            value={filterNivel}
-            onChange={setFilterNivel}
-            disabled={filterModalidad === TODOS}
-            placeholder="Todos los niveles"
-            options={[
-              { value: TODOS, label: 'Todos los niveles' },
-              ...nivelesDisponibles.map((n) => ({ value: n, label: n })),
-            ]}
-          />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+            {setSearchQuery && (
+              <Buscador
+                etiqueta="Búsqueda Rápida"
+                marcador="IE, especialista o docente..."
+                valor={searchQuery ?? ''}
+                onCambiar={setSearchQuery}
+              />
+            )}
 
-          {selectorDeAnio}
+            {/* Modalidad/Nivel/Institución sólo se editan cuando el ámbito no está
+                fijo; si lo está, viven en la banda de contexto de arriba. */}
+            {!bloquearAmbito && (
+              <>
+                <SelectField
+                  label="Modalidad"
+                  value={filterModalidad}
+                  onChange={setFilterModalidad}
+                  placeholder="Todas las modalidades"
+                  options={[
+                    { value: TODOS, label: 'Todas las modalidades' },
+                    ...MODALIDADES.map((m) => ({ value: m, label: m })),
+                  ]}
+                />
+
+                <SelectField
+                  label="Nivel Educativo"
+                  value={filterNivel}
+                  onChange={setFilterNivel}
+                  disabled={filterModalidad === TODOS}
+                  placeholder="Todos los niveles"
+                  options={[
+                    { value: TODOS, label: 'Todos los niveles' },
+                    ...nivelesDisponibles.map((n) => ({ value: n, label: n })),
+                  ]}
+                />
+
+                {setFilterInstitucion && (
+                  <SelectField
+                    label="Institución Educativa"
+                    value={filterInstitucion ?? TODOS}
+                    onChange={setFilterInstitucion}
+                    disabled={institucionesDisponibles.length === 0}
+                    placeholder="Todas las instituciones"
+                    options={[
+                      { value: TODOS, label: 'Todas las instituciones' },
+                      ...institucionesDisponibles.map((i) => ({ value: i.id, label: i.nombre })),
+                    ]}
+                  />
+                )}
+              </>
+            )}
+
+            {setFilterDocente && (
+            <SelectField
+              label="Docente"
+              value={filterDocente ?? TODOS}
+              onChange={setFilterDocente}
+              disabled={docentesDisponibles.length === 0}
+              placeholder="Todos los docentes"
+              options={[
+                { value: TODOS, label: 'Todos los docentes' },
+                ...docentesDisponibles.map((d) => ({ value: d.id, label: d.nombre })),
+              ]}
+            />
+          )}
+
+          {setFilterNumeroVisita && (
+            <SelectField
+              label="Nº de Monitoreo"
+              value={filterNumeroVisita ?? TODOS}
+              onChange={setFilterNumeroVisita}
+              disabled={numerosDeVisitaDisponibles.length === 0}
+              placeholder="Todos"
+              options={[
+                { value: TODOS, label: 'Todos' },
+                ...numerosDeVisitaDisponibles.map((n) => ({
+                  value: String(n),
+                  label: `${n}° monitoreo`,
+                })),
+              ]}
+            />
+          )}
+
+            {selectorDeAnio}
+          </div>
         </div>
       )}
     </Card>

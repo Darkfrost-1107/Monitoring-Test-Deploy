@@ -45,8 +45,11 @@ export interface IUgelDashboardMonitoreoReciente {
   especialistaNombre: string;
   /** Fecha de finalización de la ficha (ISO 8601). */
   fecha: string;
-  nivelLogro: NivelLogro;
-  promedio: number;
+  /** El monitoreo EIB es informativo: no lleva nota ni nivel, por eso no se rotula. */
+  esInformativo: boolean;
+  /** Nulos cuando el instrumento es informativo (EIB). */
+  nivelLogro: NivelLogro | null;
+  promedio: number | null;
 }
 
 /** Docente/directivo con desempeño crítico (última ficha en INICIO). */

@@ -128,12 +128,13 @@ export class FichaService {
   async getHistorial(
     evaluadoId: string,
     session: SessionUser,
+    tipoMonitoreo?: string,
   ): Promise<IHistorialPedagogicoResponse> {
     // Aquí se podrían agregar validaciones extra si se requiere que
     // un especialista solo vea el historial de docentes a su cargo.
     // Por el momento se asume que si tiene acceso al módulo (verificado en Controller)
     // puede consultar el historial del docente evaluado en cuestión.
     void session;
-    return this.repository.getHistorial(evaluadoId);
+    return this.repository.getHistorial(evaluadoId, tipoMonitoreo);
   }
 }

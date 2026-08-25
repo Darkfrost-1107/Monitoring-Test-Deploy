@@ -5,9 +5,14 @@ import type { IAnalisisDesempenoCriterio } from '@sistema-monitoreo/shared-contr
 
 interface ListaCriteriosDesempenoProps {
   criterios: IAnalisisDesempenoCriterio[];
+  /** Criterio a resaltar (al que se llegó desde un KPI). */
+  resaltadoId?: string | null;
 }
 
-export const ListaCriteriosDesempeno = ({ criterios }: ListaCriteriosDesempenoProps) => {
+export const ListaCriteriosDesempeno = ({
+  criterios,
+  resaltadoId,
+}: ListaCriteriosDesempenoProps) => {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -27,7 +32,12 @@ export const ListaCriteriosDesempeno = ({ criterios }: ListaCriteriosDesempenoPr
           return (
             <Card
               key={criterio.desempenoId}
-              className="p-4 border border-border bg-surface shadow-xs rounded-xl flex flex-col justify-between hover:shadow-md transition-shadow"
+              id={`criterio-${criterio.desempenoId}`}
+              className={`p-4 border bg-surface shadow-xs rounded-xl flex flex-col justify-between hover:shadow-md transition-all scroll-mt-24 ${
+                resaltadoId === criterio.desempenoId
+                  ? 'border-primary ring-2 ring-primary/30'
+                  : 'border-border'
+              }`}
             >
               <div>
                 {/* Cabecera idéntica al selector de la ficha */}

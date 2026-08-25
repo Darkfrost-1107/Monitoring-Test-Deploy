@@ -60,6 +60,28 @@ describe('seleccionarPlantillaActiva — prioridad 1: plantilla propia del evalu
     expect(elegida?.id).toBe('p-propia');
   });
 
+  it('prefiere la propia del coordinador/jefe de taller sobre la del director de la I.E.', () => {
+    const propiaCoord = plantilla({
+      id: 'p-coord',
+      creadoPorRole: 'coordinador_pedagogico',
+      ieId: 'ie-1',
+      creadoPorId: 'u-1',
+    });
+    const delDirector = plantilla({
+      id: 'p-dir',
+      creadoPorRole: 'director_ie',
+      ieId: 'ie-1',
+      creadoPorId: 'otro',
+    });
+
+    const elegida = seleccionarPlantillaActiva(
+      [delDirector, propiaCoord],
+      contexto({ institucionUsuarioId: 'ie-1', esInstitucion: true, esMonitorCampo: true }),
+    );
+
+    expect(elegida?.id).toBe('p-coord');
+  });
+
   it('no aplica la prioridad propia si el usuario no es monitor de campo', () => {
     const propia = plantilla({ id: 'p-propia', creadoPorRole: 'director_ie', ieId: 'ie-1', creadoPorId: 'u-1' });
     const deLaIe = plantilla({ id: 'p-ie', creadoPorRole: 'director_ie', ieId: 'ie-1', creadoPorId: 'otro' });

@@ -93,8 +93,8 @@ describe('nivelPorEscala', () => {
 });
 
 describe('calcularResultadoBaremo con escala de plantilla', () => {
-  it('decide sobre el puntaje y devuelve la denominación de la plantilla', () => {
-    // Cinco desempeños que suman 17.
+  it('clasifica por el promedio y devuelve la denominación de la plantilla', () => {
+    // Cinco desempeños que suman 17: promedio 3.4 → Logro esperado.
     const resultado = calcularResultadoBaremo([4, 4, 3, 3, 3], ESCALA_DOCENTE, 'Vigente');
 
     expect(resultado.puntajeTotal).toBe(17);
@@ -103,19 +103,36 @@ describe('calcularResultadoBaremo con escala de plantilla', () => {
   });
 
   /**
-   * Los cortes por puntaje se calibran contra un techo concreto: los de la
-   * leyenda docente valen para los cinco desempeños que dan un máximo de 20.
+   * El nivel de logro es independiente del número de desempeños: se decide sobre
+   * el promedio, no sobre el puntaje absoluto contra cortes calibrados para un
+   * techo fijo.
    *
-   * Una plantilla con siete desempeños llega a 28, y entonces siete niveles III
-   * suman 21 y cruzan el corte de 18 pese a promediar 3,0. No es un defecto del
-   * cálculo sino de la calibración: al cambiar la cantidad hay que ajustar los
-   * cortes en la pantalla de registro, que es para lo que son editables.
+   * Siete desempeños en nivel III promedian 3,0 → Logro esperado, aunque su
+   * puntaje total (21) cruce el corte de 18 de la leyenda docente (pensado para
+   * un techo de 20). Antes esa misma ficha caía en «Logro destacado» por leer el
+   * puntaje crudo; ahora el promedio manda y el nombre sale del tramo III.
    */
-  it('los cortes por puntaje quedan calibrados al techo de la plantilla', () => {
+  it('el nivel no depende de cuántos desempeños tenga la ficha', () => {
     const resultado = calcularResultadoBaremo([3, 3, 3, 3, 3, 3, 3], ESCALA_DOCENTE, 'Vigente');
 
     expect(resultado.puntajeTotal).toBe(21);
     expect(resultado.promedio).toBe(3);
+    expect(resultado.nivelLogro).toBe('LOGRO_ESPERADO');
+    expect(resultado.denominacion).toBe('Logro esperado');
+  });
+
+  /**
+   * El caso que motivó el cambio: una ficha docente perfecta con menos
+   * desempeños que los cinco de la leyenda. Tres niveles IV dan un total de 12
+   * —el máximo posible— pero no llegaban al corte III (13) ni IV (18), de modo
+   * que una ficha perfecta se mostraba «En proceso». Con el promedio manda: 4.0.
+   */
+  it('una ficha perfecta con pocos desempeños es Logro destacado', () => {
+    const resultado = calcularResultadoBaremo([4, 4, 4], ESCALA_DOCENTE, 'Vigente');
+
+    expect(resultado.puntajeTotal).toBe(12);
+    expect(resultado.promedio).toBe(4);
+    expect(resultado.nivelLogro).toBe('LOGRO_DESTACADO');
     expect(resultado.denominacion).toBe('Logro destacado');
   });
 
@@ -159,15 +176,19 @@ describe('calcularResultadoBaremo con escala de plantilla', () => {
   });
 
   /**
-   * El modo decide qué número se compara. Con la escala porcentual leída como
-   * si fueran puntajes, una ficha de 18 puntos no alcanzaría ni el segundo
-   * tramo: por eso el `baremo` de la plantilla tiene que viajar hasta acá.
+   * En modo Vigente el nivel sale del promedio y la escala sólo aporta el nombre
+   * del tramo correspondiente. Una ficha de promedio 3,6 es Logro destacado, así
+   * que toma el nombre del tramo IV de la rúbrica que reciba: «Logro destacado»
+   * en la docente, «Satisfactorio» en la directiva.
    */
-  it('leer una escala porcentual como puntaje da otro nivel', () => {
-    const niveles = [4, 4, 4, 3, 3];
+  it('en Vigente el nombre sale del tramo del promedio, según la rúbrica', () => {
+    const niveles = [4, 4, 4, 3, 3]; // promedio 3.6 → nivel IV
 
+    expect(calcularResultadoBaremo(niveles, ESCALA_DOCENTE, 'Vigente').denominacion).toBe(
+      'Logro destacado',
+    );
     expect(calcularResultadoBaremo(niveles, ESCALA_DIRECTIVO, 'Vigente').denominacion).toBe(
-      'En inicio',
+      'Satisfactorio',
     );
   });
 

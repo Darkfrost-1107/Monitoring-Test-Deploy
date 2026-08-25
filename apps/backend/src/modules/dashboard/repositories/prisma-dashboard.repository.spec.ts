@@ -26,6 +26,7 @@ const ficha = (over: Record<string, unknown> = {}) => ({
   promedio: 18,
   finalizadaAt: new Date('2026-03-10T12:00:00.000Z'),
   createdAt: new Date('2026-03-01T12:00:00.000Z'),
+  plantilla: { tipoMonitoreo: 'DOCENTE' },
   cronograma: {
     evaluadoId: 'd-1',
     nivelEducativo: 'Secundaria',

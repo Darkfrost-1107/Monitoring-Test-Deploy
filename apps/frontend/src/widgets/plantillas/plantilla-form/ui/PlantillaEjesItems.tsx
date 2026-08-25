@@ -55,16 +55,16 @@ export const PlantillaEjesItems = ({ ejeItems, onChange }: Props) => {
                 rows={2}
               />
             </div>
-            {ejeItems.length > 1 && (
-              <button
-                type="button"
-                onClick={() => removeItem(item.id)}
-                className="p-1.5 rounded-lg text-text-muted hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
-                aria-label="Eliminar item"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
-            )}
+            {/* La sección es opcional: se debe poder eliminar hasta el último eje
+                (p. ej. uno creado por error), quedando la planificación en cero. */}
+            <button
+              type="button"
+              onClick={() => removeItem(item.id)}
+              className="p-1.5 rounded-lg text-text-muted hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
+              aria-label="Eliminar item"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
           </div>
         ))}
 

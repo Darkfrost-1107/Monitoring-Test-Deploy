@@ -25,16 +25,16 @@ import {
   claveEstadoLocal,
 } from '../lib/estado-formulario';
 import { ContextoDeAulaSeccion } from './ficha/ContextoDeAulaSeccion';
-import { EvidenciaGeneralSeccion } from './ficha/EvidenciaGeneralSeccion';
 import { PanelDesempenos } from './ficha/PanelDesempenos';
 import { EjesItemsSeccion } from './ficha/EjesItemsSeccion';
-import { CierreNarrativoSeccion } from './ficha/CierreNarrativoSeccion';
 import { ConsolidadoSeccion } from './ficha/ConsolidadoSeccion';
 import { PieDeFicha } from './ficha/PieDeFicha';
 import { VistaPreviaEvidencia } from './ficha/VistaPreviaEvidencia';
 import { CabeceraFicha, type PestanaFicha } from './ficha/CabeceraFicha';
 import { BannerDatosVisita } from './ficha/BannerDatosVisita';
 import { firmasApi } from '@/shared/api/firmas.api';
+import { encolar } from '@features/offline/outbox';
+import { esErrorDeRed } from '@features/offline/errores';
 import { toast } from 'sonner';
 
 
@@ -107,6 +107,8 @@ export const LlenarFichaForm = ({
 
   const [activeTab, setActiveTab] = useState<PestanaFicha>('FICHA');
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
+  // Firma hecha sin conexión: quedó en cola, aún no confirmada por el servidor.
+  const [firmaPendiente, setFirmaPendiente] = useState(false);
 
   const printRef = useRef<HTMLDivElement>(null);
   const handlePrint = useReactToPrint({ contentRef: printRef });
@@ -205,7 +207,8 @@ export const LlenarFichaForm = ({
     !esFichaDirectiva && esDirectorDeLaVisita(user, visit);
   const rolEsperado = rolDeFirma({ esEvaluado, esEvaluador, esDirectorDeLaIE });
   const puedeFirmar = isCompleted && rolEsperado !== null;
-  const yaFirmo = firmasData?.firmas?.some((f) => f.rolFirmante === rolEsperado);
+  const yaFirmo =
+    firmaPendiente || (firmasData?.firmas?.some((f) => f.rolFirmante === rolEsperado) ?? false);
 
   const handleFirmar = async () => {
     try {
@@ -218,7 +221,17 @@ export const LlenarFichaForm = ({
       toast.success('Ficha firmada con éxito');
       refetchFirmas();
     } catch (error: unknown) {
-      toast.error(error instanceof Error ? error.message : 'Error al firmar la ficha');
+      // Sin señal, la firma se encola y sube al reconectar (idempotente: firmar
+      // dos veces con el mismo rol el backend lo resuelve como éxito).
+      if (esErrorDeRed(error)) {
+        await encolar('firmar-ficha', { cronogramaId: visit.id, plantillaId: template.id });
+        setFirmaPendiente(true);
+        toast.info('Sin conexión: la firma quedó guardada y se enviará al recuperar internet.', {
+          duration: 8000,
+        });
+      } else {
+        toast.error(error instanceof Error ? error.message : 'Error al firmar la ficha');
+      }
     }
   };
 
@@ -274,6 +287,27 @@ export const LlenarFichaForm = ({
               }
               onObservar={(id, texto) => setRubricComments((prev) => ({ ...prev, [id]: texto }))}
               mostrarAspectos={!isDirectivo}
+              cierre={{
+                observaciones: generalComments,
+                sugerencias,
+                compromisos,
+                onObservaciones: setGeneralComments,
+                onSugerencias: setSugerencias,
+                onCompromisos: setCompromisos,
+                evidencias: evidenciaUrls,
+                onEvidencias: (siguientes) => {
+                  setEvidenciaUrls(siguientes);
+                  // Se persiste el estado completo: antes se armaba a mano y
+                  // perdía las observaciones de ejes y el contexto de aula.
+                  safeSetLocalStorage(
+                    claveEstadoLocal(visit.id, template.id),
+                    JSON.stringify(
+                      aDatosFicha({ ...estado, evidenciaUrls: siguientes }, visit.tipo),
+                    ),
+                  );
+                },
+                onVerImagen: setPreviewImageUrl,
+              }}
               soloLectura={isCompleted}
             />
 
@@ -297,31 +331,6 @@ export const LlenarFichaForm = ({
             soloLectura={isCompleted}
           />
         )}
-
-        <CierreNarrativoSeccion
-          observaciones={generalComments}
-          onObservaciones={setGeneralComments}
-          sugerencias={sugerencias}
-          compromisos={compromisos}
-          onSugerencias={setSugerencias}
-          onCompromisos={setCompromisos}
-          soloLectura={isCompleted}
-        />
-
-        <EvidenciaGeneralSeccion
-          evidencias={evidenciaUrls}
-          onCambiar={(siguientes) => {
-            setEvidenciaUrls(siguientes);
-            // Se persiste el estado completo: antes se armaba a mano y perdía
-            // las observaciones de ejes y el contexto de aula.
-            safeSetLocalStorage(
-              claveEstadoLocal(visit.id, template.id),
-              JSON.stringify(aDatosFicha({ ...estado, evidenciaUrls: siguientes }, visit.tipo)),
-            );
-          }}
-          onVerImagen={setPreviewImageUrl}
-          soloLectura={isCompleted}
-        />
 
         {calificacion && (
           <ConsolidadoSeccion

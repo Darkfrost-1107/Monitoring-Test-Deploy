@@ -1,32 +1,4 @@
 import { Card } from '@shared/ui/card';
-import { AlertCircle, AlertTriangle, CheckCircle2 } from 'lucide-react';
-import { Badge } from '@shared/ui/badge';
-
-interface StateItemProps {
-  icon: React.ReactNode;
-  count: number;
-  label: string;
-  badgeLabel: string;
-  badgeVariant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'success' | 'warning';
-  iconColorClass: string;
-}
-
-const StateItem = ({ icon, count, label, badgeLabel, badgeVariant = 'default', iconColorClass }: StateItemProps) => (
-  <Card className="flex items-center justify-between p-4 shadow-sm border-border mb-3 last:mb-0">
-    <div className="flex items-center gap-4">
-      <div className={`p-2 rounded-full bg-muted ${iconColorClass}`}>
-        {icon}
-      </div>
-      <div>
-        <div className="text-xl font-bold">{count}</div>
-        <div className="text-sm text-text-muted">{label}</div>
-      </div>
-    </div>
-    <Badge variant={badgeVariant} className="uppercase font-bold tracking-wider text-[10px]">
-      {badgeLabel}
-    </Badge>
-  </Card>
-);
 
 export interface EvaluationStateData {
   /** Docentes/IEs en situación crítica (nivel INICIO). */
@@ -52,55 +24,72 @@ const DEFAULT_DATA: EvaluationStateData = {
 
 const pct = (part: number, total: number) => (total > 0 ? (part / total) * 100 : 0);
 
+/**
+ * Resumen de evaluación: la distribución de niveles como una sola barra apilada
+ * con su leyenda, y la cobertura como una barra de avance. Es el «vistazo» que
+ * acompaña a la lista accionable de Focos de Atención.
+ */
 export const EvaluationStateCard = ({ data }: { data?: EvaluationStateData }) => {
   const { critico, enProceso, logroPrevisto, coberturaActual, meta } = data ?? DEFAULT_DATA;
   const total = critico + enProceso + logroPrevisto;
 
+  const filas = [
+    { key: 'logro', label: 'Logro previsto', count: logroPrevisto, dot: 'bg-emerald-500' },
+    { key: 'proceso', label: 'En seguimiento', count: enProceso, dot: 'bg-amber-500' },
+    { key: 'critico', label: 'Situación crítica', count: critico, dot: 'bg-red-500' },
+  ];
+
   return (
-    <div className="flex flex-col h-full bg-transparent">
-      <h3 className="text-lg font-bold mb-4">Estado de Evaluación</h3>
+    <Card className="p-4 border-border shadow-xs flex flex-col gap-4 h-full overflow-y-auto">
+      <h3 className="text-lg font-bold">Estado de Evaluación</h3>
 
-      <StateItem
-        icon={<AlertCircle className="w-5 h-5" />}
-        count={critico}
-        label="Situación Crítica"
-        badgeLabel="Rojo"
-        badgeVariant="destructive"
-        iconColorClass="text-destructive bg-destructive/10"
-      />
-
-      <StateItem
-        icon={<AlertTriangle className="w-5 h-5" />}
-        count={enProceso}
-        label="En seguimiento"
-        badgeLabel="Naranja"
-        badgeVariant="warning"
-        iconColorClass="text-amber-500 bg-amber-500/10"
-      />
-
-      <StateItem
-        icon={<CheckCircle2 className="w-5 h-5" />}
-        count={logroPrevisto}
-        label="Logro Previsto"
-        badgeLabel="Verde"
-        badgeVariant="success"
-        iconColorClass="text-green-600 bg-green-500/10"
-      />
-
-      <Card className="mt-auto p-4 bg-muted/30 border-border">
-        <div className="flex justify-between items-center mb-2">
-          <span className="text-xs font-semibold text-text-muted">Resumen de Cobertura</span>
+      {/* Distribución de niveles: una barra apilada dice la proporción de un vistazo. */}
+      <div>
+        <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">
+          Distribución de niveles
+        </span>
+        <div className="mt-2 h-3 w-full rounded-full overflow-hidden flex bg-slate-100">
+          {total > 0 && (
+            <>
+              <div className="h-full bg-emerald-500" style={{ width: `${pct(logroPrevisto, total)}%` }} />
+              <div className="h-full bg-amber-500" style={{ width: `${pct(enProceso, total)}%` }} />
+              <div className="h-full bg-red-500" style={{ width: `${pct(critico, total)}%` }} />
+            </>
+          )}
         </div>
-        <div className="h-2 w-full bg-muted rounded-full overflow-hidden flex">
-          <div className="h-full bg-green-500" style={{ width: `${pct(logroPrevisto, total)}%` }} />
-          <div className="h-full bg-amber-500" style={{ width: `${pct(enProceso, total)}%` }} />
-          <div className="h-full bg-destructive" style={{ width: `${pct(critico, total)}%` }} />
+        <ul className="mt-3.5 space-y-2.5">
+          {filas.map((f) => (
+            <li key={f.key} className="flex items-center justify-between text-sm">
+              <span className="flex items-center gap-2 text-slate-600">
+                <span className={`h-2 w-2 rounded-full ${f.dot}`} />
+                {f.label}
+              </span>
+              <span className="font-black text-slate-800 tabular-nums">{f.count}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {/* Cobertura de monitoreo: avance sobre la meta, separado de la distribución. */}
+      <div className="mt-auto pt-4 border-t border-border/60">
+        <div className="flex items-baseline justify-between mb-1.5">
+          <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">
+            Cobertura
+          </span>
+          <span className="text-sm font-black text-slate-800 tabular-nums">
+            {Math.round(coberturaActual ?? 0)}%
+          </span>
         </div>
-        <div className="flex justify-between items-center mt-2 text-[10px] text-text-muted font-semibold">
-          <span>META: {meta ?? 100}%</span>
-          <span>ACTUAL: {(coberturaActual ?? 0).toFixed(1)}%</span>
+        <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-primary rounded-full transition-all"
+            style={{ width: `${Math.min(coberturaActual ?? 0, 100)}%` }}
+          />
         </div>
-      </Card>
-    </div>
+        <div className="mt-1.5 text-[10px] text-slate-400 font-semibold text-right">
+          meta {meta ?? 100}%
+        </div>
+      </div>
+    </Card>
   );
 };

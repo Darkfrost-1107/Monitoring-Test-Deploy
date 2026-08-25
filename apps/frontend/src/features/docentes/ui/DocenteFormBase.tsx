@@ -47,6 +47,7 @@ const FORMULARIO_VACIO: DocenteFormData = {
   nivelEducativo: 'PRIMARIA',
   condicion: 'Nombrado',
   especialidad: '',
+  especialidadesExtras: [],
   cargaHoraria: CARGA_HORARIA.DOCENTE,
   secciones: [],
   escala: 'I',
@@ -159,6 +160,8 @@ export const DocenteFormBase = ({
       nivelEducativo,
       // Fuera de Secundaria la especialidad es «General»; dentro se elige.
       especialidad: nivelEducativo === 'SECUNDARIA' ? '' : 'General',
+      // Las áreas adicionales sólo existen en Secundaria: se descartan al salir.
+      especialidadesExtras: nivelEducativo === 'SECUNDARIA' ? (previo.especialidadesExtras ?? []) : [],
     }));
 
   return (

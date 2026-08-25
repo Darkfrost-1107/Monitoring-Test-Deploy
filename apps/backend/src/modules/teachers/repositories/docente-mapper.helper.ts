@@ -21,6 +21,17 @@ type DocenteWithRelations = Prisma.DocenteGetPayload<{
 export function mapDocente(docente: DocenteWithRelations): DocenteEntity {
   const asig = docente.evaluadoresAsignados?.[0];
 
+  // La principal primero, luego las extras: así el string `especialidad` la
+  // ofrece por defecto y el formulario puede separar unas de otras al reeditar.
+  const especialidadesOrdenadas = [...(docente.docenteEspecialidades ?? [])]
+    .sort((a, b) => Number(b.esPrincipal) - Number(a.esPrincipal))
+    .map((de) => de.especialidad?.nombre)
+    .filter((nombre): nombre is string => Boolean(nombre));
+  const especialidadesExtras = (docente.docenteEspecialidades ?? [])
+    .filter((de) => !de.esPrincipal)
+    .map((de) => de.especialidad?.nombre)
+    .filter((nombre): nombre is string => Boolean(nombre));
+
   return {
     id: docente.id,
     personaId: docente.personaId,
@@ -28,11 +39,8 @@ export function mapDocente(docente: DocenteWithRelations): DocenteEntity {
     gradoAcademico: docente.gradoAcademico,
     nivelEducativo: docente.nivelEducativo,
     modalidad: docente.modalidad ?? null,
-    especialidad:
-      docente.docenteEspecialidades
-        ?.map((de) => de.especialidad?.nombre)
-        .filter(Boolean)
-        .join(', ') || null,
+    especialidad: especialidadesOrdenadas.join(', ') || null,
+    especialidadesExtras,
     cursoAsignado: docente.docenteCursos?.[0]?.curso?.nombre || null,
     condicionLaboral: docente.condicionLaboral,
     escalaMagisterial: docente.escalaMagisterial,

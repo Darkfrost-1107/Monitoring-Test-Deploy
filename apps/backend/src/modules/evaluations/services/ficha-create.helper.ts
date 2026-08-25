@@ -4,6 +4,7 @@ import { tipoDeVisitaDe } from '@sistema-monitoreo/shared-contracts';
 import type { FichaRepository } from '../repositories/ficha.repository.js';
 import type { CreateFichaDto } from '../dto/ficha.dto.js';
 import type { SessionUser } from '../../../shared/types/session-user.js';
+import { assertEsMonitorAsignado } from './evaluador-guard.js';
 
 export async function crear(
   repository: FichaRepository,
@@ -12,6 +13,9 @@ export async function crear(
 ): Promise<IFichaMonitoreo> {
   const cronograma = await repository.findCronogramaBasicById(dto.cronogramaId);
   if (!cronograma) throw new NotFoundException(`Visita ${dto.cronogramaId} no encontrada.`);
+
+  // Sólo el monitor asignado a esta visita puede abrir su ficha.
+  assertEsMonitorAsignado(session, cronograma.monitorId);
 
   const anio = cronograma.fechaProgramada.getFullYear();
 

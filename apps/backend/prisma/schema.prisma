@@ -488,9 +488,10 @@ model Especialidad {
 }
 
 model DocenteEspecialidad {
-  id             String @id @default(uuid()) @db.Uuid
-  docenteId      String @map("docente_id") @db.Uuid
-  especialidadId String @map("especialidad_id") @db.Uuid
+  id             String  @id @default(uuid()) @db.Uuid
+  docenteId      String  @map("docente_id") @db.Uuid
+  especialidadId String  @map("especialidad_id") @db.Uuid
+  esPrincipal    Boolean @default(false) @map("es_principal")
 
   docente      Docente      @relation(fields: [docenteId], references: [id], onDelete: Cascade)
   especialidad Especialidad @relation(fields: [especialidadId], references: [id], onDelete: Cascade)
@@ -765,9 +766,10 @@ model FichaMonitoreo {
   plantillaId      String    @map("plantilla_id") @db.Uuid
   fichaContextoId  String    @unique @map("ficha_contexto_id") @db.Uuid
   anioAcademico    Int       @map("anio_academico")
-  puntajeTotal     Int       @map("puntaje_total") @db.SmallInt
-  promedio         Decimal   @db.Decimal(4, 2)
-  nivelLogro       String    @map("nivel_logro") @db.VarChar(20) // INICIO | EN_PROCESO | LOGRO_ESPERADO | LOGRO_DESTACADO
+  // Nulos cuando el instrumento es informativo (EIB): no produce puntaje ni nivel.
+  puntajeTotal     Int?      @map("puntaje_total") @db.SmallInt
+  promedio         Decimal?  @db.Decimal(4, 2)
+  nivelLogro       String?   @map("nivel_logro") @db.VarChar(20) // INICIO | EN_PROCESO | LOGRO_ESPERADO | LOGRO_DESTACADO | null (EIB)
   estado           String    @default("BORRADOR") @db.VarChar(20) // BORRADOR | FINALIZADO | MIGRADA
   creadoPorId      String?   @map("creado_por_id") @db.Uuid
   finalizadaPorId  String?   @map("finalizada_por_id") @db.Uuid

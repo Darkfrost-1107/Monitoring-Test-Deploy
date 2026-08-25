@@ -112,6 +112,13 @@ const FICHA_COMPLETA: DatosFicha = {
   respuestasEjeItem: {},
   evidenciaUrls: {},
   observacionesEjeItem: {},
+  contexto: {
+    areaCurricular: 'Comunicación',
+    grado: '2',
+    seccion: 'A',
+    cantidadEstudiantes: 20,
+    cantidadEstudiantesNee: 1,
+  },
 } as DatosFicha;
 
 const Wrapper = ({ children }: { children: ReactNode }) => {
@@ -290,8 +297,11 @@ describe('LlenarFichaForm — ficha ya cerrada', () => {
 });
 
 describe('LlenarFichaForm — carga inicial', () => {
-  it('abre con el estado recibido', () => {
+  it('abre con el estado recibido', async () => {
     montar({ initialState: FICHA_COMPLETA });
+
+    // El cierre vive como paso del panel: se navega desde el índice.
+    await userEvent.click(screen.getByText('Sugerencias'));
 
     expect(screen.getByDisplayValue('Reforzar el uso de material concreto.')).toBeInTheDocument();
   });

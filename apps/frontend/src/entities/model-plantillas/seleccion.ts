@@ -21,6 +21,17 @@ import type { RolAutorPlantilla } from '@sistema-monitoreo/shared-contracts';
  * no se puede evaluar. Quien llama debe decirlo, no seguir de largo.
  */
 
+/** Roles de institución que crean su propia plantilla (todos menos la UGEL). */
+const ROLES_AUTOR_INSTITUCION: readonly RolAutorPlantilla[] = [
+  'director_ie',
+  'coordinador_pedagogico',
+  'jefe_taller',
+];
+
+/** ¿La plantilla la creó personal de una I.E. (no la UGEL)? */
+const esAutorDeInstitucion = (rol: RolAutorPlantilla | undefined): boolean =>
+  !!rol && ROLES_AUTOR_INSTITUCION.includes(rol);
+
 /** Nombre del instrumento según a quién se evalúa. */
 export const TIPO_MONITOREO_POR_VISITA = {
   DOCENTE: 'Monitoreo Docente',
@@ -66,19 +77,22 @@ export function seleccionarPlantillaActiva<T extends PlantillaSeleccionable>(
   let elegida: T | undefined;
 
   if (contexto.esInstitucion && contexto.institucionUsuarioId) {
-    // Prioridad 1: la del propio evaluador. Un monitor de campo del lado de la
-    // institución crea su propia plantilla, y esa gana sobre la de la I.E.
+    // Prioridad 1: la que creó el PROPIO evaluador. Cualquier monitor de campo
+    // del lado de la institución (director, coordinador pedagógico o jefe de
+    // taller) puede tener su plantilla, y la suya gana sobre la de la I.E. Antes
+    // sólo se reconocía `director_ie`, de modo que a un coordinador o jefe de
+    // taller se le sugería por defecto la del director en vez de la propia.
     if (contexto.esMonitorCampo) {
       elegida = plantillas.find(
         (p) =>
           esCandidata(p) &&
-          p.creadoPorRole === 'director_ie' &&
+          esAutorDeInstitucion(p.creadoPorRole) &&
           p.ieId === contexto.institucionUsuarioId &&
           p.creadoPorId === contexto.usuarioId,
       );
     }
 
-    // Prioridad 2: la de su institución educativa.
+    // Prioridad 2: la de su institución educativa (la del director de la I.E.).
     if (!elegida) {
       elegida = plantillas.find(
         (p) =>

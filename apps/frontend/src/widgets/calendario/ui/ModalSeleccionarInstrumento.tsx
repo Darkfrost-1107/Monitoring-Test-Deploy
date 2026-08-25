@@ -13,6 +13,12 @@ interface ModalSeleccionarInstrumentoProps {
   visita: Cronograma;
   fichasExistentes?: IFichaMonitoreo[];
   onSeleccionar: (plantilla: Plantilla, fichaExistente?: IFichaMonitoreo) => void;
+  /**
+   * ¿El usuario puede LLENAR una ficha de esta visita (es su monitor asignado)?
+   * Si no, sólo puede consultar las fichas ya finalizadas: las que no se llenaron
+   * se muestran como "Ficha no llenada" y no se pueden abrir para evaluar.
+   */
+  puedeLlenar?: boolean;
 }
 
 export const ModalSeleccionarInstrumento = ({
@@ -22,6 +28,7 @@ export const ModalSeleccionarInstrumento = ({
   visita,
   fichasExistentes = [],
   onSeleccionar,
+  puedeLlenar = true,
 }: ModalSeleccionarInstrumentoProps) => {
   if (!isOpen) return null;
 
@@ -81,19 +88,29 @@ export const ModalSeleccionarInstrumento = ({
               const fichaExistente = fichasExistentes.find((f) => f.plantillaId === plantilla.id);
               const estaCompletada = fichaExistente?.estado === 'FINALIZADO';
               const estaEnBorrador = fichaExistente?.estado === 'BORRADOR';
+              // Quien no es el monitor de la visita sólo consulta lo ya finalizado.
+              // Una ficha sin finalizar es "no llenada" y no se puede abrir a evaluar.
+              const soloLectura = !puedeLlenar && !estaCompletada;
 
               return (
                 <div
                   key={plantilla.id}
-                  onClick={() => onSeleccionar(plantilla, fichaExistente)}
-                  className={`p-4.5 rounded-2xl border-2 transition-all cursor-pointer shadow-xs flex flex-col gap-3 group relative overflow-hidden bg-white hover:border-primary hover:shadow-md ${
-                    estaCompletada
-                      ? 'border-emerald-300/90 bg-emerald-50/20'
-                      : isEib
-                        ? 'border-emerald-200/80 hover:border-emerald-500'
-                        : isDirectivo
-                          ? 'border-indigo-200/80 hover:border-indigo-500'
-                          : 'border-slate-200 hover:border-primary'
+                  onClick={() => {
+                    if (!soloLectura) onSeleccionar(plantilla, fichaExistente);
+                  }}
+                  aria-disabled={soloLectura}
+                  className={`p-4.5 rounded-2xl border-2 transition-all shadow-xs flex flex-col gap-3 group relative overflow-hidden ${
+                    soloLectura
+                      ? 'border-slate-200 bg-slate-50 opacity-60 cursor-not-allowed'
+                      : `cursor-pointer bg-white hover:shadow-md ${
+                          estaCompletada
+                            ? 'border-emerald-300/90 bg-emerald-50/20'
+                            : isEib
+                              ? 'border-emerald-200/80 hover:border-emerald-500'
+                              : isDirectivo
+                                ? 'border-indigo-200/80 hover:border-indigo-500'
+                                : 'border-slate-200 hover:border-primary'
+                        }`
                   }`}
                 >
                   <div className="flex items-start justify-between gap-3">
@@ -157,27 +174,33 @@ export const ModalSeleccionarInstrumento = ({
                     <Button
                       size="sm"
                       className={`text-xs font-bold gap-1.5 rounded-xl shadow-xs transition-all pointer-events-none ${
-                        estaCompletada
-                          ? 'bg-slate-700 group-hover:bg-slate-900 text-white'
-                          : estaEnBorrador
-                            ? 'bg-amber-600 group-hover:bg-amber-700 text-white'
-                            : isEib
-                              ? 'bg-emerald-600 group-hover:bg-emerald-700 text-white'
-                              : isDirectivo
-                                ? 'bg-indigo-600 group-hover:bg-indigo-700 text-white'
-                                : 'bg-primary group-hover:bg-primary-hover text-white'
+                        soloLectura
+                          ? 'bg-slate-200 text-slate-500'
+                          : estaCompletada
+                            ? 'bg-slate-700 group-hover:bg-slate-900 text-white'
+                            : estaEnBorrador
+                              ? 'bg-amber-600 group-hover:bg-amber-700 text-white'
+                              : isEib
+                                ? 'bg-emerald-600 group-hover:bg-emerald-700 text-white'
+                                : isDirectivo
+                                  ? 'bg-indigo-600 group-hover:bg-indigo-700 text-white'
+                                  : 'bg-primary group-hover:bg-primary-hover text-white'
                       }`}
                     >
                       <span>
-                        {estaCompletada
-                          ? 'Ver / Imprimir'
-                          : estaEnBorrador
-                            ? 'Continuar Llenado'
-                            : fichasExistentes.length > 0
-                              ? 'Aplicar Complementaria'
-                              : 'Aplicar Ficha'}
+                        {soloLectura
+                          ? 'Ficha no llenada'
+                          : estaCompletada
+                            ? 'Ver / Imprimir'
+                            : estaEnBorrador
+                              ? 'Continuar Llenado'
+                              : fichasExistentes.length > 0
+                                ? 'Aplicar Complementaria'
+                                : 'Aplicar Ficha'}
                       </span>
-                      <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                      {!soloLectura && (
+                        <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                      )}
                     </Button>
                   </div>
 

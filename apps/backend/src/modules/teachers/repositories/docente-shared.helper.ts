@@ -111,6 +111,7 @@ export async function upsertEspecialidad(
   especialidadAsignada: string,
   nivelEducativo: string,
   docenteId: string,
+  esPrincipal = true,
 ): Promise<void> {
   const nivel = await prisma.nivelEducativo.findFirst({
     where: {
@@ -147,8 +148,41 @@ export async function upsertEspecialidad(
 
   if (!exists) {
     await tx.docenteEspecialidad.create({
-      data: { docenteId, especialidadId: especialidad.id },
+      data: { docenteId, especialidadId: especialidad.id, esPrincipal },
     });
+  } else if (exists.esPrincipal !== esPrincipal) {
+    await tx.docenteEspecialidad.update({ where: { id: exists.id }, data: { esPrincipal } });
+  }
+}
+
+/**
+ * Persiste la especialidad principal del docente y sus extras.
+ *
+ * La principal queda con `esPrincipal = true` y las extras con `false`, para que
+ * el formulario pueda distinguirlas al reeditar sin depender del orden de la
+ * relación. Se ignoran vacíos y duplicados (comparando sin distinguir mayúsculas).
+ */
+export async function sincronizarEspecialidadesDocente(
+  tx: Prisma.TransactionClient,
+  prisma: PrismaService,
+  principal: string | undefined,
+  extras: string[] | undefined,
+  nivelEducativo: string,
+  docenteId: string,
+): Promise<void> {
+  const vistas = new Set<string>();
+  const agregar = async (nombre: string | undefined, esPrincipal: boolean) => {
+    const limpio = nombre?.trim();
+    if (!limpio) return;
+    const clave = limpio.toLowerCase();
+    if (vistas.has(clave)) return;
+    vistas.add(clave);
+    await upsertEspecialidad(tx, prisma, limpio, nivelEducativo, docenteId, esPrincipal);
+  };
+
+  await agregar(principal, true);
+  for (const extra of extras ?? []) {
+    await agregar(extra, false);
   }
 }
 

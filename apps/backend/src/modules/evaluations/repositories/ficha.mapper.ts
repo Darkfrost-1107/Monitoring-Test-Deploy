@@ -44,8 +44,9 @@ export function fromPrismaFicha(ficha: FichaMonitoreoPayload): IFichaMonitoreo {
     fichaContextoId: ficha.fichaContextoId,
     anioAcademico: ficha.anioAcademico,
     puntajeTotal: ficha.puntajeTotal,
-    promedio: Number(ficha.promedio),
-    nivelLogro: ficha.nivelLogro as NivelLogro,
+    // El EIB informativo se guarda sin puntaje ni nivel (null).
+    promedio: ficha.promedio === null ? null : Number(ficha.promedio),
+    nivelLogro: ficha.nivelLogro as NivelLogro | null,
     estado: ficha.estado as EstadoFicha,
     contexto: mapContexto(ficha.fichaContexto),
     respuestasDesempeno: (ficha.respuestasDesempeno || []).map(fromPrismaRespuestaDesempeno),

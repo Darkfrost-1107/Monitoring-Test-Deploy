@@ -80,6 +80,13 @@ export class PrismaMonitoringPlanRepository implements MonitoringPlanRepository 
         rolAutorAlCrear: data.rolAutorAlCrear,
         institucionId: data.institucionId,
       },
+      // Se incluye el autor igual que en findAll/findById: sin él, la respuesta
+      // del POST llega sin `autorNombre` y la tarjeta recién creada muestra sólo
+      // el cargo («Coordinador Pedagógico») en vez de «Cargo — Nombre».
+      include: {
+        institucion: { select: { nombre: true, codigoModular: true } },
+        autor: { select: { persona: { select: { nombres: true, apellidos: true } } } },
+      },
     });
 
     if (data.institucionId) {

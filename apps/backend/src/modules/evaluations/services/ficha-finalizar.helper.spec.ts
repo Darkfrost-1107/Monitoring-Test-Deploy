@@ -34,7 +34,7 @@ const ESCALA_DIRECTIVO: TramoDeEscala[] = [
 ];
 
 const DTO: FinalizarFichaDto = {};
-const SESION = { id: 'user-1', role: 'especialista' } as never;
+const SESION = { id: 'user-1', role: 'especialista', especialistaId: 'esp-1' } as never;
 
 const fichaCon = (
   niveles: number[],
@@ -57,6 +57,7 @@ const armarRepositorio = (
 ) => {
   const repo = {
     findById: jest.fn<any>().mockResolvedValue(ficha),
+    findCronogramaBasicById: jest.fn<any>().mockResolvedValue({ id: 'cr-1', monitorId: 'esp-1' }),
     findEscalaDePlantilla: jest.fn<any>().mockResolvedValue({ modo, tramos }),
     finalizar: jest.fn<any>().mockImplementation((...args: unknown[]) => ({ id: 'f-1', args })),
     updateCronogramaEstado: jest.fn<any>().mockResolvedValue(undefined),

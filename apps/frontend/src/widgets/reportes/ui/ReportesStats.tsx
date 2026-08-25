@@ -70,6 +70,11 @@ export const ReportesStats = ({ stats, isEvaluatedView = false }: ReportesStatsP
       ? (NIVEL_LOGRO_LABEL[stats.nivelLogroMasFrecuente] ?? { label: stats.nivelLogroMasFrecuente, color: 'text-slate-800' })
       : null;
 
+    // El EIB es informativo (No/Parcial/Sí): cuando es el único instrumento, no
+    // hay nota ni nivel de logro que mostrar.
+    const esEibUnico =
+      stats.porInstrumento.length === 1 && stats.porInstrumento[0]?.tipo === 'DOCENTE_EIB';
+
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         {/* KPI 1: Monitoreos recibidos */}
@@ -106,15 +111,14 @@ export const ReportesStats = ({ stats, isEvaluatedView = false }: ReportesStatsP
               Mi Promedio General
             </span>
             <span className="text-xl font-black text-slate-800 block mt-0.5 leading-none">
-              {stats.promedioGeneral != null ? stats.promedioGeneral.toFixed(2) : '—'}
+              {esEibUnico ? 'Informativo' : stats.promedioGeneral != null ? stats.promedioGeneral.toFixed(2) : '—'}
             </span>
-            {/* «sobre 4.00 pts» sólo vale para la rúbrica docente: la lista de
-                cotejo EIB llega a 3 y la directiva se resuelve por porcentaje.
-                Con más de un instrumento no hay promedio único que mostrar. */}
-            {stats.promedioGeneral != null ? (
-              <span className="text-[10px] text-slate-400 font-semibold">
-                {stats.porInstrumento[0]?.tipo === 'DOCENTE_EIB' ? 'sobre 3.00 pts' : 'sobre 4.00 pts'}
-              </span>
+            {/* El EIB no tiene nota. «sobre 4.00 pts» sólo vale para la rúbrica
+                docente; con más de un instrumento no hay promedio único. */}
+            {esEibUnico ? (
+              <span className="text-[10px] text-slate-400 font-semibold">registro No / Parcial / Sí</span>
+            ) : stats.promedioGeneral != null ? (
+              <span className="text-[10px] text-slate-400 font-semibold">sobre 4.00 pts</span>
             ) : stats.porInstrumento.length > 1 ? (
               <DesglosePorInstrumento
                 instrumentos={stats.porInstrumento}
@@ -136,10 +140,12 @@ export const ReportesStats = ({ stats, isEvaluatedView = false }: ReportesStatsP
             <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">
               Mi Nivel de Logro
             </span>
-            <span className={`text-xl font-black block mt-0.5 leading-none ${nivelInfo?.color ?? 'text-slate-800'}`}>
-              {nivelInfo?.label ?? '—'}
+            <span className={`text-xl font-black block mt-0.5 leading-none ${esEibUnico ? 'text-slate-500' : nivelInfo?.color ?? 'text-slate-800'}`}>
+              {esEibUnico ? 'Informativo' : nivelInfo?.label ?? '—'}
             </span>
-            <span className="text-[10px] text-slate-400 font-semibold">más reciente</span>
+            <span className="text-[10px] text-slate-400 font-semibold">
+              {esEibUnico ? 'sin nivel de logro' : 'más reciente'}
+            </span>
           </div>
           <ArrowUpRight className="absolute top-3 right-3 h-4.5 w-4.5 text-slate-300 group-hover:text-slate-400 transition-colors" />
         </Card>

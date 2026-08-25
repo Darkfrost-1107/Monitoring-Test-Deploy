@@ -64,6 +64,11 @@ export class UpdateDocenteDto implements IUpdateDocenteRequest {
   especialidad?: string;
 
   @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  especialidadesExtras?: string[];
+
+  @IsOptional()
   @IsString()
   @MaxLength(150, { message: 'El curso asignado no puede exceder los 150 caracteres' })
   cursoAsignado?: string;

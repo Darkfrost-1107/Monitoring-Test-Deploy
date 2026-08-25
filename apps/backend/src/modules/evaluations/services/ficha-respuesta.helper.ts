@@ -4,6 +4,7 @@ import type { FichaRepository } from '../repositories/ficha.repository.js';
 import type { StorageService } from '../../../shared/storage/storage.constants.js';
 import type { SaveRespuestaDesempenoDto, SaveRespuestaEjeItemDto } from '../dto/ficha.dto.js';
 import type { SessionUser } from '../../../shared/types/session-user.js';
+import { assertEsMonitorAsignado } from './evaluador-guard.js';
 
 async function ensurePlantillaVigente(
   repository: FichaRepository,
@@ -28,9 +29,16 @@ async function ensurePlantillaVigente(
 async function validateBorrador(
   repository: FichaRepository,
   fichaId: string,
+  session: SessionUser,
 ): Promise<IFichaMonitoreo> {
   const ficha = await repository.findById(fichaId);
   if (!ficha) throw new NotFoundException(`Ficha ${fichaId} no encontrada.`);
+
+  // Sólo el monitor asignado a la visita puede modificar su ficha.
+  const cronograma = await repository.findCronogramaBasicById(ficha.cronogramaId);
+  if (!cronograma) throw new NotFoundException(`Visita ${ficha.cronogramaId} no encontrada.`);
+  assertEsMonitorAsignado(session, cronograma.monitorId);
+
   if (ficha.estado !== 'BORRADOR') {
     throw new BadRequestException(
       `Solo se pueden modificar fichas en BORRADOR. Estado actual: ${ficha.estado}.`,
@@ -43,10 +51,9 @@ export async function guardarRespuesta(
   repository: FichaRepository,
   fichaId: string,
   dto: SaveRespuestaDesempenoDto,
-  _session: SessionUser,
+  session: SessionUser,
 ): Promise<IFichaMonitoreo> {
-  void _session;
-  const ficha = await validateBorrador(repository, fichaId);
+  const ficha = await validateBorrador(repository, fichaId, session);
   await ensurePlantillaVigente(repository, ficha);
   await repository.saveRespuestaDesempeno({
     fichaId,
@@ -63,10 +70,9 @@ export async function guardarRespuestaAspecto(
   fichaId: string,
   aspectoId: string,
   marcado: boolean,
-  _session: SessionUser,
+  session: SessionUser,
 ): Promise<IFichaMonitoreo> {
-  void _session;
-  const ficha = await validateBorrador(repository, fichaId);
+  const ficha = await validateBorrador(repository, fichaId, session);
   await ensurePlantillaVigente(repository, ficha);
   await repository.saveRespuestaAspecto({ fichaId, aspectoId, marcado });
   return repository.findById(fichaId) as Promise<IFichaMonitoreo>;
@@ -76,10 +82,9 @@ export async function guardarRespuestaEjeItem(
   repository: FichaRepository,
   fichaId: string,
   dto: SaveRespuestaEjeItemDto,
-  _session: SessionUser,
+  session: SessionUser,
 ): Promise<IFichaMonitoreo> {
-  void _session;
-  const ficha = await validateBorrador(repository, fichaId);
+  const ficha = await validateBorrador(repository, fichaId, session);
   await ensurePlantillaVigente(repository, ficha);
   await repository.saveRespuestaEjeItem({
     fichaId,
@@ -97,10 +102,9 @@ export async function subirEvidencia(
   fichaId: string,
   ejeItemId: string,
   file: Express.Multer.File,
-  _session: SessionUser,
+  session: SessionUser,
 ): Promise<string> {
-  void _session;
-  const ficha = await validateBorrador(repository, fichaId);
+  const ficha = await validateBorrador(repository, fichaId, session);
   await ensurePlantillaVigente(repository, ficha);
 
   const saved = await storage.savePdf('evidencias', file.originalname, file.buffer);

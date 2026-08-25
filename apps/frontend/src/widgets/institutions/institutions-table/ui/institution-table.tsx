@@ -20,18 +20,15 @@ interface InstitutionsTableWidgetProps {
 }
 
 const institutionFilter = (inst: Institucion, params: URLSearchParams) => {
+  const modalidadFilter = params.get('modalidad') || '';
   const nivelFilter = params.get('nivel') || '';
-  const distritoFilter = params.get('distrito') || '';
-  const estadoFilter = params.get('estado') || '';
+  const q = (params.get('q') || '').trim().toLowerCase();
   return (
+    (!modalidadFilter || (inst.modalidad ?? '') === modalidadFilter) &&
     (!nivelFilter || inst.nivel === nivelFilter) &&
-    (!distritoFilter || inst.distrito === distritoFilter) &&
-    (!estadoFilter ||
-      (estadoFilter.toLowerCase().startsWith('activ') &&
-        inst.estado.toLowerCase().startsWith('activ')) ||
-      (estadoFilter.toLowerCase().startsWith('inactiv') &&
-        inst.estado.toLowerCase().startsWith('inactiv')) ||
-      inst.estado.toLowerCase() === estadoFilter.toLowerCase())
+    (!q ||
+      inst.nombre.toLowerCase().includes(q) ||
+      inst.codigoModular.toLowerCase().includes(q))
   );
 };
 

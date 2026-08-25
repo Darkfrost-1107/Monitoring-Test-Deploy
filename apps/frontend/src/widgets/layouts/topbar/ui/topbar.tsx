@@ -1,6 +1,7 @@
 import { useLocation } from 'react-router-dom';
 import { useUser } from '@entities/model-user'; // Entidad limpia
 import { ROLE_LABELS } from '@sistema-monitoreo/shared-contracts';
+import { useScope } from '@shared/auth';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,6 +13,8 @@ import { Avatar, AvatarFallback } from '@shared/ui/avatar';
 import { Button } from '@shared/ui/button';
 import { HelpCircle, LogOut, ChevronDown, Menu, ChevronRight } from 'lucide-react';
 import { NotificationsBell } from '@features/notifications';
+import { BotonPrepararOffline } from '@features/offline/BotonPrepararOffline';
+import { EstadoOffline } from '@features/offline/EstadoOffline';
 import { getPageTitle, ROOT_CRUMB } from '../config/breadcrumbs';
 
 interface TopbarProps {
@@ -21,10 +24,19 @@ interface TopbarProps {
 export const Topbar = ({ onOpenMobileSidebar }: TopbarProps) => {
   // 1. Hooks de estado y enrutamiento
   const { user, logout } = useUser();
+  const { isMonitorCampo } = useScope();
   const location = useLocation();
 
   // 2. Cálculo automático del título basado en la URL
   const title = getPageTitle(location.pathname, user?.role);
+
+  // Las acciones offline sólo tienen sentido para quien levanta la ficha EN EL
+  // AULA (especialista, coordinador pedagógico, jefe de taller): son los que van a
+  // una IE sin señal. No se gatea por `monitoreo:execute`, porque esa capacidad la
+  // arrastran también roles de oficina —el director de UGEL por un cargo viejo, el
+  // jefe de gestión por diseño— que nunca monitorean en terreno. El resto trabaja
+  // siempre en línea y no ve estos controles.
+  const esMonitorDeCampo = isMonitorCampo;
   // Evitamos "UGEL Lampa › UGEL Lampa" cuando el título cae al prefijo raíz.
   const showRootCrumb = title !== ROOT_CRUMB;
 
@@ -57,6 +69,15 @@ export const Topbar = ({ onOpenMobileSidebar }: TopbarProps) => {
 
       {/* ── Derecha: acciones + usuario ── */}
       <div className="flex items-center gap-1 sm:gap-2">
+        {/* Acciones offline: sólo para monitores de campo (van a IE sin señal). */}
+        {esMonitorDeCampo && (
+          <>
+            {/* Estado offline: sin conexión + fichas pendientes de envío */}
+            <EstadoOffline />
+            {/* Descargar datos para trabajar sin conexión */}
+            <BotonPrepararOffline />
+          </>
+        )}
         {/* Notificaciones */}
         <NotificationsBell />
 

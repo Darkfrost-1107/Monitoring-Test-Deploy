@@ -31,6 +31,8 @@ export interface Docente {
   nivelEducativo: NivelEducativo;
   condicion: CondicionLaboral | CondicionDirectiva; // directivas solo cuando cargo = 'Director'
   especialidad: string;
+  /** Especialidades adicionales que el docente también dicta (Secundaria). */
+  especialidadesExtras?: string[];
   cargaHoraria: number; // horas por semana
   secciones: SeccionDocente[];
   /** Nula cuando el docente no tiene escala magisterial declarada. */

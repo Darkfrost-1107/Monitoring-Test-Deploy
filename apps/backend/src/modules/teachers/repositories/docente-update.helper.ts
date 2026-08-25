@@ -6,7 +6,7 @@ import {
   checkDirectorConflict,
   checkPersonaYaEsDirector,
   upsertCurso,
-  upsertEspecialidad,
+  sincronizarEspecialidadesDocente,
   syncEspecialista,
   resolveRoleCode,
 } from './docente-shared.helper.js';
@@ -67,8 +67,15 @@ export async function updateDocenteWithTransaction(
     }
 
     await tx.docenteEspecialidad.deleteMany({ where: { docenteId: id } });
-    if (dto.especialidad) {
-      await upsertEspecialidad(tx, prisma, dto.especialidad, dto.nivelEducativo, id);
+    if (dto.especialidad || dto.especialidadesExtras?.length) {
+      await sincronizarEspecialidadesDocente(
+        tx,
+        prisma,
+        dto.especialidad,
+        dto.especialidadesExtras,
+        dto.nivelEducativo,
+        id,
+      );
     }
 
     await tx.docenteSeccion.deleteMany({ where: { docenteId: id } });

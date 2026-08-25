@@ -4,6 +4,18 @@ import type { FichaRepository } from '../repositories/ficha.repository.js';
 import type { BaremoCalculatorService } from '../motor/baremo-calculator.service.js';
 import type { FinalizarFichaDto } from '../dto/ficha.dto.js';
 import type { SessionUser } from '../../../shared/types/session-user.js';
+import { assertEsMonitorAsignado } from './evaluador-guard.js';
+
+/** Verifica que la sesión sea el monitor asignado a la visita de la ficha. */
+async function assertMonitorDeFicha(
+  repository: FichaRepository,
+  cronogramaId: string,
+  session: SessionUser,
+): Promise<void> {
+  const cronograma = await repository.findCronogramaBasicById(cronogramaId);
+  if (!cronograma) throw new NotFoundException(`Visita ${cronogramaId} no encontrada.`);
+  assertEsMonitorAsignado(session, cronograma.monitorId);
+}
 
 export async function finalizar(
   repository: FichaRepository,
@@ -14,6 +26,10 @@ export async function finalizar(
 ): Promise<IFichaMonitoreo> {
   const ficha = await repository.findById(fichaId);
   if (!ficha) throw new NotFoundException(`Ficha ${fichaId} no encontrada.`);
+
+  // Sólo el monitor asignado a la visita puede finalizar su ficha.
+  await assertMonitorDeFicha(repository, ficha.cronogramaId, session);
+
   if (ficha.estado !== 'BORRADOR') {
     throw new BadRequestException(`La ficha ya esta ${ficha.estado}.`);
   }
@@ -35,9 +51,13 @@ export async function finalizar(
 
   // El nivel de logro lo decide la escala que declara la plantilla, leída en su
   // modo: la rúbrica docente corta sobre el puntaje y la directiva sobre el
-  // porcentaje de avance.
+  // porcentaje de avance. El EIB es informativo (No/Parcial/Sí): registra la
+  // práctica pero no produce puntaje ni nivel, así que se finaliza en nulo.
   const escala = await repository.findEscalaDePlantilla(ficha.plantillaId);
-  const resultado = baremoService.calcularResultadoCompleto(niveles, escala.tramos, escala.modo);
+  const esInformativo = escala.tipoMonitoreo === 'DOCENTE_EIB';
+  const resultado = esInformativo
+    ? { puntajeTotal: null, promedio: null, nivelLogro: null }
+    : baremoService.calcularResultadoCompleto(niveles, escala.tramos, escala.modo);
 
   const result = await repository.finalizar(
     fichaId,
@@ -60,11 +80,14 @@ export async function migrarPlantilla(
   repository: FichaRepository,
   fichaId: string,
   nuevaPlantillaId: string,
-  _session: SessionUser,
+  session: SessionUser,
 ): Promise<IFichaMonitoreo> {
-  void _session;
   const ficha = await repository.findById(fichaId);
   if (!ficha) throw new NotFoundException(`Ficha ${fichaId} no encontrada.`);
+
+  // Sólo el monitor asignado a la visita puede migrar la plantilla de su ficha.
+  await assertMonitorDeFicha(repository, ficha.cronogramaId, session);
+
   if (ficha.estado !== 'BORRADOR') {
     throw new BadRequestException(
       `Solo se pueden migrar fichas en BORRADOR. Estado actual: ${ficha.estado}.`,

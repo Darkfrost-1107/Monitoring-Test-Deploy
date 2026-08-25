@@ -138,7 +138,7 @@ describe('reportesVisibles — evaluador asignado', () => {
 
 describe('reportesVisibles — director de institución', () => {
   const director = (over: Partial<UsuarioDeReportes> = {}) =>
-    usuario({ role: RoleCode.DIRECTOR_INSTITUCION, institucionId: 'ie-1', ...over });
+    usuario({ role: RoleCode.DIRECTOR_INSTITUCION, institucion: 'ie-1', ...over });
 
   it('ve los reportes de su institución', () => {
     const suyo = reporte({ id: 'suyo', institucionId: 'ie-1' });
@@ -154,10 +154,10 @@ describe('reportesVisibles — director de institución', () => {
    */
   it('no coincide con una institución de nombre parecido', () => {
     const deOtra = reporte({ id: 'otra', institucionId: 'ie-1234' });
-    expect(reportesVisibles([deOtra], director({ institucionId: 'ie-123' }))).toEqual([]);
+    expect(reportesVisibles([deOtra], director({ institucion: 'ie-123' }))).toEqual([]);
   });
 
   it('sin institución asignada no ve ninguno', () => {
-    expect(reportesVisibles([reporte()], director({ institucionId: undefined }))).toEqual([]);
+    expect(reportesVisibles([reporte()], director({ institucion: undefined }))).toEqual([]);
   });
 });

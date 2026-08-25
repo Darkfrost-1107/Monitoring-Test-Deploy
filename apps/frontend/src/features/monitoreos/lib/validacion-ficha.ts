@@ -21,12 +21,23 @@ export interface PlantillaValidable {
   tipoMonitoreo: string;
 }
 
+/** Contexto de aula tal como lo lleva el formulario. */
+export interface ContextoAValidar {
+  area: string;
+  grado: string;
+  seccion: string;
+  alumnos: number | '';
+  alumnosNee: number | '';
+}
+
 export interface RespuestasAValidar {
   selectedLevels: Record<string, string>;
   rubricComments: Record<string, string>;
   observacionesEjeItem: Record<string, string>;
+  generalComments: string;
   sugerencias: string;
   compromisos: string;
+  contexto: ContextoAValidar;
 }
 
 /** ¿El texto está ausente o es sólo espacios? Un campo en blanco no justifica nada. */
@@ -44,6 +55,8 @@ export function validarCierreDeFicha(
   plantilla: PlantillaValidable,
   respuestas: RespuestasAValidar,
 ): string | null {
+  const esDirectivo = plantilla.tipoMonitoreo.toUpperCase().includes('DIRECTIVO');
+
   const sinCalificar = plantilla.desempenos.filter((d) => !respuestas.selectedLevels[d.id]);
   if (sinCalificar.length > 0) {
     return `Faltan calificar niveles. Por favor califique el nivel de logro para: \n${listar(
@@ -68,7 +81,6 @@ export function validarCierreDeFicha(
    * poder finalizarse, reclamando observaciones de una sección que su pantalla
    * ni siquiera muestra.
    */
-  const esDirectivo = plantilla.tipoMonitoreo.toUpperCase().includes('DIRECTIVO');
   const itemsExigibles = esDirectivo ? [] : (plantilla.ejesItems ?? []);
 
   const sinObservar = itemsExigibles.filter((item) =>
@@ -80,12 +92,36 @@ export function validarCierreDeFicha(
     )}`;
   }
 
+  if (estaVacio(respuestas.generalComments)) {
+    return 'Las observaciones generales son obligatorias para finalizar la ficha.';
+  }
+
   if (estaVacio(respuestas.sugerencias)) {
     return 'Las sugerencias son obligatorias para finalizar la ficha.';
   }
 
   if (estaVacio(respuestas.compromisos)) {
     return 'Los compromisos son obligatorios para finalizar la ficha.';
+  }
+
+  /**
+   * El contexto de aula es obligatorio para una ficha DOCENTE, y el backend lo
+   * rechaza sin él. Se valida para no cerrar —ni encolar sin conexión— una ficha
+   * incompleta: sin señal, el autocompletado desde el perfil del docente no
+   * corre, así que el aula la carga el evaluador y hay que exigirla. La ficha
+   * directiva no lleva contexto (va NULL), por eso se exceptúa.
+   */
+  if (!esDirectivo) {
+    const c = respuestas.contexto;
+    const faltantes: string[] = [];
+    if (estaVacio(c.area)) faltantes.push('área curricular');
+    if (estaVacio(c.grado)) faltantes.push('grado');
+    if (estaVacio(c.seccion)) faltantes.push('sección');
+    if (c.alumnos === '') faltantes.push('cantidad de estudiantes');
+    if (c.alumnosNee === '') faltantes.push('cantidad de estudiantes con NEE');
+    if (faltantes.length > 0) {
+      return `Faltan datos del aula. Complete: \n${listar(faltantes)}`;
+    }
   }
 
   return null;

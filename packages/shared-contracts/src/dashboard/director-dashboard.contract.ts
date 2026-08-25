@@ -51,8 +51,28 @@ export interface IDirectorDashboardMonitoreoReciente {
   nivelEducativo: string;
   /** Fecha de finalización de la ficha (ISO 8601). */
   fecha: string;
+  /**
+   * El monitoreo EIB es informativo: registra la práctica (No/Parcial/Sí) pero
+   * no produce una nota ni un nivel de logro, de modo que no lleva insignia.
+   */
+  esInformativo: boolean;
+  /** Nulos cuando el instrumento es informativo (EIB). */
+  nivelLogro: NivelLogro | null;
+  promedio: number | null;
+}
+
+/**
+ * Un docente con el nivel de su última ficha de rúbrica. Se usa tanto para los
+ * focos de atención (INICIO/EN_PROCESO, del promedio más bajo al más alto) como
+ * para los destacados (LOGRO_ESPERADO/DESTACADO, del más alto al más bajo).
+ */
+export interface IDirectorDashboardFoco {
+  docenteId: string;
+  docenteNombre: string;
   nivelLogro: NivelLogro;
   promedio: number;
+  /** Ficha que sustenta el nivel, para abrir su detalle. */
+  fichaId: string;
 }
 
 export interface IDirectorDashboardResponse {
@@ -60,4 +80,8 @@ export interface IDirectorDashboardResponse {
   kpis: IDirectorDashboardKpis;
   semaforo: IDirectorDashboardSemaforo;
   monitoreosRecientes: IDirectorDashboardMonitoreoReciente[];
+  /** Docentes en situación crítica o en seguimiento, para priorizar. */
+  focosDeAtencion: IDirectorDashboardFoco[];
+  /** Docentes con mejor nivel de logro, como contrapeso positivo a los focos. */
+  docentesDestacados: IDirectorDashboardFoco[];
 }

@@ -81,8 +81,12 @@ export const fichasApi = {
       body: JSON.stringify({ plantillaId }),
     }),
 
-  getHistorial: (evaluadoId: string) =>
-    request<IHistorialPedagogicoResponse>(`/api/fichas/historial/${evaluadoId}`),
+  getHistorial: (evaluadoId: string, tipoMonitoreo?: string) =>
+    request<IHistorialPedagogicoResponse>(
+      `/api/fichas/historial/${evaluadoId}${
+        tipoMonitoreo ? `?tipoMonitoreo=${encodeURIComponent(tipoMonitoreo)}` : ''
+      }`,
+    ),
 
   descargarPdf: (fichaId: string) =>
     requestBlob(`/api/reportes/ficha/${fichaId}/pdf`),

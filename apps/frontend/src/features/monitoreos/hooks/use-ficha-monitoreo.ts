@@ -121,10 +121,13 @@ export const useMigrarPlantilla = () => {
 // Re-export del helper para que las paginas lo usen
 export { toFichaError };
 
-export const useGetHistorialPedagogico = (evaluadoId: string | undefined) =>
+export const useGetHistorialPedagogico = (
+  evaluadoId: string | undefined,
+  tipoMonitoreo?: string,
+) =>
   useQuery({
-    queryKey: ['fichas', 'historial', evaluadoId],
-    queryFn: () => fichasApi.getHistorial(evaluadoId!),
+    queryKey: ['fichas', 'historial', evaluadoId, tipoMonitoreo],
+    queryFn: () => fichasApi.getHistorial(evaluadoId!, tipoMonitoreo),
     enabled: !!evaluadoId,
   });
 

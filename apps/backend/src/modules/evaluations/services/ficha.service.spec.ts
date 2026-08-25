@@ -40,6 +40,9 @@ describe('FichaService - ILA-0046 409 PLANTILLA_VERSIONADA', () => {
           useValue: {
             findById: jest.fn<any>(),
             findByVisitaId: jest.fn<any>(),
+            findCronogramaBasicById: jest
+              .fn<any>()
+              .mockResolvedValue({ id: 'cronograma-1', monitorId: 'esp-1' }),
             create: jest.fn<any>(),
             saveRespuestaDesempeno: jest.fn<any>(),
             saveRespuestaAspecto: jest.fn<any>(),
@@ -90,7 +93,7 @@ describe('FichaService - ILA-0046 409 PLANTILLA_VERSIONADA', () => {
       const result = await service.guardarRespuesta(
         'ficha-1',
         { desempenoId: 'd1', nivel: 3 },
-        { id: 'user-1', role: RoleCode.ESPECIALISTA },
+        { id: 'user-1', role: RoleCode.ESPECIALISTA, especialistaId: 'esp-1' },
       );
 
       expect(result.respuestasDesempeno).toHaveLength(1);
@@ -117,7 +120,7 @@ describe('FichaService - ILA-0046 409 PLANTILLA_VERSIONADA', () => {
         await service.guardarRespuesta(
           'ficha-1',
           { desempenoId: 'd1', nivel: 3 },
-          { id: 'user-1', role: RoleCode.ESPECIALISTA },
+          { id: 'user-1', role: RoleCode.ESPECIALISTA, especialistaId: 'esp-1' },
         );
         fail('Debio lanzar ConflictException');
       } catch (err) {
@@ -146,7 +149,7 @@ describe('FichaService - ILA-0046 409 PLANTILLA_VERSIONADA', () => {
         await service.guardarRespuesta(
           'ficha-1',
           { desempenoId: 'd1', nivel: 3 },
-          { id: 'user-1', role: RoleCode.ESPECIALISTA },
+          { id: 'user-1', role: RoleCode.ESPECIALISTA, especialistaId: 'esp-1' },
         );
         fail('Debio lanzar ConflictException');
       } catch (err) {
@@ -173,6 +176,7 @@ describe('FichaService - ILA-0046 409 PLANTILLA_VERSIONADA', () => {
         await service.guardarRespuestaAspecto('ficha-1', 'aspecto-1', true, {
           id: 'user-1',
           role: RoleCode.ESPECIALISTA,
+          especialistaId: 'esp-1',
         });
         fail('Debio lanzar ConflictException');
       } catch (err) {
@@ -192,7 +196,7 @@ describe('FichaService - ILA-0046 409 PLANTILLA_VERSIONADA', () => {
         service.guardarRespuesta(
           'ficha-x',
           { desempenoId: 'd1', nivel: 1 },
-          { id: 'user-1', role: RoleCode.ESPECIALISTA },
+          { id: 'user-1', role: RoleCode.ESPECIALISTA, especialistaId: 'esp-1' },
         ),
       ).rejects.toThrow(NotFoundException);
     });

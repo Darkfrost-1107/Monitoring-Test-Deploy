@@ -48,7 +48,7 @@ export const EvidenciaGeneralSeccion = ({
   };
 
   return (
-    <div className="p-5 border-t border-border bg-white">
+    <div>
       <div className="flex items-center justify-between mb-4">
         <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">
           Evidencia del Monitoreo

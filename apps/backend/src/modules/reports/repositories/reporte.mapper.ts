@@ -107,8 +107,9 @@ export function fromPrismaFichaReporte(f: FichaReportePayload): IReporteFicha {
     especialistaNombre: `${f.cronograma.monitor.persona.nombres} ${f.cronograma.monitor.persona.apellidos}`,
     instrumento,
     anioAcademico: f.anioAcademico,
-    nivelLogro: f.nivelLogro as NivelLogro,
-    promedio: Number(f.promedio),
+    // El EIB informativo se guarda sin nivel ni puntaje (null).
+    nivelLogro: f.nivelLogro as NivelLogro | null,
+    promedio: f.promedio === null ? null : Number(f.promedio),
     puntajeTotal: f.puntajeTotal,
     estado: f.estado as EstadoFicha,
     observaciones: f.observaciones,
@@ -123,6 +124,7 @@ export function fromPrismaFichaReporte(f: FichaReportePayload): IReporteFicha {
     horaInicio: f.cronograma.horaInicio ?? undefined,
     horaFin: f.finalizadaAt ? f.finalizadaAt.toISOString() : undefined,
     modalidad: f.cronograma.modalidad,
+    numeroVisita: f.cronograma.numeroVisita,
     nivel: f.cronograma.nivelEducativo,
     firmas: f.firmas?.map((firma) => ({
       rolFirmante: firma.rolFirmante,

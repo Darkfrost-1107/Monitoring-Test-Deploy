@@ -5,6 +5,7 @@ import {
   esFechaDeEsteMes,
   coincideConPeriodo,
   calcularConteosPorPeriodo,
+  rangoDePeriodo,
 } from './filtro-temporal';
 
 describe('filtro-temporal', () => {
@@ -67,6 +68,48 @@ describe('filtro-temporal', () => {
 
       expect(coincideConPeriodo('2026-08-01', 'ESTE_MES', ahora)).toBe(true);
       expect(coincideConPeriodo('2026-07-31', 'ESTE_MES', ahora)).toBe(false);
+    });
+  });
+
+  describe('rangoDePeriodo', () => {
+    // ¿El timestamp cae dentro del rango [desde, hasta]?
+    const dentro = (iso: string, r: { fechaDesde?: string; fechaHasta?: string }) =>
+      !!r.fechaDesde &&
+      !!r.fechaHasta &&
+      new Date(iso) >= new Date(r.fechaDesde) &&
+      new Date(iso) <= new Date(r.fechaHasta);
+
+    it('TODOS no acota fechas', () => {
+      expect(rangoDePeriodo('TODOS', ahora)).toEqual({});
+    });
+
+    it('HOY cubre el día de hoy y excluye ayer', () => {
+      const r = rangoDePeriodo('HOY', ahora);
+      expect(dentro('2026-08-14T10:00:00', r)).toBe(true);
+      expect(dentro('2026-08-13T23:00:00', r)).toBe(false);
+      expect(dentro('2026-08-15T00:30:00', r)).toBe(false);
+    });
+
+    it('ESTE_MES cubre todo agosto y excluye julio/septiembre', () => {
+      const r = rangoDePeriodo('ESTE_MES', ahora);
+      expect(dentro('2026-08-01T08:00:00', r)).toBe(true);
+      expect(dentro('2026-08-31T20:00:00', r)).toBe(true);
+      expect(dentro('2026-07-31T20:00:00', r)).toBe(false);
+      expect(dentro('2026-09-01T08:00:00', r)).toBe(false);
+    });
+
+    it('coincide con coincideConPeriodo (mismos límites que las píldoras)', () => {
+      for (const filtro of ['HOY', 'ESTA_SEMANA', 'ESTE_MES'] as const) {
+        const r = rangoDePeriodo(filtro, ahora);
+        for (const iso of [
+          '2026-08-14T10:00:00',
+          '2026-08-12T10:00:00',
+          '2026-08-01T10:00:00',
+          '2026-07-15T10:00:00',
+        ]) {
+          expect(dentro(iso, r)).toBe(coincideConPeriodo(iso, filtro, ahora));
+        }
+      }
     });
   });
 

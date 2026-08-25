@@ -4,10 +4,12 @@ import { formatearFecha } from '@shared/lib/fecha/fecha';
 
 interface HistorialChartProps {
   evaluadoId: string;
+  /** Instrumento a graficar: acota la evolución a esa rúbrica (regular o EIB). */
+  tipoMonitoreo?: string;
 }
 
-export function HistorialChart({ evaluadoId }: HistorialChartProps) {
-  const { data, isLoading, isError } = useGetHistorialPedagogico(evaluadoId);
+export function HistorialChart({ evaluadoId, tipoMonitoreo }: HistorialChartProps) {
+  const { data, isLoading, isError } = useGetHistorialPedagogico(evaluadoId, tipoMonitoreo);
 
   if (isLoading) {
     return <div className="text-sm text-slate-500 animate-pulse p-4">Cargando historial pedagógico...</div>;
@@ -49,7 +51,8 @@ export function HistorialChart({ evaluadoId }: HistorialChartProps) {
           <LineChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
             <XAxis dataKey="nombre" stroke="#64748b" fontSize={12} />
-            <YAxis stroke="#64748b" fontSize={12} domain={[0, 100]} tickFormatter={(val) => `${val}%`} />
+            {/* El promedio viene en la escala de rúbrica (1 a 4), como el KPI. */}
+            <YAxis stroke="#64748b" fontSize={12} domain={[0, 4]} ticks={[0, 1, 2, 3, 4]} />
             <Tooltip
               content={({ active, payload, label }) => {
                 if (active && payload && payload.length) {
@@ -59,8 +62,7 @@ export function HistorialChart({ evaluadoId }: HistorialChartProps) {
                       <p className="font-semibold text-slate-800 mb-1">{label}</p>
                       <p className="text-slate-600">Fecha: {data.fecha}</p>
                       <p className="text-slate-600">Nivel: <span className="font-medium text-blue-600">{data.nivel}</span></p>
-                      <p className="text-slate-600">Puntaje: {data.puntaje} / {data.maximo}</p>
-                      <p className="text-slate-600 font-medium mt-1">Porcentaje: {data.promedio}%</p>
+                      <p className="text-slate-600 font-medium mt-1">Promedio: {data.promedio} <span className="text-slate-400">/ 4</span></p>
                     </div>
                   );
                 }
@@ -71,7 +73,7 @@ export function HistorialChart({ evaluadoId }: HistorialChartProps) {
             <Line
               type="monotone"
               dataKey="promedio"
-              name="Rendimiento (%)"
+              name="Promedio (escala 1 a 4)"
               stroke="#2563eb"
               strokeWidth={2}
               dot={{ r: 4, strokeWidth: 2, fill: "#ffffff" }}

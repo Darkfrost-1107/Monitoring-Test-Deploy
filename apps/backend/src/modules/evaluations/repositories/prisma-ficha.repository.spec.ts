@@ -286,9 +286,9 @@ describe('PrismaFichaRepository', () => {
       ...over,
     });
 
-    it('devuelve las fichas en orden cronológico ascendente', async () => {
-      // El historial se lee como una línea de tiempo: de la primera visita a la
-      // última. Es el orden inverso al del panel, que muestra lo más reciente.
+    it('devuelve las fichas ordenadas por número de visita ascendente', async () => {
+      // El historial se lee como la evolución por rondas: 1er monitoreo, 2do…
+      // Se ordena por número de visita (la ronda real), no por fecha programada.
       const { repo, prisma } = montar();
       prisma.fichaMonitoreo.findMany.mockResolvedValue([fichaHistorial()]);
 
@@ -296,7 +296,24 @@ describe('PrismaFichaRepository', () => {
 
       expect(prisma.fichaMonitoreo.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          orderBy: { cronograma: { fechaProgramada: 'asc' } },
+          orderBy: { cronograma: { numeroVisita: 'asc' } },
+        }),
+      );
+    });
+
+    it('filtra el historial por instrumento cuando se indica', async () => {
+      // Un docente evaluado con la ficha regular y la EIB tiene dos series: el
+      // instrumento acota la evolución a una sola rúbrica.
+      const { repo, prisma } = montar();
+      prisma.fichaMonitoreo.findMany.mockResolvedValue([fichaHistorial()]);
+
+      await repo.getHistorial('d-1', 'DOCENTE_EIB');
+
+      expect(prisma.fichaMonitoreo.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            plantilla: { tipoMonitoreo: 'DOCENTE_EIB' },
+          }),
         }),
       );
     });
@@ -309,7 +326,11 @@ describe('PrismaFichaRepository', () => {
 
       expect(prisma.fichaMonitoreo.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { cronograma: { evaluadoId: 'd-1' }, estado: 'FINALIZADO' },
+          where: {
+            cronograma: { evaluadoId: 'd-1' },
+            estado: 'FINALIZADO',
+            promedio: { not: null },
+          },
         }),
       );
     });

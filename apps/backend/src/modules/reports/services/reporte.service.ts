@@ -97,7 +97,8 @@ export class ReporteService {
         anioAcademico: f.anioAcademico,
         nivelLogro: f.nivelLogro,
         puntajeTotal: f.puntajeTotal,
-        promedio: f.promedio.toFixed(2),
+        // El EIB informativo no tiene promedio.
+        promedio: f.promedio != null ? f.promedio.toFixed(2) : null,
         estado: f.estado,
         observaciones: f.observaciones || null,
         compromisos: f.compromisos || null,
@@ -162,7 +163,9 @@ export class ReporteService {
       LOGRO_ESPERADO: '#22c55e',
       LOGRO_DESTACADO: '#3b82f6',
     };
-    const color = colorPorNivel[f.nivelLogro] ?? '#6b7280';
+    const color = (f.nivelLogro ? colorPorNivel[f.nivelLogro] : undefined) ?? '#6b7280';
+    // El EIB es informativo (No/Parcial/Sí): no tiene nivel de logro ni promedio.
+    const esInformativo = f.nivelLogro === null;
     return `<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -202,11 +205,18 @@ export class ReporteService {
   <div class="field"><div class="label">Instrumento</div><div class="value">${this.escape(f.instrumento)}</div></div>
   <div class="field"><div class="label">Ano Academico</div><div class="value">${f.anioAcademico}</div></div>
 </div>
-<div class="result">
+${
+  esInformativo
+    ? `<div class="result">
+  <h2>Instrumento Informativo</h2>
+  <div class="promedio">Esta ficha registra la práctica observada (No / Parcial / Sí); no produce un nivel de logro ni un promedio.</div>
+</div>`
+    : `<div class="result">
   <h2>Nivel de Logro Alcanzado</h2>
-  <div class="nivel">${this.escape(f.nivelLogro)}</div>
-  <div class="promedio">Promedio: ${f.promedio.toFixed(2)} &middot; Puntaje: ${f.puntajeTotal}</div>
-</div>
+  <div class="nivel">${this.escape(f.nivelLogro ?? '')}</div>
+  <div class="promedio">Promedio: ${f.promedio?.toFixed(2) ?? '—'} &middot; Puntaje: ${f.puntajeTotal ?? '—'}</div>
+</div>`
+}
 <div class="footer">
   Documento generado por el Sistema de Monitoreo de la UGEL Lampa.<br/>
   ID Ficha: ${this.escape(f.id)} &middot; Estado: ${this.escape(f.estado)}

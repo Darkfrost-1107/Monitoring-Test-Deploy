@@ -8,7 +8,10 @@ export interface ICreateDocenteRequest {
   gradoAcademico?: string;
   nivelEducativo: string;
   modalidad?: string;
+  /** Especialidad principal del docente (Secundaria). */
   especialidad?: string;
+  /** Especialidades adicionales que el docente también dicta (plana corta). */
+  especialidadesExtras?: string[];
   cursoAsignado?: string;
   cargoId: string;
   condicionLaboral?: string;
@@ -25,7 +28,10 @@ export interface IUpdateDocenteRequest {
   gradoAcademico?: string;
   nivelEducativo: string;
   modalidad?: string;
+  /** Especialidad principal del docente (Secundaria). */
   especialidad?: string;
+  /** Especialidades adicionales que el docente también dicta (plana corta). */
+  especialidadesExtras?: string[];
   cursoAsignado?: string;
   cargoId: string;
   condicionLaboral?: string;
@@ -42,7 +48,10 @@ export interface IDocenteResponse {
   gradoAcademico: string | null;
   nivelEducativo: string;
   modalidad?: string | null;
+  /** Todas las especialidades unidas por coma, la principal primero. */
   especialidad?: string | null;
+  /** Especialidades adicionales (sin la principal), para editarlas por separado. */
+  especialidadesExtras?: string[];
   cursoAsignado: string | null;
   condicionLaboral?: string | null;
   escalaMagisterial?: number | null;
