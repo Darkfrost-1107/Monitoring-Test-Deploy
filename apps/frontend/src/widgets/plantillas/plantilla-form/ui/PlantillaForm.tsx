@@ -11,6 +11,14 @@ import { PlantillaEjesItems } from './PlantillaEjesItems';
 
 export interface PlantillaFormState {
   tipoMonitoreo: string;
+  /**
+   * Nombre con el que la ficha aparece en el catálogo.
+   *
+   * Se guarda en `descripcion`, que ya existía en el modelo y sólo llevaba el
+   * texto que dejaba el clonador. Sin nombre, todas las fichas del mismo
+   * instrumento y año se ven idénticas.
+   */
+  descripcion: string;
   anioAcademico: number;
   /**
    * Lema oficial del año. No se guarda con la plantilla: viaja acá para que
@@ -27,11 +35,20 @@ interface Props {
   onCancel: () => void;
   onSubmit: (data: PlantillaFormState) => void;
   isSaving?: boolean;
+  /**
+   * Instrumentos que esta persona puede elegir.
+   *
+   * Para la UGEL, todos. Para una institución, sólo los que tenga autorizados
+   * por una solicitud aprobada: el catálogo oficial es obligatorio y una ficha
+   * propia no se crea porque se quiera.
+   */
+  instrumentosPermitidos?: readonly string[];
 }
 
-export const PlantillaForm = ({ onCancel, onSubmit, isSaving = false }: Props) => {
+export const PlantillaForm = ({ onCancel, onSubmit, isSaving = false, instrumentosPermitidos}: Props) => {
   const [form, setForm] = useState<PlantillaFormState>(() => ({
     tipoMonitoreo: 'Monitoreo Docente',
+    descripcion: '',
     anioAcademico: new Date().getFullYear(),
     lema: '',
     baremo: baremoPorDefecto('Monitoreo Docente'),
@@ -106,6 +123,8 @@ export const PlantillaForm = ({ onCancel, onSubmit, isSaving = false }: Props) =
     <div className="flex flex-col gap-5">
       <PlantillaCabecera
         tipoMonitoreo={form.tipoMonitoreo}
+        descripcion={form.descripcion}
+        instrumentosPermitidos={instrumentosPermitidos}
         anioAcademico={form.anioAcademico}
         lema={lemaVigente}
         lemaGuardado={lemaGuardado}

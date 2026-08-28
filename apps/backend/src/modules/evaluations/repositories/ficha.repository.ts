@@ -73,6 +73,10 @@ export interface PlantillaBasic {
   tipoMonitoreo: string;
   anioAcademico: number;
   descripcion: string | null;
+  /** Institución dueña. `null` en las del catálogo de la UGEL. */
+  institucionId: string | null;
+  /** Quien la creó. Decide quién puede aplicarla si es de una institución. */
+  autorId: string;
 }
 
 export abstract class FichaRepository {

@@ -265,15 +265,32 @@ export class PrismaFichaRepository implements FichaRepository {
     return p?.estado === 'Historico';
   }
 
+  /**
+   * La ficha con la que se evalúa cuando nadie eligió una.
+   *
+   * Sale del catálogo de la UGEL —`institucionId: null`— porque es el
+   * obligatorio y el único que sirve para cualquier monitor. Antes tomaba la
+   * primera vigente del tipo y el año sin mirar el dueño, de modo que el
+   * respaldo podía ser la ficha propia de una institución cualquiera, aplicada
+   * a un docente de otra.
+   */
   async findPlantillaVigente(tipo: string, anio: number): Promise<PlantillaBasic | null> {
     const p = await this.prisma.plantillaMonitoreo.findFirst({
-      where: { tipoMonitoreo: tipo, anioAcademico: anio, estado: 'Vigente', deleted: false },
+      where: {
+        tipoMonitoreo: tipo,
+        anioAcademico: anio,
+        estado: 'Vigente',
+        deleted: false,
+        institucionId: null,
+      },
       select: {
         id: true,
         estado: true,
         tipoMonitoreo: true,
         anioAcademico: true,
         descripcion: true,
+        institucionId: true,
+        autorId: true,
       },
     });
     return p;
@@ -351,6 +368,8 @@ export class PrismaFichaRepository implements FichaRepository {
         tipoMonitoreo: true,
         anioAcademico: true,
         descripcion: true,
+        institucionId: true,
+        autorId: true,
       },
     });
     return p;

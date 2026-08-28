@@ -117,14 +117,26 @@ describe('plantillasVisibles — monitor de campo en una institución', () => {
   const monitor = (over: Partial<UsuarioDePlantillas> = {}) =>
     usuario({ role: RoleCode.ESPECIALISTA, institucion: 'ie-1', ...over });
 
-  it('ve sólo la plantilla propia de su institución, sin las de la UGEL', () => {
+  /**
+   * Antes veía sólo la plantilla de su institución. Las fichas de la UGEL son
+   * obligatorias —son las que aplica en el aula y la base desde la que clona
+   * cuando le aprueban una solicitud—, así que ocultárselas lo dejaba sin
+   * instrumento con el catálogo oficial publicado.
+   */
+  it('ve el catálogo de la UGEL y lo de su propia institución', () => {
     const lista = [
       plantilla({ id: 'ugel' }),
       plantilla({ id: 'suya', creadoPorRole: 'director_ie', ieId: 'ie-1' }),
       plantilla({ id: 'ajena', creadoPorRole: 'director_ie', ieId: 'ie-9' }),
     ];
 
-    expect(ids(plantillasVisibles(lista, monitor(), enInstitucion))).toEqual(['suya']);
+    expect(ids(plantillasVisibles(lista, monitor(), enInstitucion))).toEqual(['ugel', 'suya']);
+  });
+
+  it('no ve la plantilla de otra institución', () => {
+    const ajena = plantilla({ id: 'ajena', creadoPorRole: 'director_ie', ieId: 'ie-9' });
+
+    expect(ids(plantillasVisibles([ajena], monitor(), enInstitucion))).toEqual([]);
   });
 
   it('sin institución asignada no ve ninguna', () => {

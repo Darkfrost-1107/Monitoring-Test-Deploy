@@ -77,17 +77,25 @@ export class PlantillaService {
           (p) => !(p.rolAutorAlCrear === 'jefe_gestion' && p.estado === 'Borrador'),
         );
 
-        // Coordinador y Jefe de Taller no deben ver las plantillas de la UGEL (solo de su IE)
+        // Coordinador y Jefe de Taller ven el catálogo de la UGEL y lo de su
+        // propia institución, nada más.
+        //
+        // Antes se les ocultaban las de la UGEL: sólo veían las de su I.E.
+        // Bajo el modelo actual eso los deja sin instrumento. El catálogo de la
+        // UGEL es OBLIGATORIO y una plantilla propia sólo cuenta si nació de una
+        // solicitud aprobada, de modo que un coordinador con un clon sin
+        // autorizar se quedaba con la lista vacía y el calendario le decía «no
+        // hay una plantilla vigente» con las tres fichas oficiales publicadas.
+        //
+        // Se filtra por DUEÑO (`institucionId`), que es el hecho, y no por el
+        // sello del autor: el sello es histórico y puede faltar en plantillas
+        // anteriores a que existiera.
         if (
           session.role === RoleCode.COORDINADOR_PEDAGOGICO ||
           session.role === RoleCode.JEFE_TALLER
         ) {
           plantillas = plantillas.filter(
-            // Ven las de su institución: la del Director, para poder clonarla, y
-            // la suya propia. Se pedía `director_ie` a secas, de modo que su
-            // propia copia quedaba fuera del catálogo apenas la creaban.
-            (p) =>
-              p.institucionId === session.institucionId && esAutorDeInstitucion(p.rolAutorAlCrear),
+            (p) => p.institucionId === null || p.institucionId === session.institucionId,
           );
         }
       }

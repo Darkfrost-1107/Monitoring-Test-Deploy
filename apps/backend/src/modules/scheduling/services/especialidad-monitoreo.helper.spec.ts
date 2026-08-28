@@ -40,4 +40,31 @@ describe('compartenEspecialidad', () => {
     expect(compartenEspecialidad([], ['Matematica'])).toBe(false);
     expect(compartenEspecialidad(['Matematica'], [])).toBe(false);
   });
+
+  describe('a quien NO le aplica', () => {
+    /**
+     * La regla es del especialista de UGEL, que se asigna por área. Dentro de
+     * una institución, el Coordinador y el Jefe de Taller se rigen por su
+     * cartera de docentes asignados, y el Director por todo su personal.
+     *
+     * Ninguno tiene registro de especialista, así que su lista de áreas llega
+     * vacía —y una lista vacía no comparte especialidad con nadie—. Aplicarles
+     * esta regla les impedía programar cualquier visita en Secundaria.
+     */
+    it.each([
+      ['el director de la I.E.', 'director_institucion'],
+      ['el coordinador pedagogico', 'coordinador_pedagogico'],
+      ['el jefe de taller', 'jefe_taller'],
+    ])('no se le exige compartir area a %s', (_caso, rol) => {
+      expect(requiereEspecialidadCompartida('Secundaria', 'DOCENTE', rol)).toBe(false);
+    });
+
+    it('al especialista de UGEL si se le exige', () => {
+      expect(requiereEspecialidadCompartida('Secundaria', 'DOCENTE', 'especialista')).toBe(true);
+    });
+
+    it('sin rol se comporta como antes, para no romper a quien no lo pasa', () => {
+      expect(requiereEspecialidadCompartida('Secundaria', 'DOCENTE')).toBe(true);
+    });
+  });
 });

@@ -178,6 +178,20 @@ export async function versionarConClon(
       },
     });
     if (!creada) throw new NotFoundException('Error creando nueva version.');
+    /**
+     * El cupo que autorizó la plantilla sigue a la versión nueva.
+     *
+     * Versionar no crea otra plantilla a los ojos del negocio: es la misma,
+     * corregida. Si el cupo se quedara apuntando a la versión histórica, la
+     * vigente nacería sin autorización y dejaría de ofrecerse para monitorear:
+     * la institución tendría que volver a pedir permiso por una corrección de
+     * redacción.
+     */
+    const { count: cuposMovidos } = await tx.solicitudPlantillaItem.updateMany({
+      where: { plantillaId: original.id },
+      data: { plantillaId: creada.id },
+    });
+
     return {
       lema,
       id: creada.id,
@@ -191,6 +205,13 @@ export async function versionarConClon(
       autorId: creada.autorId,
       rolAutorAlCrear: creada.rolAutorAlCrear as RolAutorPlantilla,
       institucionId: creada.institucionId,
+      // Versionar no crea una plantilla nueva a los ojos del negocio: es la
+      // misma, corregida. Hereda la autorización del original en lugar de
+      // exigir un cupo, que ya se consumió al crearla la primera vez.
+      // De la UGEL siempre; de una I.E., sólo si traía cupo. Las anteriores a
+      // que existieran las autorizaciones se quedan sin ella, que es lo
+      // correcto: no se ofrecen para monitorear, pero sus fichas siguen vivas.
+      autorizada: creada.institucionId === null || cuposMovidos > 0,
       niveles: creada.nivelesCalificacion.map((n) => ({
         id: n.id,
         plantillaId: n.plantillaId,

@@ -10,6 +10,7 @@ import {
   INSTRUMENTOS_SOLICITABLES,
   type EstadoSolicitudPlantilla,
   type ICrearSolicitudPlantillaRequest,
+  type IDestinatarioDeVale,
   type ISolicitudPlantilla,
   type ISolicitudesPlantillaResponse,
   type TipoPlantilla,
@@ -34,6 +35,21 @@ import type { SessionUser } from '../../../shared/types/session-user.js';
 
 const CARGOS_VALIDOS: readonly string[] = Object.values(CargoBeneficiario);
 
+/**
+ * El cargo que ocupa cada rol de institución.
+ *
+ * El director elige a la PERSONA; el cargo del ítem se comprueba contra el rol
+ * que esa persona tiene registrado. Así el pedido no puede decir «Coordinador
+ * Pedagógico» y apuntar al jefe de taller.
+ */
+const CARGO_POR_ROL: Partial<Record<string, CargoBeneficiario>> = {
+  [RoleCode.DIRECTOR_INSTITUCION]: CargoBeneficiario.DIRECTOR,
+  [RoleCode.COORDINADOR_PEDAGOGICO]: CargoBeneficiario.COORDINADOR_PEDAGOGICO,
+  [RoleCode.JEFE_TALLER]: CargoBeneficiario.JEFE_DE_TALLER,
+};
+
+const ROLES_DESTINATARIOS = Object.keys(CARGO_POR_ROL);
+
 /** Fila con lo que la respuesta necesita. */
 interface FilaSolicitud {
   id: string;
@@ -53,6 +69,8 @@ interface FilaSolicitud {
     cargoBeneficiario: string;
     descripcion: string;
     plantillaId: string | null;
+    beneficiarioId: string | null;
+    beneficiario: { persona: { nombres: string; apellidos: string } } | null;
   }[];
 }
 
@@ -67,6 +85,8 @@ const INCLUDE = {
       cargoBeneficiario: true,
       descripcion: true,
       plantillaId: true,
+      beneficiarioId: true,
+      beneficiario: { select: { persona: { select: { nombres: true, apellidos: true } } } },
     },
   },
 } as const;
@@ -86,6 +106,7 @@ export class SolicitudesPlantillaService {
   ): Promise<ISolicitudPlantilla> {
     const institucionId = this.institucionDelDirector(session);
     this.validarItems(dto.items);
+    await this.validarDestinatarios(dto.items, institucionId);
 
     // Dos pedidos abiertos a la vez dejan al Jefe de Gestión decidiendo sobre
     // información que se contradice, y duplican los cupos si aprueba los dos.
@@ -106,7 +127,14 @@ export class SolicitudesPlantillaService {
         solicitanteId: session.id,
         anioEscolar: dto.anioEscolar,
         justificacionUrl,
-        items: { create: dto.items },
+        items: {
+          create: dto.items.map((i) => ({
+            instrumento: i.instrumento,
+            cargoBeneficiario: i.cargoBeneficiario,
+            beneficiarioId: i.beneficiarioId,
+            descripcion: i.descripcion,
+          })),
+        },
       },
       include: INCLUDE,
     });
@@ -181,7 +209,73 @@ export class SolicitudesPlantillaService {
     return fila.justificacionUrl;
   }
 
+  /**
+   * Personal de la I.E. que puede recibir un vale, para que el director elija.
+   *
+   * Sale del padrón: quien no está registrado como usuario activo de la
+   * institución no aparece, y por lo tanto no puede ser destinatario. Es a
+   * propósito —obliga a tener el personal cargado antes de pedir— y evita que
+   * el pedido nombre a alguien que el sistema no conoce.
+   */
+  async destinatarios(session: SessionUser): Promise<IDestinatarioDeVale[]> {
+    const elegibles = await this.destinatariosDe(this.institucionDelDirector(session));
+
+    return elegibles.sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+  }
+
   // ── Internos ───────────────────────────────────────────────────────────────
+
+  /**
+   * Cada destinatario existe, es de esta institución y ocupa el cargo declarado.
+   *
+   * Se comprueba en el servidor y no sólo al armar el formulario: el cuerpo lo
+   * controla quien envía, y un `beneficiarioId` de otra institución convertiría
+   * el pedido en una autorización para alguien de afuera.
+   */
+  private async validarDestinatarios(
+    items: ICrearSolicitudPlantillaRequest['items'],
+    institucionId: string,
+  ): Promise<void> {
+    const elegibles = new Map(
+      (await this.destinatariosDe(institucionId)).map((d) => [d.usuarioId, d]),
+    );
+
+    for (const item of items) {
+      const destinatario = elegibles.get(item.beneficiarioId);
+      if (!destinatario) {
+        throw new BadRequestException(
+          'Una de las plantillas se destina a alguien que no figura como personal activo de su institución.',
+        );
+      }
+      if (destinatario.cargo !== item.cargoBeneficiario) {
+        throw new BadRequestException(
+          `${destinatario.nombre} figura como ${destinatario.cargo}, no como ${item.cargoBeneficiario}.`,
+        );
+      }
+    }
+  }
+
+  /** La misma consulta que `destinatarios`, ya resuelta la institución. */
+  private async destinatariosDe(institucionId: string): Promise<IDestinatarioDeVale[]> {
+    const usuarios = await this.prisma.usuario.findMany({
+      where: {
+        isActive: true,
+        rol: { codigo: { in: ROLES_DESTINATARIOS } },
+        persona: { docente: { institucionId } },
+      },
+      select: {
+        id: true,
+        rol: { select: { codigo: true } },
+        persona: { select: { nombres: true, apellidos: true } },
+      },
+    });
+
+    return usuarios.map((u) => ({
+      usuarioId: u.id,
+      nombre: `${u.persona.nombres} ${u.persona.apellidos}`.trim(),
+      cargo: CARGO_POR_ROL[u.rol.codigo]!,
+    }));
+  }
 
   /**
    * Aplica la decisión sobre una solicitud que siga pendiente.
@@ -277,6 +371,13 @@ export class SolicitudesPlantillaService {
       if (!item.descripcion?.trim()) {
         throw new BadRequestException('Cada plantilla solicitada necesita una descripción.');
       }
+      if (!item.beneficiarioId?.trim()) {
+        // Sin destinatario el vale lo consume el primero de ese cargo que entre,
+        // que es exactamente lo que este campo vino a cerrar.
+        throw new BadRequestException(
+          'Indique a qué persona de su institución se destina cada plantilla solicitada.',
+        );
+      }
     }
   }
 
@@ -298,6 +399,8 @@ export class SolicitudesPlantillaService {
         instrumento: i.instrumento as TipoPlantilla,
         cargoBeneficiario: i.cargoBeneficiario as CargoBeneficiario,
         descripcion: i.descripcion,
+        beneficiarioId: i.beneficiarioId,
+        beneficiarioNombre: nombreDe(i.beneficiario),
         plantillaId: i.plantillaId,
       })),
     };

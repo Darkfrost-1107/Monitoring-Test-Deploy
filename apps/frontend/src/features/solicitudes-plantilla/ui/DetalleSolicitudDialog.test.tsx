@@ -45,6 +45,8 @@ const solicitud = (over: Partial<ISolicitudPlantilla> = {}): ISolicitudPlantilla
       id: 'item-1',
       instrumento: 'DOCENTE_EIB',
       cargoBeneficiario: CargoBeneficiario.JEFE_DE_TALLER,
+      beneficiarioId: 'u-taller',
+      beneficiarioNombre: 'Marta Ccama',
       descripcion: 'criterios de carpintería',
       plantillaId: null,
     },

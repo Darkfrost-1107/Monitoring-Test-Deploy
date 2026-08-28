@@ -105,14 +105,38 @@ describe('plantillasAplicables', () => {
   describe('personal de una institución', () => {
     const enInstitucion = contexto({ esInstitucion: true, institucionUsuarioId: IE_PROPIA });
 
-    it('ofrece las suyas y las de la UGEL', () => {
-      const propia = plantilla({ id: 'ie-propia-doc', creadoPorRole: 'director_ie', ieId: IE_PROPIA });
+    it('ofrece la suya y las de la UGEL', () => {
+      const propia = plantilla({
+        id: 'ie-propia-doc',
+        creadoPorRole: 'director_ie',
+        ieId: IE_PROPIA,
+        creadoPorId: 'u-1',
+      });
 
       expect(idsDe(plantillasAplicables([...CATALOGO, propia], enInstitucion))).toEqual([
         'ugel-docente',
         'ugel-eib',
         'ie-propia-doc',
       ]);
+    });
+
+    /**
+     * Una I.E. puede tener dos coordinadores pedagógicos o dos jefes de taller,
+     * cada uno con su área y su criterio de observación, y cada ficha propia
+     * nace de una solicitud aprobada para UNA persona. Ofrecer la del colega
+     * hacía que el segundo evaluara con el instrumento que el primero diseñó
+     * para otra realidad, y la ficha sale completa y firmada sin que nada lo
+     * delate.
+     */
+    it('no ofrece la ficha de un colega de la misma institución', () => {
+      const delColega = plantilla({
+        id: 'ie-del-colega',
+        creadoPorRole: 'coordinador_pedagogico',
+        ieId: IE_PROPIA,
+        creadoPorId: 'u-9',
+      });
+
+      expect(idsDe(plantillasAplicables([delColega], enInstitucion))).toEqual([]);
     });
 
     it('nunca ofrece las de otra institución', () => {
@@ -214,6 +238,56 @@ describe('plantillasAplicables', () => {
       );
 
       expect(idsDe(ofrecidas)).toEqual(['docente-2026']);
+    });
+  });
+
+  describe('autorizacion', () => {
+    /**
+     * El catálogo de la UGEL es obligatorio. Una plantilla propia sólo se
+     * ofrece si la Jefatura aprobó la solicitud que la creó.
+     *
+     * Las de institución anteriores a que las autorizaciones existieran dejan
+     * de ofrecerse, pero NO se archivan: sus fichas ya cerradas siguen legibles
+     * y los reportes quedan intactos. Archivarlas habría puesto un aviso de
+     * «migre las respuestas» sobre fichas que no necesitan nada.
+     */
+    const enInstitucion = contexto({ esInstitucion: true, institucionUsuarioId: IE_PROPIA });
+
+    it('no ofrece una plantilla propia sin autorizacion', () => {
+      const vieja = plantilla({
+        id: 'clon-viejo',
+        creadoPorRole: 'director_ie',
+        ieId: IE_PROPIA,
+        autorizada: false,
+      });
+
+      expect(idsDe(plantillasAplicables([vieja], enInstitucion))).toEqual([]);
+    });
+
+    it('ofrece la propia que si nacio de una solicitud aprobada', () => {
+      const conCupo = plantilla({
+        id: 'clon-autorizado',
+        creadoPorRole: 'director_ie',
+        ieId: IE_PROPIA,
+        creadoPorId: 'u-1',
+        autorizada: true,
+      });
+
+      expect(idsDe(plantillasAplicables([conCupo], enInstitucion))).toEqual(['clon-autorizado']);
+    });
+
+    it('las de la UGEL no dependen de autorizacion alguna', () => {
+      const oficial = plantilla({ id: 'ugel', creadoPorRole: 'jefe_gestion', autorizada: true });
+
+      expect(idsDe(plantillasAplicables([oficial], enInstitucion))).toEqual(['ugel']);
+    });
+
+    it('sin el dato se trata como autorizada, para no dejar sin instrumento', () => {
+      // El backend podría no rotularla todavía; quedarse sin ficha con la que
+      // monitorear es peor que ofrecer una de más.
+      const sinRotular = plantilla({ id: 'sin-rotular', creadoPorRole: 'jefe_gestion' });
+
+      expect(idsDe(plantillasAplicables([sinRotular], enInstitucion))).toEqual(['sin-rotular']);
     });
   });
 });

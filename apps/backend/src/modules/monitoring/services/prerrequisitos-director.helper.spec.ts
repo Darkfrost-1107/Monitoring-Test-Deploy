@@ -6,9 +6,9 @@ import {
 } from './prerrequisitos-director.helper.js';
 
 /**
- * El director de la I.E. sube primero; recién entonces el Coordinador Pedagógico
- * y el Jefe de Taller pueden actuar. Estas pruebas fijan la regla; la consulta de
- * los dos artefactos vive en el servicio.
+ * El director de la I.E. sube su plan primero; recién entonces el Coordinador
+ * Pedagógico y el Jefe de Taller pueden actuar. Estas pruebas fijan la regla; la
+ * consulta del artefacto vive en el servicio.
  */
 
 describe('rolRequierePrerrequisitos', () => {
@@ -29,40 +29,33 @@ describe('rolRequierePrerrequisitos', () => {
 });
 
 describe('prerrequisitosCumplidos', () => {
-  it('se cumplen sólo con el plan Y la plantilla', () => {
-    expect(prerrequisitosCumplidos({ tienePlan: true, tienePlantilla: true })).toBe(true);
+  it('se cumplen con el plan del director', () => {
+    expect(prerrequisitosCumplidos({ tienePlan: true })).toBe(true);
   });
 
-  it('no se cumplen con uno solo', () => {
-    expect(prerrequisitosCumplidos({ tienePlan: true, tienePlantilla: false })).toBe(false);
-    expect(prerrequisitosCumplidos({ tienePlan: false, tienePlantilla: true })).toBe(false);
-  });
-
-  it('no se cumplen sin ninguno', () => {
-    expect(prerrequisitosCumplidos({ tienePlan: false, tienePlantilla: false })).toBe(false);
+  it('no se cumplen sin el plan', () => {
+    expect(prerrequisitosCumplidos({ tienePlan: false })).toBe(false);
   });
 });
 
 describe('motivoPrerrequisitosPendientes', () => {
-  it('no da motivo cuando todo está listo', () => {
-    expect(motivoPrerrequisitosPendientes({ tienePlan: true, tienePlantilla: true })).toBe('');
+  it('no da motivo cuando el plan está listo', () => {
+    expect(motivoPrerrequisitosPendientes({ tienePlan: true })).toBe('');
   });
 
   it('nombra el plan cuando falta', () => {
-    const msg = motivoPrerrequisitosPendientes({ tienePlan: false, tienePlantilla: true });
-    expect(msg).toContain('Plan de Monitoreo Anual');
-    expect(msg).not.toContain('plantilla');
+    expect(motivoPrerrequisitosPendientes({ tienePlan: false })).toContain(
+      'Plan de Monitoreo Anual',
+    );
   });
 
-  it('nombra la plantilla cuando falta', () => {
-    const msg = motivoPrerrequisitosPendientes({ tienePlan: true, tienePlantilla: false });
-    expect(msg).toContain('plantilla');
-    expect(msg).not.toContain('Plan de Monitoreo Anual');
-  });
-
-  it('nombra los dos cuando faltan los dos', () => {
-    const msg = motivoPrerrequisitosPendientes({ tienePlan: false, tienePlantilla: false });
-    expect(msg).toContain('Plan de Monitoreo Anual');
-    expect(msg).toContain('plantilla');
+  /**
+   * La plantilla del director dejó de ser un requisito: hoy puede no crear
+   * ninguna en todo el año, porque las fichas obligatorias son las de la UGEL y
+   * una propia sólo nace de una solicitud aprobada. Nombrarla mandaba al
+   * coordinador a pedir algo que nadie tiene que entregar.
+   */
+  it('no menciona la plantilla del director', () => {
+    expect(motivoPrerrequisitosPendientes({ tienePlan: false })).not.toContain('plantilla');
   });
 });

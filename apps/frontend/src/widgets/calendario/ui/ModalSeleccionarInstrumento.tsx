@@ -2,9 +2,71 @@ import { X, Sparkles, BookOpen, ArrowRight, TreePine, GraduationCap, Building2, 
 import { Card } from '@shared/ui/card';
 import { Badge } from '@shared/ui/badge';
 import { Button } from '@shared/ui/button';
-import type { Plantilla } from '@entities/model-plantillas';
+import {
+  esDeLaUgel,
+  nombreDePlantilla,
+  origenDePlantilla,
+  type Plantilla,
+} from '@entities/model-plantillas';
 import type { Cronograma } from '@entities/model-cronogramas';
 import type { IFichaMonitoreo } from '@sistema-monitoreo/shared-contracts';
+
+/**
+ * El color de cada tarjeta.
+ *
+ * ── Qué dice el color, y qué no ──
+ * El ÍCONO dice qué instrumento es; el COLOR dice de quién es y en qué estado
+ * está. Antes el color salía sólo del instrumento, y desde que la institución
+ * puede tener su propia ficha docente eso dejaba dos tarjetas rojas idénticas
+ * en la misma lista: la oficial de la UGEL y la de la I.E. Quien elige lo hace
+ * con el aula esperando, y equivocarse no da ningún aviso: la ficha queda
+ * evaluada con el instrumento que no era.
+ *
+ * Por eso el origen gana sobre el instrumento. Sólo el estado de la ficha ya
+ * levantada gana sobre el origen, porque «ya está completada» es lo primero que
+ * hay que ver.
+ */
+type Tono = 'completada' | 'institucional' | 'eib' | 'directivo' | 'docente';
+
+interface EstiloDeTono {
+  borde: string;
+  icono: string;
+  insignia: string;
+  boton: string;
+}
+
+const TONOS: Record<Tono, EstiloDeTono> = {
+  completada: {
+    borde: 'border-emerald-300/90 bg-emerald-50/20',
+    icono: 'bg-emerald-600 text-white',
+    insignia: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+    boton: 'bg-slate-700 group-hover:bg-slate-900 text-white',
+  },
+  institucional: {
+    borde: 'border-violet-200/80 hover:border-violet-500',
+    icono: 'bg-violet-100 text-violet-700',
+    insignia: 'bg-violet-50 text-violet-800 border-violet-300',
+    boton: 'bg-violet-600 group-hover:bg-violet-700 text-white',
+  },
+  eib: {
+    borde: 'border-emerald-200/80 hover:border-emerald-500',
+    icono: 'bg-emerald-100 text-emerald-700',
+    insignia: 'bg-emerald-50 text-emerald-800 border-emerald-300',
+    boton: 'bg-emerald-600 group-hover:bg-emerald-700 text-white',
+  },
+  directivo: {
+    borde: 'border-indigo-200/80 hover:border-indigo-500',
+    icono: 'bg-indigo-100 text-indigo-700',
+    insignia: 'bg-indigo-50 text-indigo-800 border-indigo-300',
+    boton: 'bg-indigo-600 group-hover:bg-indigo-700 text-white',
+  },
+  docente: {
+    borde: 'border-slate-200 hover:border-primary',
+    icono: 'bg-primary/10 text-primary',
+    insignia: 'bg-primary/10 text-primary border-primary/20',
+    boton: 'bg-primary group-hover:bg-primary-hover text-white',
+  },
+};
 
 interface ModalSeleccionarInstrumentoProps {
   isOpen: boolean;
@@ -84,10 +146,22 @@ export const ModalSeleccionarInstrumento = ({
               // El instrumento viene tipado en la plantilla; el rótulo es para mostrar.
               const isEib = plantilla.instrumento === 'DOCENTE_EIB';
               const isDirectivo = plantilla.instrumento === 'DIRECTIVO';
+              const esDeUgel = esDeLaUgel(plantilla);
 
               const fichaExistente = fichasExistentes.find((f) => f.plantillaId === plantilla.id);
               const estaCompletada = fichaExistente?.estado === 'FINALIZADO';
               const estaEnBorrador = fichaExistente?.estado === 'BORRADOR';
+
+              const tono: Tono = estaCompletada
+                ? 'completada'
+                : !esDeUgel
+                  ? 'institucional'
+                  : isEib
+                    ? 'eib'
+                    : isDirectivo
+                      ? 'directivo'
+                      : 'docente';
+              const estilo = TONOS[tono];
               // Quien no es el monitor de la visita sólo consulta lo ya finalizado.
               // Una ficha sin finalizar es "no llenada" y no se puede abrir a evaluar.
               const soloLectura = !puedeLlenar && !estaCompletada;
@@ -102,29 +176,13 @@ export const ModalSeleccionarInstrumento = ({
                   className={`p-4.5 rounded-2xl border-2 transition-all shadow-xs flex flex-col gap-3 group relative overflow-hidden ${
                     soloLectura
                       ? 'border-slate-200 bg-slate-50 opacity-60 cursor-not-allowed'
-                      : `cursor-pointer bg-white hover:shadow-md ${
-                          estaCompletada
-                            ? 'border-emerald-300/90 bg-emerald-50/20'
-                            : isEib
-                              ? 'border-emerald-200/80 hover:border-emerald-500'
-                              : isDirectivo
-                                ? 'border-indigo-200/80 hover:border-indigo-500'
-                                : 'border-slate-200 hover:border-primary'
-                        }`
+                      : `cursor-pointer bg-white hover:shadow-md ${estilo.borde}`
                   }`}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3">
                       <div
-                        className={`h-11 w-11 rounded-xl flex items-center justify-center shadow-xs transition-transform group-hover:scale-105 shrink-0 ${
-                          estaCompletada
-                            ? 'bg-emerald-600 text-white'
-                            : isEib
-                              ? 'bg-emerald-100 text-emerald-700'
-                              : isDirectivo
-                                ? 'bg-indigo-100 text-indigo-700'
-                                : 'bg-primary/10 text-primary'
-                        }`}
+                        className={`h-11 w-11 rounded-xl flex items-center justify-center shadow-xs transition-transform group-hover:scale-105 shrink-0 ${estilo.icono}`}
                       >
                         {estaCompletada ? (
                           <CheckCircle2 className="h-6 w-6" />
@@ -141,15 +199,7 @@ export const ModalSeleccionarInstrumento = ({
                         <div className="flex items-center gap-2">
                           <Badge
                             variant="outline"
-                            className={`text-[9.5px] font-black uppercase tracking-wider px-2 py-0.5 ${
-                              estaCompletada
-                                ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                                : isEib
-                                  ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
-                                  : isDirectivo
-                                    ? 'bg-indigo-50 text-indigo-800 border-indigo-300'
-                                    : 'bg-primary/10 text-primary border-primary/20'
-                            }`}
+                            className={`text-[9.5px] font-black uppercase tracking-wider px-2 py-0.5 ${estilo.insignia}`}
                           >
                             {estaCompletada
                               ? 'Ficha Completada'
@@ -164,9 +214,30 @@ export const ModalSeleccionarInstrumento = ({
                           <span className="text-[11px] font-bold text-slate-400">
                             Año {plantilla.anioAcademico}
                           </span>
+                          {/*
+                            De quién es la ficha. Con el catálogo de la UGEL y las
+                            fichas propias en la misma lista, el instrumento y el año
+                            no alcanzan para distinguirlas.
+                          */}
+                          <Badge
+                            variant="outline"
+                            className={`text-[9.5px] font-black uppercase tracking-wider px-2 py-0.5 ${
+                              esDeUgel
+                                ? 'bg-slate-100 text-slate-600 border-slate-300'
+                                : 'bg-violet-50 text-violet-800 border-violet-300'
+                            }`}
+                          >
+                            {origenDePlantilla(plantilla)}
+                          </Badge>
                         </div>
+                        {/*
+                          El nombre que le puso quien la creó. Antes se componía con
+                          el instrumento y el año, de modo que dos fichas docentes de
+                          2026 se llamaban igual y el formulario pedía un nombre que
+                          no se mostraba en ninguna parte.
+                        */}
                         <h3 className="text-sm font-extrabold text-slate-800 group-hover:text-primary transition-colors">
-                          {plantilla.tipoMonitoreo} ({plantilla.anioAcademico})
+                          {nombreDePlantilla(plantilla)}
                         </h3>
                       </div>
                     </div>
@@ -176,15 +247,9 @@ export const ModalSeleccionarInstrumento = ({
                       className={`text-xs font-bold gap-1.5 rounded-xl shadow-xs transition-all pointer-events-none ${
                         soloLectura
                           ? 'bg-slate-200 text-slate-500'
-                          : estaCompletada
-                            ? 'bg-slate-700 group-hover:bg-slate-900 text-white'
-                            : estaEnBorrador
-                              ? 'bg-amber-600 group-hover:bg-amber-700 text-white'
-                              : isEib
-                                ? 'bg-emerald-600 group-hover:bg-emerald-700 text-white'
-                                : isDirectivo
-                                  ? 'bg-indigo-600 group-hover:bg-indigo-700 text-white'
-                                  : 'bg-primary group-hover:bg-primary-hover text-white'
+                          : estaEnBorrador
+                            ? 'bg-amber-600 group-hover:bg-amber-700 text-white'
+                            : estilo.boton
                       }`}
                     >
                       <span>

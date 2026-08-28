@@ -85,17 +85,28 @@ export function plantillasVisibles<T extends PlantillaVisible>(
     if (institucionId) return plantillas.filter((p) => p.ieId === institucionId);
     if (!usuario) return plantillas.filter(esDeUgel);
 
-    // El director ve las de la UGEL y además las de su propia institución.
-    if (usuario.role === RoleCode.DIRECTOR_INSTITUCION) {
-      return plantillas.filter((p) => esDeUgel(p) || esDeLaInstitucionDe(p, usuario));
-    }
-
     if (usuario.role === RoleCode.JEFE_GESTION) return plantillas;
 
-    // Monitor de campo destacado en una institución: sólo la plantilla propia
-    // de esa institución, sin las de la UGEL.
-    if (alcance.isMonitorCampo && alcance.isInstitution) {
-      return plantillas.filter((p) => esDeLaInstitucionDe(p, usuario));
+    /**
+     * Personal de una institución: el catálogo de la UGEL y lo suyo.
+     *
+     * Al monitor de campo destacado en una institución —coordinador pedagógico,
+     * jefe de taller— se le ocultaban las de la UGEL, y sólo se le mostraba la
+     * plantilla propia de su I.E. Eso venía del modelo viejo, en el que cada
+     * institución armaba sus fichas.
+     *
+     * Hoy las fichas de la UGEL son OBLIGATORIAS: son las que va a aplicar en el
+     * aula, y son también la base desde la que clona cuando la Jefatura le
+     * aprueba una solicitud. Ocultárselas lo dejaba sin instrumento para
+     * monitorear y sin nada desde donde clonar.
+     *
+     * Es la misma regla que ya regía para el director de la I.E.
+     */
+    if (
+      usuario.role === RoleCode.DIRECTOR_INSTITUCION ||
+      (alcance.isMonitorCampo && alcance.isInstitution)
+    ) {
+      return plantillas.filter((p) => esDeUgel(p) || esDeLaInstitucionDe(p, usuario));
     }
 
     return plantillas.filter(esDeUgel);

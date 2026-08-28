@@ -1,5 +1,19 @@
 export type TipoPlantilla = 'DOCENTE' | 'DIRECTIVO' | 'DOCENTE_EIB';
 
+/**
+ * Si esta plantilla puede usarse en monitoreos nuevos.
+ *
+ * Las de la UGEL siempre pueden: son el catálogo oficial. Una de institución
+ * sólo si nació de una solicitud que la Jefatura aprobó.
+ *
+ * Existe porque hay plantillas de institución ANTERIORES a que las
+ * autorizaciones existieran. Marcarlas `Historico` sería mentir: ese estado
+ * significa «fue versionada, migre las respuestas» y pondría un aviso de
+ * migración sobre fichas cerradas que no necesitan nada. Quedan vigentes y
+ * legibles —los reportes siguen intactos—, pero no se ofrecen para monitorear.
+ */
+export type PlantillaAutorizada = boolean;
+
 export type EstadoPlantilla = 'Borrador' | 'Vigente' | 'Historico';
 
 export type NivelRomano = 'I' | 'II' | 'III' | 'IV';
@@ -148,6 +162,13 @@ export interface IPlantilla {
   autorNombre?: string;
   rolAutorAlCrear: RolAutorPlantilla;
   institucionId: string | null;
+  /**
+   * Si puede usarse en monitoreos nuevos. Ver `PlantillaAutorizada`.
+   *
+   * Las de la UGEL son siempre `true`. Una de institución lo es sólo si nació
+   * de una solicitud aprobada.
+   */
+  autorizada: PlantillaAutorizada;
   niveles: INivelCalificacion[];
   desempenos: IDesempeno[];
   ejesItems: IEjeItem[];

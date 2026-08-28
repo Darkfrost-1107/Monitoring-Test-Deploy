@@ -239,8 +239,13 @@ export async function crearVisita(
 
   // En Secundaria el monitoreo es por área: el especialista sólo evalúa a docentes
   // de una especialidad que él maneja.
+  //
+  // No alcanza al personal de la institución. El Coordinador y el Jefe de Taller
+  // se rigen por su cartera de docentes asignados, y el Director por todo su
+  // personal; ninguno tiene registro de especialista, así que su lista de áreas
+  // llega vacía y esta regla los dejaba sin poder programar una sola visita.
   if (
-    requiereEspecialidadCompartida(dto.nivelEducativo, dto.tipoMonitoreo) &&
+    requiereEspecialidadCompartida(dto.nivelEducativo, dto.tipoMonitoreo, session.role) &&
     !compartenEspecialidad(activas.monitorEspecialidades, activas.evaluadoEspecialidades)
   ) {
     throw new BadRequestException(

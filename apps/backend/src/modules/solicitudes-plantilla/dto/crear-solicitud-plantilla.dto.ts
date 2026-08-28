@@ -7,6 +7,7 @@ import {
   IsInt,
   IsOptional,
   IsString,
+  IsUUID,
   MaxLength,
   ValidateNested,
 } from 'class-validator';
@@ -39,6 +40,17 @@ export class ItemSolicitudPlantillaDto {
 
   @IsIn(Object.values(CargoBeneficiario))
   cargoBeneficiario!: CargoBeneficiario;
+
+  /**
+   * Persona de la institución a la que se destina la plantilla.
+   *
+   * El cargo por sí solo no alcanza: una I.E. puede tener dos coordinadores
+   * pedagógicos, y un vale por cargo lo consume el primero que entre. Que
+   * exista, sea de esta institución y ocupe ese cargo lo comprueba el servicio;
+   * acá sólo se exige la forma.
+   */
+  @IsUUID()
+  beneficiarioId!: string;
 
   @IsString()
   @MaxLength(300)

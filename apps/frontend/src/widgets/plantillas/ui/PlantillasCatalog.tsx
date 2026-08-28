@@ -6,6 +6,7 @@ import { useUser } from '@entities/model-user';
 import { useScope } from '@shared/auth';
 import { RoleCode } from '@sistema-monitoreo/shared-contracts';
 import { usePlantillasList } from '@entities/model-plantillas/use-plantillas-api';
+import { useCuposDePlantilla } from '@features/solicitudes-plantilla';
 import { plantillasVisibles, type FiltroDeOrigen } from '@features/plantillas/lib/visibilidad-plantillas';
 import {
   FILTROS_VACIOS,
@@ -71,6 +72,16 @@ export const PlantillasCatalog = ({ institucionId }: PlantillasCatalogProps = {}
 
   const esDirector = user?.role === RoleCode.DIRECTOR_INSTITUCION;
 
+  /**
+   * Autorizaciones aprobadas y sin usar de esta persona.
+   *
+   * Copiar la ficha oficial sólo tiene sentido para materializar una plantilla
+   * que la Jefatura aprobó: el catálogo de la UGEL ya se usa tal cual para
+   * monitorear. Sin esto, el botón se ofrecía siempre y el servidor lo
+   * rechazaba con un 403.
+   */
+  const { data: cuposLibres = [] } = useCuposDePlantilla(new Date().getFullYear());
+
   return (
     <div className="flex flex-col w-full gap-6 animate-in fade-in duration-300">
       <FiltrosPlantillas
@@ -103,7 +114,7 @@ export const PlantillasCatalog = ({ institucionId }: PlantillasCatalogProps = {}
             <TarjetaPlantilla
               key={plantilla.id}
               plantilla={plantilla}
-              puedeCopiarParaSuIE={puedeCopiarParaSuInstitucion(plantilla, user)}
+              puedeCopiarParaSuIE={puedeCopiarParaSuInstitucion(plantilla, user, cuposLibres)}
               puedeGestionar={puedeGestionar(plantilla, user, alcance)}
               puedeClonarLaDelDirector={puedeClonarLaDelDirector(plantilla, user, alcance)}
               clonando={acciones.clonar.enCurso}

@@ -24,6 +24,7 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import type {
+  IDestinatarioDeVale,
   ISolicitudPlantilla,
   ISolicitudesPlantillaResponse,
   IValeDisponible,
@@ -104,6 +105,19 @@ export class SolicitudesPlantillaController {
     @Req() req: AuthenticatedRequest,
   ): Promise<IValeDisponible[]> {
     return this.vales.disponibles(this.sesionDe(req), anio);
+  }
+
+  /**
+   * Personal de la I.E. al que el director puede destinar una plantilla.
+   *
+   * Sale del padrón de usuarios activos de su institución: quien no está
+   * registrado no aparece y no puede recibir un cupo. Se pide con la misma
+   * capacidad que presentar la solicitud, porque es parte de armarla.
+   */
+  @Get('mias/destinatarios')
+  @RequirePermissions('solicitudes_plantilla:solicitar')
+  async destinatarios(@Req() req: AuthenticatedRequest): Promise<IDestinatarioDeVale[]> {
+    return this.service.destinatarios(this.sesionDe(req));
   }
 
   /** Bandeja del Jefe de Gestión. */

@@ -27,12 +27,19 @@ import type { SessionUser } from '../../../shared/types/session-user.js';
  * permiso ilimitado, y eso no se ve: no hay error, sólo un catálogo que crece.
  */
 
-/** Roles cuya sesión pertenece a una institución educativa. */
-const ROLES_DE_INSTITUCION: readonly RoleCode[] = [
-  RoleCode.DIRECTOR_INSTITUCION,
-  RoleCode.COORDINADOR_PEDAGOGICO,
-  RoleCode.JEFE_TALLER,
-];
+/**
+ * El cargo al que sirve cada rol de institución.
+ *
+ * Se usa como respaldo para los vales anteriores al destinatario, que sólo
+ * declaraban cargo. Los nuevos nombran a la PERSONA y no dependen de esta tabla.
+ *
+ * Un rol que no esté acá no pertenece a una institución y no necesita vale.
+ */
+const CARGO_POR_ROL: Partial<Record<RoleCode, CargoBeneficiario>> = {
+  [RoleCode.DIRECTOR_INSTITUCION]: CargoBeneficiario.DIRECTOR,
+  [RoleCode.COORDINADOR_PEDAGOGICO]: CargoBeneficiario.COORDINADOR_PEDAGOGICO,
+  [RoleCode.JEFE_TALLER]: CargoBeneficiario.JEFE_DE_TALLER,
+};
 
 /** Fila del vale con la cabecera de su solicitud. */
 interface ValeConSolicitud {
@@ -66,6 +73,8 @@ export class ValePlantillaService {
     const institucionId = this.institucionDe(session);
     if (institucionId === null) return null;
 
+    const cargo = CARGO_POR_ROL[session.role]!;
+
     const libre = await this.prisma.solicitudPlantillaItem.findFirst({
       where: {
         instrumento,
@@ -73,15 +82,36 @@ export class ValePlantillaService {
         // diferencia entre uno libre y uno gastado.
         plantillaId: null,
         solicitud: { estado: 'APROBADA', institucionId, anioEscolar },
+        /**
+         * El vale es de quien lo pidieron, no de quien llegue primero.
+         *
+         * Mientras se buscaba por cargo, una I.E. con dos coordinadores
+         * pedagógicos recibía un cupo aprobado para uno y se lo llevaba el otro:
+         * el sistema le decía que sí, porque su rol coincidía, y el legítimo
+         * destinatario se encontraba con «no hay cupo» semanas después. La
+         * intención del director vivía en una conversación de pasillo.
+         *
+         * La segunda rama cubre los vales anteriores al destinatario, que siguen
+         * valiendo para cualquiera de su cargo: invalidar aprobaciones ya
+         * concedidas sería peor que la imprecisión que arrastran.
+         */
+        OR: [{ beneficiarioId: session.id }, { beneficiarioId: null, cargoBeneficiario: cargo }],
       },
+      // Los nominativos primero: si esta persona tiene uno a su nombre, gastar
+      // en su lugar un vale genérico se lo quitaría a quien todavía no llegó.
+      orderBy: { beneficiarioId: 'desc' },
       select: { id: true },
     });
 
     if (!libre) {
+      // El mensaje nombra a la persona: sin eso, quien lee «no hay cupo» vuelve
+      // a pedir uno que ya le concedieron a otra persona de la institución.
       throw new ForbiddenException(
-        `Su institución no tiene una solicitud aprobada con un cupo libre para una plantilla ` +
-          `de tipo ${instrumento} en ${anioEscolar}. El director de la I.E. debe presentar la ` +
-          `solicitud con su justificación en PDF para que la Jefatura de Gestión la apruebe.`,
+        `Usted no tiene un cupo libre para una plantilla de tipo ${instrumento} en ` +
+          `${anioEscolar}. Cada cupo se aprueba a nombre de una persona: si su institución ` +
+          `tiene otro cupo, es de un compañero. El director de la I.E. debe presentar una ` +
+          `solicitud a su nombre, con la justificación en PDF, para que la Jefatura de ` +
+          `Gestión la apruebe.`,
       );
     }
 
@@ -118,6 +148,13 @@ export class ValePlantillaService {
       where: {
         plantillaId: null,
         solicitud: { estado: 'APROBADA', institucionId, anioEscolar },
+        // La misma regla que el consumo: los suyos, más los antiguos sin
+        // destinatario. Ofrecer los de un compañero prometería lo que
+        // `consumirParaCrear` va a rechazar.
+        OR: [
+          { beneficiarioId: session.id },
+          { beneficiarioId: null, cargoBeneficiario: CARGO_POR_ROL[session.role]! },
+        ],
       },
       select: {
         id: true,
@@ -144,7 +181,7 @@ export class ValePlantillaService {
    * personal de UGEL crea las fichas oficiales del catálogo.
    */
   private institucionDe(session: SessionUser): string | null {
-    if (!ROLES_DE_INSTITUCION.includes(session.role)) return null;
+    if (!CARGO_POR_ROL[session.role]) return null;
     return session.institucionId ?? null;
   }
 }

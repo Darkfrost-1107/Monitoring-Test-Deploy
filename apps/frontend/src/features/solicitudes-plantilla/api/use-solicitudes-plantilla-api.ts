@@ -36,6 +36,20 @@ export const useCuposDePlantilla = (anio: number, enabled = true) =>
     enabled,
   });
 
+/**
+ * Personal de la I.E. al que el director puede destinar una plantilla.
+ *
+ * El cupo se aprueba a nombre de una persona, así que el formulario elige de
+ * esta lista en vez de pedir sólo un cargo. Si sale vacía, la institución no
+ * tiene su personal registrado y no puede pedir todavía.
+ */
+export const useDestinatariosDeVale = (enabled = true) =>
+  useQuery({
+    queryKey: [...KEY, 'destinatarios'],
+    queryFn: () => solicitudesPlantillaApi.destinatarios(),
+    enabled,
+  });
+
 export const useCrearSolicitudPlantilla = () => {
   const qc = useQueryClient();
   return useMutation({

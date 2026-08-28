@@ -11,13 +11,27 @@ export interface PlantillaFilters {
   rolAutorAlCrear?: string;
   institucionId?: string;
   scope?: string;
+  /** Ver `QueryPlantillaDto.incluirVersionadas`. */
+  incluirVersionadas?: boolean;
 }
 
 export async function findAllPlantillas(
   prisma: PrismaService,
   filters?: PlantillaFilters,
 ): Promise<IPlantilla[]> {
-  const where: Prisma.PlantillaMonitoreoWhereInput = { deleted: false };
+  /**
+   * Las versionadas quedan fuera salvo que se pidan explícitamente.
+   *
+   * Versionar archiva la original y la marca `deleted`. El catálogo no debe
+   * mostrarla —nadie va a monitorear con una versión relevada—, pero sus fichas
+   * siguen existiendo y el análisis las mide. Cuando se piden, se traen sólo las
+   * que CONSERVAN fichas: una versionada sin ninguna no aporta nada y sólo
+   * agregaría ruido a la lista de rúbricas.
+   */
+  const where: Prisma.PlantillaMonitoreoWhereInput = filters?.incluirVersionadas
+    ? { OR: [{ deleted: false }, { deleted: true, fichas: { some: {} } }] }
+    : { deleted: false };
+
   if (filters) {
     if (filters.search) {
       where.descripcion = { contains: filters.search, mode: 'insensitive' };
@@ -27,7 +41,12 @@ export async function findAllPlantillas(
     if (filters.estado) where.estado = filters.estado;
     if (filters.rolAutorAlCrear) where.rolAutorAlCrear = filters.rolAutorAlCrear;
     if (filters.institucionId !== undefined) {
-      where.OR = [{ institucionId: filters.institucionId }, { rolAutorAlCrear: 'jefe_gestion' }];
+      // `AND` y no `OR` directo: el `OR` de arriba ya puede estar ocupado por
+      // `incluirVersionadas`, y pisarlo dejaría entrar plantillas de cualquier
+      // institución sin que nada lo delatara.
+      where.AND = [
+        { OR: [{ institucionId: filters.institucionId }, { rolAutorAlCrear: 'jefe_gestion' }] },
+      ];
     }
     // if (filters.scope) where.scope = filters.scope;
   }

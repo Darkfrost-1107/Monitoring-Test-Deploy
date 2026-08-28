@@ -33,6 +33,17 @@ const director: SessionUser = {
   institucionId: IE,
 };
 
+const jefeTaller: SessionUser = {
+  id: 'u-taller',
+  role: RoleCode.JEFE_TALLER,
+  institucionId: IE,
+};
+const coordinador: SessionUser = {
+  id: 'u-coord',
+  role: RoleCode.COORDINADOR_PEDAGOGICO,
+  institucionId: IE,
+};
+
 const especialista: SessionUser = { id: 'u-esp', role: RoleCode.ESPECIALISTA, institucionId: null };
 const jefeGestion: SessionUser = {
   id: 'u-jg',
@@ -99,7 +110,7 @@ describe('ValePlantillaService', () => {
       prisma.solicitudPlantillaItem.findFirst.mockResolvedValue(null as never);
 
       await expect(service.consumirParaCrear(director, 'DOCENTE')).rejects.toThrow(
-        /solicitud aprobada/i,
+        /solicitud a su nombre/i,
       );
     });
 
@@ -192,6 +203,87 @@ describe('ValePlantillaService', () => {
 
       await expect(service.disponibles(especialista, ANIO)).resolves.toEqual([]);
       expect(prisma.solicitudPlantillaItem.findMany).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('el vale es de una persona, no de un cargo', () => {
+    /**
+     * El agujero que cierra este bloque.
+     *
+     * Mientras el vale se buscaba por CARGO, una I.E. con dos coordinadores
+     * pedagógicos recibía un cupo aprobado para uno y se lo llevaba el otro: el
+     * sistema le decía que sí, porque su rol coincidía, y el destinatario
+     * legítimo se encontraba con «no hay cupo» semanas más tarde, al ir a
+     * monitorear. La intención del director vivía en una conversación.
+     */
+    it('busca el vale a nombre de quien lo consume', async () => {
+      const { service, prisma } = montar();
+      prisma.solicitudPlantillaItem.findFirst.mockResolvedValue(vale() as never);
+
+      await service.consumirParaCrear(coordinador, 'DOCENTE', ANIO);
+
+      const where = filtroDe(prisma.solicitudPlantillaItem.findFirst);
+      expect(where.OR).toContainEqual({ beneficiarioId: coordinador.id });
+    });
+
+    /**
+     * Los vales anteriores al destinatario siguen valiendo para cualquiera de su
+     * cargo: invalidar aprobaciones ya concedidas sería peor que la imprecisión
+     * que arrastran.
+     */
+    it('acepta tambien los vales antiguos sin destinatario, por cargo', async () => {
+      const { service, prisma } = montar();
+      prisma.solicitudPlantillaItem.findFirst.mockResolvedValue(vale() as never);
+
+      await service.consumirParaCrear(jefeTaller, 'DOCENTE', ANIO);
+
+      const where = filtroDe(prisma.solicitudPlantillaItem.findFirst);
+      expect(where.OR).toContainEqual({
+        beneficiarioId: null,
+        cargoBeneficiario: CargoBeneficiario.JEFE_DE_TALLER,
+      });
+    });
+
+    /**
+     * Si tiene uno a su nombre, ése se gasta primero: consumir en su lugar un
+     * vale genérico se lo quitaría a un compañero que todavía no llegó.
+     */
+    it('gasta primero el vale nominativo y no el generico', async () => {
+      const { service, prisma } = montar();
+      prisma.solicitudPlantillaItem.findFirst.mockResolvedValue(vale() as never);
+
+      await service.consumirParaCrear(coordinador, 'DOCENTE', ANIO);
+
+      const args = prisma.solicitudPlantillaItem.findFirst.mock.calls[0]?.[0] as {
+        orderBy: Record<string, unknown>;
+      };
+      expect(args.orderBy).toEqual({ beneficiarioId: 'desc' });
+    });
+
+    it('el mensaje dice que el cupo es de una persona, para no volver a pedir el mismo', async () => {
+      // Sin eso, quien lee «no hay cupo» vuelve a pedir uno que ya le
+      // concedieron a un compañero.
+      const { service, prisma } = montar();
+      prisma.solicitudPlantillaItem.findFirst.mockResolvedValue(null as never);
+
+      await expect(service.consumirParaCrear(jefeTaller, 'DOCENTE')).rejects.toThrow(
+        /nombre de una persona/i,
+      );
+    });
+
+    it('los vales disponibles siguen la misma regla', async () => {
+      // Ofrecer el de un compañero prometería lo que el consumo va a rechazar.
+      const { service, prisma } = montar();
+      prisma.solicitudPlantillaItem.findMany.mockResolvedValue([] as never);
+
+      await service.disponibles(coordinador, ANIO);
+
+      const where = (
+        prisma.solicitudPlantillaItem.findMany.mock.calls[0]?.[0] as {
+          where: Record<string, unknown>;
+        }
+      ).where;
+      expect(where.OR).toContainEqual({ beneficiarioId: coordinador.id });
     });
   });
 });

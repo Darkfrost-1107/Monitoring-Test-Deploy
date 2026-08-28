@@ -41,6 +41,15 @@ export interface ISolicitudPlantillaItem {
   instrumento: TipoPlantilla;
   cargoBeneficiario: CargoBeneficiario;
   descripcion: string;
+  /**
+   * Persona a la que se destina la plantilla. Sólo ella podrá crearla.
+   *
+   * `null` en los vales anteriores a este campo, que siguen valiendo para
+   * cualquiera de su cargo.
+   */
+  beneficiarioId: string | null;
+  /** Nombre del destinatario, para mostrarlo sin otra consulta. */
+  beneficiarioNombre: string | null;
   /** Plantilla creada al amparo del vale. `null` mientras está libre. */
   plantillaId: string | null;
 }
@@ -69,6 +78,15 @@ export interface ICrearSolicitudPlantillaRequest {
   items: {
     instrumento: TipoPlantilla;
     cargoBeneficiario: CargoBeneficiario;
+    /**
+     * Usuario al que se destina la plantilla.
+     *
+     * El cargo no alcanza: una I.E. puede tener dos coordinadores pedagógicos, y
+     * un vale por cargo lo consume el primero que entre. El director elige a la
+     * persona de una lista, así que su institución debe tener el personal
+     * registrado antes de pedir.
+     */
+    beneficiarioId: string;
     descripcion: string;
   }[];
 }
@@ -95,4 +113,17 @@ export interface IValeDisponible {
   cargoBeneficiario: CargoBeneficiario;
   descripcion: string;
   anioEscolar: number;
+}
+
+/**
+ * Persona de la institución que puede recibir un vale de plantilla.
+ *
+ * Es la lista que el director elige al armar la solicitud. Sale de los usuarios
+ * registrados de su I.E.: quien no está en el padrón no puede ser destinatario,
+ * y eso obliga a ordenar el registro antes de pedir.
+ */
+export interface IDestinatarioDeVale {
+  usuarioId: string;
+  nombre: string;
+  cargo: CargoBeneficiario;
 }

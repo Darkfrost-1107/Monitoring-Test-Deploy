@@ -5,7 +5,7 @@ import { usePlantillasList } from '@entities/model-plantillas/use-plantillas-api
 import { useCronogramasData } from '@features/cronogramas/hooks/use-cronogramas-data';
 import { useCan, useScope, Capability } from '@shared/auth';
 import { PageHeader } from '@shared/ui/pageHeader';
-import { MODALIDAD_NIVEL_MAP } from '@sistema-monitoreo/shared-contracts';
+import { MODALIDAD_NIVEL_MAP, type TipoPlantilla } from '@sistema-monitoreo/shared-contracts';
 import {
   reportesVisibles,
   type ReporteVisible,
@@ -16,6 +16,10 @@ import {
 } from '@features/reportes/lib/analisis-desempeno';
 import { tipoDeVisitaDe } from '@features/reportes/lib/instrumento';
 import { aniosDeFiltro } from '@features/reportes/lib/anios-de-filtro';
+import {
+  rubricasDeLaUgel,
+  rubricasInstitucionales,
+} from '@features/reportes/lib/rubricas-elegibles';
 import {
   coincideConPeriodo,
   calcularConteosPorPeriodo,
@@ -36,25 +40,13 @@ import type { BackendReportVisit } from '@/widgets/reportes';
 /** El año en curso, que es donde arranca el análisis. */
 const ANIO_ACTUAL = new Date().getFullYear();
 
-/** Instrumentos oficiales UGEL, en el orden en que se muestran sus píldoras. */
-const INSTRUMENTOS: { id: FiltroDeInstrumento; label: string }[] = [
-  { id: 'DOCENTE', label: 'Docente' },
-  { id: 'DOCENTE_EIB', label: 'Docente EIB' },
-  { id: 'DIRECTIVO', label: 'Directivo' },
-];
-const INSTRUMENTO_LABEL: Record<string, string> = {
-  DOCENTE: 'Docente',
-  DOCENTE_EIB: 'Docente EIB',
-  DIRECTIVO: 'Directivo',
-};
-/** Rótulo de la plantilla institucional según el rol que la creó. */
-const ROL_LABEL: Record<string, string> = {
-  director_ie: 'Dirección',
-  coordinador_pedagogico: 'Coordinador P.',
-  jefe_taller: 'Jefe de Taller',
-};
-/** Los roles de IE que pueden crear su plantilla, en el orden de sus píldoras. */
-const ROLES_INSTITUCIONALES = ['director_ie', 'coordinador_pedagogico', 'jefe_taller'];
+/**
+ * Instrumentos del catálogo oficial, en el orden en que se muestran sus píldoras.
+ *
+ * `TipoPlantilla` y no `FiltroDeInstrumento`: el segundo admite «Todos», que no
+ * es un instrumento y no tiene rúbrica que analizar.
+ */
+const INSTRUMENTOS: readonly TipoPlantilla[] = ['DOCENTE', 'DOCENTE_EIB', 'DIRECTIVO'];
 
 export const AnalisisDesempenoPage = () => {
   const { user } = useUser();
@@ -117,7 +109,17 @@ export const AnalisisDesempenoPage = () => {
   // `criteriosBackend` y `fichasCompletadas`, que ese actor sí puede leer.
   const puedeVerGestion = can(Capability.MONITOREO_EXECUTE);
 
-  const { data: plantillas = [] } = usePlantillasList(undefined, { enabled: puedeVerGestion });
+  /**
+   * El catálogo, incluyendo las versiones relevadas que conservan fichas.
+   *
+   * Versionar archiva la original y la saca del catálogo. Sus fichas siguen
+   * existiendo, y acá son justo lo que se mide: sin ellas la pantalla ofrecía
+   * rúbricas en cero mientras calculaba sobre una que no figuraba en la lista.
+   */
+  const { data: plantillas = [] } = usePlantillasList(
+    { incluirVersionadas: true },
+    { enabled: puedeVerGestion },
+  );
 
   const { data: fichasCompletadasData, isLoading } = useFichasCompletadas({
     limit: 1000,
@@ -202,18 +204,6 @@ export const AnalisisDesempenoPage = () => {
     return m;
   }, [completedVisits, filterModalidadEf, filterNivelEf, filterInstitucionEf]);
 
-  // La oficial UGEL vigente por instrumento (autor jefe_gestion o sin sello, sin IE).
-  const plantillasUgelPorInstrumento = useMemo(() => {
-    const m = new Map<FiltroDeInstrumento, string>();
-    plantillas.forEach((p) => {
-      const esUgel = !p.creadoPorRole || p.creadoPorRole === 'jefe_gestion';
-      if (esUgel && p.estado === 'Vigente' && !p.ieId && !m.has(p.instrumento)) {
-        m.set(p.instrumento, p.id);
-      }
-    });
-    return m;
-  }, [plantillas]);
-
   // El instrumento (y nombre) de cada plantilla, tomado de los propios datos.
   // Sirve de respaldo cuando `usePlantillasList` no trae la plantilla: al personal
   // de IE se le limita a docentes, así que la EIB o directiva de su colegio no
@@ -231,89 +221,154 @@ export const AnalisisDesempenoPage = () => {
     return m;
   }, [completedVisits]);
 
-  // Las 3 rúbricas oficiales UGEL, SIEMPRE, aunque el rol no las liste o no haya
-  // fichas: para cada instrumento se usa su plantilla oficial (de la lista) o, si
-  // el rol no la trae, la que aparezca en los datos; si tampoco, un id de respaldo
-  // para que la píldora igual se muestre en cero. Así el cliente ve el juego
-  // completo (Docente / Docente EIB / Directivo) y no cree que falta.
-  const ugelResuelto = useMemo(() => {
-    const dominanteEnDatos = (inst: FiltroDeInstrumento): string | undefined => {
-      const c = new Map<string, number>();
-      completedVisits.forEach((v) => {
-        if (v.instrumento !== inst) return;
-        if (filterModalidadEf !== 'Todos' && v.modalidad !== filterModalidadEf) return;
-        if (filterNivelEf !== 'Todos' && v.nivel !== filterNivelEf) return;
-        if (filterInstitucionEf !== 'Todos' && v.institucionId !== filterInstitucionEf) return;
-        if (v.plantillaId) c.set(v.plantillaId, (c.get(v.plantillaId) ?? 0) + 1);
-      });
-      return [...c.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
-    };
-    return INSTRUMENTOS.map(({ id: inst }) => ({
-      instrumento: inst,
-      id: plantillasUgelPorInstrumento.get(inst) ?? dominanteEnDatos(inst) ?? `ugel:${inst}`,
-    }));
-  }, [plantillasUgelPorInstrumento, completedVisits, filterModalidadEf, filterNivelEf, filterInstitucionEf]);
+  /**
+   * Las rúbricas del catálogo oficial de la UGEL.
+   *
+   * Antes se tomaba sólo la VIGENTE de cada instrumento. Pero versionar archiva
+   * la anterior y las fichas ya levantadas se quedan en la vieja: una I.E. cuya
+   * única visita se evaluó con la v1 leía «Docente 0» mientras la pantalla
+   * analizaba esa ficha igual, porque la selección caía en la plantilla con más
+   * fichas —la v1— que ni figuraba entre las píldoras. La regla y sus casos de
+   * borde viven en `rubricas-elegibles`.
+   */
+  const rubricasUgel = useMemo(
+    () =>
+      rubricasDeLaUgel(plantillas, conteoPorPlantilla, INSTRUMENTOS),
+    [plantillas, conteoPorPlantilla],
+  );
 
-  // Las institucionales, por ROL. Un rol puede tener MÁS DE UNA plantilla (el
-  // director suele tener la regular y la EIB): entonces hay una píldora por cada
-  // una, rotulada «Rol · Instrumento» para distinguirlas. Antes se colapsaba a
-  // una sola por rol y la segunda plantilla quedaba sin acceso al análisis.
-  // Un rol sin plantillas propias con fichas se muestra igual, en cero (id de
-  // respaldo), para que el cliente vea el juego completo de los 3 roles.
-  const institucionalResuelto = useMemo(() => {
-    const items: { id: string; rol: string; instrumento: FiltroDeInstrumento; label: string }[] = [];
-    for (const rol of ROLES_INSTITUCIONALES) {
-      const rolLabel = ROL_LABEL[rol] ?? rol;
-      const propias = plantillas
-        .filter((p) => p.creadoPorRole === rol && conteoPorPlantilla.has(p.id))
-        .sort((a, b) => (conteoPorPlantilla.get(b.id) ?? 0) - (conteoPorPlantilla.get(a.id) ?? 0));
+  /**
+   * Las rúbricas propias de la institución, una por PLANTILLA.
+   *
+   * Antes se agrupaban por cargo —Dirección, Coordinador P., Jefe de Taller—,
+   * dando por hecho que cada cargo tenía a lo sumo una ficha. Desde que el cupo
+   * se aprueba a nombre de una persona, dos coordinadores pueden tener una cada
+   * uno, distintas entre sí, y las dos caían en la misma píldora con el mismo
+   * rótulo. La regla y sus casos de borde viven en `rubricas-institucionales`.
+   */
+  const { rubricas: rubricasDeLaIE, motivoVacio: motivoSinRubricas } = useMemo(
+    () =>
+      rubricasInstitucionales(plantillas, conteoPorPlantilla),
+    [plantillas, conteoPorPlantilla],
+  );
 
-      if (propias.length === 0) {
-        // Placeholder en cero: el rol existe aunque todavía no monitoreó.
-        items.push({ id: `inst:${rol}`, rol, instrumento: 'DOCENTE', label: rolLabel });
-        continue;
+  /**
+   * Desde la UGEL, las rúbricas propias se listan sólo con un colegio elegido.
+   *
+   * La Jefatura tiene 300 instituciones. Si un tercio tuviera ficha propia, la
+   * fila traería cien botones y dejaría de ser un filtro. Y dos rúbricas de
+   * colegios distintos no se comparan entre sí: verlas juntas no aporta nada.
+   *
+   * La institución ya se elige en «Afinar resultados»; acá sólo se respeta esa
+   * elección en lugar de duplicarla.
+   */
+  const listaInstitucionalHabilitada = esAmbitoDeUnaIE || filterInstitucionEf !== 'Todos';
+
+  /**
+   * Cuántos colegios tienen rúbrica propia con monitoreos, mirando fuera del
+   * filtro de institución.
+   *
+   * Sin este número, «elige una institución» se lee como un requisito
+   * burocrático. Con él, la Jefatura sabe que hay algo que mirar y cuánto.
+   */
+  const colegiosConRubricaPropia = useMemo(() => {
+    if (listaInstitucionalHabilitada) return 0;
+
+    const conFichas = new Set<string>();
+    completedVisits.forEach((v) => {
+      if (filterModalidadEf !== 'Todos' && v.modalidad !== filterModalidadEf) return;
+      if (filterNivelEf !== 'Todos' && v.nivel !== filterNivelEf) return;
+      if (v.plantillaId) conFichas.add(v.plantillaId);
+    });
+
+    const colegios = new Set<string>();
+    plantillas.forEach((p) => {
+      if (p.ieId && conFichas.has(p.id)) colegios.add(p.ieId);
+    });
+    return colegios.size;
+  }, [listaInstitucionalHabilitada, completedVisits, plantillas, filterModalidadEf, filterNivelEf]);
+
+  /**
+   * Qué decir cuando la institución no tiene rúbricas propias que analizar.
+   *
+   * Son dos situaciones distintas y llevan a acciones distintas: no tener
+   * ninguna ficha propia se resuelve con una solicitud a la Jefatura; tenerla y
+   * no haberla usado, monitoreando con ella. Antes las dos se veían igual: tres
+   * píldoras en cero.
+   *
+   * Sólo aparece para el personal de institución; a la UGEL no le corresponden
+   * estas rúbricas y el grupo no se dibuja.
+   */
+  const avisoInstitucional = ((): string | undefined => {
+    // Desde la UGEL sin colegio elegido: no es que falte información, es que
+    // hay demasiada para una fila de píldoras. Se dice cuánta.
+    if (!listaInstitucionalHabilitada) {
+      if (colegiosConRubricaPropia === 0) {
+        return 'Ninguna institución tiene fichas propias con monitoreos completados: todas están midiendo con el catálogo oficial.';
       }
-      const varias = propias.length > 1;
-      for (const p of propias) {
-        items.push({
-          id: p.id,
-          rol,
-          instrumento: p.instrumento,
-          label: varias ? `${rolLabel} · ${INSTRUMENTO_LABEL[p.instrumento] ?? p.instrumento}` : rolLabel,
-        });
-      }
+      const plural = colegiosConRubricaPropia === 1 ? 'institución tiene' : 'instituciones tienen';
+      return `${colegiosConRubricaPropia} ${plural} fichas propias con monitoreos. Elige una institución educativa en «Afinar resultados» para analizar sus rúbricas.`;
     }
-    return items;
-  }, [plantillas, conteoPorPlantilla]);
+
+    if (esAmbitoDeUnaIE) {
+      if (motivoSinRubricas === 'SIN_PLANTILLAS') {
+        return 'Tu institución monitorea con las fichas oficiales de la UGEL. Para tener una ficha propia, el director debe solicitarla a la Jefatura de Gestión Pedagógica.';
+      }
+      if (motivoSinRubricas === 'SIN_FICHAS') {
+        return 'Tu institución tiene fichas propias, pero todavía no hay monitoreos completados con ellas en el ámbito seleccionado.';
+      }
+      return undefined;
+    }
+
+    if (motivoSinRubricas === 'SIN_PLANTILLAS') {
+      return 'Esta institución no tiene fichas propias autorizadas: monitorea con el catálogo oficial.';
+    }
+    if (motivoSinRubricas === 'SIN_FICHAS') {
+      return 'Esta institución tiene fichas propias, pero todavía no hay monitoreos completados con ellas en el ámbito seleccionado.';
+    }
+    return undefined;
+  })();
 
   // Rúbricas elegibles: las 3 UGEL para todos; las institucionales SOLO para el
   // personal de institución (director, coordinador, jefe de taller), que es de
   // quien son esas plantillas. Al jefe de gestión / UGEL no le corresponden.
   const gruposDePlantilla = useMemo<GruposDePlantilla>(() => {
-    const conteo = (id: string) => conteoPorPlantilla.get(id) ?? 0;
-    const ugel: OpcionPlantilla[] = ugelResuelto.map((u) => ({
-      id: u.id,
-      label: INSTRUMENTO_LABEL[u.instrumento] ?? u.instrumento,
-      conteo: conteo(u.id),
+    const ugel: OpcionPlantilla[] = rubricasUgel.map((r) => ({
+      id: r.id,
+      label: r.label,
+      titulo: r.titulo,
+      conteo: r.conteo,
     }));
-    const institucional: OpcionPlantilla[] = esAmbitoDeUnaIE
-      ? institucionalResuelto.map((r) => ({ id: r.id, label: r.label, conteo: conteo(r.id) }))
+    /**
+     * También para la UGEL.
+     *
+     * Antes el grupo se dibujaba sólo para el personal de institución, «porque
+     * esas plantillas no le corresponden» al Jefe de Gestión. Pero él sí mide
+     * esas fichas: quedaban dentro del total y fuera de toda rúbrica elegible,
+     * de modo que no había manera de mirarlas. Aprobar una plantilla propia y
+     * después no poder analizar lo que se levantó con ella no tiene sentido.
+     */
+    const institucional: OpcionPlantilla[] = listaInstitucionalHabilitada
+      ? rubricasDeLaIE.map((r) => ({
+          id: r.id,
+          label: r.label,
+          titulo: r.titulo,
+          conteo: r.conteo,
+        }))
       : [];
     return { ugel, institucional };
-  }, [ugelResuelto, institucionalResuelto, conteoPorPlantilla, esAmbitoDeUnaIE]);
+  }, [rubricasUgel, rubricasDeLaIE, listaInstitucionalHabilitada]);
 
   // Instrumento por id de rúbrica (incluye los ids de respaldo), para derivar el
   // tipo aun cuando la plantilla elegida no tenga fichas ni metadatos.
   const instrumentoPorId = useMemo(() => {
     const m = new Map<string, FiltroDeInstrumento>();
-    ugelResuelto.forEach((u) => m.set(u.id, u.instrumento));
-    institucionalResuelto.forEach((r) => m.set(r.id, r.instrumento));
     plantillas.forEach((p) => m.set(p.id, p.instrumento));
     infoPorPlantilla.forEach((info, id) => {
       if (!m.has(id)) m.set(id, info.instrumento);
     });
     return m;
-  }, [ugelResuelto, institucionalResuelto, plantillas, infoPorPlantilla]);
+  }, [plantillas, infoPorPlantilla]);
 
   // Selección efectiva: la elegida si sigue siendo válida; si no, la de más fichas
   // (normalmente la oficial UGEL). El instrumento se deriva de la plantilla.
@@ -554,6 +609,7 @@ export const AnalisisDesempenoPage = () => {
         gruposDePlantilla={gruposDePlantilla}
         plantillaSeleccionada={filterPlantillaEf}
         onSeleccionarPlantilla={handlePlantillaChange}
+        avisoInstitucional={avisoInstitucional}
         filterDocente={filterDocente}
         setFilterDocente={setFilterDocente}
         docentesDisponibles={docentesDisponibles}

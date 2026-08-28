@@ -1,5 +1,6 @@
 import type {
   ICrearSolicitudPlantillaRequest,
+  IDestinatarioDeVale,
   IResolverSolicitudPlantillaRequest,
   ISolicitudPlantilla,
   ISolicitudesPlantillaResponse,
@@ -37,6 +38,15 @@ export const solicitudesPlantillaApi = {
   /** Cupos aprobados y sin usar, para la pantalla de creación de plantillas. */
   cupos: (anio: number): Promise<IValeDisponible[]> =>
     request<IValeDisponible[]>(`/api/solicitudes-plantilla/mias/cupos?anio=${anio}`),
+
+  /**
+   * Personal de la I.E. al que el director puede destinar una plantilla.
+   *
+   * Sale del padrón de usuarios activos: quien no está registrado no aparece y
+   * no puede recibir un cupo.
+   */
+  destinatarios: (): Promise<IDestinatarioDeVale[]> =>
+    request<IDestinatarioDeVale[]>('/api/solicitudes-plantilla/mias/destinatarios'),
 
   /** Bandeja del Jefe de Gestión. */
   listar: (estado?: string): Promise<ISolicitudesPlantillaResponse> =>

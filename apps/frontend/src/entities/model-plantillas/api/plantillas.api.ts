@@ -53,7 +53,12 @@ export interface UpdatePlantillaInput {
 }
 
 export const plantillasApi = {
-  findAll: (query?: { anioAcademico?: number; tipoMonitoreo?: TipoPlantilla; estado?: EstadoPlantilla; institucionId?: string }) => {
+  /**
+   * `incluirVersionadas` trae además las plantillas relevadas por una versión
+   * nueva que todavía conservan fichas. El catálogo no las quiere; el análisis
+   * sí, porque sus fichas son las que mide.
+   */
+  findAll: (query?: { anioAcademico?: number; tipoMonitoreo?: TipoPlantilla; estado?: EstadoPlantilla; institucionId?: string; incluirVersionadas?: boolean }) => {
     const params = new URLSearchParams();
     if (query) {
       Object.entries(query).forEach(([k, v]) => {

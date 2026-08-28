@@ -13,7 +13,7 @@ import { mapIPlantillaListToPlantillaList, mapIPlantillaToPlantilla } from './ma
  */
 
 export const usePlantillasList = (
-  filters?: { anioAcademico?: number; estado?: EstadoPlantilla; tipoMonitoreo?: TipoPlantilla; institucionId?: string },
+  filters?: { anioAcademico?: number; estado?: EstadoPlantilla; tipoMonitoreo?: TipoPlantilla; institucionId?: string; incluirVersionadas?: boolean },
   options?: { enabled?: boolean },
 ) =>
   useQuery({

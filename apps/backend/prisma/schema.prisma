@@ -119,6 +119,7 @@ model Usuario {
   carpetasPedagogicas           CarpetaPedagogica[]       @relation("CarpetaPedagogicaActualizadaPor")
   solicitudesPlantilla          SolicitudPlantilla[]      @relation("SolicitudPlantillaSolicitante")
   solicitudesPlantillaResueltas SolicitudPlantilla[]      @relation("SolicitudPlantillaResolutor")
+  valesPlantillaRecibidos       SolicitudPlantillaItem[]  @relation("ValePlantillaBeneficiario")
 
   // Firmas
   firmaUrl String?      @map("firma_url") @db.Text
@@ -1007,17 +1008,31 @@ model SolicitudPlantillaItem {
   instrumento       String  @db.VarChar(20)
   /// Cargo al que servirá la plantilla: Director | Jefe de Taller | Coordinador Pedagógico.
   ///
-  /// Se declara por CARGO y no por persona: los cargos rotan durante el año y
-  /// la plantilla dura el año entero.
+  /// Se conserva para la lectura del pedido —es lo que el Jefe de Gestión ve y
+  /// lo que el PDF justifica—, pero ya no decide quién consume el vale: eso lo
+  /// dice `beneficiarioId`.
   cargoBeneficiario String  @map("cargo_beneficiario") @db.VarChar(50)
+  /// Persona a la que se destina la plantilla.
+  ///
+  /// Antes el vale sólo declaraba el cargo, y lo consumía el primero de ese
+  /// cargo que entrara: una I.E. con dos coordinadores pedagógicos aprobaba un
+  /// cupo para uno y se lo llevaba el otro, sin error y sin rastro. La intención
+  /// del director vivía en una conversación; ahora vive en la fila.
+  ///
+  /// Es nulo en los vales anteriores a este campo, que siguen valiendo para
+  /// cualquiera de su cargo: invalidar aprobaciones ya concedidas sería peor que
+  /// la imprecisión.
+  beneficiarioId    String? @map("beneficiario_id") @db.Uuid
   /// Qué plantilla se piensa armar, en una línea.
   descripcion       String  @db.VarChar(300)
   /// Plantilla creada al amparo de este vale. Nulo mientras el vale está libre.
   plantillaId       String? @unique @map("plantilla_id") @db.Uuid
 
-  solicitud SolicitudPlantilla  @relation(fields: [solicitudId], references: [id], onDelete: Cascade)
-  plantilla PlantillaMonitoreo? @relation(fields: [plantillaId], references: [id], onDelete: SetNull)
+  solicitud    SolicitudPlantilla  @relation(fields: [solicitudId], references: [id], onDelete: Cascade)
+  plantilla    PlantillaMonitoreo? @relation(fields: [plantillaId], references: [id], onDelete: SetNull)
+  beneficiario Usuario?            @relation("ValePlantillaBeneficiario", fields: [beneficiarioId], references: [id], onDelete: Restrict)
 
   @@index([solicitudId])
+  @@index([beneficiarioId])
   @@map("solicitud_plantilla_items")
 }

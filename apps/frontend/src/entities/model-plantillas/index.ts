@@ -7,4 +7,5 @@ export * from './seleccion';
 export * from './factories';
 export * from './validator';
 
+export * from './identidad';
 export * from './aplicables';

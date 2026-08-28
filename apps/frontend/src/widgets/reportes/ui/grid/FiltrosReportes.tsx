@@ -23,6 +23,14 @@ const FILTROS_TIPO = [
 export interface OpcionPlantilla {
   id: string;
   label: string;
+  /**
+   * Detalle completo —nombre, autor, cargo, instrumento—, para el tooltip y la
+   * línea que dice qué se está analizando.
+   *
+   * El rótulo de la píldora se recorta para que entre; sin este detalle, dos
+   * fichas de nombre parecido se distinguirían sólo por adivinanza.
+   */
+  titulo?: string;
   conteo: number;
 }
 
@@ -61,6 +69,7 @@ const Buscador = ({ etiqueta, marcador, valor, onCambiar }: BuscadorProps) => (
 interface OpcionSegmento {
   id: string;
   label: string;
+  titulo?: string;
   conteo?: number;
 }
 
@@ -94,13 +103,16 @@ const GrupoSegmentado = ({
             key={o.id}
             type="button"
             onClick={() => onSeleccionar?.(o.id)}
+            title={o.titulo}
             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
               activo
                 ? 'bg-primary text-primary-foreground shadow-sm'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-white/70'
             }`}
           >
-            <span>{o.label}</span>
+            {/* El nombre que le puso su autor puede ser largo: se recorta acá y
+                el detalle completo vive en el tooltip y en la línea de abajo. */}
+            <span className="truncate max-w-[16rem]">{o.label}</span>
             {o.conteo !== undefined && (
               <span
                 className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
@@ -151,6 +163,14 @@ interface FiltrosReportesProps {
   gruposDePlantilla?: GruposDePlantilla;
   plantillaSeleccionada?: string;
   onSeleccionarPlantilla?: (id: string) => void;
+  /**
+   * Por qué no hay rúbricas institucionales, cuando no las hay.
+   *
+   * Antes se dibujaban tres píldoras en cero —una por cargo— aunque la
+   * institución no tuviera ninguna ficha propia. Prometían una estructura que no
+   * existe. Una frase que diga qué falta es más honesta y además accionable.
+   */
+  avisoInstitucional?: string;
   /** Docentes para filtrar (opcional). Cascadea con institución/nivel/modalidad. */
   filterDocente?: string;
   setFilterDocente?: (id: string) => void;
@@ -226,6 +246,7 @@ export const FiltrosReportes = ({
   gruposDePlantilla,
   plantillaSeleccionada,
   onSeleccionarPlantilla,
+  avisoInstitucional,
   filterDocente,
   setFilterDocente,
   docentesDisponibles = [],
@@ -240,6 +261,13 @@ export const FiltrosReportes = ({
   permitirTipoTodos = true,
   bloquearAmbito = false,
 }: FiltrosReportesProps) => {
+  /** La rúbrica que está produciendo los números de la pantalla. */
+  const rubricaEnUso = gruposDePlantilla
+    ? [...gruposDePlantilla.ugel, ...gruposDePlantilla.institucional].find(
+        (o) => o.id === plantillaSeleccionada,
+      )
+    : undefined;
+
   const opcionesDeTipo = permitirTipoTodos
     ? FILTROS_TIPO
     : FILTROS_TIPO.filter((t) => t.id !== 'Todos');
@@ -328,7 +356,39 @@ export const FiltrosReportes = ({
             onSeleccionar={onSeleccionarPlantilla}
           />
         )}
+
+        {gruposDePlantilla && gruposDePlantilla.institucional.length === 0 && avisoInstitucional && (
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider flex items-center gap-1 px-0.5">
+              <FileText className="w-3 h-3 text-slate-300" /> Rúbrica · Institucional
+            </span>
+            <p className="text-[11px] text-slate-500 rounded-xl bg-slate-50 border border-slate-200 px-3 py-2 max-w-md leading-relaxed">
+              {avisoInstitucional}
+            </p>
+          </div>
+        )}
       </div>
+
+      {/*
+        Qué rúbrica están mirando, dicho con todas las letras.
+        Todo lo que hay debajo —promedios, gráficos, focos— sale de UNA rúbrica,
+        y cuál es se leía sólo por cuál píldora quedó resaltada. Con dos fichas
+        de nombre parecido eso no alcanza: el número sale igual de convincente
+        con la rúbrica equivocada.
+      */}
+      {rubricaEnUso && (
+        <p className="text-[11px] text-slate-500 -mt-1">
+          Analizando{' '}
+          <strong className="text-slate-700 font-bold">
+            {rubricaEnUso.titulo ?? rubricaEnUso.label}
+          </strong>
+          <span className="text-slate-400">
+            {' '}
+            · {rubricaEnUso.conteo}{' '}
+            {rubricaEnUso.conteo === 1 ? 'ficha completada' : 'fichas completadas'}
+          </span>
+        </p>
+      )}
 
       {isEvaluatedView ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

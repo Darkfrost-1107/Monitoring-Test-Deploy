@@ -22,6 +22,8 @@ describe('PlantillaService - ILA-0046', () => {
     autorId: 'user-jefe',
     rolAutorAlCrear: 'jefe_gestion' as const,
     institucionId: null,
+    // De la UGEL: el catálogo oficial siempre puede usarse.
+    autorizada: true,
     niveles: [],
     desempenos: [],
     ejesItems: [],
@@ -364,6 +366,98 @@ describe('PlantillaService - ILA-0046', () => {
         undefined,
         new Date().getFullYear(),
       );
+    });
+  });
+
+  /**
+   * Qué instrumentos ve cada persona en su catálogo.
+   *
+   * El coordinador pedagógico y el jefe de taller monitorean en el aula, y para
+   * eso necesitan una plantilla. Se les ocultaba el catálogo de la UGEL bajo el
+   * modelo viejo, en el que cada I.E. armaba sus propias fichas.
+   *
+   * Ese modelo ya no rige: las fichas de la UGEL son obligatorias y una
+   * plantilla propia sólo se ofrece si nació de una solicitud aprobada. Con el
+   * catálogo oficial oculto y un clon sin autorizar, la lista quedaba vacía y
+   * el calendario informaba «no hay una plantilla vigente» con las fichas
+   * oficiales publicadas y a la vista en otra pantalla.
+   */
+  describe('findAll — qué ve el personal de la institución', () => {
+    const sesionCoordinadora = {
+      id: 'user-coord',
+      role: RoleCode.COORDINADOR_PEDAGOGICO,
+      institucionId: 'ie-1',
+    };
+
+    /** Oficial de la UGEL: sin institución dueña. */
+    const deLaUgel = { ...plantillaVigente, id: 'ugel-docente' };
+
+    /** Clon de la propia institución. */
+    const deSuIe = {
+      ...plantillaVigente,
+      id: 'ie-1-docente',
+      institucionId: 'ie-1',
+      rolAutorAlCrear: 'coordinador_pedagogico' as const,
+      autorizada: false,
+    };
+
+    /** Clon de OTRA institución: nunca debe salir del ámbito de su dueña. */
+    const deOtraIe = {
+      ...plantillaVigente,
+      id: 'ie-2-docente',
+      institucionId: 'ie-2',
+      rolAutorAlCrear: 'director_ie' as const,
+      autorizada: false,
+    };
+
+    const idsQueVe = async (sesion: Parameters<typeof service.findAll>[1]) =>
+      (await service.findAll(undefined, sesion)).map((p) => p.id);
+
+    it('la coordinadora ve el catálogo obligatorio de la UGEL', async () => {
+      repo.findAll.mockResolvedValue([deLaUgel, deSuIe]);
+      expect(await idsQueVe(sesionCoordinadora)).toContain('ugel-docente');
+    });
+
+    it('la coordinadora sigue viendo lo de su propia institución', async () => {
+      repo.findAll.mockResolvedValue([deLaUgel, deSuIe]);
+      expect(await idsQueVe(sesionCoordinadora)).toContain('ie-1-docente');
+    });
+
+    it('no ve las plantillas de otra institución', async () => {
+      repo.findAll.mockResolvedValue([deLaUgel, deSuIe, deOtraIe]);
+      expect(await idsQueVe(sesionCoordinadora)).not.toContain('ie-2-docente');
+    });
+
+    it('el jefe de taller se rige por la misma regla', async () => {
+      repo.findAll.mockResolvedValue([deLaUgel, deSuIe, deOtraIe]);
+      const ids = await idsQueVe({
+        id: 'user-jt',
+        role: RoleCode.JEFE_TALLER,
+        institucionId: 'ie-1',
+      });
+      expect(ids.sort()).toEqual(['ie-1-docente', 'ugel-docente']);
+    });
+
+    it('el instrumento directivo sigue siendo competencia de la UGEL', async () => {
+      // El personal de I.E. monitorea docentes, no directivos: la ficha
+      // directiva no debe aparecerle aunque sea del catálogo oficial.
+      const directivoUgel = {
+        ...plantillaVigente,
+        id: 'ugel-directivo',
+        tipoMonitoreo: 'DIRECTIVO' as const,
+      };
+      repo.findAll.mockResolvedValue([deLaUgel, directivoUgel]);
+      expect(await idsQueVe(sesionCoordinadora)).toEqual(['ugel-docente']);
+    });
+
+    it('no ve los borradores de la UGEL', async () => {
+      const borradorUgel = {
+        ...plantillaVigente,
+        id: 'ugel-borrador',
+        estado: 'Borrador' as const,
+      };
+      repo.findAll.mockResolvedValue([deLaUgel, borradorUgel]);
+      expect(await idsQueVe(sesionCoordinadora)).toEqual(['ugel-docente']);
     });
   });
 });

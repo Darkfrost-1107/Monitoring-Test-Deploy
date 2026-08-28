@@ -167,21 +167,36 @@ export function useOpcionesDeEvaluacion({
     evaluadorElegidoId,
   ]);
 
-  // En Secundaria sólo se ofrece a los docentes cuya área maneja el especialista
-  // elegido; en los demás niveles pasan todos. Antes de elegir especialista no se
-  // filtra, para no mostrar una lista vacía sin explicación.
+  /**
+   * En Secundaria el especialista de UGEL sólo monitorea a los docentes cuya
+   * área maneja. En los demás niveles pasan todos, y antes de elegir
+   * especialista no se filtra para no mostrar una lista vacía sin explicación.
+   *
+   * ── Por qué NO se aplica al personal de la institución ──
+   * Esa regla es del especialista de UGEL, que se asigna por área. El
+   * coordinador pedagógico y el jefe de taller se rigen por otra: su cartera de
+   * docentes asignados, que ya se filtró más arriba y que al armarse contempla
+   * la especialidad.
+   *
+   * Ninguno de los dos tiene registro de especialista, así que
+   * `especialidadesDelEvaluador` llega vacío. Y en Secundaria una lista vacía
+   * de áreas descarta a TODOS los docentes: el selector aparecía sin una sola
+   * opción, con la cartera correctamente cargada detrás.
+   */
   const evaluados = useMemo(
     () =>
-      evaluadosBase.filter(
-        (d) =>
-          !evaluadorElegidoId ||
-          docenteEvaluablePorEspecialista(
-            d.especialidad,
-            especialidadesDelEvaluador ?? [],
-            esSecundaria,
+      esDirector
+        ? evaluadosBase
+        : evaluadosBase.filter(
+            (d) =>
+              !evaluadorElegidoId ||
+              docenteEvaluablePorEspecialista(
+                d.especialidad,
+                especialidadesDelEvaluador ?? [],
+                esSecundaria,
+              ),
           ),
-      ),
-    [evaluadosBase, evaluadorElegidoId, especialidadesDelEvaluador, esSecundaria],
+    [esDirector, evaluadosBase, evaluadorElegidoId, especialidadesDelEvaluador, esSecundaria],
   );
 
   const opcionesDeEvaluado = useMemo(

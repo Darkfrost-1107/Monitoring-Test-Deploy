@@ -26,6 +26,7 @@ export const PlantillaEditPage = () => {
     if (!plantilla) return null;
     return {
       tipoMonitoreo: plantilla.tipoMonitoreo,
+      descripcion: plantilla.descripcion ?? '',
       anioAcademico: plantilla.anioAcademico,
       lema: plantilla.lema ?? '',
       baremo: plantilla.baremo,

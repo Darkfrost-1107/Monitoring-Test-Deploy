@@ -50,6 +50,9 @@ const motivosDelRechazo = async (cuerpo: Record<string, unknown>): Promise<strin
 const item = {
   instrumento: 'DOCENTE',
   cargoBeneficiario: CargoBeneficiario.JEFE_DE_TALLER,
+  // El cupo se aprueba a nombre de una persona: sin destinatario lo consume el
+  // primero de ese cargo que entre.
+  beneficiarioId: '3f2a6d1e-7c4b-4a2e-9f10-0b5c8d3e7a91',
   descripcion: 'criterios relacionados a la carpintería',
 };
 
@@ -109,6 +112,29 @@ describe('CrearSolicitudPlantillaDto', () => {
     );
 
     expect(motivos).toMatch(/cargoBeneficiario/i);
+  });
+
+  /**
+   * El cupo se aprueba a nombre de una persona. Sin destinatario lo consume el
+   * primero de ese cargo que entre, que es justo lo que el campo vino a cerrar.
+   */
+  it('rechaza un item sin destinatario', async () => {
+    const sinDestinatario = { ...item };
+    delete (sinDestinatario as Record<string, unknown>).beneficiarioId;
+
+    const motivos = await motivosDelRechazo(
+      comoFormData({ items: JSON.stringify([sinDestinatario]) }),
+    );
+
+    expect(motivos).toMatch(/beneficiarioId/i);
+  });
+
+  it('rechaza un destinatario que no es un identificador', async () => {
+    const motivos = await motivosDelRechazo(
+      comoFormData({ items: JSON.stringify([{ ...item, beneficiarioId: 'la-marta' }]) }),
+    );
+
+    expect(motivos).toMatch(/beneficiarioId/i);
   });
 
   it('rechaza una lista de items vacia', async () => {

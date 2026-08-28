@@ -6,8 +6,24 @@ import { useUser } from '@entities/model-user';
 import { RoleCode } from '@sistema-monitoreo/shared-contracts';
 import { CampoLemaOficial } from './CampoLemaOficial';
 
+/** Roles cuya plantilla pertenece a una institución educativa. */
+const ROLES_DE_INSTITUCION: readonly RoleCode[] = [
+  RoleCode.DIRECTOR_INSTITUCION,
+  RoleCode.COORDINADOR_PEDAGOGICO,
+  RoleCode.JEFE_TALLER,
+];
+
 interface Props {
   tipoMonitoreo: string;
+  /**
+   * Nombre con el que la institución distingue esta ficha.
+   *
+   * Sin él, todas las plantillas de un mismo instrumento y año se llaman igual
+   * —«Monitoreo Docente 2026»— y en el catálogo sólo se diferencian por la
+   * insignia del autor. Se guarda en `descripcion`, que ya existía y sólo
+   * llevaba el texto que dejaba el clonador.
+   */
+  descripcion: string;
   anioAcademico: number;
   /** Lema oficial del año, ya resuelto por el formulario. */
   lema: string;
@@ -17,8 +33,21 @@ interface Props {
   onLemaChange: (lema: string) => void;
   baremo: Baremo;
   niveles: NivelCalificacion[];
+  /**
+   * Instrumentos que esta persona puede elegir.
+   *
+   * Para la UGEL son todos. Para una institución, sólo aquellos con una
+   * autorización aprobada y sin usar: el catálogo oficial es obligatorio y una
+   * plantilla propia no se crea porque se quiera, sino porque se aprobó.
+   *
+   * Antes se fijaba a «Monitoreo Docente» a mano para el director y el selector
+   * quedaba deshabilitado, de modo que ni siquiera podía crear una ficha EIB
+   * aunque se la hubieran aprobado.
+   */
+  instrumentosPermitidos?: readonly string[];
   onChange: (patch: Partial<{
     tipoMonitoreo: string;
+    descripcion: string;
     anioAcademico: number;
     baremo: Baremo;
     niveles: NivelCalificacion[];
@@ -28,6 +57,7 @@ interface Props {
 
 export const PlantillaCabecera = ({
   tipoMonitoreo,
+  descripcion,
   anioAcademico,
   lema,
   lemaGuardado,
@@ -36,10 +66,14 @@ export const PlantillaCabecera = ({
   baremo,
   niveles,
   onChange,
+  instrumentosPermitidos,
   isEditMode = false,
 }: Props) => {
   const { user } = useUser();
-  const isDirector = user?.role === RoleCode.DIRECTOR_INSTITUCION;
+  const esDeInstitucion = ROLES_DE_INSTITUCION.includes(user?.role as RoleCode);
+
+  // Para la UGEL, todos. Para una institución, sólo los que tenga autorizados.
+  const opciones = instrumentosPermitidos ?? (esDeInstitucion ? [] : TIPOS_MONITOREO);
   const setNivel = (i: number, p: Partial<NivelCalificacion>) =>
     onChange({ niveles: niveles.map((n, idx) => (idx === i ? { ...n, ...p } : n)) });
 
@@ -61,10 +95,37 @@ export const PlantillaCabecera = ({
             required
             value={tipoMonitoreo}
             onChange={(v) => onChange({ tipoMonitoreo: v })}
-            options={(isDirector ? ['Monitoreo Docente'] : TIPOS_MONITOREO).map((t) => ({ value: t, label: t }))}
+            options={opciones.map((t) => ({ value: t, label: t }))}
             placeholder="Seleccione el tipo"
-            disabled={isEditMode || isDirector}
+            // Al editar no se cambia el instrumento: la escala y las rúbricas
+            // ya están armadas para el que se eligió.
+            disabled={isEditMode || opciones.length <= 1}
           />
+          {/*
+            Un campo gris y bloqueado sin explicación obliga a deducir por qué.
+            El instrumento no se elige acá: lo fijó la autorización, y cambiarlo
+            significa pedir otra. Decirlo ahorra el viaje de ida y vuelta.
+          */}
+          {instrumentosPermitidos !== undefined && (
+            <p className="text-xs text-muted-foreground -mt-2">
+              {opciones.length <= 1
+                ? 'Viene de tu autorización aprobada. Para una ficha de otro tipo, el director de la I.E. debe presentar una solicitud nueva.'
+                : 'Sólo aparecen los tipos que tienes autorizados.'}
+            </p>
+          )}
+
+          <div className="flex flex-col gap-1">
+            <TextField
+              label="Nombre de la ficha"
+              value={descripcion}
+              onChange={(v) => onChange({ descripcion: v })}
+              placeholder="Ej.: Observación del taller de carpintería"
+            />
+            <p className="text-xs text-muted-foreground">
+              Con qué nombre aparece en el catálogo. Sin él, todas las fichas del mismo
+              instrumento y año se ven iguales.
+            </p>
+          </div>
           <TextField
             label="Año Académico"
             required

@@ -16,6 +16,11 @@ import { esDeUgel, type PlantillaVisible } from './visibilidad-plantillas';
 export interface PlantillaGestionable extends PlantillaVisible {
   /** Usuario que la creó. */
   creadoPorId?: string;
+  /**
+   * Instrumento tipado. Se compara contra el del cupo aprobado: cada
+   * autorización se concedió para una ficha concreta, no para «una plantilla».
+   */
+  instrumento?: string;
 }
 
 export interface UsuarioDeGestion {
@@ -91,9 +96,42 @@ export function puedeClonarLaDelDirector(
  * Es la acción exclusiva del director sobre el material de la UGEL: en lugar de
  * editarlo, se lleva una copia propia.
  */
+/**
+ * Si esta persona puede copiar la ficha oficial para su institución.
+ *
+ * ── Por qué exige un cupo y no sólo el rol ──
+ * El catálogo de la UGEL es obligatorio: una institución monitorea con las
+ * fichas oficiales y no necesita copiarlas para eso. Copiar sirve únicamente
+ * para materializar una plantilla que la Jefatura ya aprobó, y el servidor lo
+ * exige al duplicar.
+ *
+ * Mostrar el botón sin mirar los cupos era prometer lo que el servidor
+ * rechazaba: se pulsaba y devolvía 403.
+ *
+ * El cupo debe coincidir en INSTRUMENTO, porque cada uno se aprobó para una
+ * ficha concreta. El cargo lo verifica el backend contra la sesión; acá no
+ * hace falta repetirlo, ya que los cupos que llegan son los de esta persona.
+ */
 export function puedeCopiarParaSuInstitucion(
   plantilla: PlantillaGestionable,
   usuario: UsuarioDeGestion | null | undefined,
+  cuposLibres: readonly { instrumento: string }[] = [],
 ): boolean {
-  return usuario?.role === RoleCode.DIRECTOR_INSTITUCION && esDeUgel(plantilla);
+  if (!esDeUgel(plantilla)) return false;
+  if (!ROLES_QUE_CREAN_EN_LA_IE.includes(usuario?.role as RoleCode)) return false;
+
+  return cuposLibres.some((cupo) => cupo.instrumento === plantilla.instrumento);
 }
+
+/**
+ * Quiénes crean plantillas dentro de una institución.
+ *
+ * Antes era sólo el director. El jefe de taller y el coordinador pedagógico no
+ * PIDEN —eso lo tramita el director por todos—, pero sí crean la plantilla que
+ * se aprobó para su cargo.
+ */
+const ROLES_QUE_CREAN_EN_LA_IE: readonly RoleCode[] = [
+  RoleCode.DIRECTOR_INSTITUCION,
+  RoleCode.COORDINADOR_PEDAGOGICO,
+  RoleCode.JEFE_TALLER,
+];

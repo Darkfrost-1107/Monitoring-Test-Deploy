@@ -40,6 +40,9 @@ const jefeGestion: SessionUser = { id: 'u-jg', role: RoleCode.JEFE_GESTION, inst
 const itemValido = {
   instrumento: 'DOCENTE' as const,
   cargoBeneficiario: CargoBeneficiario.JEFE_DE_TALLER,
+  // El cupo se aprueba a nombre de una persona, no de un cargo: la I.E. puede
+  // tener dos jefes de taller y el vale es de uno solo.
+  beneficiarioId: 'u-taller',
   descripcion: 'Ficha para el taller de carpintería',
 };
 
@@ -57,9 +60,25 @@ const fila = (over: Record<string, unknown> = {}) => ({
   institucion: { nombre: 'I.E. 70001' },
   solicitante: { persona: { nombres: 'Luis', apellidos: 'Quispe' } },
   resueltaPor: null,
-  items: [{ id: 'item-1', ...itemValido, plantillaId: null }],
+  items: [
+    {
+      id: 'item-1',
+      ...itemValido,
+      plantillaId: null,
+      beneficiario: { persona: { nombres: 'Marta', apellidos: 'Ccama' } },
+    },
+  ],
   ...over,
 });
+
+/** Padrón por defecto: el jefe de taller al que apunta `itemValido`. */
+const PERSONAL_DE_LA_IE = [
+  {
+    id: 'u-taller',
+    rol: { codigo: RoleCode.JEFE_TALLER },
+    persona: { nombres: 'Marta', apellidos: 'Ccama' },
+  },
+];
 
 const prismaFalso = () => ({
   solicitudPlantilla: {
@@ -69,6 +88,9 @@ const prismaFalso = () => ({
     findUnique: jest.fn(),
     updateMany: jest.fn(),
     count: jest.fn(),
+  },
+  usuario: {
+    findMany: jest.fn<any>().mockResolvedValue(PERSONAL_DE_LA_IE),
   },
 });
 
@@ -144,6 +166,54 @@ describe('SolicitudesPlantillaService', () => {
       expect(args.data.institucionId).toBe(IE);
       expect(args.data.solicitanteId).toBe(director.id);
       expect(args.data.justificacionUrl).toBe(PDF);
+    });
+
+    /**
+     * El caso que trae el campo: una I.E. con dos jefes de taller. El vale se
+     * pedía por cargo y lo consumía el primero que entrara, de modo que el
+     * destinatario legítimo se encontraba con «no hay cupo» semanas después.
+     */
+    it('exige a que persona se destina cada plantilla', async () => {
+      const { service } = montar();
+      const sinDestinatario = pedido({
+        items: [{ ...itemValido, beneficiarioId: undefined }],
+      });
+
+      await expect(service.crear(director, sinDestinatario, PDF)).rejects.toThrow(/persona/i);
+    });
+
+    it('no admite destinar la plantilla a alguien de otra institucion', async () => {
+      // El cuerpo lo controla quien envía: sin esta comprobación, un id ajeno
+      // convertiría el pedido en una autorización para alguien de afuera.
+      const { service, prisma } = montar();
+      const ajeno = pedido({ items: [{ ...itemValido, beneficiarioId: 'u-de-otra-ie' }] });
+
+      await expect(service.crear(director, ajeno, PDF)).rejects.toThrow(BadRequestException);
+      expect(prisma.solicitudPlantilla.create).not.toHaveBeenCalled();
+    });
+
+    it('no admite que el cargo declarado contradiga al del destinatario', async () => {
+      const { service } = montar();
+      const contradictorio = pedido({
+        items: [{ ...itemValido, cargoBeneficiario: CargoBeneficiario.COORDINADOR_PEDAGOGICO }],
+      });
+
+      await expect(service.crear(director, contradictorio, PDF)).rejects.toThrow(
+        /Coordinador Pedag/i,
+      );
+    });
+
+    it('guarda el destinatario junto al cupo', async () => {
+      const { service, prisma } = montar();
+      prisma.solicitudPlantilla.findFirst.mockResolvedValue(null as never);
+      prisma.solicitudPlantilla.create.mockResolvedValue(fila() as never);
+
+      await service.crear(director, pedido(), PDF);
+
+      const args = prisma.solicitudPlantilla.create.mock.calls[0]?.[0] as {
+        data: { items: { create: { beneficiarioId: string }[] } };
+      };
+      expect(args.data.items.create[0]?.beneficiarioId).toBe('u-taller');
     });
 
     it('impide una segunda solicitud pendiente del mismo ano', async () => {

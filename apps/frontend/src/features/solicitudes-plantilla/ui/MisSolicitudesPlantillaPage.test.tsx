@@ -19,6 +19,7 @@ vi.mock('@shared/api/solicitudes-plantilla.api', () => ({
   solicitudesPlantillaApi: {
     mias: vi.fn(),
     crear: vi.fn(),
+    cupos: vi.fn(),
   },
 }));
 
@@ -40,6 +41,7 @@ const montar = () => {
 const solicitud = (
   estado: 'PENDIENTE' | 'APROBADA' | 'RECHAZADA',
   cuposUsados: (string | null)[] = [null],
+  cargo = 'Director',
 ) => ({
   id: `s-${estado}`,
   institucionId: 'ie-1',
@@ -55,7 +57,7 @@ const solicitud = (
   items: cuposUsados.map((plantillaId, i) => ({
     id: `item-${i}`,
     instrumento: 'DOCENTE' as const,
-    cargoBeneficiario: 'Director' as const,
+    cargoBeneficiario: cargo,
     descripcion: 'ficha del taller',
     plantillaId,
   })),
@@ -67,6 +69,8 @@ const botonQuitar = () => screen.getByRole('button', { name: /Quitar el archivo 
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(solicitudesPlantillaApi.mias).mockResolvedValue({ solicitudes: [], pendientes: 0 });
+  // Los cupos que el backend devuelve YA vienen acotados al cargo de la sesión.
+  vi.mocked(solicitudesPlantillaApi.cupos).mockResolvedValue([]);
 });
 
 describe('MisSolicitudesPlantillaPage — el adjunto', () => {
@@ -132,6 +136,12 @@ describe('MisSolicitudesPlantillaPage — estado del trámite', () => {
       solicitudes: [solicitud('APROBADA', [null, null])],
       pendientes: 0,
     } as never);
+    // El contador sale de los cupos que el backend acota al cargo de la sesión,
+    // no de los ítems de la solicitud: el director ve los de toda su I.E.
+    vi.mocked(solicitudesPlantillaApi.cupos).mockResolvedValue([
+      { itemId: 'a', instrumento: 'DOCENTE', cargoBeneficiario: 'Director', descripcion: 'x', anioEscolar: 2026 },
+      { itemId: 'b', instrumento: 'DOCENTE', cargoBeneficiario: 'Director', descripcion: 'y', anioEscolar: 2026 },
+    ] as never);
 
     montar();
 
@@ -173,5 +183,54 @@ describe('MisSolicitudesPlantillaPage — estado del trámite', () => {
     montar();
 
     expect(await screen.findByRole('button', { name: /Nueva solicitud/i })).toBeEnabled();
+  });
+});
+
+describe('MisSolicitudesPlantillaPage — de quién es el cupo', () => {
+  /**
+   * El director tramita por todos, así que ve los cupos de su institución
+   * entera. Pero crear la plantilla le toca a quien lleva el cargo del cupo.
+   *
+   * Contarlos juntos producía una contradicción entre pantallas: acá decía
+   * «tienes 1 plantilla autorizada, créala» y el formulario respondía «no
+   * tienes ninguna», porque el cupo era del Coordinador. Los dos tenían razón
+   * sobre cosas distintas.
+   */
+  it('un cupo de otro cargo NO se ofrece como propio', async () => {
+    vi.mocked(solicitudesPlantillaApi.mias).mockResolvedValue({
+      solicitudes: [solicitud('APROBADA', [null], 'Coordinador Pedagógico')],
+      pendientes: 0,
+    } as never);
+    // El backend no le devuelve ese cupo: no es de su cargo.
+    vi.mocked(solicitudesPlantillaApi.cupos).mockResolvedValue([]);
+
+    montar();
+
+    expect(await screen.findByText(/no te corresponden a ti/i)).toBeInTheDocument();
+    // Aparece en el aviso y en la píldora de la tarjeta.
+    expect(screen.getAllByText(/Coordinador Pedagógico/).length).toBeGreaterThan(0);
+    // Y no se ofrece crearla: el sistema no lo dejaría.
+    expect(screen.queryByRole('link', { name: /Ir a crear/i })).toBeNull();
+  });
+
+  it('un cupo del propio cargo si se ofrece', async () => {
+    vi.mocked(solicitudesPlantillaApi.mias).mockResolvedValue({
+      solicitudes: [solicitud('APROBADA', [null], 'Director')],
+      pendientes: 0,
+    } as never);
+    vi.mocked(solicitudesPlantillaApi.cupos).mockResolvedValue([
+      {
+        itemId: 'item-0',
+        instrumento: 'DOCENTE',
+        cargoBeneficiario: 'Director',
+        descripcion: 'ficha del taller',
+        anioEscolar: 2026,
+      },
+    ] as never);
+
+    montar();
+
+    expect(await screen.findByText(/1 plantilla autorizada sin crear/i)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Ir a crear/i })).toBeInTheDocument();
   });
 });

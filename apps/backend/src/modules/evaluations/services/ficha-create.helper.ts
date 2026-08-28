@@ -5,6 +5,7 @@ import type { FichaRepository } from '../repositories/ficha.repository.js';
 import type { CreateFichaDto } from '../dto/ficha.dto.js';
 import type { SessionUser } from '../../../shared/types/session-user.js';
 import { assertEsMonitorAsignado } from './evaluador-guard.js';
+import { assertPuedeAplicarPlantilla } from './plantilla-aplicable.guard.js';
 
 export async function crear(
   repository: FichaRepository,
@@ -27,6 +28,17 @@ export async function crear(
     if (!dto.plantillaId) return null;
     const elegida = await repository.findPlantillaBasicById(dto.plantillaId);
     if (!elegida) return null;
+
+    /**
+     * Elegir una ficha que no es tuya no cae al respaldo: se rechaza.
+     *
+     * Lo demás de este bloque descarta en silencio y sigue con la vigente de la
+     * UGEL, que está bien para un dato viejo o inconsistente. Acá no: quien
+     * pulsó eligió un instrumento a propósito, y cambiárselo por otro sin avisar
+     * produce una ficha completa, firmada y evaluada con preguntas que nadie
+     * quiso aplicar.
+     */
+    assertPuedeAplicarPlantilla(elegida, session);
 
     if (elegida.estado.toLowerCase() !== 'vigente') {
       return null;

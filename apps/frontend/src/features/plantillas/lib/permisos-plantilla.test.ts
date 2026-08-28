@@ -128,19 +128,53 @@ describe('puedeClonarLaDelDirector', () => {
 });
 
 describe('puedeCopiarParaSuInstitucion', () => {
+  /**
+   * El catálogo de la UGEL es obligatorio: una institución monitorea con las
+   * fichas oficiales y no necesita copiarlas para eso. Copiar sirve únicamente
+   * para materializar una plantilla que la Jefatura ya aprobó.
+   *
+   * Antes bastaba con ser director, y el botón se ofrecía siempre: se pulsaba y
+   * el servidor devolvía 403 porque exige el cupo. Un botón que promete lo que
+   * el servidor rechaza es peor que no tenerlo.
+   */
   const director = usuario({ role: RoleCode.DIRECTOR_INSTITUCION, institucion: 'ie-1' });
+  const oficialDocente = plantilla({ instrumento: 'DOCENTE' });
+  const cupoDocente = [{ instrumento: 'DOCENTE' }];
 
-  it('el director copia las plantillas de la UGEL', () => {
-    expect(puedeCopiarParaSuInstitucion(plantilla(), director)).toBe(true);
+  it('con un cupo libre del mismo instrumento, se ofrece copiar', () => {
+    expect(puedeCopiarParaSuInstitucion(oficialDocente, director, cupoDocente)).toBe(true);
+  });
+
+  it('sin cupo no se ofrece, aunque sea el director', () => {
+    expect(puedeCopiarParaSuInstitucion(oficialDocente, director, [])).toBe(false);
+  });
+
+  it('un cupo de otro instrumento no habilita esta ficha', () => {
+    // Cada autorización se concedió para una ficha concreta, no para «una
+    // plantilla cualquiera».
+    expect(
+      puedeCopiarParaSuInstitucion(oficialDocente, director, [{ instrumento: 'DOCENTE_EIB' }]),
+    ).toBe(false);
+  });
+
+  it.each([
+    ['el jefe de taller', RoleCode.JEFE_TALLER],
+    ['el coordinador pedagógico', RoleCode.COORDINADOR_PEDAGOGICO],
+  ])('%s también crea la plantilla que se aprobó para su cargo', (_caso, role) => {
+    // No PIDEN —eso lo tramita el director por todos—, pero sí crean la suya.
+    expect(
+      puedeCopiarParaSuInstitucion(oficialDocente, usuario({ role, institucion: 'ie-1' }), cupoDocente),
+    ).toBe(true);
   });
 
   it('no copia las que ya son de una institución', () => {
-    const deIE = plantilla({ creadoPorRole: 'director_ie', ieId: 'ie-1' });
+    const deIE = plantilla({ creadoPorRole: 'director_ie', ieId: 'ie-1', instrumento: 'DOCENTE' });
 
-    expect(puedeCopiarParaSuInstitucion(deIE, director)).toBe(false);
+    expect(puedeCopiarParaSuInstitucion(deIE, director, cupoDocente)).toBe(false);
   });
 
-  it('no aplica a otros roles', () => {
-    expect(puedeCopiarParaSuInstitucion(plantilla(), usuario())).toBe(false);
+  it('no aplica al personal de la UGEL', () => {
+    // El especialista aplica las fichas oficiales; no crea las de una I.E.
+    expect(puedeCopiarParaSuInstitucion(oficialDocente, usuario(), cupoDocente)).toBe(false);
   });
 });

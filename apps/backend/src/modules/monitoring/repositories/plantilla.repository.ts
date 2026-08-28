@@ -29,6 +29,8 @@ export abstract class PlantillaRepository {
     estado?: 'Borrador' | 'Vigente' | 'Historico';
     rolAutorAlCrear?: RolAutorPlantilla;
     institucionId?: string | null;
+    /** Traer también las versionadas que conservan fichas. Ver el DTO. */
+    incluirVersionadas?: boolean;
   }): Promise<IPlantilla[]>;
 
   abstract findById(id: string): Promise<IPlantilla | null>;

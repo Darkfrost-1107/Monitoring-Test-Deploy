@@ -82,6 +82,7 @@ export const EditarPlantillaForm = ({ initialData, onCancel, onSubmit, isLoading
 
       <PlantillaCabecera
         tipoMonitoreo={form.tipoMonitoreo}
+        descripcion={form.descripcion}
         anioAcademico={form.anioAcademico}
         lema={lemaVigente}
         lemaGuardado={lemaGuardado}

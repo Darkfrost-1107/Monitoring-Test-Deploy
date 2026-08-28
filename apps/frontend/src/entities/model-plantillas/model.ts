@@ -89,5 +89,13 @@ export interface Plantilla {
   /** Nombre de quien la creó. Ausente en las plantillas anteriores al campo. */
   autorNombre?: string;
   ieId?: string;
+  /**
+   * Si puede usarse en monitoreos nuevos.
+   *
+   * Las de la UGEL siempre. Una de institución sólo si nació de una solicitud
+   * que la Jefatura aprobó. Las anteriores a que existieran las autorizaciones
+   * son `false`: no se ofrecen, pero sus fichas siguen legibles.
+   */
+  autorizada?: boolean;
   institucionNombre?: string;
 }

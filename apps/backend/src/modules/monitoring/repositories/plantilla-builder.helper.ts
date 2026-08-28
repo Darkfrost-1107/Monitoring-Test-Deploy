@@ -35,6 +35,9 @@ export async function buildPlantilla(
         },
       },
       ejesItems: { orderBy: { orden: 'asc' } },
+      // El cupo que autorizó esta plantilla, si lo hubo. Sólo se necesita
+      // saber si existe.
+      valeDeSolicitud: { select: { id: true } },
       institucion: { select: { nombre: true, codigoModular: true } },
       autor: { select: { persona: { select: { nombres: true, apellidos: true } } } },
     },
@@ -58,6 +61,10 @@ export async function buildPlantilla(
     autorId: plantilla.autorId,
     autorNombre: nombreDelAutor(plantilla.autor),
     rolAutorAlCrear: plantilla.rolAutorAlCrear as RolAutorPlantilla,
+    // Las de la UGEL no llevan institución y son el catálogo oficial: siempre
+    // autorizadas. Las de una I.E. lo están sólo si nacieron de un cupo, lo que
+    // deja fuera a las anteriores a que las autorizaciones existieran.
+    autorizada: plantilla.institucionId === null || plantilla.valeDeSolicitud !== null,
     institucionId: plantilla.institucionId,
     niveles: plantilla.nivelesCalificacion.map((n) => ({
       id: n.id,

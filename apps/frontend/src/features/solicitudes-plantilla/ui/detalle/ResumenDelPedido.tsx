@@ -74,9 +74,21 @@ export const ResumenDelPedido = ({ solicitud }: { solicitud: ISolicitudPlantilla
             <ClipboardList className="h-4 w-4 text-primary shrink-0" />
             {ROTULO_INSTRUMENTO[item.instrumento] ?? item.instrumento}
           </div>
+          {/*
+            A quién se destina el cupo, que es quien podrá crear y aplicar la
+            ficha. El cargo se muestra al lado como aclaración: dos personas
+            pueden ocupar el mismo, y antes la fila sólo decía el cargo.
+          */}
           <div className="flex items-center gap-1.5 text-[11px] text-slate-600 font-medium">
             <GraduationCap className="h-3.5 w-3.5 shrink-0" />
-            {item.cargoBeneficiario}
+            {item.beneficiarioNombre ? (
+              <span>
+                {item.beneficiarioNombre}
+                <span className="text-slate-400"> · {item.cargoBeneficiario}</span>
+              </span>
+            ) : (
+              item.cargoBeneficiario
+            )}
           </div>
           <p className="text-[11px] text-slate-500 leading-relaxed">{item.descripcion}</p>
 
