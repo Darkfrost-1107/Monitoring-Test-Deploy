@@ -5,6 +5,7 @@ import { RoleCode } from '@sistema-monitoreo/shared-contracts';
 import type { Cronograma } from '@entities/model-cronogramas';
 import type { SolicitudReprogramacion } from '@entities/model-reprogramaciones';
 import { DecidirReprogramacionForm } from './DecidirReprogramacionForm';
+import * as api from '@shared/config/api';
 
 /**
  * Pruebas del detalle y la resolución de una solicitud de reprogramación.
@@ -204,25 +205,46 @@ describe('DecidirReprogramacionForm — sustento adjunto', () => {
    * veía descargable y al pulsarlo no pasaba nada. La URL existía y el mapeo la
    * descartaba.
    */
-  it('el adjunto es un enlace que abre el documento', () => {
+  it('el adjunto se pide con la sesion, no por su ruta directa', async () => {
+    // Con `href` a la ruta guardada el navegador la resolvía contra el
+    // frontend: ni nginx ni Vite la reenvían, así que el PDF abría la propia
+    // aplicación. Ahora se trae el contenido y se abre desde memoria.
+    const blob = vi.spyOn(api, 'requestBlob').mockResolvedValue(new Blob(['%PDF-1.7']));
     montar({
       request: {
-        adjunto: { nombre: 'oficio-123.pdf', url: 'https://archivos.ugel.pe/oficio-123.pdf' },
+        adjunto: { nombre: 'oficio-123.pdf', url: '/reprogramaciones/reprogramaciones-abc.pdf' },
       },
     });
 
-    const enlace = screen.getByRole('link', { name: /oficio-123\.pdf/i });
-    expect(enlace).toHaveAttribute('href', 'https://archivos.ugel.pe/oficio-123.pdf');
+    await userEvent.click(screen.getByRole('button', { name: /oficio-123\.pdf/i }));
+
+    expect(blob).toHaveBeenCalledWith('/api/archivos/reprogramaciones/reprogramaciones-abc.pdf');
   });
 
-  it('se abre fuera sin dar acceso a la pestaña de origen', () => {
+  it('se abre fuera sin dar acceso a la pestana de origen', async () => {
+    vi.spyOn(api, 'requestBlob').mockResolvedValue(new Blob(['%PDF-1.7']));
+    const abrir = vi.spyOn(window, 'open').mockReturnValue({} as Window);
     montar({
-      request: { adjunto: { nombre: 'oficio.pdf', url: 'https://archivos.ugel.pe/oficio.pdf' } },
+      request: { adjunto: { nombre: 'oficio.pdf', url: '/reprogramaciones/x.pdf' } },
     });
 
-    const enlace = screen.getByRole('link', { name: /oficio\.pdf/i });
-    expect(enlace).toHaveAttribute('target', '_blank');
-    expect(enlace).toHaveAttribute('rel', expect.stringContaining('noopener'));
+    await userEvent.click(screen.getByRole('button', { name: /oficio\.pdf/i }));
+
+    expect(abrir).toHaveBeenCalledWith(expect.any(String), '_blank', 'noopener,noreferrer');
+  });
+
+  it('una ruta que no corresponde a un cajon no se ofrece como descarga', async () => {
+    // Hay filas viejas con formatos que ya no se usan. Un botón que no puede
+    // cumplir es peor que ninguno.
+    montar({
+      request: { adjunto: { nombre: 'viejo.pdf', url: 'https://archivos.ugel.pe/viejo.pdf' } },
+    });
+
+    // Una URL absoluta sí se respeta: apunta a donde debe.
+    expect(screen.getByRole('button', { name: /viejo\.pdf/i })).toBeInTheDocument();
+
+    montar({ request: { adjunto: { nombre: 'raro.pdf', url: '/cajon-inventado/raro.pdf' } } });
+    expect(screen.getByText(/raro\.pdf — no disponible/i)).toBeInTheDocument();
   });
 
   /** «(1.2 MB)» estaba escrito a mano: el mismo tamaño para todos los archivos. */
@@ -237,6 +259,6 @@ describe('DecidirReprogramacionForm — sustento adjunto', () => {
   it('sin adjunto no muestra nada', () => {
     montar({ request: { adjunto: null } });
 
-    expect(screen.queryByRole('link')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /\.pdf/i })).not.toBeInTheDocument();
   });
 });

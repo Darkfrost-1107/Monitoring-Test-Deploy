@@ -7,6 +7,7 @@ import { TituloDeSeccion } from './tabla';
 import { useQuery } from '@tanstack/react-query';
 import { firmasApi } from '@/shared/api/firmas.api';
 import { requestBlob } from '@/shared/config/api';
+import { ImagenConSesion } from '@shared/ui/ImagenConSesion';
 import { useEffect, useState } from 'react';
 
 /**
@@ -194,8 +195,8 @@ export const Evidencias = ({ estado }: { estado: EstadoDeCierre }) => {
       <div className="mt-2 grid grid-cols-2 gap-3">
         {evidencias.map(([clave, url], indice) => (
           <figure key={clave} className="break-inside-avoid border border-[#334155] p-1.5 text-center">
-            <img
-              src={url}
+            <ImagenConSesion
+              url={url}
               alt={`Evidencia ${indice + 1}`}
               className="w-full object-contain mx-auto"
               style={{ maxHeight: '230px' }}
