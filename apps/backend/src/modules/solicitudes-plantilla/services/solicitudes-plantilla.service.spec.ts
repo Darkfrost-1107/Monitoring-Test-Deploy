@@ -1,4 +1,5 @@
 import { jest } from '@jest/globals';
+import type { EventEmitter2 } from '@nestjs/event-emitter';
 import {
   BadRequestException,
   ConflictException,
@@ -96,8 +97,14 @@ const prismaFalso = () => ({
 
 const montar = () => {
   const prisma = prismaFalso();
-  const service = new SolicitudesPlantillaService(prisma as unknown as PrismaService);
-  return { service, prisma };
+  // El emisor de eventos se espía: los avisos de la solicitud viajan por ahí y
+  // son parte del contrato del servicio, no un detalle de otro módulo.
+  const emit = jest.fn();
+  const service = new SolicitudesPlantillaService(
+    prisma as unknown as PrismaService,
+    { emit } as unknown as EventEmitter2,
+  );
+  return { service, prisma, emit };
 };
 
 const pedido = (over: Record<string, unknown> = {}) => ({
@@ -223,6 +230,77 @@ describe('SolicitudesPlantillaService', () => {
       prisma.solicitudPlantilla.findFirst.mockResolvedValue(fila() as never);
 
       await expect(service.crear(director, pedido(), PDF)).rejects.toThrow(ConflictException);
+    });
+  });
+
+  /**
+   * El trámite tenía las dos puntas mudas: el director presentaba y nadie en la
+   * Jefatura se enteraba hasta que alguien abría la bandeja; resuelto el pedido,
+   * el director tampoco sabía si podía crear su ficha. Un trámite que sólo
+   * avanza si alguien se acuerda de mirar no es un trámite.
+   */
+  describe('avisos del trámite', () => {
+    it('avisa cuando se presenta la solicitud', async () => {
+      const { service, prisma, emit } = montar();
+      prisma.solicitudPlantilla.findFirst.mockResolvedValue(null as never);
+      prisma.solicitudPlantilla.create.mockResolvedValue(fila() as never);
+
+      await service.crear(director, pedido(), PDF);
+
+      expect(emit).toHaveBeenCalledWith('solicitud-plantilla.creada', { solicitudId: 's-1' });
+    });
+
+    it('no avisa si el pedido no llegó a guardarse', async () => {
+      // Ya hay una solicitud pendiente: la creación falla y nadie debe recibir
+      // el aviso de algo que no existe.
+      const { service, prisma, emit } = montar();
+      prisma.solicitudPlantilla.findFirst.mockResolvedValue(fila() as never);
+
+      await expect(service.crear(director, pedido(), PDF)).rejects.toThrow(ConflictException);
+      expect(emit).not.toHaveBeenCalled();
+    });
+
+    it('avisa la aprobación, diciendo quién resolvió', async () => {
+      const { service, prisma, emit } = montar();
+      prisma.solicitudPlantilla.updateMany.mockResolvedValue({ count: 1 } as never);
+      prisma.solicitudPlantilla.findUnique.mockResolvedValue(fila({ estado: 'APROBADA' }) as never);
+
+      await service.aprobar('s-1', jefeGestion);
+
+      expect(emit).toHaveBeenCalledWith('solicitud-plantilla.resuelta', {
+        solicitudId: 's-1',
+        resolutorId: jefeGestion.id,
+        estado: 'APROBADA',
+      });
+    });
+
+    it('avisa el rechazo', async () => {
+      const { service, prisma, emit } = montar();
+      prisma.solicitudPlantilla.updateMany.mockResolvedValue({ count: 1 } as never);
+      prisma.solicitudPlantilla.findUnique.mockResolvedValue(
+        fila({ estado: 'RECHAZADA' }) as never,
+      );
+
+      await service.rechazar('s-1', jefeGestion, 'La ficha oficial ya cubre eso.');
+
+      expect(emit).toHaveBeenCalledWith('solicitud-plantilla.resuelta', {
+        solicitudId: 's-1',
+        resolutorId: jefeGestion.id,
+        estado: 'RECHAZADA',
+      });
+    });
+
+    /**
+     * El aviso sale DESPUÉS del UPDATE condicional. Dos jefes resolviendo a la
+     * vez: sólo uno actualiza filas, y la misma decisión no se comunica dos
+     * veces.
+     */
+    it('no avisa una decisión que otro ya había tomado', async () => {
+      const { service, prisma, emit } = montar();
+      prisma.solicitudPlantilla.updateMany.mockResolvedValue({ count: 0 } as never);
+
+      await expect(service.aprobar('s-1', jefeGestion)).rejects.toThrow(ConflictException);
+      expect(emit).not.toHaveBeenCalled();
     });
   });
 

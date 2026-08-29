@@ -154,6 +154,62 @@ describe('NotificationsBell', () => {
       expect(h.navigate).toHaveBeenCalledWith('/monitoreo/calendario?tab=solicitudes');
     });
 
+    /**
+     * El trámite de plantillas propias tiene dos destinos porque tiene dos
+     * audiencias con tareas distintas: la Jefatura decide en su bandeja, el
+     * director sigue el estado en «Mis Solicitudes» y el beneficiario del cupo
+     * va al catálogo, que es donde crea su ficha.
+     */
+    it('lleva a la bandeja de la Jefatura cuando llega una solicitud de plantilla', async () => {
+      const user = userEvent.setup();
+      setData([
+        notif({ id: 'sp1', tipo: 'SOLICITUD_PLANTILLA_CREADA', titulo: 'Solicitud de plantilla' }),
+      ]);
+      render(<NotificationsBell />);
+      await abrirPanel(user);
+
+      await user.click(await screen.findByRole('button', { name: /Ver solicitudes de plantilla/ }));
+      expect(h.navigate).toHaveBeenCalledWith('/plantillas/solicitudes');
+    });
+
+    it('lleva al director al seguimiento de su trámite cuando se resuelve', async () => {
+      const user = userEvent.setup();
+      setData([
+        notif({
+          id: 'sp2',
+          tipo: 'SOLICITUD_PLANTILLA_RESUELTA',
+          titulo: 'Solicitud de plantilla APROBADA',
+        }),
+      ]);
+      render(<NotificationsBell />);
+      await abrirPanel(user);
+
+      await user.click(await screen.findByRole('button', { name: /Ver mis solicitudes/ }));
+      expect(h.navigate).toHaveBeenCalledWith('/plantillas/mis-solicitudes');
+    });
+
+    /**
+     * Al catálogo y NO a «Mis Solicitudes»: esa pantalla exige
+     * `solicitudes_plantilla:solicitar`, que sólo tiene el director. Mandar ahí
+     * al coordinador sería contra una pantalla bloqueada.
+     */
+    it('lleva al beneficiario al catálogo, que es donde crea su ficha', async () => {
+      const user = userEvent.setup();
+      setData([
+        notif({
+          id: 'sp3',
+          tipo: 'SOLICITUD_PLANTILLA_AUTORIZADA',
+          titulo: 'Ya puedes crear tu ficha propia',
+        }),
+      ]);
+      render(<NotificationsBell />);
+      await abrirPanel(user);
+
+      await user.click(await screen.findByRole('button', { name: /Crear mi ficha/ }));
+      expect(h.navigate).toHaveBeenCalledWith('/plantillas?filtro=ie');
+      expect(h.navigate).not.toHaveBeenCalledWith('/plantillas/mis-solicitudes');
+    });
+
     it('navega a /monitoreo/solicitudes-visita para notificaciones de SOLICITUD_RESUELTA', async () => {
       const user = userEvent.setup();
       setData([

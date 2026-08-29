@@ -15,6 +15,7 @@ import {
   type ISolicitudesPlantillaResponse,
   type TipoPlantilla,
 } from '@sistema-monitoreo/shared-contracts';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import { RoleCode } from '../../../common/enums/role.enum.js';
 import type { SessionUser } from '../../../shared/types/session-user.js';
@@ -96,7 +97,10 @@ const nombreDe = (p: { persona: { nombres: string; apellidos: string } } | null)
 
 @Injectable()
 export class SolicitudesPlantillaService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly eventEmitter: EventEmitter2,
+  ) {}
 
   /** Alta del pedido. El PDF ya fue validado y guardado por el controlador. */
   async crear(
@@ -138,6 +142,15 @@ export class SolicitudesPlantillaService {
       },
       include: INCLUDE,
     });
+
+    /**
+     * El aviso sale del camino de la petición, no dentro.
+     *
+     * Presentar la solicitud no debe esperar a que salgan los correos, y un
+     * fallo del canal de avisos no puede hacer fracasar un pedido que ya quedó
+     * guardado.
+     */
+    this.eventEmitter.emit('solicitud-plantilla.creada', { solicitudId: fila.id });
 
     return this.aContrato(fila);
   }
@@ -306,6 +319,15 @@ export class SolicitudesPlantillaService {
       include: INCLUDE,
     });
     if (!fila) throw new NotFoundException('Solicitud no encontrada.');
+
+    // Se emite después del UPDATE condicional: si otra sesión resolvió primero,
+    // el `count` fue 0 y acá no se llega. Así no se avisa dos veces la misma
+    // decisión.
+    this.eventEmitter.emit('solicitud-plantilla.resuelta', {
+      solicitudId: id,
+      resolutorId: session.id,
+      estado,
+    });
 
     return this.aContrato(fila);
   }

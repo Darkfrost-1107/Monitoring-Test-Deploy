@@ -463,6 +463,139 @@ export class NotificationsService {
     return rol === RoleCode.COORDINADOR_PEDAGOGICO || rol === RoleCode.JEFE_TALLER;
   }
 
+  /**
+   * Avisa a la Jefatura de Gestión que una institución presentó una solicitud.
+   *
+   * Sin esto el pedido quedaba esperando a que alguien abriera la bandeja por
+   * su cuenta. Del otro lado hay un director que no puede crear su ficha hasta
+   * que la Jefatura decida, y no tiene forma de apurar el trámite.
+   *
+   * El mensaje dice CUÁNTAS plantillas se piden y para quién: es lo que le
+   * permite al jefe estimar el trabajo sin abrir el PDF.
+   */
+  async notificarSolicitudPlantillaCreada(solicitudId: string): Promise<void> {
+    try {
+      const s = await this.prisma.solicitudPlantilla.findUnique({
+        where: { id: solicitudId },
+        include: {
+          institucion: { select: { nombre: true } },
+          solicitante: { include: { persona: true } },
+          items: { select: { cargoBeneficiario: true } },
+        },
+      });
+      if (!s) return;
+
+      const ieNombre = s.institucion?.nombre ?? 'una institución educativa';
+      const solicitante = s.solicitante?.persona
+        ? `${s.solicitante.persona.nombres} ${s.solicitante.persona.apellidos}`.trim()
+        : 'El director de la I.E.';
+
+      const cuantas = s.items.length;
+      const plural = cuantas === 1 ? '1 plantilla propia' : `${cuantas} plantillas propias`;
+      // Los cargos, sin repetir: le dicen al jefe de qué se trata el pedido
+      // antes de abrir el PDF.
+      const cargos = [...new Set(s.items.map((i) => i.cargoBeneficiario))].join(', ');
+
+      await this.crearNotificaciones(await this.getJefesGestion(), {
+        tipo: 'SOLICITUD_PLANTILLA_CREADA',
+        titulo: `Solicitud de plantilla - ${ieNombre}`,
+        mensaje:
+          `${solicitante} solicita autorización para ${plural} en ${s.anioEscolar}` +
+          `${cargos ? ` (${cargos})` : ''}. Revise la justificación en PDF y apruebe o rechace el pedido.`,
+        institucionId: s.institucionId,
+        emisorId: s.solicitanteId,
+      });
+    } catch (err) {
+      this.logger.error(`Error al notificar solicitud de plantilla creada (${solicitudId}):`, err);
+    }
+  }
+
+  /**
+   * Avisa a la institución que su solicitud fue aprobada o rechazada.
+   *
+   * ── Dos avisos, porque son dos personas con dos tareas distintas ──
+   * El DIRECTOR firmó el pedido: le interesa el estado del trámite y, si lo
+   * rechazaron, el motivo para volver a presentarlo. Va a «Mis Solicitudes».
+   *
+   * El BENEFICIARIO de cada cupo es quien crea la ficha: lo que necesita es el
+   * catálogo de plantillas, no la bandeja del trámite —a la que, además, no
+   * tiene acceso: «Mis Solicitudes» exige `solicitudes_plantilla:solicitar`, que
+   * sólo tiene el director—. Un mismo aviso para los dos habría mandado al
+   * coordinador contra una pantalla bloqueada.
+   *
+   * Un rechazo lo recibe sólo el director. El beneficiario no pidió nada por su
+   * cuenta y no hay nada que pueda hacer al respecto: volver a presentar el
+   * pedido es del director.
+   */
+  async notificarSolicitudPlantillaResuelta(
+    solicitudId: string,
+    resolutorId: string,
+    estado: 'APROBADA' | 'RECHAZADA',
+  ): Promise<void> {
+    try {
+      const s = await this.prisma.solicitudPlantilla.findUnique({
+        where: { id: solicitudId },
+        include: {
+          institucion: { select: { nombre: true } },
+          items: {
+            select: {
+              beneficiario: { select: { id: true, persona: { select: { correo: true } } } },
+            },
+          },
+        },
+      });
+      if (!s) return;
+
+      const ieNombre = s.institucion?.nombre ?? 'su institución educativa';
+      const aprobada = estado === 'APROBADA';
+
+      // ── El director: el estado del trámite que firmó ──
+      const director = await this.getUsuario(s.solicitanteId);
+      if (director) {
+        await this.crearNotificaciones([director], {
+          tipo: 'SOLICITUD_PLANTILLA_RESUELTA',
+          titulo: aprobada
+            ? `Solicitud de plantilla APROBADA - ${ieNombre}`
+            : `Solicitud de plantilla RECHAZADA - ${ieNombre}`,
+          mensaje: aprobada
+            ? `La Jefatura de Gestión aprobó la solicitud de plantillas de ${s.anioEscolar}. ` +
+              'Cada persona autorizada ya puede crear su ficha desde el catálogo de plantillas.'
+            : `La Jefatura de Gestión rechazó la solicitud de plantillas de ${s.anioEscolar}.` +
+              `${s.comentario ? ` Motivo: ${s.comentario}` : ''}`,
+          institucionId: s.institucionId,
+          emisorId: resolutorId,
+        });
+      }
+
+      if (!aprobada) return;
+
+      // ── Cada beneficiario: su ficha está habilitada ──
+      // Los vales anteriores al destinatario no nombran a nadie; ésos los
+      // comunica el director, como hasta ahora.
+      const beneficiarios: NotifRecipient[] = s.items
+        .filter((i) => i.beneficiario?.id)
+        .map((i) => ({
+          usuarioId: i.beneficiario!.id,
+          correo: i.beneficiario!.persona?.correo,
+        }));
+
+      await this.crearNotificaciones(beneficiarios, {
+        tipo: 'SOLICITUD_PLANTILLA_AUTORIZADA',
+        titulo: 'Ya puedes crear tu ficha propia',
+        mensaje:
+          `La Jefatura de Gestión autorizó una plantilla propia a tu nombre para ${s.anioEscolar}. ` +
+          'Créala desde el catálogo de plantillas: sólo tú podrás aplicarla en tus monitoreos.',
+        institucionId: s.institucionId,
+        emisorId: resolutorId,
+      });
+    } catch (err) {
+      this.logger.error(
+        `Error al notificar solicitud de plantilla resuelta (${solicitudId}):`,
+        err,
+      );
+    }
+  }
+
   private async getJefesGestion(): Promise<NotifRecipient[]> {
     const jefes = await this.prisma.usuario.findMany({
       where: { rol: { codigo: 'jefe_gestion' }, isActive: true },

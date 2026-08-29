@@ -91,6 +91,41 @@ const getNotificationBadge = (
         actionUrl: '/monitoreo/solicitudes-visita',
         actionLabel: 'Ver Solicitudes de visita',
       };
+    /*
+      El trámite de plantillas propias, con sus dos destinos: la Jefatura decide
+      en su bandeja y la institución sigue el suyo en «Mis Solicitudes». Son
+      pantallas distintas, así que el enlace no puede ser el mismo aunque el
+      trámite sea uno.
+    */
+    case 'SOLICITUD_PLANTILLA_CREADA':
+      return {
+        icon: FileText,
+        bg: 'bg-primary/10 text-primary',
+        actionUrl: '/plantillas/solicitudes',
+        actionLabel: 'Ver solicitudes de plantilla',
+      };
+    // Al DIRECTOR, que firmó el pedido: el estado del trámite. Aprobado o
+    // rechazado, el destino es el mismo y el estado va en el título.
+    case 'SOLICITUD_PLANTILLA_RESUELTA':
+      return {
+        icon: FileText,
+        bg: 'bg-primary/10 text-primary',
+        actionUrl: '/plantillas/mis-solicitudes',
+        actionLabel: 'Ver mis solicitudes',
+      };
+    /*
+      Al BENEFICIARIO del cupo: lo que necesita es el catálogo, que es donde
+      crea su ficha. «Mis Solicitudes» exige `solicitudes_plantilla:solicitar`,
+      que sólo tiene el director: mandarlo ahí sería contra una pantalla
+      bloqueada.
+    */
+    case 'SOLICITUD_PLANTILLA_AUTORIZADA':
+      return {
+        icon: CheckCircle2,
+        bg: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+        actionUrl: '/plantillas?filtro=ie',
+        actionLabel: 'Crear mi ficha',
+      };
     // Las tres alertas de desempeño llevan a Focos de Atención, que es donde
     // están el mapa y la institución o el distrito señalado.
     case 'ALERTA_DISTRITO': {
