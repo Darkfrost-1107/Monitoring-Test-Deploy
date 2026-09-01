@@ -19,8 +19,8 @@ RUN pnpm install --frozen-lockfile
 # Generate prisma client inside the backend filter context
 RUN pnpm --filter backend exec prisma generate
 
-# Build contracts first, then backend explicitly
-RUN pnpm --filter @sistema-monitoreo/shared-contracts run build && pnpm --filter backend run build
+# Build backend and all its workspace dependencies in topological order
+RUN pnpm --filter backend... run build
 
 # Expose port
 EXPOSE 3000
