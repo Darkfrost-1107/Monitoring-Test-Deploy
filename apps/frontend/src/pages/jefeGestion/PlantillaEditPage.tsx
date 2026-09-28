@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
+import { toast } from 'sonner';
 import { PageHeader } from '@shared/ui/pageHeader';
 import { Spinner } from '@shared/ui/Spinner';
 import { EditarPlantillaForm } from '@widgets/plantillas';
@@ -62,7 +63,7 @@ export const PlantillaEditPage = () => {
         qc.invalidateQueries({ queryKey: ['lema-anual'] });
       }
 
-      await actualizar.mutateAsync({
+      const resultado = await actualizar.mutateAsync({
         id,
         data: {
           baremo: data.baremo,
@@ -108,6 +109,17 @@ export const PlantillaEditPage = () => {
           })),
         },
       });
+
+      // La plantilla tenía fichas asociadas: no se tocó, se creó una versión
+      // nueva en Borrador y la anterior pasó a Histórico (`plantilla.service.ts`,
+      // `versionarConClon`). Sin este aviso, el único rastro de que eso pasó
+      // era la insignia «Borrador» en el catálogo, sin ninguna explicación.
+      if (resultado.modo === 'VERSIONADO') {
+        toast.warning(resultado.mensaje, { duration: 8000 });
+      } else {
+        toast.success(resultado.mensaje);
+      }
+
       navigate(-1);
     } catch (err) {
       let msg = err instanceof Error ? err.message : 'Error desconocido';
