@@ -99,17 +99,17 @@ describe('nivelesPermitidos', () => {
 
 describe('especialistasAsignables — sin cascada completa', () => {
   it('no ofrece nadie sin modalidad', () => {
-    expect(especialistasAsignables([especialista()], '', 'Primaria', usuario())).toEqual([]);
+    expect(especialistasAsignables([especialista()], '', 'Primaria')).toEqual([]);
   });
 
   it('no ofrece nadie sin nivel', () => {
-    expect(especialistasAsignables([especialista()], 'EBR', '', usuario())).toEqual([]);
+    expect(especialistasAsignables([especialista()], 'EBR', '')).toEqual([]);
   });
 });
 
 describe('especialistasAsignables — EBR', () => {
-  const asignables = (esp: EspecialistaAsignable[], actor = usuario()) =>
-    especialistasAsignables(esp, 'EBR', 'Primaria', actor).map((e) => e.id);
+  const asignables = (esp: EspecialistaAsignable[]) =>
+    especialistasAsignables(esp, 'EBR', 'Primaria').map((e) => e.id);
 
   it('ofrece al especialista de la misma modalidad y nivel', () => {
     expect(asignables([especialista({ id: 'ok' })])).toEqual(['ok']);
@@ -138,28 +138,73 @@ describe('especialistasAsignables — EBR', () => {
 });
 
 describe('especialistasAsignables — jefe de gestión', () => {
-  const jefe = (id: string) => especialista({ id, cargo: 'Jefe de Gestión' });
+  /** El Jefe de Gestión coordina la UGEL; no sale a monitorear. */
+  it('nunca queda entre los asignables', () => {
+    const jefe = especialista({ id: 'jefe-1', cargo: 'Jefe de Gestión' });
+    const resultado = especialistasAsignables([jefe], 'EBR', 'Primaria');
+    expect(resultado).toEqual([]);
+  });
+});
 
-  /**
-   * Un jefe de gestión puede asignarse a sí mismo pero no a otro par: la carga
-   * de trabajo de un jefe la decide él, no un colega.
-   */
-  it('el jefe de gestión puede asignarse a sí mismo', () => {
-    const actor = usuario({ especialistaId: 'jefe-1' });
-    const resultado = especialistasAsignables([jefe('jefe-1')], 'EBR', 'Primaria', actor);
-    expect(resultado.map((e) => e.id)).toEqual(['jefe-1']);
+describe('especialistasAsignables — jefe de área', () => {
+  it('el jefe de área queda entre los asignables: también sale a monitorear', () => {
+    const resultado = especialistasAsignables(
+      [especialista({ id: 'jefe-area-1', cargo: 'Jefe de Área' })],
+      'EBR',
+      'Primaria',
+    );
+    expect(resultado.map((e) => e.id)).toEqual(['jefe-area-1']);
   });
 
-  it('no puede asignar a otro jefe de gestión', () => {
-    const actor = usuario({ especialistaId: 'jefe-1' });
-    const resultado = especialistasAsignables([jefe('jefe-2')], 'EBR', 'Primaria', actor);
+  /**
+   * Sin excepciones por quién arma el cronograma: un Responsable de Nivel de
+   * otro nivel u otra modalidad queda fuera igual que cualquier especialista.
+   */
+  it('el de otro nivel u otra modalidad queda fuera, sin importar quién arme el cronograma', () => {
+    const deOtroNivel = especialista({
+      id: 'jefe-area-secundaria',
+      cargo: 'Jefe de Área',
+      nivelEducativo: 'Secundaria',
+      modalidad: 'EBA',
+    });
+    const resultado = especialistasAsignables([deOtroNivel], 'EBR', 'Primaria');
+    expect(resultado).toEqual([]);
+  });
+});
+
+describe('especialistasAsignables — monitor ya asignado, al editar', () => {
+  /**
+   * Una regla de elegibilidad se endurece después de creada la visita —acá,
+   * que el Jefe de Gestión deje de poder monitorear— y el monitor que ya
+   * estaba asignado no pasa el filtro. Sin conservarlo, el selector se abría
+   * vacío en modo edición: la opción elegida desaparecía de la lista.
+   */
+  it('conserva al monitor ya asignado aunque ya no sea elegible', () => {
+    const jefeGestion = especialista({ id: 'jefe-gestion-1', cargo: 'Jefe de Gestión' });
+    const resultado = especialistasAsignables([jefeGestion], 'EBR', 'Primaria', 'jefe-gestion-1');
+    expect(resultado.map((e) => e.id)).toEqual(['jefe-gestion-1']);
+  });
+
+  it('no lo duplica si de todos modos sigue siendo elegible', () => {
+    const resultado = especialistasAsignables(
+      [especialista({ id: 'esp-1' })],
+      'EBR',
+      'Primaria',
+      'esp-1',
+    );
+    expect(resultado.map((e) => e.id)).toEqual(['esp-1']);
+  });
+
+  it('sin id de monitor actual, no agrega nada de más', () => {
+    const jefeGestion = especialista({ id: 'jefe-gestion-1', cargo: 'Jefe de Gestión' });
+    const resultado = especialistasAsignables([jefeGestion], 'EBR', 'Primaria', null);
     expect(resultado).toEqual([]);
   });
 });
 
 describe('especialistasAsignables — CEPTRO', () => {
   const asignables = (esp: EspecialistaAsignable[]) =>
-    especialistasAsignables(esp, 'CEPTRO', 'Secundaria', usuario()).map((e) => e.id);
+    especialistasAsignables(esp, 'CEPTRO', 'Secundaria').map((e) => e.id);
 
   /**
    * CEPTRO es educación técnico-productiva: exige un especialista de Secundaria
@@ -206,12 +251,7 @@ describe('especialistasAsignables — EBA y EBE', () => {
     const primaria = especialista({ id: 'pri', nivelEducativo: 'Primaria' });
     const secundaria = especialista({ id: 'sec', nivelEducativo: 'Secundaria' });
 
-    const resultado = especialistasAsignables(
-      [inicial, primaria, secundaria],
-      modalidad,
-      'Secundaria',
-      usuario(),
-    );
+    const resultado = especialistasAsignables([inicial, primaria, secundaria], modalidad, 'Secundaria');
 
     expect(resultado.map((e) => e.id).sort()).toEqual(['ini', 'pri']);
   });
