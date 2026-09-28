@@ -232,9 +232,12 @@ export const LampaMap = ({
           style={{ height: '100%', width: '100%', zIndex: 0 }}
         >
           <VistaDelMapa distrito={selected} />
+          {/* CARTO pasó a exigir API key: devuelve un cartel «API KEY REQUIRED» en
+              lugar del mapa. Los tiles de OSM no piden key pero su política sólo
+              tolera poco tráfico; si el uso crece, pasar a un proveedor con key. */}
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+            url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
           {/* Oculta todo lo que queda fuera de la provincia. */}
           <Polygon
