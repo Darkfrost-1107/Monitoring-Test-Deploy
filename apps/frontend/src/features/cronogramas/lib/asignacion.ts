@@ -1,5 +1,6 @@
 import { ModalidadEducativa, RoleCode } from '@sistema-monitoreo/shared-contracts';
 import { MODALIDAD_NIVEL_MAP } from '@entities/model-instituciones';
+import { esDeEPT } from '@features/docentes/lib/asignacion-de-cargo';
 
 /**
  * Cascada de asignación de un cronograma de monitoreo.
@@ -122,7 +123,7 @@ const cubreModalidadYNivel = (
   if (modalidad === 'CEPTRO') {
     return (
       especialista.nivelEducativo === 'Secundaria' &&
-      !!especialista.especialidades?.includes('EPT')
+      !!especialista.especialidades?.some((e) => esDeEPT(e))
     );
   }
 

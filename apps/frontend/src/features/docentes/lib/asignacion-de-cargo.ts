@@ -20,8 +20,23 @@ export type CondicionDelCargo = (typeof CONDICIONES_DEL_CARGO)[number];
 /** Cargo desde el que se promueve. */
 const DOCENTE_DE_AULA = 'Docente de Aula';
 
-/** Especialidad que habilita el cargo de Jefe de Taller. */
-const EPT = 'ept';
+/**
+ * Normaliza una cadena removiendo tildes, signos diacríticos, mayúsculas y espacios extremos.
+ */
+export const normalizarTexto = (s: string): string =>
+  s
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase();
+
+/**
+ * Patrón canónico de Educación para el Trabajo:
+ * Coincide con la sigla «EPT» o la denominación «Educación para el Trabajo» respetando
+ * límites de palabra (\b) para no colisionar con términos como «Aceptación» o «Recepción»,
+ * pero admitiendo menciones técnicas complementarias («EPT - Computación», «EPT: Mecánica»).
+ */
+const EPT_REGEX = /\b(ept|educacion para el trabajo)\b/;
 
 /** Carga horaria propia de cada cargo cuando no hay una previa que respetar. */
 const CARGA_DEL_CARGO: Record<CargoAsignable, number> = {
@@ -42,15 +57,34 @@ export interface DocenteCandidato {
 /**
  * ¿El docente enseña Educación para el Trabajo?
  *
- * La especialidad puede venir como una lista separada por comas. Se compara
- * contra el elemento completo y no por inclusión: una especialidad que
- * contenga las letras «ept» no es Educación para el Trabajo.
+ * La especialidad puede registrarse como sigla («EPT»), nombre oficial («Educación para el Trabajo»),
+ * variante con mención de especialidad técnica o lista separada por comas.
  */
 export function esDeEPT(especialidad: string | null | undefined): boolean {
-  return (especialidad ?? '')
+  if (!especialidad) return false;
+  return especialidad
     .split(',')
-    .map((e) => e.trim().toLowerCase())
-    .includes(EPT);
+    .map(normalizarTexto)
+    .some((item) => EPT_REGEX.test(item));
+}
+
+/**
+ * Comprueba si la especialidad de un docente coincide con una especialidad de filtro u objetivo.
+ * Maneja transparentemente la equivalencia semántica de EPT y listas separadas por comas.
+ */
+export function coincideEspecialidad(
+  especialidadDocente: string | null | undefined,
+  especialidadFiltro: string | null | undefined,
+): boolean {
+  if (!especialidadFiltro) return true;
+  if (esDeEPT(especialidadFiltro)) {
+    return esDeEPT(especialidadDocente);
+  }
+  const filtro = normalizarTexto(especialidadFiltro);
+  return (especialidadDocente ?? '')
+    .split(',')
+    .map(normalizarTexto)
+    .includes(filtro);
 }
 
 /**

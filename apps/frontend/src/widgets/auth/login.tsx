@@ -16,8 +16,6 @@ import { useNavigate } from 'react-router-dom';
  * estaba el mensaje de error. Nada tapa ni reemplaza al formulario.
  */
 
-const LOGO_SRC = '/logo-ugel.png';
-
 /** Segundos → «MM:SS». */
 const formatTime = (seconds: number): string => {
   const m = Math.floor(seconds / 60)
@@ -59,23 +57,16 @@ export const LoginCardWidget = () => {
   };
 
   return (
-    <div className="w-full max-w-[400px]">
-      <div className="text-center mb-6">
-        <img
-          src={LOGO_SRC}
-          alt="Logo UGEL Lampa"
-          className="w-[88px] h-[88px] mx-auto mb-3 object-contain"
-        />
-        <h1 className="text-3xl font-black text-slate-800 tracking-wide">UGEL Lampa</h1>
-        <p className="text-xs text-slate-500 mt-1">Sistema de Monitoreo</p>
+    <div className="w-full max-w-[400px] shadow-2xl rounded-2xl overflow-hidden bg-white border border-slate-100 relative">
+      {/* Top Header section */}
+      <div className="bg-gradient-to-br from-[#80042e] to-[#990537] p-8 pb-6 text-center relative overflow-hidden border-b-4 border-yellow-400">
+        <h2 className="text-3xl font-black text-white tracking-wide mb-1 relative z-10">Iniciar Sesión</h2>
+        <p className="text-[10px] text-yellow-400 font-bold uppercase tracking-[0.2em] relative z-10">
+          SISTEMA DE MONITOREO - LAMPA
+        </p>
       </div>
 
-      <div className="w-full bg-white border border-slate-200 rounded-2xl p-8 shadow-xl">
-        <div className="flex justify-center mb-5">
-          <span className="bg-[#990537] text-white text-[0.72rem] font-bold tracking-widest px-6 py-2 rounded-full uppercase shadow-sm">
-            Acceso de Sistema
-          </span>
-        </div>
+      <div className="p-8 pt-6">
 
         <BaseLoginForm
           onSubmit={handleLoginSubmit}
@@ -151,7 +142,7 @@ export const LoginCardWidget = () => {
         )}
       </div>
 
-      <p className="text-center text-slate-400 text-xs mt-6">
+      <p className="text-center text-slate-400 text-[10px] pb-4 bg-white">
         Plataforma de Desempeño Escolar © Puno, Perú
       </p>
     </div>

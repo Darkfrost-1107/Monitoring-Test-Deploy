@@ -5,6 +5,7 @@ import { Search, AlertCircle, Save, CheckCircle2 } from 'lucide-react';
 import { TextField } from '@shared/ui/form-controls';
 import type { Docente } from '@entities/model-docentes';
 import { fetchDocentes } from '@features/docentes/docente-service';
+import { esDeEPT } from '../lib/asignacion-de-cargo';
 import { teachersApi } from '@shared/api/teachers.api';
 import { toast } from 'sonner';
 import {
@@ -53,12 +54,7 @@ export const AsignacionEvaluadorWidget: React.FC<AsignacionEvaluadorWidgetProps>
         let deAula = allDocentes.filter((d) => d.cargo === 'Docente de Aula' && d.id !== evaluadorId);
         // El Jefe de Taller solo evalúa docentes de EPT (Educación para el Trabajo).
         if (evaluadorCargo === 'Jefe de Taller') {
-          deAula = deAula.filter((d) =>
-            (d.especialidad ?? '')
-              .split(',')
-              .map((e) => e.trim().toLowerCase())
-              .includes('ept'),
-          );
+          deAula = deAula.filter((d) => esDeEPT(d.especialidad));
         }
         setDocentes(deAula);
         

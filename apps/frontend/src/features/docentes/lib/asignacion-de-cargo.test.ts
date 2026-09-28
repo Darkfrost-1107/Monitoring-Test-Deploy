@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   CARGOS_ASIGNABLES,
   esDeEPT,
+  coincideEspecialidad,
   candidatosParaCargo,
   cargaHorariaDelCargo,
   condicionInicial,
@@ -30,12 +31,21 @@ describe('esDeEPT', () => {
     expect(esDeEPT('EPT')).toBe(true);
   });
 
+  it('reconoce la denominación oficial Educación para el Trabajo con o sin tildes', () => {
+    expect(esDeEPT('Educación para el Trabajo')).toBe(true);
+    expect(esDeEPT('Educacion para el Trabajo')).toBe(true);
+    expect(esDeEPT('educación para el trabajo')).toBe(true);
+    expect(esDeEPT('Educación para el Trabajo (EPT)')).toBe(true);
+  });
+
   it('la reconoce dentro de una lista separada por comas', () => {
     expect(esDeEPT('Matemática, EPT, Comunicación')).toBe(true);
+    expect(esDeEPT('Matemática, Educación para el Trabajo, Comunicación')).toBe(true);
   });
 
   it('ignora mayúsculas y espacios', () => {
     expect(esDeEPT('  matemática ,  ept  ')).toBe(true);
+    expect(esDeEPT('  matemática ,  educación para el trabajo  ')).toBe(true);
   });
 
   /**
@@ -46,12 +56,47 @@ describe('esDeEPT', () => {
   it('no la confunde con otra que la contenga como subcadena', () => {
     expect(esDeEPT('Conceptos Básicos')).toBe(false);
     expect(esDeEPT('EPTX')).toBe(false);
+    expect(esDeEPT('Aceptación')).toBe(false);
+    expect(esDeEPT('Recepción')).toBe(false);
+  });
+
+  it('reconoce especialidades técnicas con mención o variante', () => {
+    expect(esDeEPT('EPT - Computación e Informática')).toBe(true);
+    expect(esDeEPT('Educación para el Trabajo: Mecánica')).toBe(true);
+    expect(esDeEPT('Área de Educación para el Trabajo')).toBe(true);
+    expect(esDeEPT('EPT (Electricidad)')).toBe(true);
   });
 
   it('es falso sin especialidad', () => {
     expect(esDeEPT('')).toBe(false);
     expect(esDeEPT(null)).toBe(false);
     expect(esDeEPT(undefined)).toBe(false);
+  });
+});
+
+describe('coincideEspecialidad', () => {
+  it('reconoce equivalencia cruzada entre EPT y Educación para el Trabajo', () => {
+    expect(coincideEspecialidad('EPT', 'Educación para el Trabajo')).toBe(true);
+    expect(coincideEspecialidad('Educación para el Trabajo', 'EPT')).toBe(true);
+    expect(coincideEspecialidad('Matemática, EPT', 'Educación para el Trabajo')).toBe(true);
+    expect(coincideEspecialidad('EPT - Computación', 'EPT')).toBe(true);
+  });
+
+  it('compara otras especialidades con normalización de mayúsculas y tildes', () => {
+    expect(coincideEspecialidad('Matemática', 'matematica')).toBe(true);
+    expect(coincideEspecialidad('Comunicación', 'COMUNICACION')).toBe(true);
+    expect(coincideEspecialidad('Física, Química', 'Química')).toBe(true);
+  });
+
+  it('retorna falso cuando las especialidades no coinciden', () => {
+    expect(coincideEspecialidad('Matemática', 'EPT')).toBe(false);
+    expect(coincideEspecialidad('Educación Física', 'Educación para el Trabajo')).toBe(false);
+  });
+
+  it('si no hay especialidad filtro retorna verdadero (sin restricción)', () => {
+    expect(coincideEspecialidad('Cualquiera', '')).toBe(true);
+    expect(coincideEspecialidad('Cualquiera', null)).toBe(true);
+    expect(coincideEspecialidad('Cualquiera', undefined)).toBe(true);
   });
 });
 

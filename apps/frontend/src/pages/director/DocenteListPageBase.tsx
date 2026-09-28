@@ -8,6 +8,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { FilterDocentes } from '@features/docentes';
 import { DocentesStatsWidget, DocentesTableWidget } from '@widgets/docentes';
 import { fetchDocentes } from '@features/docentes/docente-service';
+import { coincideEspecialidad } from '@features/docentes/lib/asignacion-de-cargo';
 import type { Docente } from '@entities/model-docentes';
 import type { Institucion } from '@entities/model-instituciones';
 import { useUser } from '@entities/model-user';
@@ -55,14 +56,8 @@ export const DocenteListPageBase = ({
         }
       }
       if (filterEspecialidad) {
-        // El Jefe de Taller es solo para docentes de EPT (Educación para el Trabajo).
-        // La especialidad puede venir como lista separada por comas.
-        const objetivo = filterEspecialidad.toLowerCase();
         docentesMapped = docentesMapped.filter((d) =>
-          (d.especialidad ?? '')
-            .split(',')
-            .map((e) => e.trim().toLowerCase())
-            .includes(objetivo),
+          coincideEspecialidad(d.especialidad, filterEspecialidad),
         );
       }
       setDocentes(docentesMapped);
