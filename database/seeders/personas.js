@@ -56,7 +56,7 @@ const DEMO_UGEL_USERS = [
     email: 'jose.quispe@ugel.gob.pe',
     role: 'jefe_area',
     nivelEducativo: 'Secundaria',
-    especialidades: ['Comunicacion', 'Matematica', 'EPT'],
+    especialidades: ['Comunicación', 'Matemática', 'Educación para el Trabajo'],
   },
   {
     dni: '40000004',
@@ -65,7 +65,7 @@ const DEMO_UGEL_USERS = [
     email: 'martha.perez@ugel.gob.pe',
     role: 'jefe_area',
     nivelEducativo: 'Primaria',
-    especialidades: ['PIP', 'Educacion Fisica'],
+    especialidades: ['PIP', 'Educación Física'],
   },
   {
     dni: '40000005',
@@ -82,7 +82,7 @@ const DEMO_UGEL_USERS = [
     email: 'ana.ticona@ugel.gob.pe',
     role: 'especialista',
     nivelEducativo: 'Primaria',
-    especialidades: ['Educacion Fisica'],
+    especialidades: ['Educación Física'],
   },
   {
     dni: '40000007',
@@ -91,7 +91,7 @@ const DEMO_UGEL_USERS = [
     email: 'pedro.mamani@ugel.gob.pe',
     role: 'especialista',
     nivelEducativo: 'Secundaria',
-    especialidades: ['CTA'],
+    especialidades: ['Ciencia y Tecnología'],
   },
   {
     dni: '40000008',
@@ -100,7 +100,7 @@ const DEMO_UGEL_USERS = [
     email: 'lidia.salinas@ugel.gob.pe',
     role: 'especialista',
     nivelEducativo: 'Secundaria',
-    especialidades: ['Matematica', 'Comunicacion', 'Ingles'],
+    especialidades: ['Matemática', 'Comunicación', 'Inglés'],
   },
   {
     dni: '40000009',
@@ -151,23 +151,23 @@ const normalizarNivel = (nivel) => {
 };
 
 const AREAS_SECUNDARIA = [
-  { nombre: 'Matematica', patterns: [/MATEMATICA/i] },
-  { nombre: 'Comunicacion', patterns: [/COMUNICACION/i] },
+  { nombre: 'Matemática', patterns: [/MATEMATICA/i] },
+  { nombre: 'Comunicación', patterns: [/COMUNICACION/i] },
   { nombre: 'Ciencias Sociales', patterns: [/CIENCIAS SOCIALES/i, /HISTORIA/i, /\bHGE\b/i] },
-  { nombre: 'CTA', patterns: [/CIENCIA TECNOLOGIA/i, /TECNOLOGIA Y AMBIENTE/i, /\bCTA\b/i, /CIENCIA Y AMBIENTE/i] },
-  { nombre: 'Ingles', patterns: [/INGLES/i] },
-  { nombre: 'EPT', patterns: [/EDUCACION PARA EL TRABAJO/i, /\bEPT\b/i, /TALLER/i] },
-  { nombre: 'Desarrollo Personal Ciudadania y Civica', patterns: [/DESARROLLO PERSONAL/i, /\bDPCC\b/i, /CIVICA/i, /CIUDADANIA/i] },
+  { nombre: 'Ciencia y Tecnología', patterns: [/CIENCIA TECNOLOGIA/i, /TECNOLOGIA Y AMBIENTE/i, /\bCTA\b/i, /CIENCIA Y AMBIENTE/i] },
+  { nombre: 'Inglés', patterns: [/INGLES/i] },
+  { nombre: 'Educación para el Trabajo', patterns: [/EDUCACION PARA EL TRABAJO/i, /\bEPT\b/i, /TALLER/i] },
+  { nombre: 'Desarrollo Personal, Ciudadanía y Cívica', patterns: [/DESARROLLO PERSONAL/i, /\bDPCC\b/i, /CIVICA/i, /CIUDADANIA/i] },
   { nombre: 'Arte y Cultura', patterns: [/ARTE Y CULTURA/i, /\bARTE\b/i] },
-  { nombre: 'Educacion Religiosa', patterns: [/EDUCACION RELIGIOSA/i, /RELIGIOSA/i] },
-  { nombre: 'Educacion Fisica', patterns: [/EDUCACION FISICA/i, /ED\. FISICA/i] },
+  { nombre: 'Educación Religiosa', patterns: [/EDUCACION RELIGIOSA/i, /RELIGIOSA/i] },
+  { nombre: 'Educación Física', patterns: [/EDUCACION FISICA/i, /ED\. FISICA/i] },
 ];
 
 const NO_LECTIVAS = ['ATENCION', 'COLEGIADO', 'TUTORIA', 'MATERIALES', 'REFUERZO', 'INVEST'];
 
 function parseEspecialidadesSecundaria(raw) {
   if (!raw || typeof raw !== 'string') {
-    return [{ nombre: 'Comunicacion', horas: 0, esPrincipal: true }];
+    return [{ nombre: 'Comunicación', horas: 0, esPrincipal: true }];
   }
 
   const regex = /(\d+)\s*HRS?\s+([^,]+)/gi;
@@ -192,7 +192,7 @@ function parseEspecialidadesSecundaria(raw) {
 
   if (mapaHoras.size === 0) {
     const str = raw.toUpperCase();
-    let fallbackNombre = 'Comunicacion';
+    let fallbackNombre = 'Comunicación';
     for (const area of AREAS_SECUNDARIA) {
       if (area.patterns.some((p) => p.test(str))) {
         fallbackNombre = area.nombre;
@@ -495,12 +495,18 @@ export async function seedPersonas(ctx) {
             ? 'Jefe de Gestión'
             : 'Especialista');
 
+      // El backend rechaza 'Nombrado' para todo el que no sea Jefe de Gestión
+      // (especialista.service.ts, Regla 2b): sembrarlo así en todos dejaba a
+      // cualquier Especialista o Jefe de Área en un estado que la propia API
+      // no deja volver a guardar.
+      const condicionLaboral = cargoEspecialista === 'Jefe de Gestión' ? 'Nombrado' : 'Encargado';
+
       const esp = await prisma.especialista.upsert({
         where: { personaId: persona.id },
         update: {
           cargo: cargoEspecialista,
           nivelEducativo: u.nivelEducativo || 'Secundaria',
-          condicionLaboral: 'Nombrado',
+          condicionLaboral,
           cargaLaboral: 40,
           estado: 'Activo',
         },
@@ -508,7 +514,7 @@ export async function seedPersonas(ctx) {
           personaId: persona.id,
           cargo: cargoEspecialista,
           nivelEducativo: u.nivelEducativo || 'Secundaria',
-          condicionLaboral: 'Nombrado',
+          condicionLaboral,
           cargaLaboral: 40,
           estado: 'Activo',
         },
@@ -529,17 +535,21 @@ export async function seedPersonas(ctx) {
       });
 
       if (u.especialidades && u.especialidades.length > 0) {
-        for (const espNombre of u.especialidades) {
+        for (const [indice, espNombre] of u.especialidades.entries()) {
           const nivelId = ctx.nivelMap[u.nivelEducativo || 'Secundaria'];
           if (nivelId) {
             const espRecord = await prisma.especialidad.findFirst({
               where: { nombre: espNombre, nivelEducativoId: nivelId },
             });
             if (espRecord) {
+              // Solo la primera es la principal; el mapper del backend
+              // (`especialista-mapper.helper.ts`) separa principal/extras
+              // filtrando por `esPrincipal`, así que marcarlas todas como
+              // principal dejaba las extras vacías para el formulario.
               await prisma.especialistaEspecialidad.upsert({
                 where: { especialistaId_especialidadId: { especialistaId: esp.id, especialidadId: espRecord.id } },
-                update: {},
-                create: { especialistaId: esp.id, especialidadId: espRecord.id, esPrincipal: true },
+                update: { esPrincipal: indice === 0 },
+                create: { especialistaId: esp.id, especialidadId: espRecord.id, esPrincipal: indice === 0 },
               });
             }
           }
@@ -628,12 +638,17 @@ export async function seedPersonas(ctx) {
       // Sincronizar Especialista para directivos/coordinadores (capacidad de monitorear)
       const isMonitor = ['Director', 'Subdirector', 'Coordinador Pedagógico', 'Jefe de Taller', 'Jefe de Laboratorio'].includes(cargoNombre);
       if (isMonitor) {
+        // `u.condicionLaboral` es la del Docente (donde 'Nombrado' es válido y
+        // hasta default), no la de este Especialista sincronizado: acá el
+        // backend rechaza 'Nombrado' para cualquier cargo que no sea Jefe de
+        // Gestión (especialista.service.ts, Regla 2b), y ninguno de estos
+        // cargos lo es.
         await prisma.especialista.upsert({
           where: { personaId: persona.id },
           update: {
             cargo: cargoNombre,
             nivelEducativo: u.nivelEducativo || 'Secundaria',
-            condicionLaboral: u.condicionLaboral || 'Nombrado',
+            condicionLaboral: 'Encargado',
             cargaLaboral: u.cargaLaboral ?? 40,
             estado: 'Activo',
             modalidad: 'EBR',
@@ -642,7 +657,7 @@ export async function seedPersonas(ctx) {
             personaId: persona.id,
             cargo: cargoNombre,
             nivelEducativo: u.nivelEducativo || 'Secundaria',
-            condicionLaboral: u.condicionLaboral || 'Nombrado',
+            condicionLaboral: 'Encargado',
             cargaLaboral: u.cargaLaboral ?? 40,
             estado: 'Activo',
             modalidad: 'EBR',

@@ -41,7 +41,7 @@ export const JefeAreaDetailPage = () => {
       <div className="w-full h-[60vh] flex flex-col justify-center items-center gap-3">
         <Spinner />
         <span className="text-text-muted text-sm font-medium">
-          Cargando ficha de jefe de área...
+          Cargando ficha de responsable de nivel...
         </span>
       </div>
     );
@@ -50,7 +50,7 @@ export const JefeAreaDetailPage = () => {
   if (!jefe) {
     return (
       <div className="w-full max-w-[820px] mx-auto text-center py-20 bg-surface border border-border rounded-2xl shadow-sm mt-6">
-        <h2 className="text-xl font-bold text-text mb-2">Jefe de Área no encontrado</h2>
+        <h2 className="text-xl font-bold text-text mb-2">Responsable de Nivel no encontrado</h2>
         <p className="text-text-muted mb-6">
           El código identificador {id} no existe o no tiene permisos de acceso.
         </p>
@@ -76,7 +76,7 @@ export const JefeAreaDetailPage = () => {
             <ArrowLeft className="h-[18px] w-[18px]" strokeWidth={2.5} />
           </button>
           <div>
-            <h1 className="text-xl font-bold text-text m-0 leading-tight">Ficha de Jefe de Área</h1>
+            <h1 className="text-xl font-bold text-text m-0 leading-tight">Ficha de Responsable de Nivel</h1>
             <p className="text-text-muted text-[0.8rem] m-0">Perfil directivo de la UGEL</p>
           </div>
         </div>
@@ -157,7 +157,7 @@ export const JefeAreaDetailPage = () => {
                   variant="default"
                   className="text-xs font-bold px-3 py-0.5 uppercase tracking-wide"
                 >
-                  Jefe de Área
+                  Responsable de Nivel
                 </Badge>
               </div>
               <div>

@@ -115,7 +115,7 @@ export const EspecialistaDetailPage = () => {
                   <span className="text-[0.65rem] text-text-muted uppercase font-bold tracking-wider">
                     Correo Institucional
                   </span>
-                  <span className="text-xs font-semibold text-text">{especialista.correo}</span>
+                  <span className="text-xs font-semibold text-text">{especialista.correo || 'No registrado'}</span>
                 </div>
               </div>
 
@@ -125,7 +125,7 @@ export const EspecialistaDetailPage = () => {
                   <span className="text-[0.65rem] text-text-muted uppercase font-bold tracking-wider">
                     Teléfono de Contacto
                   </span>
-                  <span className="text-xs font-semibold text-text">{especialista.celular}</span>
+                  <span className="text-xs font-semibold text-text">{especialista.celular || 'No registrado'}</span>
                 </div>
               </div>
             </div>

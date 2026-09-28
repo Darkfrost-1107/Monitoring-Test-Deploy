@@ -146,14 +146,14 @@ export async function crearVisita(
       const isValid = (targetMod === 'EBR' && targetNivel === 'Inicial') || targetMod === 'EBE';
       if (!isValid) {
         throw new ForbiddenException(
-          'Un Jefe de Área de nivel Inicial solo puede registrar visitas de nivel Inicial (EBR) o de la modalidad Especial (EBE).',
+          'Un Responsable de Nivel de nivel Inicial solo puede registrar visitas de nivel Inicial (EBR) o de la modalidad Especial (EBE).',
         );
       }
     } else if (jefeNivel === 'Primaria') {
       const isValid = targetMod === 'EBR' && targetNivel === 'Primaria';
       if (!isValid) {
         throw new ForbiddenException(
-          'Un Jefe de Área de nivel Primaria solo puede registrar visitas de nivel Primaria (EBR).',
+          'Un Responsable de Nivel de nivel Primaria solo puede registrar visitas de nivel Primaria (EBR).',
         );
       }
     } else if (jefeNivel === 'Secundaria') {
@@ -163,7 +163,7 @@ export async function crearVisita(
         targetMod === 'CEPTRO';
       if (!isValid) {
         throw new ForbiddenException(
-          'Un Jefe de Área de nivel Secundaria solo puede registrar visitas de nivel Secundaria (EBR), Alternativa (EBA) o CEPTRO.',
+          'Un Responsable de Nivel de nivel Secundaria solo puede registrar visitas de nivel Secundaria (EBR), Alternativa (EBA) o CEPTRO.',
         );
       }
     }
@@ -210,7 +210,7 @@ export async function crearVisita(
   }
   if (activas.monitorCargo === 'Jefe de Área') {
     throw new ForbiddenException(
-      'Los Jefes de Área no pueden realizar visitas (rol no evaluador).',
+      'Los Responsables de Nivel no pueden realizar visitas (rol no evaluador).',
     );
   }
   // El Director de UGEL conduce la unidad, no hace monitoreo de campo: no debe

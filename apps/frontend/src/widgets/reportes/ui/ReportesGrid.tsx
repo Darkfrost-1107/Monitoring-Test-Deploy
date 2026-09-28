@@ -1,11 +1,11 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useReactToPrint } from 'react-to-print';
 import type { TipoPlantilla } from '@sistema-monitoreo/shared-contracts';
 import type { Cronograma } from '@/entities/model-cronogramas';
 import type { Plantilla } from '@/entities/model-plantillas';
 import { usePlantilla } from '@/entities/model-plantillas/use-plantillas-api';
-import { LlenarFichaForm } from '@/features/monitoreos';
 import { fichasApi } from '@/features/monitoreos/api/fichas.api';
 import { fichaAEstadoFormulario } from '@/features/monitoreos/lib/ficha-estado';
 import { FiltrosReportes } from './grid/FiltrosReportes';
@@ -91,6 +91,7 @@ export const ReportesGrid = ({
 }: ReportesGridProps) => {
   const [visitaAbierta, setVisitaAbierta] = useState<BackendReportVisit | null>(null);
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const {
     data: fichaDelBackend,
@@ -140,6 +141,22 @@ export const ReportesGrid = ({
   );
 
   const cerrarFicha = () => setVisitaAbierta(null);
+
+  /**
+   * En cuanto la ficha ya resolvió (plantilla + estado del formulario), se
+   * navega a su página en vez de renderizarla acá adentro. Antes era un modal
+   * que se abría cuando `fichaLista` se ponía en `true`; ahora ese mismo
+   * momento dispara la navegación, pasando lo ya resuelto por `state` para no
+   * tener que volver a buscarlo en la página. La navegación desmonta esta
+   * grilla, así que no hace falta (ni conviene) limpiar `visitaAbierta` acá.
+   */
+  useEffect(() => {
+    if (!visitaAbierta || !plantillaActiva || !estadoDeLaFicha) return;
+
+    navigate(`/monitoreo/ficha/${visitaAbierta.id}`, {
+      state: { visit: visitaAbierta, template: plantillaActiva, initialState: estadoDeLaFicha },
+    });
+  }, [visitaAbierta, plantillaActiva, estadoDeLaFicha, navigate]);
 
   // Impresión directa del formato oficial (FichaPrintable)
   const [visitaParaImprimir, setVisitaParaImprimir] = useState<BackendReportVisit | null>(null);
@@ -280,16 +297,9 @@ export const ReportesGrid = ({
         />
       )}
 
-      {fichaLista && (
-        <LlenarFichaForm
-          isOpen
-          onClose={cerrarFicha}
-          visit={visitaAbierta}
-          template={plantillaActiva}
-          initialState={estadoDeLaFicha}
-        />
-      )}
-
+      {/* Mientras se resuelve la ficha (plantilla + estado del formulario), un
+          efecto más arriba navega a su página en cuanto está lista. Acá sólo
+          queda mostrar la carga o el aviso de que no se pudo recuperar. */}
       {!!visitaAbierta && !fichaLista && (
         <FichaNoDisponible
           cargando={cargandoFicha && !errorDeFicha}

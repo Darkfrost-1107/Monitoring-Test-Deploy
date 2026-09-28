@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type FocusEvent } from 'react';
 import { toast } from 'sonner';
 import { ChevronDown, ChevronUp, Edit3 } from 'lucide-react';
 import type { SeccionDocente } from '@entities/model-docentes';
@@ -51,6 +51,21 @@ export const ContextoDeAulaSeccion = ({
 
   const hayaSugerencias = sugerencias.areas.length > 0 || sugerencias.secciones.length > 0;
 
+  /**
+   * Al salir del bloque con los tres campos obligatorios ya completos, se
+   * pliega solo. Se dispara en `onBlur` del contenedor, no de cada campo: así
+   * tabular o hacer clic entre Área, Grado y Sección no lo pliega a mitad de
+   * carga, solo salir del bloque entero lo hace.
+   */
+  const handleBlurDelBloque = (e: FocusEvent<HTMLDivElement>) => {
+    const sigueDentro = e.relatedTarget && e.currentTarget.contains(e.relatedTarget as Node);
+    if (sigueDentro) return;
+
+    const completo =
+      contexto.area.trim() !== '' && contexto.grado.trim() !== '' && contexto.seccion.trim() !== '';
+    if (completo) setEstaPlegado(true);
+  };
+
   if (estaPlegado) {
     return (
       <div className="px-4 sm:px-6 py-1.5 bg-white border-b border-border/80 text-xs flex items-center justify-between gap-2 animate-in fade-in duration-150">
@@ -76,7 +91,10 @@ export const ContextoDeAulaSeccion = ({
   }
 
   return (
-    <div className="bg-white border-b border-border/80 px-4 sm:px-6 py-2 transition-all">
+    <div
+      className="bg-white border-b border-border/80 px-4 sm:px-6 py-2 transition-all"
+      onBlur={handleBlurDelBloque}
+    >
       <div className="flex items-center justify-between mb-1.5">
         <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">
           Datos de la Sesión Observada

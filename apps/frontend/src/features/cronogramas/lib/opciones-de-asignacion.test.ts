@@ -110,6 +110,18 @@ describe('opcionesDeEspecialista', () => {
 
     expect(new Set(opciones.map((o) => o.label)).size).toBe(2);
   });
+
+  /**
+   * El valor que se guarda y compara sigue siendo «Jefe de Área» —no se toca,
+   * es lo que hay en la base—, pero la persona que arma el cronograma lee
+   * «Responsable de Nivel».
+   */
+  it('muestra "Jefe de Área" como "Responsable de Nivel"', () => {
+    const opciones = opcionesDeEspecialista([
+      { id: 'a', nombre: 'Ana Torres', cargo: 'Jefe de Área' },
+    ]);
+    expect(opciones[0].label).toBe('Ana Torres (Responsable de Nivel)');
+  });
 });
 
 describe('opcionesDeEvaluadorInterno', () => {

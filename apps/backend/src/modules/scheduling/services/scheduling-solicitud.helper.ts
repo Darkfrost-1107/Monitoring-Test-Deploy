@@ -184,14 +184,14 @@ async function resolverSolicitud(
 
     if (!isAll && !isJefeArea) {
       throw new ForbiddenException(
-        'Solo el Jefe de Gestión o el Jefe de Área de su nivel correspondiente pueden resolver reprogramaciones a nivel UGEL.',
+        'Solo el Jefe de Gestión o el Responsable de Nivel de su nivel correspondiente pueden resolver reprogramaciones a nivel UGEL.',
       );
     }
 
     if (isJefeArea) {
       if (cronograma.nivelEducativo !== session.especialistaNivel) {
         throw new ForbiddenException(
-          'El Jefe de Área solo puede resolver solicitudes de su propio nivel educativo.',
+          'El Responsable de Nivel solo puede resolver solicitudes de su propio nivel educativo.',
         );
       }
     }

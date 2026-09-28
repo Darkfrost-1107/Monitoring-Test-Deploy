@@ -70,7 +70,7 @@ export const PasoCierre = ({
   }, [foco]);
 
   return (
-    <div className="flex-1 p-6 overflow-y-auto space-y-6 md:sticky md:top-0 self-start max-h-[560px] bg-white">
+    <div className="flex-1 p-6 space-y-6 bg-white">
       <div className="space-y-6 animate-in fade-in duration-200">
         <div id="cierre-obs" className="space-y-2 scroll-mt-4">
           <EtiquetaCampo

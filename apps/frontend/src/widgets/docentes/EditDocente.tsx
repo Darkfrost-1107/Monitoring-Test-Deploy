@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AlertCircle } from 'lucide-react';
+import { toast } from 'sonner';
 import { DocenteFormBase } from '@features/docentes';
 import { type Docente } from '@entities/model-docentes';
 import { useDocenteService, mapApiDocenteToFrontend } from '@features/docentes/docente-service';
@@ -101,6 +102,7 @@ export const EditDocenteCard = ({
     if (!id) return;
     const result = await updateDocente(id, formData);
     if (result.success) {
+      toast.success('Datos actualizados correctamente');
       navigate(routePrefix);
     }
   };

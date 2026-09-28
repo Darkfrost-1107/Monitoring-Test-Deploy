@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AlertCircle } from 'lucide-react';
+import { toast } from 'sonner';
 import { Card } from '@shared/ui/card';
 import { Spinner } from '@shared/ui/Spinner';
 import { DirectorFormBase } from '@features/directores';
@@ -70,6 +71,7 @@ export const CreateDirectorCard = () => {
 
     const result = await createDocente(docenteFormData);
     if (result.success) {
+      toast.success('Director registrado correctamente');
       navigate('/instituciones/docentes');
     }
   };

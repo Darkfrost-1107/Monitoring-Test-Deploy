@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { AlertCircle } from 'lucide-react';
+import { toast } from 'sonner';
 import { EspecialistaFormBase } from '@features/especialistas';
 import { useEspecialistaService } from '@features/especialistas';
 import { Card } from '@shared/ui/card';
@@ -12,6 +13,7 @@ export const CreateEspecialistaCard = () => {
   const handleFormSubmit = async (formData: EspecialistaFormData) => {
     const result = await createEspecialista(formData);
     if (result.success) {
+      toast.success('Especialista registrado correctamente');
       navigate('/especialistas');
     }
   };

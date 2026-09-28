@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AlertCircle } from 'lucide-react';
+import { toast } from 'sonner';
 import { EspecialistaFormBase } from '@features/especialistas';
 import { type Especialista } from '@entities/model-especialistas';
 import {
@@ -87,6 +88,7 @@ export const EditEspecialistaCard = () => {
       especialista.cargo || 'Especialista',
     );
     if (result.success) {
+      toast.success('Datos del especialista actualizados correctamente');
       navigate('/especialistas');
     }
   };

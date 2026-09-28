@@ -141,7 +141,7 @@ export const DocenteDetailPage = () => {
                   <span className="text-[0.65rem] text-text-muted uppercase font-bold tracking-wider">
                     Correo UGEL / I.E.
                   </span>
-                  <span className="text-xs font-semibold text-text">{docente.correo}</span>
+                  <span className="text-xs font-semibold text-text">{docente.correo || 'No registrado'}</span>
                 </div>
               </div>
 
@@ -151,7 +151,7 @@ export const DocenteDetailPage = () => {
                   <span className="text-[0.65rem] text-text-muted uppercase font-bold tracking-wider">
                     Teléfono de Contacto
                   </span>
-                  <span className="text-xs font-semibold text-text">{docente.celular}</span>
+                  <span className="text-xs font-semibold text-text">{docente.celular || 'No registrado'}</span>
                 </div>
               </div>
             </div>

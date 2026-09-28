@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AlertCircle } from 'lucide-react';
+import { toast } from 'sonner';
 import { Card } from '@shared/ui/card';
 import { Spinner } from '@shared/ui/Spinner';
 import { DirectorFormBase } from '@features/directores';
@@ -115,6 +116,7 @@ export const EditDirectorCard = () => {
 
     const result = await updateDocente(director.id, docenteFormData);
     if (result.success) {
+      toast.success('Datos del director actualizados correctamente');
       navigate('/instituciones/docentes');
     }
   };

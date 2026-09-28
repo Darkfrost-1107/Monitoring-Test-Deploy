@@ -134,7 +134,7 @@ export const DetalleDesempeno = ({
 }: DetalleDesempenoProps) => {
   if (!desempeno) {
     return (
-      <div className="flex-1 p-6 space-y-6 md:sticky md:top-0 self-start bg-white">
+      <div className="flex-1 p-6 space-y-6 bg-white">
         <div className="h-48 flex flex-col items-center justify-center text-slate-300">
           <FileText className="h-10 w-10 mb-2 stroke-1" />
           <span className="text-xs font-semibold">Seleccione un desempeño a la izquierda</span>
@@ -146,7 +146,7 @@ export const DetalleDesempeno = ({
   const hayAspectos = mostrarAspectos && !!desempeno.aspectos?.length;
 
   return (
-    <div className="flex-1 p-6 overflow-y-auto space-y-5 md:sticky md:top-0 self-start max-h-[560px] bg-white">
+    <div className="flex-1 p-6 space-y-5 bg-white">
       <div className="space-y-6 animate-in fade-in duration-200">
         <div className="space-y-2">
           {esEib && desempeno.descripcionCorta && (() => {

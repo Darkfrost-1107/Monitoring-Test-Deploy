@@ -1,21 +1,7 @@
 import { especialidadesDelNivel } from './grados-y-secciones';
+import { normalizarArea, areaYaUsada } from '@shared/lib/especialidades-secundaria';
 
-// Sin tildes ni mayúsculas: el valor guardado puede venir sin tilde
-// («Comunicacion») y el catálogo con tilde («Comunicación»), y son la misma área.
-export const normalizarArea = (s: string) =>
-  s
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .trim()
-    .toLowerCase();
-
-/** ¿El área ya está tomada por la principal o alguna extra (ignorando tildes)? */
-export const areaYaUsada = (
-  valor: string,
-  principal: string | null | undefined,
-  extras: string[],
-): boolean =>
-  [principal, ...extras].some((s) => Boolean(s) && normalizarArea(s as string) === normalizarArea(valor));
+export { normalizarArea, areaYaUsada };
 
 /**
  * Áreas del catálogo que quedan para sumar como extra: las del nivel, quitando la

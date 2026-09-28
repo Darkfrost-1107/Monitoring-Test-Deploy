@@ -65,13 +65,21 @@ export const opcionesDeInstitucion = (
     label: etiquetaDeInstitucion(institucion, instituciones),
   }));
 
+/**
+ * Etiqueta visible del cargo. El valor que se guarda y compara en todo el
+ * resto del código sigue siendo «Jefe de Área» —cambiarlo exige migrar datos
+ * ya guardados—, pero acá se arma texto para que lo lea la persona.
+ */
+const etiquetaDeCargo = (cargo: string): string =>
+  cargo === 'Jefe de Área' ? 'Responsable de Nivel' : cargo;
+
 /** El cargo distingue a dos especialistas de igual nombre; el área, qué monitorea. */
 export const opcionesDeEspecialista = (
   especialistas: readonly EspecialistaOfrecible[],
 ): Opcion[] =>
   especialistas.map((especialista) => {
     const base = especialista.cargo
-      ? `${especialista.nombre} (${especialista.cargo})`
+      ? `${especialista.nombre} (${etiquetaDeCargo(especialista.cargo)})`
       : especialista.nombre;
     const area = especialista.especialidades?.length
       ? ` · ${especialista.especialidades.join(', ')}`

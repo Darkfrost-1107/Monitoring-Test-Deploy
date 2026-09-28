@@ -17,8 +17,8 @@ import { esDeEPT } from '@features/docentes/lib/asignacion-de-cargo';
 
 const TODAS_LAS_MODALIDADES = Object.values(ModalidadEducativa);
 
-/** Cargos de la UGEL que salen a monitorear. */
-const CARGOS_QUE_MONITOREAN = ['Especialista', 'Jefe de Gestión'];
+/** Cargos de la UGEL que salen a monitorear. El Jefe de Gestión coordina, no monitorea. */
+const CARGOS_QUE_MONITOREAN = ['Especialista', 'Jefe de Área'];
 
 /** Modalidad que se asume cuando el especialista no la declara. */
 const MODALIDAD_POR_DEFECTO = 'EBR';
@@ -56,9 +56,6 @@ export interface EspecialistaAsignable {
  * cargo describe su plaza y el rol su función— de modo que aparecía entre los
  * asignables de un cronograma. Ocupa un cargo de conducción, no una plaza de
  * acompañamiento en territorio.
- *
- * El Jefe de Gestión no entra en esta lista: tiene su propia regla más abajo,
- * que le permite asignarse a sí mismo pero no a un par.
  */
 const ROLES_DE_CONDUCCION: readonly string[] = ['director_ugel'];
 
@@ -146,28 +143,41 @@ const cubreModalidadYNivel = (
  * Genérica en el tipo de especialista para devolver los mismos objetos que
  * recibe: la regla sólo lee los campos declarados acá, pero quien la llama
  * necesita el registro completo para renderizar el selector.
+ *
+ * El nivel/modalidad de la visita acota a cualquiera, sin excepción por quién
+ * arma el cronograma: un Responsable de Nivel de Secundaria no cubre una
+ * visita de Primaria aunque sea el Jefe de Gestión quien la programe.
  */
 export function especialistasAsignables<T extends EspecialistaAsignable>(
   especialistas: readonly T[],
   modalidad: string,
   nivel: string,
-  usuario: UsuarioAsignador | null | undefined,
+  /**
+   * El monitor ya asignado, al editar una visita existente.
+   *
+   * Una regla de elegibilidad puede endurecerse después de creada la visita
+   * —el cargo del monitor deja de poder monitorear, o cambia de nivel—, y sin
+   * esto el selector se abría vacío en modo edición: la opción que ya estaba
+   * elegida desaparecía de la lista en vez de seguir mostrándose.
+   */
+  monitorActualId?: string | null,
 ): T[] {
   if (!modalidad || !nivel) return [];
 
-  return especialistas.filter((especialista) => {
+  const elegibles = especialistas.filter((especialista) => {
     if (especialista.activo !== true) return false;
     if (!CARGOS_QUE_MONITOREAN.includes(especialista.cargo)) return false;
     if (ROLES_DE_CONDUCCION.includes(especialista.rolCode ?? '')) return false;
 
-    // Un jefe de gestión puede asignarse a sí mismo, pero no a otro par: la
-    // carga de trabajo de un jefe la decide él, no un colega.
-    const esOtroJefe =
-      especialista.cargo === 'Jefe de Gestión' && especialista.id !== usuario?.especialistaId;
-    if (esOtroJefe) return false;
-
     return cubreModalidadYNivel(especialista, modalidad, nivel);
   });
+
+  if (monitorActualId && !elegibles.some((e) => e.id === monitorActualId)) {
+    const actual = especialistas.find((e) => e.id === monitorActualId);
+    if (actual) return [...elegibles, actual];
+  }
+
+  return elegibles;
 }
 
 /**

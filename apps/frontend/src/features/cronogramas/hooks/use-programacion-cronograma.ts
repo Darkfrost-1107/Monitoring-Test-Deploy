@@ -140,7 +140,12 @@ export function useProgramacionCronograma({
       modalidades: modalidadesPermitidas(usuario),
       niveles: nivelesPermitidos(form.modalidad, usuario),
       especialistas: opcionesDeEspecialista(
-        especialistasAsignables(especialistas, form.modalidad, form.nivel, usuario),
+        especialistasAsignables(
+          especialistas,
+          form.modalidad,
+          form.nivel,
+          editandoId ? form.monitorId : null,
+        ),
       ),
       instituciones: opcionesDeInstitucion(
         institucionesAsignables(instituciones, form.modalidad, form.nivel),
@@ -158,6 +163,8 @@ export function useProgramacionCronograma({
       form.modalidad,
       form.nivel,
       form.tipo,
+      form.monitorId,
+      editandoId,
       especialistas,
       instituciones,
       opcionesDeEvaluado,

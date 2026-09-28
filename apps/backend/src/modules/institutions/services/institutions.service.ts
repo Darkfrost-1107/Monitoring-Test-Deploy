@@ -26,14 +26,14 @@ export class InstitutionsService {
         const isValid = (targetMod === 'EBR' && targetNivel === 'Inicial') || targetMod === 'EBE';
         if (!isValid) {
           throw new ForbiddenException(
-            'Un Jefe de Área de nivel Inicial solo puede crear instituciones de nivel Inicial (EBR) o de la modalidad Especial (EBE).',
+            'Un Responsable de Nivel de nivel Inicial solo puede crear instituciones de nivel Inicial (EBR) o de la modalidad Especial (EBE).',
           );
         }
       } else if (jefeNivel === 'Primaria') {
         const isValid = targetMod === 'EBR' && targetNivel === 'Primaria';
         if (!isValid) {
           throw new ForbiddenException(
-            'Un Jefe de Área de nivel Primaria solo puede crear instituciones de nivel Primaria (EBR).',
+            'Un Responsable de Nivel de nivel Primaria solo puede crear instituciones de nivel Primaria (EBR).',
           );
         }
       } else if (jefeNivel === 'Secundaria') {
@@ -43,7 +43,7 @@ export class InstitutionsService {
           targetMod === 'CEPTRO';
         if (!isValid) {
           throw new ForbiddenException(
-            'Un Jefe de Área de nivel Secundaria solo puede crear instituciones de nivel Secundaria (EBR), Alternativa (EBA) o CEPTRO.',
+            'Un Responsable de Nivel de nivel Secundaria solo puede crear instituciones de nivel Secundaria (EBR), Alternativa (EBA) o CEPTRO.',
           );
         }
       }

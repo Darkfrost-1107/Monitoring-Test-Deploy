@@ -255,11 +255,27 @@ export const LlenarFichaForm = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 overflow-y-auto animate-in fade-in duration-200">
+    <div className="w-full h-full flex flex-col animate-in fade-in-0 duration-200">
       <div style={{ display: 'none' }}>
         <FichaPrintable ref={printRef} visit={visit} template={template} fichaState={currentFichaState} />
       </div>
-      <Card className="bg-surface w-full max-w-[1250px] border border-border rounded-2xl shadow-xl flex flex-col max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-200">
+      {/*
+        Un pie fijo (`sticky`/`fixed`) sobre una tarjeta redondeada más alta
+        que la pantalla siempre termina superponiéndose a lo que todavía no
+        scrolleó —es así como funciona `position: sticky`, no un detalle de
+        estilo que se arregle con más margen—. Se probó como página con scroll
+        único y un pie flotando aparte, y también sin bordes propios: siempre
+        tapaba la esquina redondeada de la tarjeta o la lista de criterios.
+        La única forma de que el pie nunca tape nada es que esté SIEMPRE
+        visible sin necesitar scroll: encabezado fijo, un único tramo con
+        scroll interno en el medio, pie fijo, los tres dentro de la misma
+        caja. El "doble scroll" que se veía con esta misma arquitectura antes
+        no lo causaba esto, sino tres cajas con alto fijo (`max-h-[560px]`)
+        que quedaron de la época de modal en `ListaDesempenos` y
+        `DetalleDesempeno`/`PasoCierre` —ya se sacaron—. Sin ellas, este único
+        scroll interno es el único que existe en toda la ficha.
+      */}
+      <Card className="bg-surface w-full flex-1 min-h-0 border border-border rounded-2xl shadow-sm flex flex-col overflow-hidden">
         <CabeceraFicha
           template={template}
           soloLectura={isCompleted}
@@ -270,7 +286,6 @@ export const LlenarFichaForm = ({
           onCerrar={onClose}
         />
 
-        {/* Contenedor con scroll interno — engloba metadatos + cuerpo + comentarios + calificación */}
         <div className="flex-1 overflow-y-auto min-h-0">
           <BannerDatosVisita visit={visit} />
 
@@ -372,7 +387,7 @@ export const LlenarFichaForm = ({
         )}
           </>
         )} {/* fin FICHA */}
-        </div> {/* fin scroll interno */}
+        </div>
 
         <AvisoDeError
           mensaje={faltaParaCerrar}

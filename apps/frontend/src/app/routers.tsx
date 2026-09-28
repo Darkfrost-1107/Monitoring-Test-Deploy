@@ -15,6 +15,7 @@ import { ProtectedRoute } from '@shared/ui/ProtectedRoute';
 import { FocosAtencionPage } from '@/pages/focosAtencion/FocosAtencionPage';
 import { MiFirmaPage } from '@/features/firmas/ui/MiFirmaPage';
 import { MiCarpetaPedagogicaPage } from '@/features/carpeta-pedagogica';
+import { LlenarFichaPage } from '@/features/monitoreos';
 import {
   BandejaSolicitudesPlantillaPage,
   MisSolicitudesPlantillaPage,
@@ -45,6 +46,15 @@ export const router = createBrowserRouter([
       {
         element: <ProtectedRoute permission="mi_firma" />,
         children: [{ path: 'mi-firma', element: <MiFirmaPage /> }],
+      },
+      {
+        // 'reportes_fichas' es el único permiso que tienen todos los roles que
+        // hoy llegan a esta ficha: quien la llena (jefe_gestion, jefe_area,
+        // especialista, coordinador pedagógico, jefe de taller, director de
+        // institución) y quien sólo la consulta desde Reportes (director UGEL,
+        // el propio docente evaluado). 'monitoreo' excluye a estos últimos dos.
+        element: <ProtectedRoute permission="reportes_fichas" />,
+        children: [{ path: 'monitoreo/ficha/:visitaId', element: <LlenarFichaPage /> }],
       },
       {
         element: <ProtectedRoute permission="carpeta_pedagogica" />,

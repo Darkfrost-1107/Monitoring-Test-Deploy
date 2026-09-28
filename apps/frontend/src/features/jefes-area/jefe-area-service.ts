@@ -82,12 +82,12 @@ export const useJefeAreaService = () => {
         return { success: true, data: mapped };
       } else {
         const errMsg =
-          (res.error as { message?: string })?.message || 'Error al registrar el jefe de área.';
+          (res.error as { message?: string })?.message || 'Error al registrar el responsable de nivel.';
         setError(errMsg);
         return { success: false, error: res.error };
       }
     } catch (err) {
-      setError('Error al registrar el jefe de área.');
+      setError('Error al registrar el responsable de nivel.');
       return { success: false, error: err };
     } finally {
       setLoading(false);
@@ -120,12 +120,12 @@ export const useJefeAreaService = () => {
         return { success: true, data: mapped };
       } else {
         const errMsg =
-          (res.error as { message?: string })?.message || 'Error al actualizar el jefe de área.';
+          (res.error as { message?: string })?.message || 'Error al actualizar el responsable de nivel.';
         setError(errMsg);
         return { success: false, error: res.error };
       }
     } catch (err) {
-      setError('Error al actualizar el jefe de área.');
+      setError('Error al actualizar el responsable de nivel.');
       return { success: false, error: err };
     } finally {
       setLoading(false);

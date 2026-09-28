@@ -27,7 +27,7 @@ export async function create(
       });
       if (existingJefe) {
         throw new ConflictException(
-          `Ya existe un Jefe de Área activo para el nivel ${data.nivelEducativo}.`,
+          `Ya existe un Responsable de Nivel activo para el nivel ${data.nivelEducativo}.`,
         );
       }
     }
