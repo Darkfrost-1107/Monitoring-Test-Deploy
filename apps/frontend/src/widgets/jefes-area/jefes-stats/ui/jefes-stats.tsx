@@ -16,14 +16,14 @@ export const JefesStatsWidget = ({ jefes }: JefesStatsWidgetProps) => {
       columns={3}
       cards={[
         {
-          title: 'Total de Jefes de Área',
+          title: 'Total de Responsables de Nivel',
           icon: <Users className="w-5 h-5 text-primary" strokeWidth={2} />,
           value: total,
           trendText: `${activos} Activos / ${inactivos} Inactivos`,
           trendType: 'neutral',
         },
         {
-          title: 'Jefes de Área Activos',
+          title: 'Responsables de Nivel Activos',
           icon: <ShieldCheck className="w-5 h-5 text-green-500" strokeWidth={2} />,
           value: activos,
           trendText: 'Personal directivo vigente',

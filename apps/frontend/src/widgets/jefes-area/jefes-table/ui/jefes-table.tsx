@@ -44,7 +44,7 @@ export const JefesTableWidget = ({ jefes, onEdit, onView, onChanged }: JefesTabl
     if (!finalizingDoc) return;
     const ok = await ejecutar(
       () => jefesAreaApi.deactivate(finalizingDoc.id),
-      'Error al desactivar el registro de jefe de área.',
+      'Error al desactivar el registro de responsable de nivel.',
       () => setFinalizingDoc(null),
     );
     if (ok) onChanged?.();
@@ -54,7 +54,7 @@ export const JefesTableWidget = ({ jefes, onEdit, onView, onChanged }: JefesTabl
     if (!restoringDoc) return;
     const ok = await ejecutar(
       () => jefesAreaApi.activate(restoringDoc.id),
-      'Error al reactivar el registro de jefe de área.',
+      'Error al reactivar el registro de responsable de nivel.',
       () => setRestoringDoc(null),
     );
     if (ok) onChanged?.();
@@ -77,9 +77,9 @@ export const JefesTableWidget = ({ jefes, onEdit, onView, onChanged }: JefesTabl
           </>
         }
         pagination={pagination}
-        emptyMessage="No se encontraron jefes de área con los filtros seleccionados."
+        emptyMessage="No se encontraron responsables de nivel con los filtros seleccionados."
         emptyColSpan={7}
-        itemName="jefes de área"
+        itemName="responsables de nivel"
       >
         {pagination.pageItems.map((doc) => (
           <TableRow key={doc.id} className="hover:bg-muted/30 transition-colors">
@@ -117,8 +117,8 @@ export const JefesTableWidget = ({ jefes, onEdit, onView, onChanged }: JefesTabl
                 onFinalize={doc.activo ? () => setFinalizingDoc(doc) : undefined}
                 onRestore={!doc.activo ? () => setRestoringDoc(doc) : undefined}
                 viewTitle="Ver ficha"
-                restoreTitle="Reactivar jefe de área"
-                finalizeTitle="Desactivar jefe de área"
+                restoreTitle="Reactivar responsable de nivel"
+                finalizeTitle="Desactivar responsable de nivel"
               />
             </TableCell>
           </TableRow>
@@ -128,11 +128,11 @@ export const JefesTableWidget = ({ jefes, onEdit, onView, onChanged }: JefesTabl
       {finalizingDoc && (
         <ConfirmModal
           danger
-          title="¿Retirar el cargo de Jefe de Área?"
+          title="¿Retirar el cargo de Responsable de Nivel?"
           message={
             <>
               <strong>{finalizingDoc.apellidos}, {finalizingDoc.nombres}</strong> dejará el cargo de
-              Jefe de Área y volverá a figurar como Especialista, de modo que saldrá de este listado
+              Responsable de Nivel y volverá a figurar como Especialista, de modo que saldrá de este listado
               y pasará al de Especialistas.
               <br />
               <br />
@@ -149,8 +149,8 @@ export const JefesTableWidget = ({ jefes, onEdit, onView, onChanged }: JefesTabl
 
       {restoringDoc && (
         <ConfirmModal
-          title="¿Reactivar Jefe de Área?"
-          message={`Esta acción reactivará el registro de ${restoringDoc.apellidos}, ${restoringDoc.nombres} como Especialista y le devolverá el acceso. El cargo de Jefe de Área se asigna aparte.`}
+          title="¿Reactivar Responsable de Nivel?"
+          message={`Esta acción reactivará el registro de ${restoringDoc.apellidos}, ${restoringDoc.nombres} como Especialista y le devolverá el acceso. El cargo de Responsable de Nivel se asigna aparte.`}
           confirmLabel="Reactivar"
           cancelLabel="Cancelar"
           onConfirm={confirmRestore}

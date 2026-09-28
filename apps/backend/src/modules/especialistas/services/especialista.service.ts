@@ -104,7 +104,7 @@ export class EspecialistaService {
       dto.cargaLaboral !== 40
     ) {
       throw new BadRequestException(
-        'La carga laboral de un Jefe de Área debe ser exactamente 40 horas.',
+        'La carga laboral de un Responsable de Nivel debe ser exactamente 40 horas.',
       );
     }
 
@@ -209,7 +209,7 @@ export class EspecialistaService {
       dto.cargaLaboral !== 40
     ) {
       throw new BadRequestException(
-        'La carga laboral de un Jefe de Área debe ser exactamente 40 horas.',
+        'La carga laboral de un Responsable de Nivel debe ser exactamente 40 horas.',
       );
     }
 

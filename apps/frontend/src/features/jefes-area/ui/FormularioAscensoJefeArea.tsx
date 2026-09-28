@@ -90,7 +90,7 @@ export const FormularioAscensoJefeArea = ({
       {error && <AvisoDeError mensaje={error} />}
 
       {sinNivelesLibres && (
-        <AvisoDeError mensaje="Los tres niveles educativos ya tienen un Jefe de Área activo. Para nombrar a otro, primero debe desactivar al vigente del nivel correspondiente." />
+        <AvisoDeError mensaje="Los tres niveles educativos ya tienen un Responsable de Nivel activo. Para nombrar a otro, primero debe desactivar al vigente del nivel correspondiente." />
       )}
 
       <SectionCard icon={<Search className="w-5 h-5" />} title="Filtro y Selección de Especialista">
@@ -144,7 +144,7 @@ export const FormularioAscensoJefeArea = ({
         <div className="animate-in slide-in-from-bottom-2 duration-300">
           <SectionCard
             icon={<Shield className="w-5 h-5" />}
-            title="Confirmar Ascenso a Jefe de Área"
+            title="Confirmar Ascenso a Responsable de Nivel"
           >
             <div className="p-4 bg-muted/30 border border-border/80 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">
               <div>
@@ -152,12 +152,12 @@ export const FormularioAscensoJefeArea = ({
                   Se promoverá al especialista seleccionado
                 </h4>
                 <p className="text-xs text-text-muted">
-                  Esta acción actualizará su cargo actual a &quot;Jefe de Área&quot; y le otorgará el
+                  Esta acción actualizará su cargo actual a &quot;Responsable de Nivel&quot; y le otorgará el
                   rol correspondiente en el sistema.
                 </p>
               </div>
               <div className="flex flex-wrap gap-2 shrink-0">
-                <Etiqueta tono="primary">Cargo: Jefe de Área</Etiqueta>
+                <Etiqueta tono="primary">Cargo: Responsable de Nivel</Etiqueta>
                 <Etiqueta tono="success">Carga: {CARGA_HORARIA.JEFE_AREA} hrs</Etiqueta>
                 <Etiqueta tono="secondary">Nivel: {nivel}</Etiqueta>
               </div>

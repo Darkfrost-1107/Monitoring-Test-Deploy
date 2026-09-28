@@ -126,7 +126,7 @@ export function validateJefeAreaCanAssign(cargoNombre: string): void {
     (cargoNombre as CargoNombre) !== CargoNombre.COORDINADOR_PEDAGOGICO
   ) {
     throw new ForbiddenException(
-      'El Jefe de Área solo puede registrar directores y coordinadores pedagógicos.',
+      'El Responsable de Nivel solo puede registrar directores y coordinadores pedagógicos.',
     );
   }
 }
@@ -146,7 +146,7 @@ export async function validateJefeAreaCanManageDocente(
         (currentCargo.nombre as CargoNombre) !== CargoNombre.COORDINADOR_PEDAGOGICO
       ) {
         throw new ForbiddenException(
-          'El Jefe de Área solo puede gestionar directores y coordinadores pedagógicos.',
+          'El Responsable de Nivel solo puede gestionar directores y coordinadores pedagógicos.',
         );
       }
     }

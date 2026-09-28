@@ -23,7 +23,7 @@ export async function transicionDocenteAEspecialista(
       });
       if (existingJefe) {
         throw new ConflictException(
-          `Ya existe un Jefe de Área activo para el nivel ${dto.nivelEducativo}.`,
+          `Ya existe un Responsable de Nivel activo para el nivel ${dto.nivelEducativo}.`,
         );
       }
     }

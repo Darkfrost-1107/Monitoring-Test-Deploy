@@ -37,7 +37,7 @@ export const JefesAreaPage = () => {
     return (
       <div className="w-full h-[60vh] flex flex-col justify-center items-center gap-3">
         <Spinner />
-        <span className="text-text-muted text-sm font-medium">Cargando jefes de área...</span>
+        <span className="text-text-muted text-sm font-medium">Cargando responsables de nivel...</span>
       </div>
     );
   }
@@ -45,15 +45,15 @@ export const JefesAreaPage = () => {
   return (
     <div className="flex flex-col w-full gap-6 animate-in fade-in-0 duration-300">
       <PageHeader
-        title="Gestión de Jefes de Área"
-        description="Padrón oficial de jefes de área de la jurisdicción de la UGEL Lampa."
+        title="Gestión de Responsables de Nivel"
+        description="Padrón oficial de responsables de nivel de la jurisdicción de la UGEL Lampa."
         action={
           <Button
             onClick={() => navigate('/jefes-area/nuevo', { state: { from: location.pathname } })}
             className="flex items-center gap-2 font-bold cursor-pointer bg-primary hover:bg-primary-hover text-white rounded-xl px-4 py-2.5 shadow-xs"
           >
             <PlusCircle className="w-[18px] h-[18px]" strokeWidth={2} />
-            Registrar Jefe de Área
+            Registrar Responsable de Nivel
           </Button>
         }
       />

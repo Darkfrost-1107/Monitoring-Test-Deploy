@@ -89,7 +89,7 @@ export class NotificationsService {
           motivo:
             rol === 'director_ie'
               ? 'La IE no tiene Director registrado.'
-              : 'No hay Jefe de Área del nivel de la IE.',
+              : 'No hay Responsable de Nivel del nivel de la IE.',
         });
         continue;
       }

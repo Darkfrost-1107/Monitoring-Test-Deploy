@@ -31,7 +31,7 @@ export const FilterJefesArea = () => {
           {/* Búsqueda por texto */}
           <div className="flex flex-col gap-1.5 w-full">
             <label className="text-[0.7rem] font-bold uppercase tracking-wider text-text-muted">
-              Buscar Jefe de Área
+              Buscar Responsable de Nivel
             </label>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted pointer-events-none" />

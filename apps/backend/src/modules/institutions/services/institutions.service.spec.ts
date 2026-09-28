@@ -115,7 +115,7 @@ describe('InstitutionsService', () => {
         } as CreateInstitucionDto;
 
         await expect(service.create(invalidDto, user)).rejects.toThrow(
-          'Un Jefe de Área de nivel Inicial solo puede crear instituciones de nivel Inicial (EBR) o de la modalidad Especial (EBE).',
+          'Un Responsable de Nivel de nivel Inicial solo puede crear instituciones de nivel Inicial (EBR) o de la modalidad Especial (EBE).',
         );
       });
 
@@ -142,7 +142,7 @@ describe('InstitutionsService', () => {
         } as CreateInstitucionDto;
 
         await expect(service.create(invalidDto, user)).rejects.toThrow(
-          'Un Jefe de Área de nivel Primaria solo puede crear instituciones de nivel Primaria (EBR).',
+          'Un Responsable de Nivel de nivel Primaria solo puede crear instituciones de nivel Primaria (EBR).',
         );
       });
 
@@ -183,7 +183,7 @@ describe('InstitutionsService', () => {
         } as CreateInstitucionDto;
 
         await expect(service.create(invalidDto, user)).rejects.toThrow(
-          'Un Jefe de Área de nivel Secundaria solo puede crear instituciones de nivel Secundaria (EBR), Alternativa (EBA) o CEPTRO.',
+          'Un Responsable de Nivel de nivel Secundaria solo puede crear instituciones de nivel Secundaria (EBR), Alternativa (EBA) o CEPTRO.',
         );
       });
     });

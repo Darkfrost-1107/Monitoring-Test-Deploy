@@ -34,7 +34,7 @@ export class UpdateEspecialistaDto implements IUpdateEspecialistaRequest {
   @IsString()
   @IsNotEmpty()
   @IsIn(Object.values(CargoEspecialista), {
-    message: 'El cargo debe ser Especialista, Jefe de Área o Jefe de Gestión',
+    message: 'El cargo debe ser Especialista, Responsable de Nivel o Jefe de Gestión',
   })
   cargo!: string;
 

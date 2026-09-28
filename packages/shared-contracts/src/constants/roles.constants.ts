@@ -53,7 +53,7 @@ export const ALL_ROLE_CODES: readonly RoleCode[] = Object.values(RoleCode);
 /** Etiqueta legible por persona. Fuente única: no duplicar en las aplicaciones. */
 export const ROLE_LABELS: Record<RoleCode, string> = {
   [RoleCode.DIRECTOR_UGEL]: 'Director de UGEL',
-  [RoleCode.JEFE_AREA]: 'Jefe de Área',
+  [RoleCode.JEFE_AREA]: 'Responsable de Nivel',
   [RoleCode.JEFE_GESTION]: 'Jefe de Gestión',
   [RoleCode.ESPECIALISTA]: 'Especialista',
   [RoleCode.DIRECTOR_INSTITUCION]: 'Director de Institución',

@@ -19,8 +19,8 @@ export const JefeAreaCreatePage = () => {
         </button>
         <div className="flex-1">
           <PageHeader
-            title="Registrar Nuevo Jefe de Área"
-            description="Complete los datos para dar de alta un nuevo jefe de área de la jurisdicción UGEL."
+            title="Registrar Nuevo Responsable de Nivel"
+            description="Complete los datos para dar de alta un nuevo responsable de nivel de la jurisdicción UGEL."
           />
         </div>
       </div>

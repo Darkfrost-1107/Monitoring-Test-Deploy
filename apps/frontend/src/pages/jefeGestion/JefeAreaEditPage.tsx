@@ -19,8 +19,8 @@ export const JefeAreaEditPage = () => {
         </button>
         <div className="flex-1">
           <PageHeader
-            title="Modificar Datos de Jefe de Área"
-            description="Actualice el perfil profesional o de contacto del jefe de área seleccionado."
+            title="Modificar Datos de Responsable de Nivel"
+            description="Actualice el perfil profesional o de contacto del responsable de nivel seleccionado."
           />
         </div>
       </div>
