@@ -113,24 +113,32 @@ export const FiltrosDelMapa = ({
           onClick={() => setTab('estado')}
           className={`flex-1 flex items-center justify-center gap-1 py-1 px-1.5 text-[10px] font-bold rounded transition-colors cursor-pointer ${
             tab === 'estado'
-              ? 'bg-background text-foreground shadow-xs'
+              ? 'bg-primary text-white shadow-sm'
               : 'text-text-muted hover:text-foreground'
           }`}
         >
           <span>Estado</span>
-          {tieneFiltroEstado && <span className="w-1.5 h-1.5 rounded-full bg-primary" />}
+          {tieneFiltroEstado && (
+            <span
+              className={`w-1.5 h-1.5 rounded-full ${tab === 'estado' ? 'bg-white' : 'bg-primary'}`}
+            />
+          )}
         </button>
         <button
           type="button"
           onClick={() => setTab('distrito')}
           className={`flex-1 flex items-center justify-center gap-1 py-1 px-1.5 text-[10px] font-bold rounded transition-colors cursor-pointer ${
             tab === 'distrito'
-              ? 'bg-background text-foreground shadow-xs'
+              ? 'bg-primary text-white shadow-sm'
               : 'text-text-muted hover:text-foreground'
           }`}
         >
           <span>Distrito</span>
-          {tieneFiltroDistrito && <span className="w-1.5 h-1.5 rounded-full bg-primary" />}
+          {tieneFiltroDistrito && (
+            <span
+              className={`w-1.5 h-1.5 rounded-full ${tab === 'distrito' ? 'bg-white' : 'bg-primary'}`}
+            />
+          )}
         </button>
       </div>
 
