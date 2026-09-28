@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { UserRound, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
+import { UserRound, Lock, Eye, EyeOff, ArrowRight, TriangleAlert } from 'lucide-react';
 
 interface BaseLoginFormProps {
   onSubmit: (dni: string, password: string) => void;
@@ -40,7 +40,15 @@ export const BaseLoginForm = ({
   const [dni, setDni] = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
+  /**
+   * Tres intentos fallidos bloquean la cuenta media hora: escribir con Bloq
+   * Mayús activado sin darse cuenta es la forma más tonta de gastarlos.
+   */
+  const [bloqMayus, setBloqMayus] = useState(false);
   const campoPassword = useRef<HTMLInputElement>(null);
+
+  const leerBloqMayus = (e: React.KeyboardEvent<HTMLInputElement>) =>
+    setBloqMayus(e.getModifierState('CapsLock'));
 
   // Tras fallar, el cursor quedaba donde estaba y había que ir al campo con el
   // mouse. Se devuelve el foco con el texto seleccionado, para reescribir de una.
@@ -115,6 +123,10 @@ export const BaseLoginForm = ({
               setPassword(e.target.value);
               alEditar();
             }}
+            onKeyDown={leerBloqMayus}
+            onKeyUp={leerBloqMayus}
+            onBlur={() => setBloqMayus(false)}
+            aria-describedby={bloqMayus ? 'login-bloq-mayus' : undefined}
             disabled={isLoading || bloqueado}
             className="w-full bg-transparent border-none outline-none text-slate-800 text-[15px] px-3 py-3.5 disabled:opacity-50"
           />
@@ -138,6 +150,17 @@ export const BaseLoginForm = ({
             )}
           </button>
         </div>
+
+        {bloqMayus && (
+          <p
+            id="login-bloq-mayus"
+            role="status"
+            className="flex items-center gap-1.5 text-xs font-medium text-amber-700 mt-1.5 pl-1"
+          >
+            <TriangleAlert className="w-3.5 h-3.5 shrink-0" strokeWidth={2.25} />
+            Bloq Mayús está activado
+          </p>
+        )}
 
         <div className="flex justify-end mt-2">
           {/* Sigue disponible con la cuenta bloqueada: recuperar la contraseña es
