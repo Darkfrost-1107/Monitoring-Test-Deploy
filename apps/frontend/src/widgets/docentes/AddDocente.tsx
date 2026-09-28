@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { AlertCircle } from 'lucide-react';
+import { toast } from 'sonner';
 import { DocenteFormBase } from '@features/docentes';
 import { useDocenteService } from '@features/docentes';
 import { Card } from '@shared/ui/card';
@@ -24,6 +25,7 @@ export const CreateDocenteCard = ({
   const handleFormSubmit = async (formData: DocenteFormData) => {
     const result = await createDocente(formData);
     if (result.success) {
+      toast.success('Registro creado correctamente');
       navigate(routePrefix);
     }
   };

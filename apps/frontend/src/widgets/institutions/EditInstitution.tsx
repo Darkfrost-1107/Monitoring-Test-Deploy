@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AlertCircle } from 'lucide-react';
+import { toast } from 'sonner';
 import {
   InstitutionFormBase,
   type InstitutionRawInput,
@@ -82,6 +83,7 @@ export const EditInstitutionCard = ({ routePrefix = '/instituciones/padron' }: E
     if (!id) return;
     const result = await updateInstitution(id, formData);
     if (result.success) {
+      toast.success('Datos de la institución actualizados correctamente');
       navigate(routePrefix);
     }
   };

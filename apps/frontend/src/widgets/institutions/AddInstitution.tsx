@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { AlertCircle } from 'lucide-react';
+import { toast } from 'sonner';
 import {
   InstitutionFormBase,
   type InstitutionRawInput,
@@ -18,6 +19,7 @@ export const CreateInstitutionCard = ({ routePrefix = '/instituciones/padron' }:
   const handleFormSubmit = async (formData: InstitutionRawInput) => {
     const result = await createInstitution(formData);
     if (result.success) {
+      toast.success('Institución registrada correctamente');
       navigate(routePrefix);
     }
   };

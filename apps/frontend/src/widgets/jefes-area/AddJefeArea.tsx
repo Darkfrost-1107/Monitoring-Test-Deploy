@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { AlertCircle } from 'lucide-react';
+import { toast } from 'sonner';
 import { JefeAreaFormBase, useJefeAreaService } from '@features/jefes-area';
 import { esErrorDeCelular } from '@shared/lib/errores-formulario';
 import { Card } from '@shared/ui/card';
@@ -23,6 +24,7 @@ export const AddJefeArea = ({ routePrefix = '/jefes-area' }: AddJefeAreaProps = 
   }) => {
     const result = await createJefeArea(formData, 'jefe_area');
     if (result.success) {
+      toast.success('Responsable de Nivel registrado correctamente');
       navigate(routePrefix);
     }
   };

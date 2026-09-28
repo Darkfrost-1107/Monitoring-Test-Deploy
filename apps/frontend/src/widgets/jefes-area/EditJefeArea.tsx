@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AlertCircle } from 'lucide-react';
+import { toast } from 'sonner';
 import {
   JefeAreaFormBase,
   useJefeAreaService,
@@ -50,7 +51,7 @@ export const EditJefeArea = ({ routePrefix = '/jefes-area' }: EditJefeAreaProps 
       <div className="w-full h-[30vh] flex flex-col justify-center items-center gap-3">
         <Spinner />
         <span className="text-text-muted text-sm font-medium">
-          Cargando datos del jefe de área...
+          Cargando datos del responsable de nivel...
         </span>
       </div>
     );
@@ -59,7 +60,7 @@ export const EditJefeArea = ({ routePrefix = '/jefes-area' }: EditJefeAreaProps 
   if (!jefe) {
     return (
       <div className="p-6 text-center text-text-muted font-medium bg-surface border border-border rounded-2xl">
-        No se encontró el registro del Jefe de Área especificado.
+        No se encontró el registro del Responsable de Nivel especificado.
       </div>
     );
   }
@@ -70,7 +71,7 @@ export const EditJefeArea = ({ routePrefix = '/jefes-area' }: EditJefeAreaProps 
   if (!jefe.nivelEducativo) {
     return (
       <div className="p-6 text-center text-text-muted font-medium bg-surface border border-border rounded-2xl">
-        Este Jefe de Área tiene un nivel educativo que el sistema no reconoce. Corrija el dato en el
+        Este Responsable de Nivel tiene un nivel educativo que el sistema no reconoce. Corrija el dato en el
         padrón antes de editar el registro.
       </div>
     );
@@ -91,6 +92,7 @@ export const EditJefeArea = ({ routePrefix = '/jefes-area' }: EditJefeAreaProps 
     if (!id) return;
     const result = await updateJefeArea(id, formData, 'jefe_area');
     if (result.success) {
+      toast.success('Datos del Responsable de Nivel actualizados correctamente');
       navigate(routePrefix);
     }
   };
