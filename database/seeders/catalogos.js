@@ -42,17 +42,17 @@ const NIVELES_POR_MODALIDAD = {
 
 const ESPECIALIDADES = [
   { nombre: 'PIP', nivel: 'Primaria' },
-  { nombre: 'Educacion Fisica', nivel: 'Primaria' },
-  { nombre: 'CTA', nivel: 'Secundaria' },
-  { nombre: 'Matematica', nivel: 'Secundaria' },
-  { nombre: 'Comunicacion', nivel: 'Secundaria' },
+  { nombre: 'Educación Física', nivel: 'Primaria' },
+  { nombre: 'Ciencia y Tecnología', nivel: 'Secundaria' },
+  { nombre: 'Matemática', nivel: 'Secundaria' },
+  { nombre: 'Comunicación', nivel: 'Secundaria' },
   { nombre: 'Ciencias Sociales', nivel: 'Secundaria' },
-  { nombre: 'Desarrollo Personal Ciudadania y Civica', nivel: 'Secundaria' },
+  { nombre: 'Desarrollo Personal, Ciudadanía y Cívica', nivel: 'Secundaria' },
   { nombre: 'Arte y Cultura', nivel: 'Secundaria' },
-  { nombre: 'Educacion Religiosa', nivel: 'Secundaria' },
-  { nombre: 'Educacion Fisica', nivel: 'Secundaria' },
-  { nombre: 'Ingles', nivel: 'Secundaria' },
-  { nombre: 'EPT', nivel: 'Secundaria' },
+  { nombre: 'Educación Religiosa', nivel: 'Secundaria' },
+  { nombre: 'Educación Física', nivel: 'Secundaria' },
+  { nombre: 'Inglés', nivel: 'Secundaria' },
+  { nombre: 'Educación para el Trabajo', nivel: 'Secundaria' },
 ];
 
 const CURSOS = [
@@ -66,7 +66,7 @@ const CURSOS = [
   { nombre: 'Matematica', nivelEducativo: 'Secundaria' },
   { nombre: 'Comunicacion', nivelEducativo: 'Secundaria' },
   { nombre: 'Ingles', nivelEducativo: 'Secundaria' },
-  { nombre: 'CTA', nivelEducativo: 'Secundaria' },
+  { nombre: 'Ciencia y Tecnología', nivelEducativo: 'Secundaria' },
   { nombre: 'HGE', nivelEducativo: 'Secundaria' },
   { nombre: 'DPCC', nivelEducativo: 'Secundaria' },
   { nombre: 'Educacion Fisica', nivelEducativo: 'Secundaria' },
