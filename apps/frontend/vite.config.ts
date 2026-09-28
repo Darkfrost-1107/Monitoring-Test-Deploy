@@ -38,7 +38,7 @@ export default defineConfig({
         // El shell de una SPA: cualquier ruta desconocida se sirve con index.html
         // desde la caché, para que la navegación funcione sin red.
         navigateFallback: '/index.html',
-        globPatterns: ['**/*.{js,css,html,svg,png,ico,woff,woff2}'],
+        globPatterns: ['**/*.{js,css,html,svg,png,webp,ico,woff,woff2}'],
         // Los chunks de Vite pueden superar el tope por defecto de 2 MB.
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         cleanupOutdatedCaches: true,

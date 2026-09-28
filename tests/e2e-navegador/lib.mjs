@@ -61,9 +61,9 @@ export async function prepararUsuario(dni) {
 /** Login por navegador con la contraseña definitiva. Devuelve la URL de aterrizaje. */
 export async function loginWeb(page, dni) {
   await page.goto(WEB, { waitUntil: 'networkidle' });
-  await page.getByPlaceholder(/Ingrese su DNI/i).fill(dni);
-  await page.getByPlaceholder(/Ingrese su contraseña/i).fill(PASSWORD);
-  await page.getByRole('button', { name: /inicio de sesión/i }).click();
+  await page.getByLabel('Usuario', { exact: true }).fill(dni);
+  await page.getByLabel('Contraseña', { exact: true }).fill(PASSWORD);
+  await page.getByRole('button', { name: /iniciar sesión/i }).click();
   await page.waitForLoadState('networkidle');
   await page.waitForTimeout(1200);
   return page.url();

@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.2.9",
+    "@fontsource/dancing-script": "^5.3.0",
     "@sistema-monitoreo/shared-contracts": "workspace:*",
     "@sistema-monitoreo/shared-validation": "workspace:*",
     "@tanstack/query-async-storage-persister": "^5.101.4",
