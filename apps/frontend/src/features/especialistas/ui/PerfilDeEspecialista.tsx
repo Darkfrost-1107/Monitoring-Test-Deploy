@@ -1,10 +1,13 @@
 import { SelectField, TextField } from '@shared/ui/form-controls';
 import { MODALIDAD_NIVEL_MAP } from '@sistema-monitoreo/shared-contracts';
+import { ESPECIALIDADES_DE_SECUNDARIA } from '@shared/lib/especialidades-secundaria';
 import type { EspecialistaFormData } from '@entities/model-especialistas/validator';
 import {
   ESPECIALIDADES_DE_PRIMARIA,
   OPCIONES_DE_ESCALA,
   SIN_ESCALA,
+  especialidadCanonica,
+  opcionesConActual,
   perfilAlCambiarModalidad,
 } from '../lib/perfil-especialista';
 import { EspecialidadesExtras } from './EspecialidadesExtras';
@@ -26,7 +29,10 @@ const MODALIDADES = [
   { value: 'CEPTRO', label: 'CEPTRO (Técnico Productiva)' },
 ];
 
-const CONDICIONES = ['Encargado', 'Destacado', 'Designado'] as const;
+// 'Contratado' faltaba y es válida para cualquier cargo. 'Nombrado' NO va acá:
+// el backend rechaza esa condición para todo el que no sea Jefe de Gestión
+// (especialista.service.ts, Regla 2b) — se ofrece aparte, solo para ese cargo.
+const CONDICIONES = ['Encargado', 'Destacado', 'Designado', 'Contratado'] as const;
 
 interface Props {
   form: EspecialistaFormData;
@@ -60,7 +66,7 @@ export const PerfilDeEspecialista = ({
           onChange={(v) => onChange('cargo', v as EspecialistaFormData['cargo'])}
           options={[
             { value: 'Especialista', label: 'Especialista' },
-            { value: 'Jefe de Área', label: 'Jefe de Área' },
+            { value: 'Jefe de Área', label: 'Responsable de Nivel' },
             { value: 'Jefe de Gestión', label: 'Jefe de Gestión' },
           ]}
           // El cargo lo determina la pantalla desde la que se entra.
@@ -73,7 +79,9 @@ export const PerfilDeEspecialista = ({
           required
           value={form.condicionLaboral}
           onChange={(v) => onChange('condicionLaboral', v as EspecialistaFormData['condicionLaboral'])}
-          options={CONDICIONES.map((c) => ({ value: c, label: c }))}
+          options={(
+            form.cargo === 'Jefe de Gestión' ? ['Nombrado'] : CONDICIONES
+          ).map((c) => ({ value: c, label: c }))}
           placeholder="Seleccione Condición"
           error={showError('condicionLaboral')}
           disabled={bloqueado}
@@ -121,7 +129,11 @@ export const PerfilDeEspecialista = ({
         {esPrimaria && (
           <SelectField
             label="Especialidad"
-            value={form.especialidad || SIN_ESCALA}
+            value={
+              form.especialidad
+                ? especialidadCanonica(ESPECIALIDADES_DE_PRIMARIA, form.especialidad)
+                : SIN_ESCALA
+            }
             onChange={(v) => onChange('especialidad', v === SIN_ESCALA ? '' : v)}
             options={[
               { value: SIN_ESCALA, label: 'Ninguna / No aplica' },
@@ -134,12 +146,19 @@ export const PerfilDeEspecialista = ({
         )}
 
         {esSecundaria && (
-          <TextField
+          <SelectField
             label="Especialidad Principal *"
             required
-            value={form.especialidad || ''}
+            value={
+              form.especialidad
+                ? especialidadCanonica(ESPECIALIDADES_DE_SECUNDARIA, form.especialidad)
+                : ''
+            }
             onChange={(v) => onChange('especialidad', v)}
-            placeholder="Ej. Matemática, CTA, Comunicación..."
+            options={opcionesConActual(ESPECIALIDADES_DE_SECUNDARIA, form.especialidad).map(
+              (e) => ({ value: e, label: e }),
+            )}
+            placeholder="Seleccione Especialidad"
             error={showError('especialidad')}
           />
         )}

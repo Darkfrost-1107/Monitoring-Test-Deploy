@@ -4,10 +4,13 @@ import {
   OPCIONES_DE_ESCALA,
   SIN_ESCALA,
   erroresDelPerfil,
+  especialidadCanonica,
   especialidadesReunidas,
+  especialidadesExtrasDeSecundariaDisponibles,
+  opcionesConActual,
   perfilAlCambiarModalidad,
-  agregarEspecialidadExtra,
 } from './perfil-especialista';
+import { ESPECIALIDADES_DE_SECUNDARIA } from '@shared/lib/especialidades-secundaria';
 
 /**
  * Las reglas del perfil de un especialista: qué especialidad corresponde a cada
@@ -21,13 +24,22 @@ describe('erroresDelPerfil', () => {
     expect(errores.especialidad).toBeTruthy();
   });
 
-  it('en Secundaria acepta una especialidad cualquiera', () => {
+  it.each(ESPECIALIDADES_DE_SECUNDARIA)('en Secundaria acepta %s', (especialidad) => {
     const errores = erroresDelPerfil({
       cargo: 'Especialista',
       nivelEducativo: 'Secundaria',
-      especialidad: 'Matemática',
+      especialidad,
     });
     expect(errores).toEqual({});
+  });
+
+  it('en Secundaria rechaza una especialidad fuera del catálogo oficial', () => {
+    const errores = erroresDelPerfil({
+      cargo: 'Especialista',
+      nivelEducativo: 'Secundaria',
+      especialidad: 'CTA',
+    });
+    expect(errores.especialidad).toBeTruthy();
   });
 
   it('no exige especialidad si sólo hay espacios', () => {
@@ -125,37 +137,55 @@ describe('perfilAlCambiarModalidad', () => {
   });
 });
 
-describe('agregarEspecialidadExtra', () => {
-  it('agrega la especialidad recortando los espacios', () => {
-    expect(agregarEspecialidadExtra([], '  Física ', 'Matemática')).toEqual({
-      ok: true,
-      extras: ['Física'],
-    });
+describe('especialidadesExtrasDeSecundariaDisponibles', () => {
+  it('excluye la principal', () => {
+    const disponibles = especialidadesExtrasDeSecundariaDisponibles('Matemática', []);
+    expect(disponibles).not.toContain('Matemática');
+    expect(disponibles).toHaveLength(ESPECIALIDADES_DE_SECUNDARIA.length - 1);
   });
 
-  it('rechaza el texto vacío', () => {
-    expect(agregarEspecialidadExtra([], '   ', 'Matemática').ok).toBe(false);
+  it('excluye las ya agregadas, sin distinguir tildes ni mayúsculas', () => {
+    const disponibles = especialidadesExtrasDeSecundariaDisponibles('Matemática', [
+      'ingles',
+    ]);
+    expect(disponibles).not.toContain('Inglés');
   });
+});
 
-  it('rechaza la que ya es la principal, sin distinguir mayúsculas', () => {
-    const resultado = agregarEspecialidadExtra([], 'matemática', 'Matemática');
-    expect(resultado.ok).toBe(false);
-    expect(resultado.motivo).toBeTruthy();
-  });
-
+describe('especialidadCanonica', () => {
   /**
-   * La comparación de duplicados era sensible a mayúsculas: «Física» y
-   * «física» entraban las dos y se guardaban como menciones distintas.
+   * Un especialista sembrado como «Matematica» (sin tilde, por una versión
+   * vieja del seed) abría el selector vacío: «Matematica» no era ninguno de
+   * los `option.value` del catálogo, que solo tiene «Matemática».
    */
-  it('rechaza una repetida sin distinguir mayúsculas', () => {
-    const resultado = agregarEspecialidadExtra(['Física'], 'FÍSICA', 'Matemática');
-    expect(resultado.ok).toBe(false);
+  it('resuelve un valor guardado sin tilde a la forma exacta del catálogo', () => {
+    expect(especialidadCanonica(ESPECIALIDADES_DE_SECUNDARIA, 'Matematica')).toBe('Matemática');
   });
 
-  it('no modifica la lista que recibe', () => {
-    const previas = ['Física'];
-    agregarEspecialidadExtra(previas, 'Química', 'Matemática');
-    expect(previas).toEqual(['Física']);
+  it('no distingue mayúsculas', () => {
+    expect(especialidadCanonica(ESPECIALIDADES_DE_SECUNDARIA, 'INGLES')).toBe('Inglés');
+  });
+
+  it('si no hay ninguna coincidencia, devuelve el valor tal cual', () => {
+    expect(especialidadCanonica(ESPECIALIDADES_DE_SECUNDARIA, 'EPT')).toBe('EPT');
+  });
+
+  it('recorta espacios', () => {
+    expect(especialidadCanonica(ESPECIALIDADES_DE_SECUNDARIA, '  Matemática ')).toBe('Matemática');
+  });
+});
+
+describe('opcionesConActual', () => {
+  it('devuelve el catálogo tal cual si el valor actual ya figura', () => {
+    expect(opcionesConActual(['A', 'B'], 'A')).toEqual(['A', 'B']);
+  });
+
+  it('suma el valor actual si no figura, para no perderlo al editar', () => {
+    expect(opcionesConActual(['A', 'B'], 'CTA')).toEqual(['A', 'B', 'CTA']);
+  });
+
+  it('sin valor actual devuelve el catálogo sin cambios', () => {
+    expect(opcionesConActual(['A', 'B'], undefined)).toEqual(['A', 'B']);
   });
 });
 

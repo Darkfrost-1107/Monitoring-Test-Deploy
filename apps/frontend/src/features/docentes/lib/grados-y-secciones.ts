@@ -1,4 +1,5 @@
 import { CONDICION_LABORAL, CONDICION_DIRECTIVA } from '@entities/model-docentes';
+import { ESPECIALIDADES_DE_SECUNDARIA } from '@shared/lib/especialidades-secundaria';
 
 /**
  * Qué ofrece cada selector del formulario de docente, según el nivel y el cargo.
@@ -20,20 +21,7 @@ export const GRADOS_POR_NIVEL: Record<string, readonly string[]> = {
 const ESPECIALIDADES_POR_NIVEL: Record<string, readonly string[]> = {
   INICIAL: ['General'],
   PRIMARIA: ['General', 'PIP', 'Educación Física'],
-  SECUNDARIA: [
-    'Comunicación',
-    'Matemática',
-    'Ciencia y Tecnología',
-    'Desarrollo Personal, Ciudadanía y Cívica',
-    'Ciencias Sociales',
-    'Educación Física',
-    'Arte y Cultura',
-    'Inglés',
-    'Educación Religiosa',
-    'Educación para el Trabajo',
-    'Castellano como Segunda Lengua Materna',
-    'Tutoría',
-  ],
+  SECUNDARIA: ESPECIALIDADES_DE_SECUNDARIA,
 };
 
 /** Cargos de institución que sólo existen en Secundaria. */

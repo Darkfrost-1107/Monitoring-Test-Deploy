@@ -1,13 +1,15 @@
-import { useRef, useState } from 'react';
-import { Plus, X, AlertCircle } from 'lucide-react';
-import { agregarEspecialidadExtra } from '../lib/perfil-especialista';
+import { X } from 'lucide-react';
+import { SelectField } from '@shared/ui/form-controls';
+import { especialidadesExtrasDeSecundariaDisponibles } from '../lib/perfil-especialista';
 
 /**
- * Menciones adicionales de un especialista de Secundaria.
+ * Áreas curriculares adicionales de un especialista de Secundaria.
  *
- * Estaba dentro de `EspecialistaFormBase` con su propio estado y tres
- * manejadores. Los rechazos eran `return` mudos: escribir una especialidad ya
- * puesta y pulsar «Agregar» no hacía nada ni explicaba nada.
+ * Antes era un campo de texto libre con botón «Agregar»: cualquier variación
+ * de tilde o mayúscula («CTA» vs. «Ciencia y Tecnología») guardaba una
+ * especialidad distinta en el catálogo, y el cruce con el área del docente
+ * nunca coincidía. Ahora es un selector sobre el mismo catálogo oficial que
+ * usa el formulario de docente.
  */
 
 interface Props {
@@ -17,33 +19,26 @@ interface Props {
 }
 
 export const EspecialidadesExtras = ({ extras, principal, onCambiar }: Props) => {
-  const [texto, setTexto] = useState('');
-  const [motivo, setMotivo] = useState<string | null>(null);
-  const campoRef = useRef<HTMLInputElement>(null);
+  const disponibles = especialidadesExtrasDeSecundariaDisponibles(principal, extras);
 
-  const agregar = () => {
-    const resultado = agregarEspecialidadExtra(extras, texto, principal);
-
-    if (!resultado.ok) {
-      setMotivo(resultado.motivo ?? null);
-      return;
-    }
-
-    onCambiar(resultado.extras ?? extras);
-    setTexto('');
-    setMotivo(null);
-    campoRef.current?.focus();
+  const agregar = (valor: string) => {
+    if (!valor) return;
+    onCambiar([...extras, valor]);
   };
 
   return (
     <div className="flex flex-col gap-1.5 mt-[18px]">
-      <label className="text-xs font-semibold text-text-muted uppercase tracking-wide">
-        Especialidades Extras / Temporales
-        <span className="ml-1 text-text-muted font-normal normal-case">(Opcional)</span>
-      </label>
+      <SelectField
+        label="Especialidades Extras / Temporales"
+        value=""
+        onChange={agregar}
+        options={disponibles.map((e) => ({ value: e, label: e }))}
+        placeholder={disponibles.length ? 'Agregar otra área que dicta' : 'Sin áreas disponibles'}
+        disabled={disponibles.length === 0}
+      />
 
       {extras.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 mb-1">
+        <div className="flex flex-wrap gap-1.5 mt-1">
           {extras.map((especialidad) => (
             <span
               key={especialidad}
@@ -60,41 +55,6 @@ export const EspecialidadesExtras = ({ extras, principal, onCambiar }: Props) =>
               </button>
             </span>
           ))}
-        </div>
-      )}
-
-      <div className="flex gap-2 max-w-md">
-        <input
-          ref={campoRef}
-          type="text"
-          value={texto}
-          onChange={(e) => {
-            setTexto(e.target.value);
-            setMotivo(null);
-          }}
-          onKeyDown={(e) => {
-            if (e.key !== 'Enter') return;
-            // El formulario entero se enviaría con Enter; acá sólo se agrega.
-            e.preventDefault();
-            agregar();
-          }}
-          placeholder="Ej. Historia, Inglés..."
-          className="flex-1 text-sm bg-surface border border-border rounded-lg px-3 py-2 text-text placeholder:text-text-muted focus:outline-none focus:border-primary transition-colors"
-        />
-        <button
-          type="button"
-          onClick={agregar}
-          className="flex items-center gap-1 px-3 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors cursor-pointer"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          Agregar
-        </button>
-      </div>
-
-      {motivo && (
-        <div className="flex items-center gap-1.5 text-xs text-destructive font-medium">
-          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-          {motivo}
         </div>
       )}
     </div>
