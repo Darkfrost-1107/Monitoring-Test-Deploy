@@ -1,5 +1,5 @@
-import { ModalMigracionPlantilla } from '@/features/monitoreos';
-import type { PlantillaVersionada } from '@/features/monitoreos/hooks/use-ficha-persistence';
+import { ModalMigracionPlantilla } from './ModalMigracionPlantilla';
+import type { PlantillaVersionada } from '../hooks/use-ficha-persistence';
 
 interface MigracionPlantillaFichaProps {
   /** Datos del rechazo por plantilla versionada. `null` cierra el flujo. */
@@ -21,6 +21,10 @@ interface MigracionPlantillaFichaProps {
  * terminan en el mismo reseteo, que estaba escrito dos veces en
  * `CalendarioSidebar`. Descartar es distinto y se mantiene separado: devuelve al
  * formulario sin cerrarlo, que es el comportamiento original.
+ *
+ * Vive en `features/monitoreos` (y no en `widgets/calendario`, donde estaba
+ * antes) porque lo reutiliza también `LlenarFichaPage`: un widget no puede
+ * depender de otro, y esto ya no es propio del calendario.
  */
 export const MigracionPlantillaFicha = ({
   contexto,
@@ -31,7 +35,7 @@ export const MigracionPlantillaFicha = ({
   if (!contexto) return null;
 
   const migrar = async () => {
-    const { fichasApi } = await import('@/features/monitoreos/api/fichas.api');
+    const { fichasApi } = await import('../api/fichas.api');
     const ficha = await fichasApi.findByVisita(contexto.visitId);
     if (ficha && contexto.plantillaVigenteId) {
       await fichasApi.migrarPlantilla(ficha.id, contexto.plantillaVigenteId);

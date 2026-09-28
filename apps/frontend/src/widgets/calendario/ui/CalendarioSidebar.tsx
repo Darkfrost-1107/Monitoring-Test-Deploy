@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Sparkles, X, Calendar } from 'lucide-react';
 import { useCronogramasData } from '@features/cronogramas/hooks/use-cronogramas-data';
@@ -11,8 +12,7 @@ import { usePlantillasList } from '@/entities/model-plantillas/use-plantillas-ap
 import { claveDeHoy } from '@/shared/lib/calendario/grid';
 import { motivoSinInstrumento } from '../lib/instrumento';
 import { useFichaPersistence } from '@/features/monitoreos/hooks/use-ficha-persistence';
-import { LlenarFichaForm } from '@/features/monitoreos';
-import { fichaAEstadoFormulario } from '@/features/monitoreos/lib/ficha-estado';
+import { fichaAEstadoFormulario, type DatosFicha } from '@/features/monitoreos/lib/ficha-estado';
 import {
   SolicitarReprogramacionForm,
   DecidirReprogramacionForm,
@@ -24,7 +24,6 @@ import { SelectorVisitasDelDia } from './sidebar/SelectorVisitasDelDia';
 import { DetalleVisita } from './sidebar/DetalleVisita';
 import { AccionesVisita } from './sidebar/AccionesVisita';
 import { AvisoSolicitudPendiente } from './sidebar/AvisoSolicitudPendiente';
-import { MigracionPlantillaFicha } from './sidebar/MigracionPlantillaFicha';
 import { ModalSeleccionarInstrumento } from './ModalSeleccionarInstrumento';
 import type { Plantilla } from '@/entities/model-plantillas';
 
@@ -51,6 +50,7 @@ export const CalendarioSidebar = ({
   filteredVisits,
 }: CalendarioSidebarProps) => {
   const { user } = useUser();
+  const navigate = useNavigate();
   // Quien levanta la ficha en el aula. Se llamaba `isEspecialista`, pero incluía
   // también al coordinador pedagógico y al jefe de taller, que son personal de
   // institución: los une la tarea, no el ámbito.
@@ -64,17 +64,10 @@ export const CalendarioSidebar = ({
     rejectRescheduleRequest,
   } = useCronogramasData();
 
-  const [showFichaModal, setShowFichaModal] = useState(false);
   const [showSeleccionarInstrumentoModal, setShowSeleccionarInstrumentoModal] = useState(false);
   const [selectedTemplateOverride, setSelectedTemplateOverride] = useState<Plantilla | null>(null);
   const [showSolicitarReprogramarModal, setShowSolicitarReprogramarModal] = useState(false);
   const [showReprogramarModal, setShowReprogramarModal] = useState(false);
-  const [showMigracionModal, setShowMigracionModal] = useState(false);
-  const [migracionContext, setMigracionContext] = useState<{
-    visitId: string;
-    plantillaVigenteId: string | null;
-    plantillaVigenteNombre: string;
-  } | null>(null);
 
   // Ya vienen mapeadas al modelo Plantilla del frontend.
   const {
@@ -89,7 +82,7 @@ export const CalendarioSidebar = ({
   );
 
   // Consulta de todas las fichas levantadas para esta visita (soporte de ficha dual/múltiple)
-  const { data: fichasDeVisita = [], refetch: refetchFichas } = useQuery<IFichaMonitoreo[]>({
+  const { data: fichasDeVisita = [] } = useQuery<IFichaMonitoreo[]>({
     queryKey: ['fichas', 'visita', selectedVisit?.id],
     queryFn: async () => {
       if (!selectedVisit?.id) return [];
@@ -184,15 +177,32 @@ export const CalendarioSidebar = ({
     return claveDeHoy() === selectedVisit.fechaHora.substring(0, 10);
   }, [selectedVisit]);
 
+  /**
+   * La ficha ya no es un modal: es su propia página. El calendario ya tiene
+   * `visit` y `template` resueltos —nombres denormalizados, plantilla
+   * aplicable ya elegida—, así que se los pasa por `state` de navegación en
+   * vez de que la página tenga que volver a resolverlos.
+   */
+  const abrirPaginaDeFicha = (visit: Cronograma, template: Plantilla) => {
+    const fichaExistente = fichasDeVisita.find((f) => f.plantillaId === template.id);
+    const initialState: DatosFicha | undefined = fichaExistente
+      ? fichaAEstadoFormulario(fichaExistente)
+      : undefined;
+
+    navigate(`/monitoreo/ficha/${visit.id}`, { state: { visit, template, initialState } });
+  };
+
   // Manejo de inicio de ficha: si hay varias fichas vigentes disponibles, se abre el selector de instrumento
   const handleIniciarFicha = () => {
+    if (!selectedVisit) return;
+
     if (plantillasCandidatas.length > 1) {
       setShowSeleccionarInstrumentoModal(true);
     } else if (plantillasCandidatas.length === 1) {
       setSelectedTemplateOverride(plantillasCandidatas[0]);
-      setShowFichaModal(true);
+      abrirPaginaDeFicha(selectedVisit, plantillasCandidatas[0]);
     } else if (activeTemplate) {
-      setShowFichaModal(true);
+      abrirPaginaDeFicha(selectedVisit, activeTemplate);
     }
   };
 
@@ -200,14 +210,18 @@ export const CalendarioSidebar = ({
    * Abre la ficha ya cerrada, si existe.
    */
   const abrirFichaLlena = async (visitId: string, pId?: string) => {
+    let templateAAbrir = activeTemplate;
     if (pId) {
       const tpl = plantillas.find((p) => p.id === pId);
-      if (tpl) setSelectedTemplateOverride(tpl);
+      if (tpl) {
+        setSelectedTemplateOverride(tpl);
+        templateAAbrir = tpl;
+      }
     }
     const resultado = await prepararFichaLlena(visitId, pId);
 
     if (resultado === 'cargada') {
-      setShowFichaModal(true);
+      if (selectedVisit && templateAAbrir) abrirPaginaDeFicha(selectedVisit, templateAAbrir);
       return;
     }
 
@@ -243,38 +257,22 @@ export const CalendarioSidebar = ({
 
     if (fichaExistente) {
       await abrirFichaLlena(selectedVisit!.id, plantillaElegida.id);
-    } else {
-      setShowFichaModal(true);
+    } else if (selectedVisit) {
+      abrirPaginaDeFicha(selectedVisit, plantillaElegida);
     }
   };
 
-  // Escritura del resultado del monitoreo. Vive en `use-ficha-persistence`
-  // porque no es maquetación; acá sólo se enlazan sus efectos con los modales.
-  const { guardarBorrador, finalizar, prepararFichaLlena } = useFichaPersistence({
+  /**
+   * Sólo para recuperar el borrador local antes de navegar a la página de la
+   * ficha (`prepararFichaLlena`, usado por `abrirFichaLlena`). Guardar y
+   * finalizar ya no pasan por acá: la página tiene su propia instancia de este
+   * hook. Los otros dos callbacks quedan inalcanzables desde este componente.
+   */
+  const { prepararFichaLlena } = useFichaPersistence({
     plantillaId: activeTemplate?.id,
-    onPersistido: () => {
-      setShowFichaModal(false);
-      setSelectedTemplateOverride(null);
-      void refetchFichas();
-    },
-    onPlantillaVersionada: (contexto) => {
-      // ILA-0046: la plantilla pasó a Histórico; se ofrece migrar.
-      setMigracionContext(contexto);
-      setShowMigracionModal(true);
-    },
+    onPersistido: () => {},
+    onPlantillaVersionada: () => {},
   });
-
-  /** Descarta la migración: vuelve al formulario de ficha sin cerrarlo. */
-  const descartarMigracion = () => {
-    setShowMigracionModal(false);
-    setMigracionContext(null);
-  };
-
-  /** La migración se resolvió; el formulario de ficha ya no tiene qué guardar. */
-  const resolverMigracion = () => {
-    descartarMigracion();
-    setShowFichaModal(false);
-  };
 
   return (
     <div className="lg:col-span-4 bg-surface border border-border rounded-xl p-5 shadow-sm relative transition-all duration-300 animate-in fade-in slide-in-from-right-5">
@@ -338,26 +336,6 @@ export const CalendarioSidebar = ({
         />
       )}
 
-      {selectedVisit && activeTemplate && (
-        <LlenarFichaForm
-          isOpen={showFichaModal}
-          onClose={() => {
-            setShowFichaModal(false);
-            setSelectedTemplateOverride(null);
-          }}
-          visit={selectedVisit}
-          template={activeTemplate}
-          initialState={(() => {
-            const fExistente = fichasDeVisita.find(
-              (f) => f.plantillaId === activeTemplate.id,
-            );
-            return fExistente ? fichaAEstadoFormulario(fExistente) : undefined;
-          })()}
-          onSave={guardarBorrador}
-          onFinalize={finalizar}
-        />
-      )}
-
       {selectedVisit && (
         <SolicitarReprogramacionForm
           isOpen={showSolicitarReprogramarModal}
@@ -392,12 +370,6 @@ export const CalendarioSidebar = ({
         />
       )}
 
-      <MigracionPlantillaFicha
-        contexto={migracionContext}
-        abierto={showMigracionModal}
-        onDescartar={descartarMigracion}
-        onResuelto={resolverMigracion}
-      />
     </div>
   );
 };

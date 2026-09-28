@@ -129,7 +129,7 @@ export const ListaDesempenos = ({
   onSeleccionar,
   onSeleccionarCierre,
 }: ListaDesempenosProps) => (
-  <div className="w-full md:w-80 border-r border-border p-3.5 overflow-y-auto space-y-2 bg-slate-50/70 max-h-[500px] md:max-h-[560px] shrink-0">
+  <div className="w-full md:w-80 border-r border-border p-3.5 space-y-2 bg-slate-50/70 shrink-0">
     <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block mb-2 px-1">
       Criterios / Desempeños ({desempenos.length})
     </span>
