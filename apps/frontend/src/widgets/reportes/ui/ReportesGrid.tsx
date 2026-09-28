@@ -147,7 +147,8 @@ export const ReportesGrid = ({
    * navega a su página en vez de renderizarla acá adentro. Antes era un modal
    * que se abría cuando `fichaLista` se ponía en `true`; ahora ese mismo
    * momento dispara la navegación, pasando lo ya resuelto por `state` para no
-   * tener que volver a buscarlo en la página.
+   * tener que volver a buscarlo en la página. La navegación desmonta esta
+   * grilla, así que no hace falta (ni conviene) limpiar `visitaAbierta` acá.
    */
   useEffect(() => {
     if (!visitaAbierta || !plantillaActiva || !estadoDeLaFicha) return;
@@ -155,7 +156,6 @@ export const ReportesGrid = ({
     navigate(`/monitoreo/ficha/${visitaAbierta.id}`, {
       state: { visit: visitaAbierta, template: plantillaActiva, initialState: estadoDeLaFicha },
     });
-    setVisitaAbierta(null);
   }, [visitaAbierta, plantillaActiva, estadoDeLaFicha, navigate]);
 
   // Impresión directa del formato oficial (FichaPrintable)
