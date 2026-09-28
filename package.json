@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "concurrently \"pnpm:dev:frontend\" \"pnpm:dev:backend\"",
+    "predev:frontend": "pnpm --filter \"./packages/*\" build",
     "dev:frontend": "pnpm --filter frontend dev",
+    "predev:backend": "pnpm --filter \"./packages/*\" build",
     "dev:backend": "pnpm --filter backend dev",
     "build": "pnpm -r build",
     "start": "pnpm --filter backend start:prod",
