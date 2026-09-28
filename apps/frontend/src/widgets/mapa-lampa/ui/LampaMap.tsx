@@ -21,12 +21,18 @@ import {
 import {
   MODO_DISTRITAL,
   MODO_INSTITUCIONAL,
+  SIN_FILTRO_DE_NIVEL,
   TODOS,
   colorDeCobertura,
+  coberturaSegunFiltro,
+  conteoPorDistrito,
+  conteoPorEstado,
   extraerDistritos,
   firmaDeCobertura,
-  hayVariosNiveles,
   institucionesVisibles,
+  modalidadesDisponibles,
+  nivelesDelFiltro,
+  type FiltroDeNivel,
 } from '../lib/vista-del-mapa';
 import { CabeceraDelMapa } from './CabeceraDelMapa';
 import { LeyendaDeCobertura, FiltrosDelMapa } from './LeyendaDelMapa';
@@ -63,13 +69,13 @@ interface LampaMapProps {
   /** IE seleccionada actualmente, para resaltar su marcador. */
   selectedInstitucionId?: string | null;
   /**
-   * Avisa qué nivel educativo quedó filtrado.
+   * Avisa qué modalidad y nivel quedaron filtrados.
    *
    * El filtro vivía sólo acá adentro, de modo que elegir «Secundaria» acotaba el
    * mapa y dejaba intacta la lista de al lado: dos vistas del mismo recorte
    * mostrando cosas distintas.
    */
-  onNivelChange?: (nivel: string) => void;
+  onFiltroDeNivelChange?: (filtro: FiltroDeNivel) => void;
 }
 
 export const LampaMap = ({
@@ -79,7 +85,7 @@ export const LampaMap = ({
   onSelectDistrito,
   onSelectInstitucion,
   selectedInstitucionId,
-  onNivelChange,
+  onFiltroDeNivelChange,
 }: LampaMapProps) => {
   const { user } = useUser();
 
@@ -88,47 +94,81 @@ export const LampaMap = ({
   const modo =
     user?.role === RoleCode.DIRECTOR_UGEL ? MODO_DISTRITAL : MODO_INSTITUCIONAL;
 
-  const [nivel, setNivelInterno] = useState<string>(TODOS);
-  const setNivel = (siguiente: string) => {
-    setNivelInterno(siguiente);
-    onNivelChange?.(siguiente);
+  const [filtroDeNivel, setFiltroDeNivelInterno] = useState<FiltroDeNivel>(SIN_FILTRO_DE_NIVEL);
+  const cambiarFiltroDeNivel = (siguiente: FiltroDeNivel) => {
+    setFiltroDeNivelInterno(siguiente);
+    onFiltroDeNivelChange?.(siguiente);
   };
+  // Cambiar de modalidad descarta el nivel: «Inicial» de EBR no es el de EBA.
+  const elegirModalidad = (modalidad: string) =>
+    cambiarFiltroDeNivel({ modalidad, nivel: TODOS });
+  const elegirNivel = (nivel: string) => cambiarFiltroDeNivel({ ...filtroDeNivel, nivel });
   const [estado, setEstado] = useState<string>(TODOS);
+
+  // Quien ve toda la provincia recibe las modalidades y niveles completos del
+  // dominio (EBE = CEBE y PRITE aunque hoy sólo haya CEBE); el resto, sólo lo
+  // que tiene, para no ofrecerle botones que dejan el mapa vacío.
+  const veTodaLaProvincia =
+    user?.role === RoleCode.DIRECTOR_UGEL || user?.role === RoleCode.JEFE_GESTION;
+
+  const modalidades = useMemo(
+    () => modalidadesDisponibles(instituciones, { delDominio: veTodaLaProvincia }),
+    [instituciones, veTodaLaProvincia],
+  );
+  const niveles = useMemo(
+    () =>
+      nivelesDelFiltro(instituciones, filtroDeNivel.modalidad, { delDominio: veTodaLaProvincia }),
+    [instituciones, filtroDeNivel.modalidad, veTodaLaProvincia],
+  );
+
+  // En la vista distrital el filtro repinta los distritos, no sólo los puntos:
+  // elegir «EBA» y seguir viendo los colores de toda la provincia engañaría.
+  const coberturaFiltrada = useMemo(
+    () => coberturaSegunFiltro(coberturaPorDistrito, filtroDeNivel),
+    [coberturaPorDistrito, filtroDeNivel],
+  );
 
   const listaDistritos = useMemo(
     () => extraerDistritos(instituciones, coberturaPorDistrito),
     [instituciones, coberturaPorDistrito],
   );
 
-  const conteoPorDistrito = useMemo(() => {
-    const conteo = new Map<string, number>();
-    for (const ie of instituciones) {
-      if (ie.distrito) {
-        const key = ie.distrito.toUpperCase();
-        conteo.set(key, (conteo.get(key) ?? 0) + 1);
-      }
-    }
-    return conteo;
-  }, [instituciones]);
+  // Los conteos de la leyenda siguen el filtro por modalidad y nivel: con EBA
+  // elegida se ven 4 puntos y la leyenda no puede seguir diciendo 223.
+  const conteoDeDistritos = useMemo(
+    () =>
+      conteoPorDistrito(instituciones, {
+        modalidad: filtroDeNivel.modalidad,
+        nivel: filtroDeNivel.nivel,
+      }),
+    [instituciones, filtroDeNivel],
+  );
 
-  const conteoPorEstado = useMemo(() => {
-    const conteo: Record<string, number> = {};
-    for (const ie of instituciones) {
-      if (selected && normDistrito(ie.distrito) !== normDistrito(selected)) continue;
-      conteo[ie.estado] = (conteo[ie.estado] ?? 0) + 1;
-    }
-    return conteo;
-  }, [instituciones, selected]);
+  const conteoDeEstados = useMemo(
+    () =>
+      conteoPorEstado(instituciones, {
+        distrito: selected,
+        modalidad: filtroDeNivel.modalidad,
+        nivel: filtroDeNivel.nivel,
+      }),
+    [instituciones, selected, filtroDeNivel],
+  );
 
   const porDistrito = useMemo(
-    () => new Map(coberturaPorDistrito.map((d) => [normDistrito(d.distrito), d])),
-    [coberturaPorDistrito],
+    () => new Map(coberturaFiltrada.map((d) => [normDistrito(d.distrito), d])),
+    [coberturaFiltrada],
   );
   const seleccionado = selected ? normDistrito(selected) : null;
 
   const visibles = useMemo(
-    () => institucionesVisibles(instituciones, { distrito: selected, nivel, estado }),
-    [instituciones, selected, nivel, estado],
+    () =>
+      institucionesVisibles(instituciones, {
+        distrito: selected,
+        modalidad: filtroDeNivel.modalidad,
+        nivel: filtroDeNivel.nivel,
+        estado,
+      }),
+    [instituciones, selected, filtroDeNivel, estado],
   );
 
   const estiloDeDistrito = (feature?: DistritoFeature): PathOptions => {
@@ -176,9 +216,11 @@ export const LampaMap = ({
         totalInstituciones={instituciones.length}
         distritoSeleccionado={selected}
         onLimpiarDistrito={() => onSelectDistrito?.(null)}
-        mostrarFiltroDeNivel={modo === MODO_INSTITUCIONAL && hayVariosNiveles(instituciones)}
-        nivel={nivel}
-        onCambiarNivel={setNivel}
+        modalidades={modalidades}
+        niveles={niveles}
+        filtro={filtroDeNivel}
+        onCambiarModalidad={elegirModalidad}
+        onCambiarNivel={elegirNivel}
       />
 
       <div className="flex-1 w-full bg-muted/20 relative z-0 h-[420px] md:h-auto">
@@ -190,9 +232,12 @@ export const LampaMap = ({
           style={{ height: '100%', width: '100%', zIndex: 0 }}
         >
           <VistaDelMapa distrito={selected} />
+          {/* CARTO pasó a exigir API key: devuelve un cartel «API KEY REQUIRED» en
+              lugar del mapa. Los tiles de OSM no piden key pero su política sólo
+              tolera poco tráfico; si el uso crece, pasar a un proveedor con key. */}
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+            url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
           {/* Oculta todo lo que queda fuera de la provincia. */}
           <Polygon
@@ -203,7 +248,7 @@ export const LampaMap = ({
               una sola vez: sin ella los tooltips se quedan con los porcentajes
               del primer render mientras los colores sí se actualizan. */}
           <GeoJSON
-            key={`${seleccionado ?? 'ninguno'}-${modo}-${firmaDeCobertura(coberturaPorDistrito)}`}
+            key={`${seleccionado ?? 'ninguno'}-${modo}-${firmaDeCobertura(coberturaFiltrada)}`}
             data={DISTRITOS_GEOJSON}
             style={estiloDeDistrito as never}
             onEachFeature={prepararDistrito}
@@ -224,8 +269,8 @@ export const LampaMap = ({
             distrito={selected ?? null}
             distritos={listaDistritos}
             onCambiarDistrito={(d) => onSelectDistrito?.(d)}
-            conteoPorEstado={conteoPorEstado}
-            conteoPorDistrito={conteoPorDistrito}
+            conteoPorEstado={conteoDeEstados}
+            conteoPorDistrito={conteoDeDistritos}
           />
         )}
       </div>

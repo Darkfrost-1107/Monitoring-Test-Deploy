@@ -38,6 +38,7 @@ Thumbs.db
 .gemini/
 .claude/
 .agents/
+.codegraph/
 mejora:txt
 skills-lock.json
 AGENTS.md

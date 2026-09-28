@@ -1,3 +1,4 @@
+import { MODALIDAD_NIVEL_MAP, ModalidadEducativa } from '@sistema-monitoreo/shared-contracts';
 import type { IUgelDashboardDistrito, IUgelDashboardIeMapa } from '@sistema-monitoreo/shared-contracts';
 import { normDistrito } from '@shared/lib/distrito';
 
@@ -43,7 +44,129 @@ export const COBERTURA_LEYENDA = [
   { desde: null, color: '#94a3b8', label: 'Sin registro' },
 ] as const;
 
-export const NIVELES_DEL_FILTRO = [TODOS, 'Inicial', 'Primaria', 'Secundaria'] as const;
+/** Lo que hace falta saber de una II.EE. para filtrarla por modalidad y nivel. */
+type ConNivel = Pick<IUgelDashboardIeMapa, 'modalidad' | 'nivelEducativo'>;
+
+/**
+ * El filtro por nivel se elige en cascada: modalidad y después nivel.
+ *
+ * Antes eran sólo tres botones —Inicial, Primaria y Secundaria—, así que las
+ * II.EE. de EBA, EBE y CEPTRO se veían en el mapa y ningún botón las alcanzaba.
+ * El nivel sólo se entiende dentro de su modalidad, igual que al programar un
+ * cronograma.
+ */
+export interface FiltroDeNivel {
+  modalidad: string;
+  nivel: string;
+}
+
+export const SIN_FILTRO_DE_NIVEL: FiltroDeNivel = { modalidad: TODOS, nivel: TODOS };
+
+/** Nombre completo, para acompañar al código que dice el botón. */
+export const NOMBRE_DE_MODALIDAD: Record<string, string> = {
+  [ModalidadEducativa.EBR]: 'Educación Básica Regular',
+  [ModalidadEducativa.EBA]: 'Educación Básica Alternativa',
+  [ModalidadEducativa.EBE]: 'Educación Básica Especial',
+  [ModalidadEducativa.CEPTRO]: 'Centro de Educación Técnico-Productiva',
+};
+
+const MODALIDADES_DEL_DOMINIO = Object.keys(MODALIDAD_NIVEL_MAP);
+
+/**
+ * Lo que hay, primero en el orden del dominio y después lo que el dominio no
+ * conoce: un dato raro en la base no puede volver inalcanzable a una II.EE.
+ */
+function enOrdenDelDominio(presentes: Iterable<string>, delDominio: readonly string[]): string[] {
+  const hay = new Set(presentes);
+  const conocidos = delDominio.filter((valor) => hay.has(valor));
+  const desconocidos = [...hay]
+    .filter((valor) => !delDominio.includes(valor))
+    .sort((a, b) => a.localeCompare(b, 'es'));
+  return [...conocidos, ...desconocidos];
+}
+
+interface OpcionesDelFiltro {
+  /**
+   * Ofrecer todo lo que el dominio define y no sólo lo que hay en los datos.
+   *
+   * Es para quien ve toda la provincia: EBE tiene dos niveles, CEBE y PRITE, y
+   * hoy sólo hay II.EE. de CEBE; sin esto PRITE no se ofrecía y parecía que EBE
+   * tenía uno solo. Quien recibe un alcance acotado no lo activa: un
+   * especialista sólo tiene su nivel, y ofrecerle los otros sería darle botones
+   * que dejan el mapa vacío.
+   */
+  delDominio?: boolean;
+}
+
+/** Modalidades que se ofrecen, en el orden del dominio. */
+export function modalidadesDisponibles(
+  instituciones: readonly ConNivel[],
+  { delDominio = false }: OpcionesDelFiltro = {},
+): string[] {
+  const presentes = instituciones.map((ie) => ie.modalidad);
+  return enOrdenDelDominio(
+    delDominio ? [...MODALIDADES_DEL_DOMINIO, ...presentes] : presentes,
+    MODALIDADES_DEL_DOMINIO,
+  );
+}
+
+/** Niveles que se ofrecen dentro de una modalidad, en el orden del dominio. */
+export function nivelesDisponibles(
+  instituciones: readonly ConNivel[],
+  modalidad: string,
+  { delDominio = false }: OpcionesDelFiltro = {},
+): string[] {
+  const delaModalidad = MODALIDAD_NIVEL_MAP[modalidad] ?? [];
+  const presentes = instituciones
+    .filter((ie) => ie.modalidad === modalidad)
+    .map((ie) => ie.nivelEducativo);
+  return enOrdenDelDominio(delDominio ? [...delaModalidad, ...presentes] : presentes, delaModalidad);
+}
+
+/**
+ * Niveles que el filtro ofrece según la modalidad elegida.
+ *
+ * Con varias modalidades a la vista un nivel suelto no dice de cuál es, así que
+ * no se ofrece hasta que se elige una. Con una sola —el especialista sólo recibe
+ * la suya— se ofrecen de una vez: obligarlo a elegirla sería un clic de más.
+ */
+export function nivelesDelFiltro(
+  instituciones: readonly ConNivel[],
+  modalidad: string,
+  opciones: OpcionesDelFiltro = {},
+): string[] {
+  if (modalidad !== TODOS) return nivelesDisponibles(instituciones, modalidad, opciones);
+
+  const modalidades = modalidadesDisponibles(instituciones, opciones);
+  return modalidades.length === 1
+    ? nivelesDisponibles(instituciones, modalidades[0], opciones)
+    : [];
+}
+
+/**
+ * ¿La II.EE. entra en el recorte que el filtro describe?
+ *
+ * El mapa y la lista de al lado tienen que usar esta misma regla: si cada uno
+ * comparara a su manera, elegir un nivel mostraría dos vistas del mismo recorte
+ * con cosas distintas.
+ */
+export function coincideConFiltroDeNivel(ie: ConNivel, { modalidad, nivel }: FiltroDeNivel): boolean {
+  if (modalidad !== TODOS && ie.modalidad !== modalidad) return false;
+  if (nivel !== TODOS && ie.nivelEducativo !== nivel) return false;
+  return true;
+}
+
+/**
+ * Nivel tal como se lee en una tarjeta o un globo.
+ *
+ * En EBR alcanza con el nivel, que es lo que siempre se mostró. En las demás
+ * «CEBE» o «Avanzado» solos no dicen a qué modalidad pertenecen.
+ */
+export function etiquetaDeNivel(ie: ConNivel): string {
+  return ie.modalidad === ModalidadEducativa.EBR
+    ? ie.nivelEducativo
+    : `${ie.modalidad} · ${ie.nivelEducativo}`;
+}
 
 export const DISTRITOS_DE_LAMPA = [
   'CABANILLA',
@@ -108,19 +231,10 @@ export function estadoDelMarcador(estado: string): EstadoDelMapa {
   );
 }
 
-/**
- * ¿El filtro por nivel aporta algo?
- *
- * El especialista recibe sólo II.EE. de su nivel: ofrecerle el filtro sería
- * ofrecerle botones que dejan el mapa vacío.
- */
-export function hayVariosNiveles(instituciones: readonly IUgelDashboardIeMapa[]): boolean {
-  return new Set(instituciones.map((ie) => ie.nivelEducativo)).size > 1;
-}
-
 interface FiltrosDelMapa {
   /** Nombre del distrito seleccionado, tal como se muestra. */
   distrito?: string | null;
+  modalidad?: string;
   nivel?: string;
   estado?: string;
 }
@@ -128,15 +242,89 @@ interface FiltrosDelMapa {
 /** II.EE. que quedan a la vista con los filtros puestos. */
 export function institucionesVisibles(
   instituciones: readonly IUgelDashboardIeMapa[],
-  { distrito, nivel, estado }: FiltrosDelMapa,
+  { distrito, modalidad = TODOS, nivel = TODOS, estado }: FiltrosDelMapa,
 ): IUgelDashboardIeMapa[] {
   const distritoNorm = distrito ? normDistrito(distrito) : null;
 
   return instituciones.filter((ie) => {
     if (distritoNorm && normDistrito(ie.distrito) !== distritoNorm) return false;
-    if (nivel && nivel !== TODOS && ie.nivelEducativo !== nivel) return false;
+    if (!coincideConFiltroDeNivel(ie, { modalidad, nivel })) return false;
     if (estado && estado !== TODOS && ie.estado !== estado) return false;
     return true;
+  });
+}
+
+interface RecorteDeConteo {
+  distrito?: string | null;
+  modalidad?: string;
+  nivel?: string;
+}
+
+/**
+ * Cuántas II.EE. hay en cada estado del semáforo dentro del recorte.
+ *
+ * El propio estado no filtra: la leyenda cuenta con esto para elegirlo, y un
+ * conteo que ya lo excluyera mostraría cero en todos menos en el elegido.
+ */
+export function conteoPorEstado(
+  instituciones: readonly IUgelDashboardIeMapa[],
+  { distrito, modalidad, nivel }: RecorteDeConteo,
+): Record<string, number> {
+  const conteo: Record<string, number> = {};
+  for (const ie of institucionesVisibles(instituciones, { distrito, modalidad, nivel })) {
+    conteo[ie.estado] = (conteo[ie.estado] ?? 0) + 1;
+  }
+  return conteo;
+}
+
+/** Cuántas II.EE. hay en cada distrito dentro del recorte, con el nombre en mayúsculas como clave. */
+export function conteoPorDistrito(
+  instituciones: readonly IUgelDashboardIeMapa[],
+  { modalidad, nivel }: Omit<RecorteDeConteo, 'distrito'>,
+): Map<string, number> {
+  const conteo = new Map<string, number>();
+  for (const ie of institucionesVisibles(instituciones, { modalidad, nivel })) {
+    if (!ie.distrito) continue;
+    const clave = ie.distrito.toUpperCase();
+    conteo.set(clave, (conteo.get(clave) ?? 0) + 1);
+  }
+  return conteo;
+}
+
+/**
+ * Cobertura de cada distrito dentro del recorte de modalidad y nivel.
+ *
+ * El backend manda la cobertura abierta por modalidad y nivel: sumar sólo las
+ * filas que el filtro deja pasar da la cifra que habría calculado con ese
+ * filtro, incluidas las II.EE. sin coordenadas que el mapa no dibuja. Un
+ * distrito sin II.EE. en el recorte queda fuera —no tiene 0 % de cobertura, no
+ * tiene qué cubrir— y el mapa lo pinta como «sin datos».
+ *
+ * `nivelPromedio` no se recalcula: el desglose no lo trae y ningún filtro lo usa.
+ */
+export function coberturaSegunFiltro(
+  cobertura: readonly IUgelDashboardDistrito[],
+  { modalidad, nivel }: FiltroDeNivel,
+): IUgelDashboardDistrito[] {
+  if (modalidad === TODOS && nivel === TODOS) return [...cobertura];
+
+  return cobertura.flatMap((distrito) => {
+    const filas = distrito.desglose.filter((fila) =>
+      coincideConFiltroDeNivel(fila, { modalidad, nivel }),
+    );
+    const total = filas.reduce((suma, fila) => suma + fila.totalInstituciones, 0);
+    if (total === 0) return [];
+
+    const monitoreadas = filas.reduce((suma, fila) => suma + fila.monitoreadas, 0);
+    return [
+      {
+        ...distrito,
+        totalInstituciones: total,
+        monitoreadas,
+        porcentajeCobertura: Math.round((monitoreadas / total) * 100),
+        desglose: filas,
+      },
+    ];
   });
 }
 

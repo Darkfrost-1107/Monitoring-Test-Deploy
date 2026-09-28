@@ -7,6 +7,7 @@ import type {
   IUgelDashboardDistritoCritico,
   IUgelDashboardIeCriticaDistrito,
   IUgelDashboardDistrito,
+  IUgelDashboardDistritoDesglose,
   IUgelDashboardIeMapa,
   IUgelDashboardInstitucionDetalle,
   IUgelDashboardMonitoreoReciente,
@@ -270,6 +271,7 @@ export class PrismaDashboardRepository implements DashboardRepository {
                 codigoModular: true,
                 distrito: true,
                 nivelEducativo: true,
+                modalidad: true,
               },
             },
             monitor: {
@@ -362,6 +364,7 @@ export class PrismaDashboardRepository implements DashboardRepository {
           nombre: c.institucion.nombre,
           distrito: c.institucion.distrito,
           nivelEducativo: c.institucion.nivelEducativo,
+          modalidad: c.institucion.modalidad,
           docentes: [],
         };
         iesAtencion.set(c.institucionId, ie);
@@ -432,6 +435,7 @@ export class PrismaDashboardRepository implements DashboardRepository {
         nombre: true,
         distrito: true,
         nivelEducativo: true,
+        modalidad: true,
         latitud: true,
         longitud: true,
       },
@@ -443,6 +447,7 @@ export class PrismaDashboardRepository implements DashboardRepository {
         nombre: ie.nombre,
         distrito: ie.distrito,
         nivelEducativo: ie.nivelEducativo,
+        modalidad: ie.modalidad,
         latitud: Number(ie.latitud),
         longitud: Number(ie.longitud),
         estado: acc ? clasificarSemaforo(acc.suma / acc.n) : 'sinRegistro',
@@ -453,7 +458,7 @@ export class PrismaDashboardRepository implements DashboardRepository {
     const [iesActivas, iesMonitoreadas] = await Promise.all([
       this.prisma.institucionEducativa.findMany({
         where: institucionWhere,
-        select: { id: true, distrito: true },
+        select: { id: true, distrito: true, modalidad: true, nivelEducativo: true },
       }),
       this.prisma.institucionEducativa.findMany({
         where: {
@@ -467,11 +472,28 @@ export class PrismaDashboardRepository implements DashboardRepository {
     ]);
     const monitoreadaIds = new Set(iesMonitoreadas.map((ie) => ie.id));
     const distritoMap = new Map<string, { total: number; monitoreadas: number }>();
+    const desglosePorDistrito = new Map<string, Map<string, IUgelDashboardDistritoDesglose>>();
     for (const ie of iesActivas) {
+      const monitoreada = monitoreadaIds.has(ie.id);
+
       const acc = distritoMap.get(ie.distrito) ?? { total: 0, monitoreadas: 0 };
       acc.total += 1;
-      if (monitoreadaIds.has(ie.id)) acc.monitoreadas += 1;
+      if (monitoreada) acc.monitoreadas += 1;
       distritoMap.set(ie.distrito, acc);
+
+      const filas =
+        desglosePorDistrito.get(ie.distrito) ?? new Map<string, IUgelDashboardDistritoDesglose>();
+      const clave = `${ie.modalidad}|${ie.nivelEducativo}`;
+      const fila = filas.get(clave) ?? {
+        modalidad: ie.modalidad,
+        nivelEducativo: ie.nivelEducativo,
+        totalInstituciones: 0,
+        monitoreadas: 0,
+      };
+      fila.totalInstituciones += 1;
+      if (monitoreada) fila.monitoreadas += 1;
+      filas.set(clave, fila);
+      desglosePorDistrito.set(ie.distrito, filas);
     }
     // Promedio (nivel de logro) por distrito, derivado de las IE monitoreadas.
     const promedioPorDistrito = new Map<string, number>();
@@ -485,6 +507,11 @@ export class PrismaDashboardRepository implements DashboardRepository {
         monitoreadas: m,
         porcentajeCobertura: total > 0 ? Math.round((m / total) * 100) : 0,
         nivelPromedio: Number((promedioPorDistrito.get(distrito) ?? 0).toFixed(2)),
+        desglose: [...(desglosePorDistrito.get(distrito)?.values() ?? [])].sort(
+          (a, b) =>
+            a.modalidad.localeCompare(b.modalidad, 'es') ||
+            a.nivelEducativo.localeCompare(b.nivelEducativo, 'es'),
+        ),
       }))
       .sort((a, b) => a.porcentajeCobertura - b.porcentajeCobertura);
 

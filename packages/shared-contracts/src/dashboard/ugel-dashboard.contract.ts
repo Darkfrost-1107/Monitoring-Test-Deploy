@@ -79,6 +79,8 @@ export interface IUgelDashboardCriticaIe {
   nombre: string;
   distrito: string;
   nivelEducativo: string;
+  /** EBR, EBA, EBE o CEPTRO: el nivel sólo se entiende dentro de su modalidad. */
+  modalidad: string;
   docentes: IDocenteCritico[];
 }
 
@@ -105,6 +107,14 @@ export interface IUgelDashboardDistritoCritico {
   institucionesCriticas: IUgelDashboardIeCriticaDistrito[];
 }
 
+/** Los totales de cobertura de un distrito, para una modalidad y nivel. */
+export interface IUgelDashboardDistritoDesglose {
+  modalidad: string;
+  nivelEducativo: string;
+  totalInstituciones: number;
+  monitoreadas: number;
+}
+
 /** Cobertura de monitoreo agregada por distrito. */
 export interface IUgelDashboardDistrito {
   distrito: string;
@@ -113,6 +123,15 @@ export interface IUgelDashboardDistrito {
   porcentajeCobertura: number;
   /** Promedio de la rúbrica de las II.EE. monitoreadas del distrito (0 si ninguna). */
   nivelPromedio: number;
+  /**
+   * Los mismos totales abiertos por modalidad y nivel.
+   *
+   * Sirve para recalcular la cobertura cuando el mapa se filtra: sumar sólo las
+   * filas que el filtro deja pasar da la misma cifra que el backend habría
+   * calculado con ese filtro, incluidas las II.EE. sin coordenadas que el mapa
+   * no dibuja.
+   */
+  desglose: IUgelDashboardDistritoDesglose[];
 }
 
 /** Punto de la evolución mensual de monitoreos finalizados en el año. */
@@ -187,6 +206,8 @@ export interface IUgelDashboardIeMapa {
   nombre: string;
   distrito: string;
   nivelEducativo: string;
+  /** EBR, EBA, EBE o CEPTRO: el nivel sólo se entiende dentro de su modalidad. */
+  modalidad: string;
   latitud: number;
   longitud: number;
   estado: EstadoSemaforoIe;
