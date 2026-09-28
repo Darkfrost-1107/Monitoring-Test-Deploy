@@ -31,6 +31,7 @@ const ie = (over: Partial<IUgelDashboardIeMapa> = {}): IUgelDashboardIeMapa => (
   nombre: 'IE 70001',
   distrito: 'Lampa',
   nivelEducativo: 'Primaria',
+  modalidad: 'EBR',
   latitud: -15.36,
   longitud: -70.37,
   estado: 'critico',
@@ -140,6 +141,7 @@ describe('firmaDeCobertura', () => {
     monitoreadas: 2,
     porcentajeCobertura: 40,
     nivelPromedio: 3,
+    desglose: [],
     ...over,
   });
 
