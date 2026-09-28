@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { CreditCard, Lock, Eye, EyeOff } from 'lucide-react';
+import { UserRound, Lock, Eye, EyeOff, ArrowRight, TriangleAlert } from 'lucide-react';
 
 interface BaseLoginFormProps {
   onSubmit: (dni: string, password: string) => void;
@@ -40,7 +40,15 @@ export const BaseLoginForm = ({
   const [dni, setDni] = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
+  /**
+   * Tres intentos fallidos bloquean la cuenta media hora: escribir con Bloq
+   * Mayús activado sin darse cuenta es la forma más tonta de gastarlos.
+   */
+  const [bloqMayus, setBloqMayus] = useState(false);
   const campoPassword = useRef<HTMLInputElement>(null);
+
+  const leerBloqMayus = (e: React.KeyboardEvent<HTMLInputElement>) =>
+    setBloqMayus(e.getModifierState('CapsLock'));
 
   // Tras fallar, el cursor quedaba donde estaba y había que ir al campo con el
   // mouse. Se devuelve el foco con el texto seleccionado, para reescribir de una.
@@ -61,17 +69,15 @@ export const BaseLoginForm = ({
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      {/* Campo Usuario */}
+      {/* Campo Usuario. El rótulo queda para lectores de pantalla: a la vista
+          lo reemplazan el ícono y el placeholder, como en el diseño. */}
       <div>
-        <label
-          htmlFor="login-dni"
-          className="block text-slate-600 text-[0.68rem] font-bold tracking-wider uppercase mb-1.5"
-        >
+        <label htmlFor="login-dni" className="sr-only">
           Usuario
         </label>
-        <div className="flex items-center bg-slate-50 border border-slate-200 rounded-xl overflow-hidden focus-within:border-[#990537] focus-within:bg-white transition-colors">
-          <span className="pl-3 text-slate-400">
-            <CreditCard className="w-[17px] h-[17px]" strokeWidth={2} />
+        <div className="flex items-center bg-white border border-slate-300 rounded-xl overflow-hidden focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/15 transition-colors">
+          <span className="pl-4 text-slate-500">
+            <UserRound className="w-[18px] h-[18px]" strokeWidth={2} />
           </span>
           <input
             id="login-dni"
@@ -79,7 +85,8 @@ export const BaseLoginForm = ({
             type="text"
             inputMode="numeric"
             autoComplete="username"
-            placeholder="Ingrese su DNI"
+            aria-describedby="login-dni-ayuda"
+            placeholder="Usuario"
             value={dni}
             onChange={(e) => {
               setDni(e.target.value.replace(/\D/g, '').slice(0, 8));
@@ -87,37 +94,41 @@ export const BaseLoginForm = ({
             }}
             maxLength={8}
             disabled={isLoading || bloqueado}
-            className="w-full bg-transparent border-none outline-none text-slate-800 text-sm px-3 py-3 disabled:opacity-50"
+            className="w-full bg-transparent border-none outline-none text-slate-800 text-[15px] px-3 py-3.5 disabled:opacity-50"
           />
         </div>
+        <p id="login-dni-ayuda" className="text-[11px] text-slate-500 mt-1.5 pl-11">
+          Ingresa tu DNI de 8 dígitos
+        </p>
       </div>
 
       {/* Campo Contraseña */}
       <div>
-        <label
-          htmlFor="login-password"
-          className="block text-slate-600 text-[0.68rem] font-bold tracking-wider uppercase mb-1.5"
-        >
+        <label htmlFor="login-password" className="sr-only">
           Contraseña
         </label>
-        <div className="flex items-center bg-slate-50 border border-slate-200 rounded-xl overflow-hidden focus-within:border-[#990537] focus-within:bg-white transition-colors">
-          <span className="pl-3 text-slate-400">
-            <Lock className="w-[17px] h-[17px]" strokeWidth={2} />
+        <div className="flex items-center bg-white border border-slate-300 rounded-xl overflow-hidden focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/15 transition-colors">
+          <span className="pl-4 text-slate-500">
+            <Lock className="w-[18px] h-[18px]" strokeWidth={2} />
           </span>
           <input
             id="login-password"
             name="password"
             type={showPass ? 'text' : 'password'}
             autoComplete="current-password"
-            placeholder="Ingrese su contraseña"
+            placeholder="Contraseña"
             ref={campoPassword}
             value={password}
             onChange={(e) => {
               setPassword(e.target.value);
               alEditar();
             }}
+            onKeyDown={leerBloqMayus}
+            onKeyUp={leerBloqMayus}
+            onBlur={() => setBloqMayus(false)}
+            aria-describedby={bloqMayus ? 'login-bloq-mayus' : undefined}
             disabled={isLoading || bloqueado}
-            className="w-full bg-transparent border-none outline-none text-slate-800 text-sm px-3 py-3 disabled:opacity-50"
+            className="w-full bg-transparent border-none outline-none text-slate-800 text-[15px] px-3 py-3.5 disabled:opacity-50"
           />
           {/*
             Va después del input y no en la fila del rótulo: en el DOM estaba
@@ -130,16 +141,26 @@ export const BaseLoginForm = ({
             disabled={isLoading || bloqueado}
             aria-label={showPass ? 'Ocultar contraseña' : 'Mostrar contraseña'}
             aria-pressed={showPass}
-            className="shrink-0 pr-3 pl-1 text-[#990537] hover:text-[#7a042c] text-xs flex items-center gap-1.5 cursor-pointer bg-transparent border-none font-semibold disabled:opacity-50"
+            className="shrink-0 px-4 text-slate-500 hover:text-primary flex items-center cursor-pointer bg-transparent border-none disabled:opacity-50"
           >
             {showPass ? (
-              <EyeOff className="w-[14px] h-[14px]" />
+              <EyeOff className="w-[18px] h-[18px]" />
             ) : (
-              <Eye className="w-[14px] h-[14px]" />
+              <Eye className="w-[18px] h-[18px]" />
             )}
-            {showPass ? 'ocultar' : 'mostrar'}
           </button>
         </div>
+
+        {bloqMayus && (
+          <p
+            id="login-bloq-mayus"
+            role="status"
+            className="flex items-center gap-1.5 text-xs font-medium text-amber-700 mt-1.5 pl-1"
+          >
+            <TriangleAlert className="w-3.5 h-3.5 shrink-0" strokeWidth={2.25} />
+            Bloq Mayús está activado
+          </p>
+        )}
 
         <div className="flex justify-end mt-2">
           {/* Sigue disponible con la cuenta bloqueada: recuperar la contraseña es
@@ -148,7 +169,7 @@ export const BaseLoginForm = ({
             type="button"
             onClick={onForgotPassword}
             disabled={isLoading}
-            className="text-[#990537] hover:underline text-xs cursor-pointer bg-transparent border-none outline-none font-medium disabled:opacity-50"
+            className="text-primary underline underline-offset-2 hover:text-primary-hover text-xs cursor-pointer bg-transparent border-none outline-none font-medium disabled:opacity-50"
           >
             ¿Olvidaste tu contraseña?
           </button>
@@ -159,9 +180,10 @@ export const BaseLoginForm = ({
       <button
         type="submit"
         disabled={isLoading || bloqueado || dni.length < 8 || password.length < 6}
-        className="w-full py-3.5 bg-[#990537] hover:bg-[#80042e] disabled:bg-[#990537]/50 text-white font-bold text-sm tracking-wider rounded-xl transition-all shadow-md mt-2 cursor-pointer disabled:cursor-not-allowed border-none"
+        className="w-full py-3.5 bg-primary-dark hover:bg-primary disabled:bg-primary-dark/75 text-white font-semibold text-[15px] rounded-xl transition-all shadow-md shadow-primary-dark/20 mt-1 cursor-pointer disabled:cursor-not-allowed border-none flex items-center justify-center gap-2"
       >
-        {isLoading ? 'Verificando...' : 'INICIO DE SESIÓN'}
+        {!isLoading && <ArrowRight className="w-[18px] h-[18px]" strokeWidth={2.25} />}
+        {isLoading ? 'Verificando...' : 'Iniciar sesión'}
       </button>
     </form>
   );

@@ -1,4 +1,4 @@
-import { AlertCircle, Clock } from 'lucide-react';
+import { AlertCircle, Clock, ShieldCheck } from 'lucide-react';
 import { BaseLoginForm } from '@features/login/ui/formLoginBase';
 import { useLoginService } from '@features/login/login-service';
 import { useNavigate } from 'react-router-dom';
@@ -15,8 +15,6 @@ import { useNavigate } from 'react-router-dom';
  * Ahora los dos estados viven en el mismo lugar, debajo del botón, donde ya
  * estaba el mensaje de error. Nada tapa ni reemplaza al formulario.
  */
-
-const LOGO_SRC = '/logo-ugel.png';
 
 /** Segundos → «MM:SS». */
 const formatTime = (seconds: number): string => {
@@ -59,23 +57,31 @@ export const LoginCardWidget = () => {
   };
 
   return (
-    <div className="w-full max-w-[400px]">
-      <div className="text-center mb-6">
-        <img
-          src={LOGO_SRC}
-          alt="Logo UGEL Lampa"
-          className="w-[88px] h-[88px] mx-auto mb-3 object-contain"
-        />
-        <h1 className="text-3xl font-black text-slate-800 tracking-wide">UGEL Lampa</h1>
-        <p className="text-xs text-slate-500 mt-1">Sistema de Monitoreo</p>
-      </div>
-
-      <div className="w-full bg-white border border-slate-200 rounded-2xl p-8 shadow-xl">
-        <div className="flex justify-center mb-5">
-          <span className="bg-[#990537] text-white text-[0.72rem] font-bold tracking-widest px-6 py-2 rounded-full uppercase shadow-sm">
-            Acceso de Sistema
-          </span>
+    <div className="w-full max-w-[460px] rounded-3xl overflow-hidden bg-white border border-slate-200/80 shadow-2xl shadow-slate-900/10 relative">
+      <div className="px-8 sm:px-10 pt-9 pb-8">
+        {/* Isotipo institucional en vez de un bloque de color a pantalla
+            completa: el logo real es más creíble que un ícono inventado. */}
+        <div className="flex items-center gap-4 mb-5">
+          <img src="/logo-ugel-lampa.webp" alt="" aria-hidden="true" className="h-14 w-14 object-contain shrink-0" />
+          <div className="min-w-0">
+            <p className="text-[1.75rem] font-black text-primary tracking-tight leading-none">UGEL LAMPA</p>
+            <p className="text-sm text-slate-600 mt-1.5 leading-tight">
+              Sistema de Monitoreo Docente y Directivo
+            </p>
+          </div>
         </div>
+
+        {/* Acento en tramos guinda y dorado, que se afina en una línea. */}
+        <div className="flex items-center gap-1 mb-7" aria-hidden="true">
+          <span className="h-[3px] w-16 rounded-full bg-primary" />
+          <span className="h-[3px] w-6 rounded-full bg-yellow-400" />
+          <span className="h-[3px] w-6 rounded-full bg-primary" />
+          <span className="h-[3px] w-6 rounded-full bg-yellow-400/70" />
+          <span className="h-px flex-1 bg-primary/30" />
+        </div>
+
+        <h2 className="text-2xl font-bold text-slate-800 mb-1">Iniciar sesión</h2>
+        <p className="text-sm text-slate-500 mb-6">Ingresa tus credenciales para continuar</p>
 
         <BaseLoginForm
           onSubmit={handleLoginSubmit}
@@ -149,11 +155,26 @@ export const LoginCardWidget = () => {
             </div>
           </div>
         )}
+
+        <div className="flex items-center gap-3 my-6">
+          <span className="h-px flex-1 bg-slate-200" />
+          <span className="flex items-center gap-1.5 text-xs text-slate-500">
+            <ShieldCheck className="w-4 h-4" strokeWidth={2} />
+            Acceso seguro
+          </span>
+          <span className="h-px flex-1 bg-slate-200" />
+        </div>
+
+        <div className="flex items-center justify-center gap-2 bg-slate-100/80 rounded-xl px-3 py-3">
+          <ShieldCheck className="w-4 h-4 text-primary shrink-0" strokeWidth={2} />
+          <p className="text-xs text-slate-600">Solo personal autorizado de la UGEL Lampa</p>
+        </div>
       </div>
 
-      <p className="text-center text-slate-400 text-xs mt-6">
-        Plataforma de Desempeño Escolar © Puno, Perú
-      </p>
+      <div className="flex items-center justify-between gap-3 px-8 sm:px-10 py-3 bg-slate-50 border-t border-slate-100">
+        <p className="text-slate-400 text-[10px]">Plataforma de Desempeño Escolar © Puno, Perú</p>
+        <img src="/logo-agp.webp" alt="AGP" className="h-5 object-contain opacity-80" />
+      </div>
     </div>
   );
 };
