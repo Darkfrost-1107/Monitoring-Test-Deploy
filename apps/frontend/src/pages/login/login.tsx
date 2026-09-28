@@ -91,7 +91,12 @@ export const LoginPage = () => {
 
       {/* En celular la tarjeta va primero: entrar no puede exigir scrollear
           por debajo de toda la presentación. */}
-      <div className="relative order-first lg:order-none flex-1 lg:basis-[42%] flex items-center justify-center overflow-hidden bg-slate-50 px-6 pt-10 pb-16 lg:py-14 lg:px-12">
+      <div className="relative order-first lg:order-none flex-1 lg:basis-[42%] flex items-center justify-center overflow-hidden bg-gradient-to-b from-slate-50 via-[#fbf4f6] to-primary-light px-6 pt-10 pb-16 lg:py-14 lg:px-12">
+        {/* Halo detrás de la tarjeta: la despega del fondo sin sumar color fuerte. */}
+        <div
+          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[640px] h-[640px] rounded-full bg-primary/[0.07] blur-[90px] pointer-events-none"
+          aria-hidden="true"
+        />
         {/* Marcas de agua: el emblema institucional arriba y la cordillera
             abajo, casi transparentes para no competir con la tarjeta. */}
         <img
