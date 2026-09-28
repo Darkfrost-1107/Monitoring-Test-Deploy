@@ -1,6 +1,6 @@
 import { CircleMarker, Popup, Pane } from 'react-leaflet';
 import type { IUgelDashboardIeMapa } from '@sistema-monitoreo/shared-contracts';
-import { estadoDelMarcador } from '../lib/vista-del-mapa';
+import { estadoDelMarcador, etiquetaDeNivel } from '../lib/vista-del-mapa';
 
 /**
  * Los puntos de las II.EE. sobre el mapa.
@@ -54,7 +54,7 @@ export const MarcadoresDeInstituciones = ({
                   <div className="flex items-center gap-2 text-text-muted">
                     <span>{ie.distrito}</span>
                     <span>·</span>
-                    <span className="font-medium text-foreground">{ie.nivelEducativo}</span>
+                    <span className="font-medium text-foreground">{etiquetaDeNivel(ie)}</span>
                   </div>
                   <div style={{ color: estado.color }} className="font-semibold pt-1">
                     {estado.label}

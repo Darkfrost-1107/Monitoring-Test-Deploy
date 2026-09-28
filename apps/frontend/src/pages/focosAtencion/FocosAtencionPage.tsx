@@ -4,7 +4,12 @@ import { useUgelDashboard } from '@features/dashboard';
 import { useUser } from '@entities/model-user';
 import { PageHeader } from '@shared/ui/pageHeader';
 import { Spinner } from '@shared/ui/Spinner';
-import { LampaMap } from '@widgets/mapa-lampa';
+import {
+  LampaMap,
+  SIN_FILTRO_DE_NIVEL,
+  coincideConFiltroDeNivel,
+  type FiltroDeNivel,
+} from '@widgets/mapa-lampa';
 import { RequierenAtencionCard } from '@/pages/directorUgel/components/RequierenAtencionCard';
 import { RequierenAtencionInstitucionalCard } from './components/RequierenAtencionInstitucionalCard';
 import { InstitucionDetalleCard } from './components/InstitucionDetalleCard';
@@ -28,13 +33,14 @@ export const FocosAtencionPage = () => {
   const institucionSel = searchParams.get('institucionId') || null;
 
   /**
-   * Nivel educativo elegido en el mapa.
+   * Modalidad y nivel elegidos en el mapa.
    *
    * El filtro acotaba sólo los puntos y dejaba la lista de al lado completa:
    * elegir «Secundaria» mostraba un mapa de secundaria junto a instituciones de
-   * primaria. Las dos vistas son del mismo recorte y deben moverse juntas.
+   * primaria. Las dos vistas son del mismo recorte y deben moverse juntas, con
+   * la misma regla de comparación.
    */
-  const [nivelFiltrado, setNivelFiltrado] = useState<string>('Todos');
+  const [filtroDeNivel, setFiltroDeNivel] = useState<FiltroDeNivel>(SIN_FILTRO_DE_NIVEL);
 
   const handleSelectDistrito = (nuevoDistrito: string | null) => {
     setSearchParams((prev) => {
@@ -66,12 +72,9 @@ export const FocosAtencionPage = () => {
     ? (data?.requierenAtencion ?? []).filter((ie) => normDistrito(ie.distrito) === sel)
     : (data?.requierenAtencion ?? []);
 
-  const atencionVisible =
-    nivelFiltrado === 'Todos'
-      ? atencionDocente
-      : atencionDocente.filter(
-          (ie) => ie.nivelEducativo?.toUpperCase() === nivelFiltrado.toUpperCase(),
-        );
+  const atencionVisible = atencionDocente.filter((ie) =>
+    coincideConFiltroDeNivel(ie, filtroDeNivel),
+  );
 
   const atencionDistrito = sel
     ? (data?.distritosCriticos ?? []).filter((d) => normDistrito(d.distrito) === sel)
@@ -103,7 +106,7 @@ export const FocosAtencionPage = () => {
               onSelectDistrito={handleSelectDistrito}
               onSelectInstitucion={handleSelectInstitucion}
               selectedInstitucionId={institucionSel}
-              onNivelChange={setNivelFiltrado}
+              onFiltroDeNivelChange={setFiltroDeNivel}
             />
           </div>
           <div className="lg:col-span-1">

@@ -2,6 +2,7 @@ import { Card } from '@shared/ui/card';
 import { Badge } from '@shared/ui/badge';
 import { AlertTriangle, CheckCircle2 } from 'lucide-react';
 import type { IUgelDashboardCriticaIe } from '@sistema-monitoreo/shared-contracts';
+import { etiquetaDeNivel } from '@widgets/mapa-lampa';
 import { NotificarInstitucionDialog } from '@features/notifications';
 import { SolicitarVisitaButton } from '@features/visit-requests';
 
@@ -72,7 +73,7 @@ export const RequierenAtencionInstitucionalCard = ({
                 <div className="min-w-0">
                   <div className="font-bold truncate">{ie.nombre}</div>
                   <div className="text-[11px] text-text-muted uppercase tracking-wide">
-                    {ie.distrito} · {ie.nivelEducativo}
+                    {ie.distrito} · {etiquetaDeNivel(ie)}
                   </div>
                 </div>
                 <Badge variant="secondary" className="text-[10px] font-bold shrink-0">
