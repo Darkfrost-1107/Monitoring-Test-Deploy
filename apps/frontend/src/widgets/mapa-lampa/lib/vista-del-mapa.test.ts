@@ -502,6 +502,23 @@ describe('coberturaSegunFiltro', () => {
 
     expect(lampa).toEqual(copia);
   });
+
+  it('tolera distritos sin desglose sin lanzar TypeError', () => {
+    const sinDesglose = {
+      distrito: 'Lampa',
+      totalInstituciones: 10,
+      monitoreadas: 5,
+      porcentajeCobertura: 50,
+      nivelPromedio: 2.5,
+    } as unknown as IUgelDashboardDistrito;
+
+    expect(() =>
+      coberturaSegunFiltro([sinDesglose], { modalidad: 'EBR', nivel: 'Primaria' }),
+    ).not.toThrow();
+
+    const resultado = coberturaSegunFiltro([sinDesglose], { modalidad: 'EBR', nivel: 'Primaria' });
+    expect(resultado).toEqual([sinDesglose]);
+  });
 });
 
 describe('firmaDeCobertura', () => {
