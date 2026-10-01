@@ -315,8 +315,10 @@ function cargarNexusPersonas() {
       } else if (rawCargo === 'SUB-DIRECTOR I.E.' || rawEstado.includes('SUB-DIRECTOR')) {
         cargoNombre = 'Subdirector';
       } else if (rawCargo.includes('COORDINADOR') || rawEstado.includes('COORDINADOR')) {
+        role = 'coordinador_pedagogico';
         cargoNombre = 'Coordinador Pedagógico';
       } else if (rawCargo === 'JEFE DE TALLER') {
+        role = 'jefe_taller';
         cargoNombre = 'Jefe de Taller';
       } else if (rawCargo === 'JEFE DE LABORATORIO') {
         cargoNombre = 'Jefe de Laboratorio';
@@ -558,7 +560,7 @@ export async function seedPersonas(ctx) {
     }
 
     // 2. Staff Docente / Directivo de IE
-    if (u.role === 'director_institucion' || u.role === 'docente') {
+    if (['director_institucion', 'coordinador_pedagogico', 'jefe_taller', 'docente'].includes(u.role)) {
       const instId = ctx.instMap[u.institucionCodigoModular];
       if (!instId) {
         console.warn(`[personas] IE con código modular '${u.institucionCodigoModular}' no existe en instMap`);

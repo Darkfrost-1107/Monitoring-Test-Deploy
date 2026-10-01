@@ -306,10 +306,13 @@ export function coberturaSegunFiltro(
   cobertura: readonly IUgelDashboardDistrito[],
   { modalidad, nivel }: FiltroDeNivel,
 ): IUgelDashboardDistrito[] {
-  if (modalidad === TODOS && nivel === TODOS) return [...cobertura];
+  if (!cobertura || (modalidad === TODOS && nivel === TODOS)) return [...(cobertura ?? [])];
 
   return cobertura.flatMap((distrito) => {
-    const filas = distrito.desglose.filter((fila) =>
+    if (!distrito.desglose || distrito.desglose.length === 0) {
+      return [distrito];
+    }
+    const filas = (distrito.desglose ?? []).filter((fila) =>
       coincideConFiltroDeNivel(fila, { modalidad, nivel }),
     );
     const total = filas.reduce((suma, fila) => suma + fila.totalInstituciones, 0);
