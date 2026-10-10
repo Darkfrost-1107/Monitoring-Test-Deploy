@@ -6,12 +6,8 @@ WORKDIR /app
 # Enable corepack for pnpm
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
-# We need openssl for Prisma and Chromium with system fonts for Puppeteer PDF reports
-RUN apk add --no-cache openssl chromium nss freetype harfbuzz ca-certificates ttf-freefont
-
-# Configure Puppeteer to use the system installed Chromium
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
-    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+# openssl is required by Prisma. PDFs are rendered by the separate Gotenberg service.
+RUN apk add --no-cache openssl ca-certificates
 
 # Copy all project files to support the monorepo structure
 COPY . .

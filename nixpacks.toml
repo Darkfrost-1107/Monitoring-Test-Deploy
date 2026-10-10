@@ -1,25 +1,6 @@
 # nixpacks.toml para Railway
-# Instalamos las dependencias requeridas por Puppeteer / Chromium
+# Los PDFs los genera el servicio Gotenberg (GOTENBERG_URL); no se necesita Chromium aqui.
 providers = ["node"]
-
-[phases.setup]
-nixPkgs = [
-  "...", # Keep default nix packages for node
-  "nss",
-  "nspr",
-  "atk",
-  "cups",
-  "libdrm",
-  "libxkbcommon",
-  "libXcomposite",
-  "libXdamage",
-  "libXrandr",
-  "mesa",
-  "alsa-lib",
-  "pango",
-  "cairo",
-  "expat",
-]
 
 [phases.build]
 cmds = ["pnpm install", "pnpm build"]
