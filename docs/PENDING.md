@@ -87,7 +87,7 @@ Este documento detalla el análisis del estado actual del sistema, enfocado en l
   - Archivo `package.json` del backend (para validar dependencias futuras).
   - Nuevo módulo: `apps/backend/src/modules/reports/`.
 - **Lista de Tareas (Qué modificar):**
-  - [x] **Configuración:** Instalar librería para generación PDF (ej. `puppeteer`, `pdfkit`, `html-pdf-node`).
+  - [x] **Configuración:** Instalar librería para generación PDF (servicio Gotenberg vía `GOTENBERG_URL`).
   - [x] **Backend:** Instalar `@nestjs/schedule` para tareas cronometradas (alertas).
   - [x] **Backend:** Crear y diseñar plantillas (templates HTML/Handlebars) para la estructura visual oficial del PDF en la carpeta del módulo de reportes.
   - [x] **Backend:** Construir servicio generador de PDF que interpole la data del modelo de Prisma en la plantilla oficial.

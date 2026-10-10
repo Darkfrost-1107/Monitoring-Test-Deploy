@@ -1,5 +1,5 @@
 # nixpacks.toml para Railway
-# Los PDFs los genera el servicio Gotenberg (GOTENBERG_URL); no se necesita Chromium aqui.
+# Los PDFs los genera el servicio Gotenberg (GOTENBERG_URL).
 providers = ["node"]
 
 [phases.build]
