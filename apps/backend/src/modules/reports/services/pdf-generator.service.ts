@@ -13,27 +13,44 @@ const MARGIN_SIDE_IN = '0.4';
 const MARGIN_TOP_IN = '0.4';
 const MARGIN_BOTTOM_IN = '0.6';
 
+const TEMPLATES_DIR = path.join(process.cwd(), 'src', 'modules', 'reports', 'templates');
+
 const FOOTER_HTML = `<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
   <style>
-    body { margin: 0; width: 100%; font-family: Arial, sans-serif; font-size: 8px; color: #555; }
-    .footer { width: 100%; padding: 0 0.4in; text-align: right; }
+    html, body { width: 100%; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; font-size: 8px; color: #64748b; }
+    table { width: calc(100% - 0.8in); margin: 0 0.4in; border-collapse: collapse; border-top: 1px solid #cbd5e1; }
+    td { padding-top: 4px; }
+    td.derecha { text-align: right; }
   </style>
 </head>
 <body>
-  <div class="footer">Página <span class="pageNumber"></span> de <span class="totalPages"></span></div>
+  <table>
+    <tr>
+      <td>UGEL Lampa · Sistema de Monitoreo Pedagógico</td>
+      <td class="derecha">Página <span class="pageNumber"></span> de <span class="totalPages"></span></td>
+    </tr>
+  </table>
 </body>
 </html>`;
 
 @Injectable()
 export class PdfGeneratorService {
   private readonly logger = new Logger(PdfGeneratorService.name);
+  private logoUgel?: string;
 
   // Helper custom de Handlebars
   constructor() {
     handlebars.registerHelper('increment', (value) => parseInt(String(value), 10) + 1);
+    // 'LOGRO_ESPERADO' -> 'Logro esperado'
+    handlebars.registerHelper('humanizar', (value: unknown) => {
+      if (typeof value !== 'string' || value === '') return '';
+      const texto = value.replaceAll('_', ' ').toLowerCase();
+      return texto.charAt(0).toUpperCase() + texto.slice(1);
+    });
   }
 
   async generatePdfFromTemplate(templateName: string, data: any): Promise<Buffer> {
@@ -47,16 +64,19 @@ export class PdfGeneratorService {
   }
 
   private renderTemplate(templateName: string, data: any): string {
-    const templatePath = path.join(
-      process.cwd(),
-      'src',
-      'modules',
-      'reports',
-      'templates',
-      `${templateName}.hbs`,
-    );
-    const templateHtml = fs.readFileSync(templatePath, 'utf8');
-    return handlebars.compile(templateHtml)(data);
+    const templateHtml = fs.readFileSync(path.join(TEMPLATES_DIR, `${templateName}.hbs`), 'utf8');
+    return handlebars.compile(templateHtml)({ ...data, logoUgel: this.getLogoUgel() });
+  }
+
+  // Se embebe como data URI para que el HTML sea autocontenido: Gotenberg no tiene por qué
+  // alcanzar al frontend ni a internet para resolver imágenes.
+  private getLogoUgel(): string {
+    this.logoUgel ??=
+      'data:image/webp;base64,' +
+      fs
+        .readFileSync(path.join(TEMPLATES_DIR, 'assets', 'logo-ugel-lampa.webp'))
+        .toString('base64');
+    return this.logoUgel;
   }
 
   private buildForm(htmlContent: string): FormData {

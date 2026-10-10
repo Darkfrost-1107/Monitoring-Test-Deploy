@@ -72,4 +72,50 @@ describe('PdfGeneratorService (Gotenberg)', () => {
       /No se pudo contactar a Gotenberg/,
     );
   });
+
+  describe('diseño de la ficha', () => {
+    async function renderFicha(data: object): Promise<string> {
+      const service = new PdfGeneratorService();
+      await service.generatePdfFromTemplate('ficha-report', data);
+      const form = fetchMock.mock.calls[0][1]?.body as FormData;
+      return (form.get('files') as File).text();
+    }
+
+    it('muestra cada nivel de rúbrica como insignia con la clase de su nivel', async () => {
+      const html = await renderFicha({
+        respuestas: [
+          { nombre: 'A', nivel: 1, observaciones: '—' },
+          { nombre: 'B', nivel: 4, observaciones: '—' },
+        ],
+      });
+
+      expect(html).toMatch(/class="nivel-badge nivel-1"[^>]*>\s*1\s*</);
+      expect(html).toMatch(/class="nivel-badge nivel-4"[^>]*>\s*4\s*</);
+    });
+
+    it('incluye el logo de la UGEL embebido, sin depender de URLs externas', async () => {
+      const html = await renderFicha({});
+
+      expect(html).toMatch(
+        /<img[^>]+class="logo"[^>]+src="data:image\/webp;base64,[A-Za-z0-9+/=]{100,}"/,
+      );
+      expect(html).not.toMatch(/src="https?:/);
+    });
+
+    it('muestra el nivel de logro y el estado legibles, sin guiones bajos', async () => {
+      const html = await renderFicha({
+        ficha: { nivelLogro: 'LOGRO_ESPERADO', estado: 'FINALIZADA' },
+      });
+
+      expect(html).toContain('Logro esperado');
+      expect(html).toContain('Finalizada');
+      expect(html).not.toContain('LOGRO_ESPERADO');
+    });
+
+    it('repite el encabezado de la tabla de rúbricas en cada página', async () => {
+      const html = await renderFicha({});
+
+      expect(html).toMatch(/thead\s*\{[^}]*display:\s*table-header-group/);
+    });
+  });
 });
