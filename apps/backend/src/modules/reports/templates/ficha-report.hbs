@@ -198,7 +198,7 @@
     </div>
     <table>
       <thead>
-        <tr><th>N°</th><th>Rúbrica / desempeño</th><th>Nivel</th><th>Observaciones</th></tr>
+        <tr><th>N°</th><th>Rúbrica / desempeño</th><th>{{#if ficha.promedio}}Nivel{{else}}Valoración{{/if}}</th><th>Observaciones</th></tr>
       </thead>
       <tbody>
         {{#each respuestas}}
@@ -209,7 +209,7 @@
             {{#if @root.ficha.promedio}}
             <span class="paso nivel-1{{#if (eq this.nivel 1)}} activo{{/if}}">I</span><span class="paso nivel-2{{#if (eq this.nivel 2)}} activo{{/if}}">II</span><span class="paso nivel-3{{#if (eq this.nivel 3)}} activo{{/if}}">III</span><span class="paso nivel-4{{#if (eq this.nivel 4)}} activo{{/if}}">IV</span>
             {{else}}
-            <span class="paso texto nivel-1{{#if (eq this.nivel 1)}} activo{{/if}}">No</span><span class="paso texto nivel-2{{#if (eq this.nivel 2)}} activo{{/if}}">Parcial</span><span class="paso texto nivel-3{{#if (eq this.nivel 3)}} activo{{/if}}">Sí</span>
+            <span class="paso texto nivel-1{{#if (eq this.nivel 1)}} activo{{/if}}">No</span><span class="paso texto nivel-2{{#if (eq this.nivel 2)}} activo{{/if}}">Parcialmente</span><span class="paso texto nivel-3{{#if (eq this.nivel 3)}} activo{{/if}}">Sí</span>
             {{/if}}
           </td>
           <td class="obs">{{this.observaciones}}</td>

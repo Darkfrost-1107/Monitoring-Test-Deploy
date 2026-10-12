@@ -105,15 +105,17 @@ describe('PdfGeneratorService (Gotenberg)', () => {
       expect(html).toContain('Instrumento informativo');
     });
 
-    it('en un instrumento informativo la regla tiene tres valoraciones: No, Parcial y Sí', async () => {
+    it('en un instrumento informativo la regla tiene tres valoraciones: No, Parcialmente y Sí', async () => {
       const html = await renderFicha({
         ficha: { promedio: null, nivelLogro: null },
         respuestas: [{ nombre: 'A', nivel: 2, observaciones: '—' }],
       });
 
-      expect(html).toMatch(/class="paso texto nivel-2 activo"[^>]*>\s*Parcial\s*</);
+      expect(html).toMatch(/class="paso texto nivel-2 activo"[^>]*>\s*Parcialmente\s*</);
       expect(html.match(/class="paso texto nivel-\d( activo)?"/g)).toHaveLength(3);
       expect(html).not.toMatch(/>\s*IV\s*</);
+      expect(html).toMatch(/<th>Valoración<\/th>/);
+      expect(html).not.toMatch(/<th>Nivel<\/th>/);
     });
 
     it('incluye el logo de la UGEL embebido, sin depender de URLs externas', async () => {
