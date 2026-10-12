@@ -81,16 +81,39 @@ describe('PdfGeneratorService (Gotenberg)', () => {
       return (form.get('files') as File).text();
     }
 
-    it('muestra cada nivel de rúbrica como insignia con la clase de su nivel', async () => {
+    it('marca en la regla de logro solo el nivel alcanzado de cada rúbrica', async () => {
       const html = await renderFicha({
-        respuestas: [
-          { nombre: 'A', nivel: 1, observaciones: '—' },
-          { nombre: 'B', nivel: 4, observaciones: '—' },
-        ],
+        ficha: { promedio: '3.00' },
+        respuestas: [{ nombre: 'A', nivel: 3, observaciones: '—' }],
       });
 
-      expect(html).toMatch(/class="nivel-badge nivel-1"[^>]*>\s*1\s*</);
-      expect(html).toMatch(/class="nivel-badge nivel-4"[^>]*>\s*4\s*</);
+      expect(html.match(/class="paso nivel-3 activo"/g)).toHaveLength(1);
+      expect(html.match(/class="paso nivel-\d activo"/g)).toHaveLength(1);
+      expect(html.match(/class="paso nivel-\d"/g)).toHaveLength(3);
+    });
+
+    it('ubica el promedio sobre la escala de 4 tramos', async () => {
+      const html = await renderFicha({ ficha: { promedio: '2.50', nivelLogro: 'LOGRO_ESPERADO' } });
+
+      expect(html).toMatch(/class="marcador"[^>]*left:\s*50%/);
+    });
+
+    it('en un instrumento informativo no dibuja promedio ni escala', async () => {
+      const html = await renderFicha({ ficha: { promedio: null, nivelLogro: null } });
+
+      expect(html).not.toContain('class="marcador"');
+      expect(html).toContain('Instrumento informativo');
+    });
+
+    it('en un instrumento informativo la regla tiene tres valoraciones: No, Parcial y Sí', async () => {
+      const html = await renderFicha({
+        ficha: { promedio: null, nivelLogro: null },
+        respuestas: [{ nombre: 'A', nivel: 2, observaciones: '—' }],
+      });
+
+      expect(html).toMatch(/class="paso texto nivel-2 activo"[^>]*>\s*Parcial\s*</);
+      expect(html.match(/class="paso texto nivel-\d( activo)?"/g)).toHaveLength(3);
+      expect(html).not.toMatch(/>\s*IV\s*</);
     });
 
     it('incluye el logo de la UGEL embebido, sin depender de URLs externas', async () => {
@@ -104,7 +127,7 @@ describe('PdfGeneratorService (Gotenberg)', () => {
 
     it('muestra el nivel de logro y el estado legibles, sin guiones bajos', async () => {
       const html = await renderFicha({
-        ficha: { nivelLogro: 'LOGRO_ESPERADO', estado: 'FINALIZADA' },
+        ficha: { promedio: '2.93', nivelLogro: 'LOGRO_ESPERADO', estado: 'FINALIZADA' },
       });
 
       expect(html).toContain('Logro esperado');

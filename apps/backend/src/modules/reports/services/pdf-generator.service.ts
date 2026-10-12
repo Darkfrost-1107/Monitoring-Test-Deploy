@@ -45,6 +45,12 @@ export class PdfGeneratorService {
   // Helper custom de Handlebars
   constructor() {
     handlebars.registerHelper('increment', (value) => parseInt(String(value), 10) + 1);
+    handlebars.registerHelper('eq', (a: unknown, b: unknown) => Number(a) === Number(b));
+    // Posición (0–100 %) de un promedio dentro de la escala de logro de 1 a 4.
+    handlebars.registerHelper('posicionEscala', (promedio: unknown) => {
+      const valor = Math.min(4, Math.max(1, Number(promedio)));
+      return Number((((valor - 1) / 3) * 100).toFixed(1));
+    });
     // 'LOGRO_ESPERADO' -> 'Logro esperado'
     handlebars.registerHelper('humanizar', (value: unknown) => {
       if (typeof value !== 'string' || value === '') return '';
