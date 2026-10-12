@@ -45,7 +45,10 @@ describe('useSincronizacionFormulario — tipo de visita según el monitor', () 
   });
 
   it('no restringe a quien puede levantar las dos', () => {
-    const onCambiar = montar({ tiposPermitidos: ['DOCENTE', 'DIRECTIVO'], tipoDeVisita: 'DOCENTE' });
+    const onCambiar = montar({
+      tiposPermitidos: ['DOCENTE', 'DIRECTIVO'],
+      tipoDeVisita: 'DOCENTE',
+    });
 
     expect(onCambiar).not.toHaveBeenCalledWith('tipo', expect.anything());
   });
@@ -59,5 +62,22 @@ describe('useSincronizacionFormulario — tipo de visita según el monitor', () 
     });
 
     expect(onCambiar).not.toHaveBeenCalledWith('tipo', expect.anything());
+  });
+});
+
+describe('useSincronizacionFormulario — número de visita sugerido', () => {
+  const evaluado = { id: 'ana' } as Params['evaluadoResuelto'];
+  const previa = (tipo: string, nroVisita: string) =>
+    ({ evaluadoId: 'ana', tipo, nroVisita, estado: 'COMPLETADO' }) as Params['cronogramas'][number];
+
+  /** El backend cuenta las visitas del evaluado sin mirar el tipo: sugerir el 01 chocaría. */
+  it('cuenta las visitas previas aunque hayan sido de otro tipo de ficha', () => {
+    const onCambiar = montar({
+      evaluadoResuelto: evaluado,
+      tipoDeVisita: 'DIRECTIVO',
+      cronogramas: [previa('DOCENTE', '01')],
+    });
+
+    expect(onCambiar).toHaveBeenCalledWith('visita', '02');
   });
 });

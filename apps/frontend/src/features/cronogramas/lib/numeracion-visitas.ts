@@ -36,9 +36,10 @@ export interface NumeroDeVisita {
 /**
  * Números disponibles para la visita que se está programando.
  *
- * Recibe únicamente las visitas del mismo evaluado y del mismo tipo: la
- * numeración es independiente entre docentes y entre monitoreo docente y
- * directivo.
+ * Recibe únicamente las visitas del mismo evaluado, de cualquier tipo: la
+ * numeración es de la persona en el año. Si pasa de director a docente, la
+ * ficha cambia pero el contador sigue. Es el mismo criterio que aplica el
+ * backend al rechazar un número repetido.
  */
 export function numerosDeVisitaDisponibles(
   visitasDelEvaluado: readonly VisitaNumerada[],
@@ -71,4 +72,12 @@ export function numerosDeVisitaDisponibles(
       isFuture: !ocupado && !anulado && num > ultimaVigente + 1,
     };
   });
+}
+
+/** Visitas de un evaluado, sin distinguir si se lo monitoreó como docente o como director. */
+export function visitasDelEvaluado<T extends { evaluadoId?: string }>(
+  cronogramas: readonly T[],
+  evaluadoId: string,
+): T[] {
+  return cronogramas.filter((c) => c.evaluadoId === evaluadoId);
 }
