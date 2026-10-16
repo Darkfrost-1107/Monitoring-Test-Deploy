@@ -9,6 +9,8 @@ interface NavegacionPasosProps {
   estado?: 'completado' | 'pendiente' | null;
   onAnterior?: () => void;
   onSiguiente?: () => void;
+  /** Se muestra al pasar el cursor por «Siguiente» cuando está bloqueado. */
+  motivoSinAvance?: string;
 }
 
 /**
@@ -31,6 +33,7 @@ export const NavegacionPasos = ({
   estado = null,
   onAnterior,
   onSiguiente,
+  motivoSinAvance,
 }: NavegacionPasosProps) => (
   <div className="sticky bottom-0 z-10 -mx-6 -mb-6 mt-6 border-t border-slate-200 flex items-center justify-between gap-2 bg-slate-50 px-6 py-2 shadow-[0_-6px_16px_-10px_rgba(0,0,0,0.3)]">
     <button
@@ -71,6 +74,7 @@ export const NavegacionPasos = ({
     <button
       type="button"
       disabled={!onSiguiente}
+      title={onSiguiente ? undefined : motivoSinAvance}
       onClick={onSiguiente}
       className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
         onSiguiente
