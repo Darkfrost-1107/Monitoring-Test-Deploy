@@ -189,6 +189,27 @@ describe('PdfGeneratorService — ficha oficial al docente', () => {
     }
   });
 
+  it('las opciones se muestran como casillas: una marcada por grupo, el resto vacías', async () => {
+    const { html } = await render();
+
+    // Director (3), docente (3) y monitor (4): diez casillas, con una marcada en cada grupo.
+    expect(html.match(/class="caja-x marcada"/g)).toHaveLength(3);
+    expect(html.match(/class="caja-x"/g)).toHaveLength(7);
+  });
+
+  it('el correo tiene ancho de sobra y no se parte a la mitad de la palabra', async () => {
+    const { html } = await render();
+
+    expect(html.match(/E-MAIL:<\/td>\s*<td colspan="4" class="correo">/g)).toHaveLength(3);
+  });
+
+  it('cada sección lleva su rótulo en una franja con acento', async () => {
+    const { html } = await render();
+
+    expect(html.match(/class="seccion"/g)!.length).toBeGreaterThanOrEqual(6);
+    expect(html).toMatch(/\.seccion\s*\{[^}]*border-left/);
+  });
+
   it('el banner institucional va en la cabecera de la tabla, que se repite en cada página', async () => {
     const { html } = await render();
 

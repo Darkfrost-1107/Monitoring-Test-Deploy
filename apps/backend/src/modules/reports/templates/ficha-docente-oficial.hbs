@@ -22,19 +22,33 @@
     }
 
     .titulo { margin: 6px 0 4px; text-align: center; font-size: 17px; font-weight: bold; text-transform: uppercase; }
-    .seccion { margin: 8px 0 1px; font-size: 13px; font-weight: bold; text-transform: uppercase; text-decoration: underline; break-after: avoid; }
-    .seccion.centrada { text-align: center; text-decoration: none; margin-top: 10px; }
+    .seccion {
+      margin: 9px 0 3px; padding: 3px 8px; font-size: 12px; font-weight: bold; text-transform: uppercase;
+      letter-spacing: 0.3px; color: #14305f; background: var(--azul-suave); border-left: 4px solid #1f4f9c;
+      break-after: avoid;
+    }
+    .seccion.centrada { text-align: center; border-left: 0; border-top: 2px solid #1f4f9c; margin-top: 10px; }
 
     table { width: 100%; border-collapse: collapse; table-layout: fixed; }
     td, th { border: 1px solid var(--linea); padding: 2px 4px; vertical-align: middle; overflow-wrap: anywhere; }
     tr { break-inside: avoid; }
-    .l { font-weight: bold; text-transform: uppercase; font-size: 11.5px; }
+    .l { font-weight: bold; text-transform: uppercase; font-size: 11px; color: #14305f; background: var(--azul-suave); }
+    .datos td { padding: 3px 6px; height: 22px; }
+    .datos td:not(.l):not(.chk) { font-size: 12px; }
+    .fuerte { font-weight: bold; color: #0b1b3a; }
+    .correo { font-size: 11px; overflow-wrap: anywhere; }
     .centro { text-align: center; }
     .negrita { font-weight: bold; }
     .relleno { background: var(--azul-suave); font-weight: bold; text-align: center; }
-    .chk { text-align: center; font-weight: bold; }
+    .chk { text-align: center; }
+    .caja-x {
+      display: inline-block; width: 15px; height: 15px; border: 1.3px solid #1f4f9c; border-radius: 3px;
+      background: #fff; color: #fff; text-align: center; font-size: 12px; font-weight: bold; line-height: 13px; vertical-align: middle;
+    }
+    .caja-x.marcada { background: #1f4f9c; }
 
-    .monitor-opciones { float: right; font-weight: bold; text-transform: uppercase; font-size: 11.5px; }
+    .monitor-opciones { float: right; font-weight: bold; text-transform: uppercase; font-size: 11px; color: #14305f; }
+    .monitor-opciones .caja-x { margin: 0 8px 0 3px; }
 
     .lineamiento {
       margin: 6px 0 0; padding: 2px 6px; background: var(--azul-medio); border: 1px solid var(--linea);
@@ -66,7 +80,7 @@
     .rubrica-texto { text-align: justify; font-size: 11.5px; }
     .libre, .gris, .marca { text-align: center; font-weight: bold; font-size: 15px; vertical-align: middle; }
     .gris { background: var(--gris); }
-    .marca { background: #fff; }
+    .marca { background: #fff; color: #1f4f9c; }
     /* La pregunta extra y las evidencias no se quedan solas bajo una cabecera repetida: viajan con la última fila de niveles. */
     .dt tr.junto { break-before: avoid; }
     .pregunta td { font-style: italic; font-size: 11.5px; }
@@ -86,11 +100,11 @@
     .plan .r { width: 5%; text-align: center; vertical-align: middle; }
     .plan .eje { width: 28%; }
     .plan .nl { width: 5%; text-align: center; font-weight: bold; font-size: 15px; vertical-align: middle; }
-    .plan .marca-plan { text-align: center; font-weight: bold; font-size: 15px; vertical-align: middle; }
+    .plan .marca-plan { text-align: center; font-weight: bold; font-size: 15px; vertical-align: middle; color: #1f4f9c; }
 
     .caja { border: 1px solid var(--linea); padding: 3px 5px; margin-bottom: 4px; break-inside: avoid; }
     .caja .renglones { min-height: 72px; }
-    .etiqueta-caja { font-weight: bold; text-transform: uppercase; margin-top: 4px; break-after: avoid; }
+    .etiqueta-caja { font-weight: bold; text-transform: uppercase; margin-top: 4px; font-size: 11px; letter-spacing: 0.3px; color: #14305f; break-after: avoid; }
 
     .consolidado .cab { background: var(--azul-suave); text-align: center; font-weight: bold; }
     .consolidado td { text-align: center; }
@@ -146,39 +160,39 @@
   <div class="titulo">FICHA DE MONITOREO AL DOCENTE {{anio}}</div>
 
   <div class="seccion">DATOS DE LA INSTITUCIÓN EDUCATIVA:</div>
-  <table>
+  <table class="datos">
     <tr><td class="l" colspan="2">UGEL:</td><td colspan="10">UGEL LAMPA</td></tr>
-    <tr><td class="l" colspan="2">INSTITUCIÓN EDUCATIVA:</td><td colspan="10">{{institucion.nombre}}</td></tr>
+    <tr><td class="l" colspan="2">INSTITUCIÓN EDUCATIVA:</td><td class="fuerte" colspan="10">{{institucion.nombre}}</td></tr>
     <tr>
       <td class="l" colspan="2">MODALIDAD:</td><td colspan="2">{{institucion.modalidad}}</td>
       <td class="l" colspan="2">NIVEL:</td><td colspan="2">{{institucion.nivel}}</td>
       <td class="l" colspan="2">ÁREA:</td><td colspan="2">{{docente.area}}</td>
     </tr>
-    <tr><td class="l" colspan="4">APELLIDOS Y NOMBRES DEL DIRECTOR(A):</td><td colspan="8">{{director.nombre}}</td></tr>
+    <tr><td class="l" colspan="4">APELLIDOS Y NOMBRES DEL DIRECTOR(A):</td><td class="fuerte" colspan="8">{{director.nombre}}</td></tr>
     <tr>
-      <td class="l" colspan="2">DNI:</td><td colspan="2">{{director.dni}}</td>
-      <td class="l" colspan="2">E-MAIL:</td><td colspan="2">{{director.correo}}</td>
+      <td class="l" colspan="1">DNI:</td><td colspan="2">{{director.dni}}</td>
+      <td class="l" colspan="1">E-MAIL:</td><td colspan="4" class="correo">{{director.correo}}</td>
       <td class="l" colspan="2">N° CELULAR:</td><td colspan="2">{{director.celular}}</td>
     </tr>
     <tr>
-      <td class="l" colspan="2">ENCARGADO:</td><td class="chk" colspan="2">{{#if director.encargado}}X{{/if}}</td>
-      <td class="l" colspan="2">DESIGNADO:</td><td class="chk" colspan="2">{{#if director.designado}}X{{/if}}</td>
-      <td class="l" colspan="2">ENC. X FUNCIONES:</td><td class="chk" colspan="2">{{#if director.porFunciones}}X{{/if}}</td>
+      <td class="l" colspan="2">ENCARGADO:</td><td class="chk" colspan="2"><span class="caja-x{{#if director.encargado}} marcada{{/if}}">{{#if director.encargado}}X{{/if}}</span></td>
+      <td class="l" colspan="2">DESIGNADO:</td><td class="chk" colspan="2"><span class="caja-x{{#if director.designado}} marcada{{/if}}">{{#if director.designado}}X{{/if}}</span></td>
+      <td class="l" colspan="2">ENC. X FUNCIONES:</td><td class="chk" colspan="2"><span class="caja-x{{#if director.porFunciones}} marcada{{/if}}">{{#if director.porFunciones}}X{{/if}}</span></td>
     </tr>
   </table>
 
   <div class="seccion">DATOS DEL DOCENTE MONITOREADO:</div>
-  <table>
-    <tr><td class="l" colspan="4">APELLIDOS Y NOMBRES DEL DOCENTE:</td><td colspan="8">{{docente.nombre}}</td></tr>
+  <table class="datos">
+    <tr><td class="l" colspan="4">APELLIDOS Y NOMBRES DEL DOCENTE:</td><td class="fuerte" colspan="8">{{docente.nombre}}</td></tr>
     <tr>
-      <td class="l" colspan="2">DNI:</td><td colspan="2">{{docente.dni}}</td>
-      <td class="l" colspan="2">E-MAIL:</td><td colspan="2">{{docente.correo}}</td>
+      <td class="l" colspan="1">DNI:</td><td colspan="2">{{docente.dni}}</td>
+      <td class="l" colspan="1">E-MAIL:</td><td colspan="4" class="correo">{{docente.correo}}</td>
       <td class="l" colspan="2">N° CELULAR:</td><td colspan="2">{{docente.celular}}</td>
     </tr>
     <tr>
-      <td class="l" colspan="2">CONTRATADO:</td><td class="chk" colspan="2">{{#if docente.contratado}}X{{/if}}</td>
-      <td class="l" colspan="2">NOMBRADO:</td><td class="chk" colspan="2">{{#if docente.nombrado}}X{{/if}}</td>
-      <td class="l" colspan="2">OTRO:</td><td class="chk" colspan="2">{{#if docente.otro}}X{{/if}}</td>
+      <td class="l" colspan="2">CONTRATADO:</td><td class="chk" colspan="2"><span class="caja-x{{#if docente.contratado}} marcada{{/if}}">{{#if docente.contratado}}X{{/if}}</span></td>
+      <td class="l" colspan="2">NOMBRADO:</td><td class="chk" colspan="2"><span class="caja-x{{#if docente.nombrado}} marcada{{/if}}">{{#if docente.nombrado}}X{{/if}}</span></td>
+      <td class="l" colspan="2">OTRO:</td><td class="chk" colspan="2"><span class="caja-x{{#if docente.otro}} marcada{{/if}}">{{#if docente.otro}}X{{/if}}</span></td>
     </tr>
     <tr>
       <td class="l" colspan="2">MODALIDAD:</td><td colspan="2">{{docente.modalidad}}</td>
@@ -194,28 +208,25 @@
   </table>
 
   <div class="seccion">DATOS DEL(OS) MONITOR(ES):</div>
-  <table>
+  <table class="datos">
     <tr>
       <td class="l" colspan="3">APELLIDOS Y NOMBRES:</td>
       <td colspan="9">
-        {{monitor.nombre}}
+        <span class="fuerte">{{monitor.nombre}}</span>
         <span class="monitor-opciones">
-          DREP ( {{#if monitor.drep}}X{{else}}&nbsp;{{/if}} ) &nbsp;
-          UGEL ( {{#if monitor.ugel}}X{{else}}&nbsp;{{/if}} ) &nbsp;
-          DIRECTOR IE ( {{#if monitor.directorIe}}X{{else}}&nbsp;{{/if}} ) &nbsp;
-          COORDINADOR ( {{#if monitor.coordinador}}X{{else}}&nbsp;{{/if}} )
+          DREP <span class="caja-x{{#if monitor.drep}} marcada{{/if}}">{{#if monitor.drep}}X{{/if}}</span> UGEL <span class="caja-x{{#if monitor.ugel}} marcada{{/if}}">{{#if monitor.ugel}}X{{/if}}</span> DIRECTOR IE <span class="caja-x{{#if monitor.directorIe}} marcada{{/if}}">{{#if monitor.directorIe}}X{{/if}}</span> COORDINADOR <span class="caja-x{{#if monitor.coordinador}} marcada{{/if}}">{{#if monitor.coordinador}}X{{/if}}</span>
         </span>
       </td>
     </tr>
     <tr>
-      <td class="l" colspan="2">DNI:</td><td colspan="2">{{monitor.dni}}</td>
-      <td class="l" colspan="2">E-MAIL:</td><td colspan="2">{{monitor.correo}}</td>
+      <td class="l" colspan="1">DNI:</td><td colspan="2">{{monitor.dni}}</td>
+      <td class="l" colspan="1">E-MAIL:</td><td colspan="4" class="correo">{{monitor.correo}}</td>
       <td class="l" colspan="2">N° CELULAR:</td><td colspan="2">{{monitor.celular}}</td>
     </tr>
   </table>
 
   <div class="seccion">FECHA Y DURACIÓN:</div>
-  <table>
+  <table class="datos">
     <tr>
       <td class="l" colspan="1">FECHA:</td><td colspan="3">{{fecha}}</td>
       <td class="l" colspan="2">HORA INICIO:</td><td colspan="2">{{horaInicio}}</td>
@@ -282,7 +293,7 @@
 
   {{#if planificacion.length}}
   <div class="bloque">
-  <div class="seccion centrada" style="text-align:left; font-size:15px; text-decoration:none; margin-top:14px;">PLANIFICACIÓN Y DISEÑO DE EVALUACIÓN</div>
+  <div class="seccion" style="margin-top:14px;">PLANIFICACIÓN Y DISEÑO DE EVALUACIÓN</div>
   <table class="plan">
     <tr>
       <th rowspan="2" style="width:5%">R</th>
