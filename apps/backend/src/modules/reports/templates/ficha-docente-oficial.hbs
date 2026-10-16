@@ -45,21 +45,30 @@
       text-align: center; font-weight: bold; font-style: italic; font-size: 15px; text-transform: uppercase;
     }
 
-    /* ── Desempeño ── */
-    .desempeno { margin-bottom: 10px; }
-    .desempeno td { vertical-align: top; }
-    .d-titulo { background: var(--azul); font-weight: bold; text-transform: uppercase; font-size: 12.5px; padding: 3px 5px; break-after: avoid; }
+    /* ── Desempeño ──
+       Tres tablas apiladas con bordes propios (border-collapse: separate): la cabecera con la
+       descripción y los aspectos, y la rúbrica. La rúbrica no usa celdas que abarquen varias
+       filas, así que puede partirse entre filas, y su cabecera de niveles se repite. */
+    .desempeno { margin-bottom: 8px; }
+    .dt { width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 0; border-top: 1px solid var(--linea); border-left: 1px solid var(--linea); }
+    .dt + .dt { border-top: 0; }
+    .dt td, .dt th { border: 0; border-right: 1px solid var(--linea); border-bottom: 1px solid var(--linea); padding: 2px 5px; vertical-align: top; overflow-wrap: anywhere; }
+    .d-titulo { background: var(--azul); font-weight: bold; text-transform: uppercase; font-size: 12.5px; padding: 3px 5px; }
     .d-bloque { background: var(--azul); padding: 3px 6px; text-align: justify; }
     .d-bloque ul { margin: 2px 0 0 18px; padding: 0; }
     .d-bloque li { margin: 1px 0; }
-    .desempeno .nivel-vertical { background: var(--azul-medio); text-align: center; vertical-align: middle; width: 4%; }
+    .dt td.nivel-vertical { background: var(--azul-medio); text-align: center; vertical-align: middle; }
     .nivel-vertical span { display: inline-block; writing-mode: vertical-rl; transform: rotate(180deg); font-weight: bold; letter-spacing: 1px; }
-    .d-cabecera { background: var(--azul); font-weight: bold; text-align: center; font-size: 11.5px; }
-    .romano { text-align: center; font-size: 11px; width: 4%; vertical-align: top; }
+    .dt td.nv { background: var(--azul-medio); border-bottom: 0; }
+    .dt tr.ultima td.nv { border-bottom: 1px solid var(--linea); }
+    .d-cabecera { background: var(--azul); font-weight: bold; text-align: center; font-size: 11.5px; vertical-align: middle; }
+    .romano { text-align: center; font-size: 11px; }
     .rubrica-texto { text-align: justify; font-size: 11.5px; }
-    .libre, .gris, .marca { width: 6.5%; text-align: center; font-weight: bold; font-size: 15px; }
+    .libre, .gris, .marca { text-align: center; font-weight: bold; font-size: 15px; vertical-align: middle; }
     .gris { background: var(--gris); }
     .marca { background: #fff; }
+    /* La pregunta extra y las evidencias no se quedan solas bajo una cabecera repetida: viajan con la última fila de niveles. */
+    .dt tr.junto { break-before: avoid; }
     .pregunta td { font-style: italic; font-size: 11.5px; }
     .pregunta .si-no { text-align: right; font-weight: bold; font-style: normal; white-space: nowrap; }
     .casilla { display: inline-block; min-width: 14px; height: 13px; border-bottom: 1px solid #000; text-align: center; line-height: 13px; vertical-align: baseline; }
@@ -79,9 +88,9 @@
     .plan .nl { width: 5%; text-align: center; font-weight: bold; font-size: 15px; vertical-align: middle; }
     .plan .marca-plan { text-align: center; font-weight: bold; font-size: 15px; vertical-align: middle; }
 
-    .caja { border: 1px solid var(--linea); padding: 3px 5px; margin-bottom: 4px; }
+    .caja { border: 1px solid var(--linea); padding: 3px 5px; margin-bottom: 4px; break-inside: avoid; }
     .caja .renglones { min-height: 72px; }
-    .etiqueta-caja { font-weight: bold; text-transform: uppercase; margin-top: 4px; }
+    .etiqueta-caja { font-weight: bold; text-transform: uppercase; margin-top: 4px; break-after: avoid; }
 
     .consolidado .cab { background: var(--azul-suave); text-align: center; font-weight: bold; }
     .consolidado td { text-align: center; }
@@ -224,42 +233,51 @@
   <div class="aula">OBSERVACIÓN DE AULA</div>
 
   {{#each desempenos}}
-  <table class="desempeno">
-    <colgroup><col style="width:4%"><col style="width:4%"><col style="width:66%"><col style="width:6.5%"><col style="width:6.5%"><col style="width:6.5%"><col style="width:6.5%"></colgroup>
-    <tr><td class="d-titulo" colspan="7">{{this.nombre}}</td></tr>
-    <tr><td class="d-bloque" colspan="7"><b>Descripción del desempeño:</b><br>{{this.descripcion}}</td></tr>
-    <tr>
-      <td class="d-bloque" colspan="7">
-        <b>{{this.introAspectos}}</b>
-        <ul>{{#each this.aspectos}}<li>{{this}}</li>{{/each}}</ul>
-      </td>
-    </tr>
-    <tr>
-      <td class="nivel-vertical" rowspan="{{rowspanNivel this}}"><span>NIVEL</span></td>
-      <td class="d-cabecera" colspan="2" rowspan="2">DESCRIPCIÓN DEL NIVEL A QUE CORRESPONDE<br>(Marcar sólo un nivel de desempeño)</td>
-      <td class="d-cabecera" colspan="4">NIVELES</td>
-    </tr>
-    <tr><td class="d-cabecera">I</td><td class="d-cabecera">II</td><td class="d-cabecera">III</td><td class="d-cabecera">IV</td></tr>
-    {{#each this.rubrica}}
-    <tr>
-      <td class="romano">{{this.romano}}</td>
-      <td class="rubrica-texto">{{this.descripcion}}</td>
-      {{#each this.celdas}}{{#if (eq this "marcada")}}<td class="marca">X</td>{{else}}{{#if (eq this "gris")}}<td class="gris"></td>{{else}}<td class="libre"></td>{{/if}}{{/if}}{{/each}}
-    </tr>
-    {{/each}}
-    {{#if this.preguntaExtra}}
-    <tr class="pregunta">
-      <td colspan="5">{{this.preguntaExtra.texto}}</td>
-      <td class="si-no" colspan="2">Sí: <span class="casilla">{{#if this.preguntaExtra.si}}X{{/if}}</span> &nbsp; No: <span class="casilla">{{#if this.preguntaExtra.no}}X{{/if}}</span></td>
-    </tr>
-    {{/if}}
-    <tr>
-      <td colspan="7">
-        <div class="evidencias-titulo">EVIDENCIAS (CONDUCTAS OBSERVADAS)</div>
-        <div class="renglones">{{this.evidencias}}</div>
-      </td>
-    </tr>
-  </table>
+  <div class="desempeno">
+    <table class="dt" style="break-after: avoid;">
+      <tr><td class="d-titulo">{{this.nombre}}</td></tr>
+      <tr><td class="d-bloque"><b>Descripción del desempeño:</b><br>{{this.descripcion}}</td></tr>
+      <tr>
+        <td class="d-bloque">
+          <b>{{this.introAspectos}}</b>
+          <ul>{{#each this.aspectos}}<li>{{this}}</li>{{/each}}</ul>
+        </td>
+      </tr>
+    </table>
+    <table class="dt">
+      <colgroup><col style="width:4%"><col style="width:4%"><col style="width:66%"><col style="width:6.5%"><col style="width:6.5%"><col style="width:6.5%"><col style="width:6.5%"></colgroup>
+      <thead>
+        <tr>
+          <td class="nivel-vertical" rowspan="2"><span>NIVEL</span></td>
+          <td class="d-cabecera" colspan="2" rowspan="2">DESCRIPCIÓN DEL NIVEL A QUE CORRESPONDE<br>(Marcar sólo un nivel de desempeño)</td>
+          <td class="d-cabecera" colspan="4">NIVELES</td>
+        </tr>
+        <tr><td class="d-cabecera">I</td><td class="d-cabecera">II</td><td class="d-cabecera">III</td><td class="d-cabecera">IV</td></tr>
+      </thead>
+      <tbody>
+        {{#each this.rubrica}}
+        <tr{{#if @last}} class="ultima"{{/if}}>
+          <td class="nv"></td>
+          <td class="romano">{{this.romano}}</td>
+          <td class="rubrica-texto">{{this.descripcion}}</td>
+          {{#each this.celdas}}{{#if (eq this "marcada")}}<td class="marca">X</td>{{else}}{{#if (eq this "gris")}}<td class="gris"></td>{{else}}<td class="libre"></td>{{/if}}{{/if}}{{/each}}
+        </tr>
+        {{/each}}
+        {{#if this.preguntaExtra}}
+        <tr class="pregunta junto">
+          <td colspan="5">{{this.preguntaExtra.texto}}</td>
+          <td class="si-no" colspan="2">Sí: <span class="casilla">{{#if this.preguntaExtra.si}}X{{/if}}</span> &nbsp; No: <span class="casilla">{{#if this.preguntaExtra.no}}X{{/if}}</span></td>
+        </tr>
+        {{/if}}
+        <tr class="junto">
+          <td colspan="7">
+            <div class="evidencias-titulo">EVIDENCIAS (CONDUCTAS OBSERVADAS)</div>
+            <div class="renglones">{{this.evidencias}}</div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
   {{/each}}
 
   {{#if planificacion.length}}
@@ -285,7 +303,7 @@
   </div>
   {{/if}}
 
-  <div class="bloque">
+  <div class="cierre">
     <div class="seccion" style="margin-top:16px;">SUGERENCIAS Y COMPROMISOS:</div>
     {{#if observaciones}}
     <div class="etiqueta-caja">OBSERVACIONES GENERALES:</div>
@@ -312,6 +330,9 @@
       <tr><td class="cab">PROMEDIO</td><td colspan="{{consolidado.columnas.length}}" class="negrita" data-consolidado="promedio">{{consolidado.promedio}}</td></tr>
       <tr><td class="cab">NIVEL DE LOGRO</td><td colspan="{{consolidado.columnas.length}}" class="negrita" data-consolidado="nivel">{{consolidado.nivel}}</td></tr>
     </table>
+  </div>
+
+  <div class="bloque">
     <div class="leyenda-titulo">LEYENDA</div>
     <table class="leyenda">
       <tr><th>TOTAL</th><th>PROMEDIO</th><th>NIVEL DE LOGRO ALCANZADO</th></tr>

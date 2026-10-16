@@ -52,11 +52,6 @@ export class PdfGeneratorService {
       const nb = Number(b);
       return Number.isNaN(na) || Number.isNaN(nb) ? a === b : na === nb;
     });
-    // Filas que ocupa la celda vertical «NIVEL»: dos de cabecera y una por cada nivel de la rúbrica.
-    handlebars.registerHelper(
-      'rowspanNivel',
-      (desempeno: { rubrica?: unknown[] }) => 2 + (desempeno.rubrica?.length ?? 0),
-    );
     // Posición (0–100 %) de un promedio dentro de la escala de logro de 1 a 4.
     handlebars.registerHelper('posicionEscala', (promedio: unknown) => {
       const valor = Math.min(4, Math.max(1, Number(promedio)));

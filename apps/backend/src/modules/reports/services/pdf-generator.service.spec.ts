@@ -225,6 +225,39 @@ describe('PdfGeneratorService — ficha oficial al docente', () => {
     expect(Number(form.get('marginTop'))).toBeLessThan(0.6);
   });
 
+  it('la rúbrica se puede partir entre filas: ninguna celda abarca toda la tabla', async () => {
+    const { html } = await render();
+
+    // Una celda vertical «NIVEL» que abarcara las cuatro filas obliga a que toda la rúbrica
+    // salte junta a la hoja siguiente y deje un hueco en la anterior.
+    expect(html).not.toMatch(/rowspan="[3-9]"/);
+  });
+
+  it('la cabecera de niveles de cada desempeño se repite si su rúbrica cruza de página', async () => {
+    const { html } = await render();
+
+    // Una cabecera para el banner y una por cada uno de los 5 desempeños.
+    expect(html.match(/<thead>/g)).toHaveLength(1 + 5);
+  });
+
+  it('las evidencias de cada desempeño viajan con su última fila de niveles', async () => {
+    const { html } = await render();
+
+    // Sin esto, una cabecera repetida podría quedar sobre una fila de evidencias suelta.
+    expect(html.match(/<tr class="junto">/g)).toHaveLength(5);
+  });
+
+  it('la leyenda no se pega al consolidado: puede pasar sola a la hoja siguiente', async () => {
+    const { html } = await render();
+
+    const consolidado = html.indexOf('CONSOLIDADO DE NIVELES DE LOGRO');
+    const leyenda = html.indexOf('class="leyenda-titulo"');
+    const cierreDelBloque = html.indexOf('</table>\n  </div>', consolidado);
+
+    expect(cierreDelBloque).toBeGreaterThan(consolidado);
+    expect(cierreDelBloque).toBeLessThan(leyenda);
+  });
+
   it('marca una casilla por desempeño calificado y deja el resto en gris', async () => {
     const { html } = await render();
 
