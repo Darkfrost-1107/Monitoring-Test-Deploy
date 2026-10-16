@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { criterioCompleto, indiceMaximoAccesible } from './avance-ficha';
+import { criterioCompleto, indiceMaximoAccesible, planificacionCompleta } from './avance-ficha';
 
 describe('criterioCompleto', () => {
   it('exige nivel y justificación, igual que la validación del cierre', () => {
@@ -48,5 +48,26 @@ describe('indiceMaximoAccesible', () => {
 
   it('sin pasos devuelve 0', () => {
     expect(indiceMaximoAccesible([], () => true)).toBe(0);
+  });
+});
+
+describe('planificacionCompleta', () => {
+  const items = [{ id: 'e1' }, { id: 'e2' }];
+
+  it('exige nivel y observación en cada ítem', () => {
+    expect(planificacionCompleta(items, { e1: 3, e2: 4 }, { e1: 'Uno', e2: 'Dos' })).toBe(true);
+  });
+
+  it('un ítem sin nivel la deja incompleta', () => {
+    expect(planificacionCompleta(items, { e1: 3 }, { e1: 'Uno', e2: 'Dos' })).toBe(false);
+  });
+
+  it('un ítem sin observación, o en blanco, la deja incompleta', () => {
+    expect(planificacionCompleta(items, { e1: 3, e2: 4 }, { e1: 'Uno' })).toBe(false);
+    expect(planificacionCompleta(items, { e1: 3, e2: 4 }, { e1: 'Uno', e2: '  ' })).toBe(false);
+  });
+
+  it('sin ítems no hay nada que completar', () => {
+    expect(planificacionCompleta([], {}, {})).toBe(true);
   });
 });

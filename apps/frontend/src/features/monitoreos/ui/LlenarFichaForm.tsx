@@ -27,7 +27,6 @@ import {
 } from '../lib/estado-formulario';
 import { ContextoDeAulaSeccion } from './ficha/ContextoDeAulaSeccion';
 import { PanelDesempenos } from './ficha/PanelDesempenos';
-import { EjesItemsSeccion } from './ficha/EjesItemsSeccion';
 import { ConsolidadoSeccion } from './ficha/ConsolidadoSeccion';
 import { PieDeFicha } from './ficha/PieDeFicha';
 import { VistaPreviaEvidencia } from './ficha/VistaPreviaEvidencia';
@@ -350,6 +349,25 @@ export const LlenarFichaForm = ({
               }
               onObservar={(id, texto) => setRubricComments((prev) => ({ ...prev, [id]: texto }))}
               mostrarAspectos={!isDirectivo}
+              /* Planificación y diseño de evaluación existe sólo en el instrumento
+                 docente. Se condiciona al tipo y no sólo a que haya ítems: una
+                 plantilla directiva que los tenga cargados —el formulario ya no lo
+                 permite, pero la base puede traerlos— le mostraría al evaluador un
+                 paso que su ficha no lleva. */
+              planificacion={
+                !isDirectivo && template.ejesItems && template.ejesItems.length > 0
+                  ? {
+                      items: template.ejesItems,
+                      niveles: template.niveles,
+                      respuestas: respuestasEjeItem,
+                      observaciones: observacionesEjeItem,
+                      onResponder: (itemId, nivel) =>
+                        setRespuestasEjeItem((prev) => ({ ...prev, [itemId]: nivel })),
+                      onObservar: (itemId, texto) =>
+                        setObservacionesEjeItem((prev) => ({ ...prev, [itemId]: texto })),
+                    }
+                  : undefined
+              }
               cierre={{
                 observaciones: generalComments,
                 sugerencias,
@@ -373,27 +391,6 @@ export const LlenarFichaForm = ({
               }}
               soloLectura={isCompleted}
             />
-
-        {/* Planificación y diseño de evaluación existe sólo en el instrumento
-            docente. Se condiciona al tipo y no sólo a que haya ítems: una
-            plantilla directiva que los tenga cargados —el formulario ya no lo
-            permite, pero la base puede traerlos— le mostraría al evaluador una
-            sección que su ficha no lleva. */}
-        {!isDirectivo && template.ejesItems && template.ejesItems.length > 0 && (
-          <EjesItemsSeccion
-            items={template.ejesItems}
-            niveles={template.niveles}
-            respuestas={respuestasEjeItem}
-            observaciones={observacionesEjeItem}
-            onResponder={(itemId, nivel) =>
-              setRespuestasEjeItem((prev) => ({ ...prev, [itemId]: nivel }))
-            }
-            onObservar={(itemId, texto) =>
-              setObservacionesEjeItem((prev) => ({ ...prev, [itemId]: texto }))
-            }
-            soloLectura={isCompleted}
-          />
-        )}
 
         {calificacion && (
           <ConsolidadoSeccion

@@ -29,3 +29,16 @@ export function indiceMaximoAccesible(
   const primeroIncompleto = claves.findIndex((clave) => !estaCompleto(clave));
   return primeroIncompleto === -1 ? Math.max(0, claves.length - 1) : primeroIncompleto;
 }
+
+/**
+ * La planificación y el diseño de la evaluación están completos cuando cada
+ * ítem tiene su nivel y su observación: el backend exige el nivel de cada
+ * respuesta guardada, y la observación es obligatoria para cerrar la ficha.
+ */
+export function planificacionCompleta(
+  items: readonly { id: string }[],
+  niveles: Readonly<Record<string, number>>,
+  observaciones: Readonly<Record<string, string>>,
+): boolean {
+  return items.every((item) => !!niveles[item.id] && !!observaciones[item.id]?.trim());
+}

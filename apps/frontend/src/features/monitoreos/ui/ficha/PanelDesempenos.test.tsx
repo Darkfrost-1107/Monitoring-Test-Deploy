@@ -2,7 +2,11 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { Plantilla } from '@/entities/model-plantillas';
-import { PanelDesempenos, type RespuestasDesempenos } from './PanelDesempenos';
+import {
+  PanelDesempenos,
+  type PlanificacionDeFicha,
+  type RespuestasDesempenos,
+} from './PanelDesempenos';
 
 /**
  * El avance de la ficha es lineal: no se pasa al criterio siguiente, ni al
@@ -44,10 +48,15 @@ const PLANTILLA: Plantilla = {
 
 const VACIAS: RespuestasDesempenos = { niveles: {}, preguntasExtra: {}, observaciones: {} };
 
-const montar = (respuestas: RespuestasDesempenos = VACIAS, soloLectura = false) =>
+const montar = (
+  respuestas: RespuestasDesempenos = VACIAS,
+  soloLectura = false,
+  planificacion?: PlanificacionDeFicha,
+) =>
   render(
     <PanelDesempenos
       template={PLANTILLA}
+      planificacion={planificacion}
       respuestas={respuestas}
       onElegirNivel={vi.fn()}
       onResponderExtra={vi.fn()}
@@ -133,5 +142,92 @@ describe('PanelDesempenos — avance bloqueado con el criterio incompleto', () =
     montar({ niveles: { d1: 'III' }, preguntasExtra: {}, observaciones: {} });
 
     expect(screen.queryByText('Completado')).not.toBeInTheDocument();
+  });
+});
+
+describe('PanelDesempenos — planificación y diseño de la evaluación como paso', () => {
+  const COMPLETOS: RespuestasDesempenos = {
+    niveles: { d1: 'III', d2: 'IV' },
+    preguntasExtra: {},
+    observaciones: { d1: 'Uno', d2: 'Dos' },
+  };
+
+  const planificacion = (over: Partial<PlanificacionDeFicha> = {}): PlanificacionDeFicha => ({
+    items: [
+      { id: 'e1', numero: 1, descripcion: 'Planifica el proceso de enseñanza' },
+      { id: 'e2', numero: 2, descripcion: 'Diseña una evaluación pertinente' },
+    ],
+    niveles: NIVELES,
+    respuestas: {},
+    observaciones: {},
+    onResponder: vi.fn(),
+    onObservar: vi.fn(),
+    ...over,
+  });
+
+  const ETIQUETA = 'Planificación y diseño de evaluación';
+
+  it('aparece en la barra lateral entre los criterios y el cierre', () => {
+    montar(COMPLETOS, false, planificacion());
+
+    const plan = screen.getByText(ETIQUETA);
+    const criterio = screen.getByText('Criterio dos');
+    const cierre = screen.getByText('Observaciones Generales');
+
+    expect(criterio.compareDocumentPosition(plan) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(plan.compareDocumentPosition(cierre) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('no aparece si la ficha no la lleva', () => {
+    montar(COMPLETOS);
+
+    expect(screen.queryByText(ETIQUETA)).not.toBeInTheDocument();
+  });
+
+  it('queda bloqueada mientras haya un criterio incompleto', () => {
+    montar(VACIAS, false, planificacion());
+
+    expect(itemDelIndice(ETIQUETA)).toHaveAttribute('aria-disabled', 'true');
+  });
+
+  it('con los criterios completos se abre y se muestra en el panel derecho', async () => {
+    montar(COMPLETOS, false, planificacion());
+
+    await userEvent.click(screen.getByText(ETIQUETA));
+
+    expect(screen.getByText('Planifica el proceso de enseñanza')).toBeInTheDocument();
+    expect(screen.getByText('Diseña una evaluación pertinente')).toBeInTheDocument();
+  });
+
+  it('«Siguiente» desde el último criterio lleva a la planificación, no al cierre', async () => {
+    montar(COMPLETOS, false, planificacion());
+
+    await userEvent.click(screen.getByText('Criterio dos'));
+    await userEvent.click(siguiente());
+
+    expect(screen.getByText('Planifica el proceso de enseñanza')).toBeInTheDocument();
+    expect(screen.queryByText(/Describa cómo se desarrolló la visita/)).not.toBeInTheDocument();
+  });
+
+  it('el cierre sigue bloqueado hasta completar la planificación', () => {
+    montar(COMPLETOS, false, planificacion());
+
+    expect(itemDelIndice('Observaciones Generales')).toHaveAttribute('aria-disabled', 'true');
+  });
+
+  it('con la planificación completa se abre el cierre', () => {
+    montar(
+      COMPLETOS,
+      false,
+      planificacion({ respuestas: { e1: 3, e2: 4 }, observaciones: { e1: 'A', e2: 'B' } }),
+    );
+
+    expect(itemDelIndice('Observaciones Generales')).toHaveAttribute('aria-disabled', 'false');
+  });
+
+  it('en sólo lectura no bloquea la planificación', () => {
+    montar(VACIAS, true, planificacion());
+
+    expect(itemDelIndice(ETIQUETA)).toHaveAttribute('aria-disabled', 'false');
   });
 });

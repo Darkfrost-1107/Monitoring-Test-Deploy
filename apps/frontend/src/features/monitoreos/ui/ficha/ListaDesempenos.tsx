@@ -26,6 +26,13 @@ interface ListaDesempenosProps {
     compromisos: boolean;
     evidencia: boolean;
   };
+  /** Paso de planificación y diseño de la evaluación, entre los criterios y el cierre. */
+  planificacion?: {
+    completa: boolean;
+    activa: boolean;
+    bloqueada: boolean;
+    onSeleccionar: () => void;
+  };
   /** Paso de cierre activo en el panel, si el escenario no muestra un criterio. */
   pasoCierreActivo?: PasoCierreTipo | null;
   onSeleccionar: (desempenoId: string) => void;
@@ -140,6 +147,7 @@ export const ListaDesempenos = ({
   bloqueados,
   cierreBloqueado = false,
   esEib = false,
+  planificacion,
   cierre,
   pasoCierreActivo = null,
   onSeleccionar,
@@ -238,6 +246,18 @@ export const ListaDesempenos = ({
       </div>
       );
     })}
+
+    {planificacion && (
+      <div className="pt-3 mt-1 border-t border-slate-200/70">
+        <ItemCierre
+          etiqueta="Planificación y diseño de evaluación"
+          estado={planificacion.completa ? 'ok' : 'pendiente'}
+          activo={planificacion.activa}
+          bloqueado={planificacion.bloqueada}
+          onClick={planificacion.onSeleccionar}
+        />
+      </div>
+    )}
 
     {cierre && (
       <div className="space-y-2">
