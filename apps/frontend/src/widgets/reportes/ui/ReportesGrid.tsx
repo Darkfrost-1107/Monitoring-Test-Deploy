@@ -9,6 +9,7 @@ import { usePlantilla } from '@/entities/model-plantillas/use-plantillas-api';
 import { fichasApi } from '@/features/monitoreos/api/fichas.api';
 import { fichaAEstadoFormulario } from '@/features/monitoreos/lib/ficha-estado';
 import { tieneFormatoOficial } from '@/features/monitoreos/lib/formato-oficial';
+import { idDeFicha } from '@/features/monitoreos/lib/id-de-ficha';
 import { useImprimirFichaOficial } from '@/features/monitoreos/hooks/use-imprimir-ficha-oficial';
 import { FiltrosReportes } from './grid/FiltrosReportes';
 import { TarjetaReporte } from './grid/TarjetaReporte';
@@ -248,11 +249,10 @@ export const ReportesGrid = ({
     }
 
     setPdfOficialId(visita.id);
-    void imprimirOficial(async () => {
-      // El listado del backend trae el id de la FICHA; el respaldo local, el de la visita.
-      if ('nivelLogro' in visita) return visita.id;
-      return (await fichasApi.findByVisita(visita.id))?.id ?? null;
-    }).finally(() => setPdfOficialId(null));
+    // El listado del backend trae el id de la FICHA; el respaldo local, el de la visita.
+    void imprimirOficial(() =>
+      idDeFicha(visita, '', (visitaId) => fichasApi.findByVisita(visitaId)),
+    ).finally(() => setPdfOficialId(null));
   };
 
   const [enviandoCorreoId, setEnviandoCorreoId] = useState<string | null>(null);

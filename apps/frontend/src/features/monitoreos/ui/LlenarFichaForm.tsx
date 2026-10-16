@@ -14,6 +14,7 @@ import { useReactToPrint } from 'react-to-print';
 import { FichaPrintable } from '@/widgets/reportes/ui/FichaPrintable';
 import { useImprimirFichaOficial } from '../hooks/use-imprimir-ficha-oficial';
 import { tieneFormatoOficial } from '../lib/formato-oficial';
+import { idDeFicha } from '../lib/id-de-ficha';
 import { fichasApi } from '../api/fichas.api';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRef } from 'react';
@@ -312,10 +313,9 @@ export const LlenarFichaForm = ({
           imprimiendo={generandoPdf}
           onImprimir={() =>
             tieneFormatoOficial(template.instrumento)
-              ? void imprimirOficial(async () => {
-                  const ficha = await fichasApi.findByVisitaYPlantilla(visit.id, template.id);
-                  return ficha?.id ?? null;
-                })
+              ? void imprimirOficial(() =>
+                  idDeFicha(visit, template.id, fichasApi.findByVisitaYPlantilla),
+                )
               : handlePrint()
           }
           onCerrar={onClose}
