@@ -41,10 +41,13 @@ export class PrismaReporteRepository implements ReporteRepository {
     const limit = Number(filters.limit ?? 20);
     const skip = (page - 1) * limit;
 
-    const where: Prisma.FichaMonitoreoWhereInput = {
-      estado: 'FINALIZADO',
-      ...this.scopeFilter.forFicha(this.toScopeContext(session)),
-    };
+    // El alcance del usuario y sus filtros se SUMAN (AND): asignar `where.cronograma`
+    // reemplazaba el alcance de institución o de nivel cada vez que llegaba un
+    // filtro de cronograma, y el usuario veía fichas que no le correspondían.
+    const condiciones: Prisma.FichaMonitoreoWhereInput[] = [
+      this.scopeFilter.forFicha(this.toScopeContext(session)),
+    ];
+    const where: Prisma.FichaMonitoreoWhereInput = { estado: 'FINALIZADO', AND: condiciones };
     if (filters.anioAcademico !== undefined) where.anioAcademico = filters.anioAcademico;
 
     // Ambos filtros apuntan a Cronograma, no a FichaMonitoreo. `institucionId`
@@ -56,7 +59,7 @@ export class PrismaReporteRepository implements ReporteRepository {
     if (filters.nivelEducativo) porCronograma.nivelEducativo = filters.nivelEducativo;
     if (filters.docenteId) porCronograma.evaluadoId = filters.docenteId;
     if (filters.numeroVisita) porCronograma.numeroVisita = filters.numeroVisita;
-    if (Object.keys(porCronograma).length > 0) where.cronograma = porCronograma;
+    if (Object.keys(porCronograma).length > 0) condiciones.push({ cronograma: porCronograma });
     if (filters.tipoMonitoreo) where.plantilla = { tipoMonitoreo: filters.tipoMonitoreo };
     if (filters.nivelLogro) where.nivelLogro = filters.nivelLogro;
     if (filters.fechaDesde || filters.fechaHasta) {
@@ -308,9 +311,13 @@ export class PrismaReporteRepository implements ReporteRepository {
     filters: QueryFichasCompletadas,
     session: SessionScope,
   ): Promise<IAnalisisDesempenoCriterio[]> {
+    // Ver el comentario de `findFichasCompletadas`: el alcance y los filtros se suman.
+    const condiciones: Prisma.FichaMonitoreoWhereInput[] = [
+      this.scopeFilter.forFicha(this.toScopeContext(session)),
+    ];
     const whereFicha: Prisma.FichaMonitoreoWhereInput = {
       estado: 'FINALIZADO',
-      ...this.scopeFilter.forFicha(this.toScopeContext(session)),
+      AND: condiciones,
     };
     if (filters.anioAcademico !== undefined) whereFicha.anioAcademico = filters.anioAcademico;
 
@@ -331,7 +338,7 @@ export class PrismaReporteRepository implements ReporteRepository {
       porCronograma.numeroVisita = filters.numeroVisita;
     }
     if (Object.keys(porCronograma).length > 0) {
-      whereFicha.cronograma = porCronograma;
+      condiciones.push({ cronograma: porCronograma });
     }
     if (filters.tipoMonitoreo) {
       whereFicha.plantilla = { tipoMonitoreo: filters.tipoMonitoreo };
