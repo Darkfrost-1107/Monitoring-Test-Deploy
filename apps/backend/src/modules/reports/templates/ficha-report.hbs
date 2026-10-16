@@ -4,242 +4,252 @@
   <meta charset="UTF-8">
   <title>Ficha de Monitoreo</title>
   <style>
+    :root {
+      --tinta: #1b2a41;
+      --altiplano: #2f5d8a;
+      --rosa: #c4756b;
+      --suave: #667085;
+      --linea: #d9d4cc;
+      --panel: #f6f4f0;
+
+      /* Rampa ordinal de un solo tono: I (claro) a IV (oscuro). Se lee igual en blanco y negro. */
+      --n1: #d3deea;
+      --n2: #94b0cc;
+      --n3: #4d79a3;
+      --n4: #1b2a41;
+    }
+    * { box-sizing: border-box; }
     body {
-      font-family: Arial, sans-serif;
-      font-size: 11px;
       margin: 0;
-      padding: 20px;
-      color: #000;
+      font-family: Carlito, 'Liberation Sans', Arial, sans-serif;
+      font-size: 11.5px;
+      line-height: 1.4;
+      color: var(--tinta);
+      font-variant-numeric: tabular-nums;
     }
-    .header-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-bottom: 10px;
+    .serif { font-family: Caladea, 'Liberation Serif', Georgia, serif; }
+
+    /* ── Cabecera ── */
+    .cabecera { display: flex; align-items: center; justify-content: space-between; padding-bottom: 9px; border-bottom: 2px solid var(--rosa); }
+    .logo { height: 50px; width: auto; }
+    .entidad { text-align: right; line-height: 1.3; }
+    .entidad .gobierno { font-size: 10px; font-weight: bold; letter-spacing: 1.4px; text-transform: uppercase; color: var(--tinta); }
+    .entidad .direccion { font-size: 9.5px; color: var(--suave); }
+
+    .titulo { margin: 16px 0 3px; }
+    .titulo .anio { font-size: 10px; font-weight: bold; letter-spacing: 2px; text-transform: uppercase; color: var(--rosa); }
+    .titulo h1 { margin: 1px 0 0; font-family: Caladea, 'Liberation Serif', Georgia, serif; font-size: 27px; font-weight: bold; line-height: 1.1; letter-spacing: -0.2px; }
+    .lema { margin: 5px 0 0; font-size: 9px; font-style: italic; color: var(--suave); }
+
+    /* ── Resultado ── */
+    .resultado {
+      display: flex; align-items: stretch; gap: 22px;
+      margin: 14px 0 16px; padding: 14px 16px;
+      background: var(--panel); border-left: 4px solid var(--tinta);
+      break-inside: avoid;
     }
-    .header-table td {
-      border: 1px solid #000;
-      padding: 5px;
-      text-align: center;
-      font-weight: bold;
-      background-color: #f3f4f6;
+    .promedio { min-width: 118px; }
+    .promedio .rotulo, .escala-bloque .rotulo { font-size: 8.5px; font-weight: bold; letter-spacing: 1.2px; text-transform: uppercase; color: var(--suave); }
+    .promedio .cifra { font-family: Caladea, 'Liberation Serif', Georgia, serif; font-size: 44px; font-weight: bold; line-height: 1; margin-top: 2px; }
+    .promedio .nivel { margin-top: 3px; font-size: 12.5px; font-weight: bold; color: var(--altiplano); }
+    .escala-bloque { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+    .escala { position: relative; display: flex; height: 12px; margin: 8px 0 4px; border: 1px solid var(--tinta); }
+    .escala span { flex: 1; }
+    .escala span + span { border-left: 1px solid #fff; }
+    .escala .t1 { background: var(--n1); } .escala .t2 { background: var(--n2); }
+    .escala .t3 { background: var(--n3); } .escala .t4 { background: var(--n4); }
+    .marcador { position: absolute; top: -7px; width: 0; height: 0; margin-left: -6px; z-index: 1;
+      border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 8px solid var(--rosa); }
+    .marcador::after { content: ''; position: absolute; left: -1px; top: 8px; width: 2px; height: 5px; background: var(--rosa); }
+    .escala-nombres { display: flex; margin-top: 7px; font-size: 8.5px; color: var(--suave); text-align: center; }
+    .escala-nombres span { flex: 1; }
+    .datos-resumen { display: flex; gap: 18px; margin-top: 9px; font-size: 11px; }
+    .datos-resumen b { font-family: Caladea, 'Liberation Serif', Georgia, serif; font-size: 13px; }
+    .informativo { align-self: center; font-size: 12px; }
+    .informativo strong { display: block; font-family: Caladea, 'Liberation Serif', Georgia, serif; font-size: 15px; }
+
+    /* ── Secciones ── */
+    .seccion { margin-bottom: 14px; break-inside: avoid; }
+    .seccion-titulo {
+      display: flex; align-items: center; gap: 8px; margin: 0 0 7px;
+      font-size: 9.5px; font-weight: bold; letter-spacing: 1.6px; text-transform: uppercase; color: var(--altiplano);
     }
-    h2 {
-      text-align: center;
-      margin: 10px 0;
-      font-size: 14px;
-      text-transform: uppercase;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-bottom: 15px;
-      table-layout: fixed;
-    }
-    th, td {
-      border: 1px solid #000;
-      padding: 4px;
-      vertical-align: top;
-      word-wrap: break-word;
-    }
-    th {
-      background-color: #e5e7eb;
-      font-weight: bold;
-    }
-    .section-title {
-      font-weight: bold;
-      text-transform: uppercase;
-      margin: 10px 0 5px 0;
-      font-size: 12px;
-    }
-    .bg-gray {
-      background-color: #f3f4f6;
-      font-weight: bold;
-    }
-    .text-center {
-      text-align: center;
-    }
-    .page-break {
-      page-break-before: always;
-    }
-    .signatures {
-      margin-top: 50px;
-      width: 100%;
-      text-align: center;
-    }
-    .signatures td {
-      border: none;
-      padding-top: 40px;
-    }
-    .signature-line {
-      border-top: 1px dotted #000;
-      width: 80%;
-      margin: 0 auto;
-      padding-top: 5px;
-    }
+    .seccion-titulo::after { content: ''; flex: 1; height: 1px; background: var(--linea); }
+
+    .datos { display: grid; grid-template-columns: 2fr 1fr 1fr; column-gap: 24px; row-gap: 9px; margin: 0; }
+    .campo { margin: 0; }
+    .campo.doble { grid-column: span 2; }
+    dt { font-size: 8.5px; font-weight: bold; letter-spacing: 0.9px; text-transform: uppercase; color: var(--suave); }
+    dd { margin: 1px 0 0; font-size: 12px; font-weight: bold; }
+
+    /* ── Rúbricas ── */
+    .leyenda { display: flex; gap: 14px; margin-bottom: 6px; font-size: 8.5px; color: var(--suave); }
+    .leyenda span { display: flex; align-items: center; gap: 4px; }
+    .paso { display: inline-flex; align-items: center; justify-content: center; width: 17px; height: 17px;
+      border: 1px solid var(--linea); font-size: 9px; font-weight: bold; color: #b8b3aa; background: #fff; }
+    .paso + .paso { margin-left: -1px; }
+    .paso.texto { width: auto; min-width: 17px; padding: 0 5px; }
+    .paso.activo.nivel-1 { background: var(--n1); color: var(--tinta); border-color: var(--tinta); }
+    .paso.activo.nivel-2 { background: var(--n2); color: var(--tinta); border-color: var(--tinta); }
+    .paso.activo.nivel-3 { background: var(--n3); color: #fff; border-color: var(--tinta); }
+    .paso.activo.nivel-4 { background: var(--n4); color: #fff; border-color: var(--tinta); }
+    .muestra { display: inline-block; width: 11px; height: 11px; border: 1px solid var(--tinta); }
+    .muestra.nivel-1 { background: var(--n1); } .muestra.nivel-2 { background: var(--n2); }
+    .muestra.nivel-3 { background: var(--n3); } .muestra.nivel-4 { background: var(--n4); }
+
+    table { width: 100%; border-collapse: collapse; }
+    thead { display: table-header-group; }
+    tr { break-inside: avoid; }
+    th { padding: 0 6px 5px; text-align: left; border-bottom: 1.5px solid var(--tinta);
+      font-size: 8.5px; font-weight: bold; letter-spacing: 1.1px; text-transform: uppercase; color: var(--suave); }
+    td { padding: 6px; vertical-align: top; border-bottom: 1px solid var(--linea); }
+    td.num { width: 28px; font-family: Caladea, 'Liberation Serif', Georgia, serif; font-weight: bold; color: var(--rosa); font-size: 13px; }
+    td.regla { width: 1%; white-space: nowrap; padding-top: 7px; }
+    td.obs { width: 34%; font-size: 10.5px; color: #3b4658; }
+    td.obs .sin { color: #b8b3aa; }
+
+    /* ── Texto libre ── */
+    .texto-libre { min-height: 44px; padding: 2px 0 2px 12px; border-left: 2px solid var(--linea); white-space: pre-line; }
+    .vacio { color: var(--suave); font-style: italic; }
+    .texto-libre strong { font-size: 8.5px; letter-spacing: 1px; text-transform: uppercase; color: var(--suave); }
+
+    /* ── Firmas ── */
+    .firmas { display: flex; justify-content: center; gap: 34px; margin-top: 4px; break-inside: avoid; }
+    .firma { flex: 1; max-width: 270px; text-align: center; }
+    .firma .trazo { height: 64px; display: flex; align-items: flex-end; justify-content: center; }
+    .firma img { max-height: 62px; max-width: 190px; }
+    .firma .linea { border-top: 1px solid var(--tinta); padding-top: 4px; }
+    .firma .rol { font-size: 8.5px; font-weight: bold; letter-spacing: 1.2px; text-transform: uppercase; color: var(--suave); }
+    .firma .nombre { font-size: 12px; font-weight: bold; }
+    .firma .fecha { font-size: 9px; color: var(--suave); }
   </style>
 </head>
 <body>
 
-  <!-- ENCABEZADO OFICIAL SIMULADO -->
-  <table class="header-table">
-    <tr>
-      <td>GOBIERNO REGIONAL PUNO</td>
-      <td>Dirección Regional de Educación</td>
-      <td>Dirección de Gestión Pedagógica</td>
-    </tr>
-  </table>
-  
-  <div style="text-align: center; font-style: italic; margin-bottom: 15px;">
-    Año de la recuperación y consolidación de la economía peruana
+  <div class="cabecera">
+    <img class="logo" src="{{{logoUgel}}}" alt="UGEL Lampa">
+    <div class="entidad">
+      <div class="gobierno">Gobierno Regional Puno</div>
+      <div class="direccion">Dirección Regional de Educación · Dirección de Gestión Pedagógica</div>
+    </div>
   </div>
 
-  <h2>FICHA DE MONITOREO - {{ficha.anioAcademico}}</h2>
+  <div class="titulo">
+    <div class="anio">Año académico {{ficha.anioAcademico}}</div>
+    <h1>Ficha de monitoreo pedagógico</h1>
+    <div class="lema">Año de la recuperación y consolidación de la economía peruana</div>
+  </div>
 
-  <!-- DATOS INSTITUCIÓN Y EVALUADO -->
-  <div class="section-title">DATOS DE LA INSTITUCIÓN EDUCATIVA Y DOCENTE:</div>
-  <table>
-    <tr>
-      <td class="bg-gray" width="20%">INSTITUCIÓN EDUCATIVA:</td>
-      <td width="50%">{{institucion.nombre}}</td>
-      <td class="bg-gray" width="15%">CÓD. MODULAR:</td>
-      <td width="15%">{{institucion.codigoModular}}</td>
-    </tr>
-    <tr>
-      <td class="bg-gray">APELLIDOS Y NOMBRES DEL DOCENTE:</td>
-      <td colspan="3">{{docente.nombres}} {{docente.apellidoPaterno}} {{docente.apellidoMaterno}}</td>
-    </tr>
-    <tr>
-      <td class="bg-gray">DNI:</td>
-      <td>{{docente.dni}}</td>
-      <td class="bg-gray">CELULAR:</td>
-      <td>{{docente.telefono}}</td>
-    </tr>
-  </table>
+  <div class="resultado">
+    {{#if ficha.promedio}}
+    <div class="promedio">
+      <div class="rotulo">Promedio</div>
+      <div class="cifra">{{ficha.promedio}}</div>
+      <div class="nivel">{{humanizar ficha.nivelLogro}}</div>
+    </div>
+    <div class="escala-bloque">
+      <div class="rotulo">Posición en la escala de logro</div>
+      <div class="escala">
+        <span class="t1"></span><span class="t2"></span><span class="t3"></span><span class="t4"></span>
+        <div class="marcador" style="left: {{posicionEscala ficha.promedio}}%"></div>
+      </div>
+      <div class="escala-nombres"><span>I · Inicio</span><span>II · En proceso</span><span>III · Logro esperado</span><span>IV · Destacado</span></div>
+      <div class="datos-resumen">
+        <div>Puntaje total <b>{{ficha.puntajeTotal}}</b></div>
+        <div>Estado <b>{{humanizar ficha.estado}}</b></div>
+      </div>
+    </div>
+    {{else}}
+    <div class="informativo">
+      <strong>Instrumento informativo</strong>
+      Registra la práctica observada; no produce nivel de logro ni promedio.
+      <div class="datos-resumen">
+        <div>Estado <b>{{humanizar ficha.estado}}</b></div>
+      </div>
+    </div>
+    {{/if}}
+  </div>
 
-  <!-- DATOS MONITOR -->
-  <div class="section-title">DATOS DEL MONITOR:</div>
-  <table>
-    <tr>
-      <td class="bg-gray" width="20%">APELLIDOS Y NOMBRES:</td>
-      <td colspan="3">{{monitor.nombres}} {{monitor.apellidoPaterno}} {{monitor.apellidoMaterno}}</td>
-    </tr>
-    <tr>
-      <td class="bg-gray" width="20%">CARGO:</td>
-      <td width="30%">Especialista en Educación</td>
-      <td class="bg-gray" width="15%">FECHA:</td>
-      <td width="35%">{{fechaFormat}}</td>
-    </tr>
-  </table>
+  <div class="seccion">
+    <div class="seccion-titulo">Datos generales</div>
+    <dl class="datos">
+      <div class="campo doble"><dt>Institución educativa</dt><dd>{{institucion.nombre}}</dd></div>
+      <div class="campo"><dt>Cód. modular</dt><dd>{{institucion.codigoModular}}</dd></div>
+      <div class="campo"><dt>Docente monitoreado</dt><dd>{{docente.nombres}} {{docente.apellidoPaterno}} {{docente.apellidoMaterno}}</dd></div>
+      <div class="campo"><dt>DNI</dt><dd>{{docente.dni}}</dd></div>
+      <div class="campo"><dt>Celular</dt><dd>{{docente.telefono}}</dd></div>
+      <div class="campo"><dt>Monitor</dt><dd>{{monitor.nombres}} {{monitor.apellidoPaterno}} {{monitor.apellidoMaterno}}</dd></div>
+      <div class="campo"><dt>Cargo</dt><dd>Especialista en Educación</dd></div>
+      <div class="campo"><dt>Fecha</dt><dd>{{fechaFormat}}</dd></div>
+    </dl>
+  </div>
 
-  <!-- NIVELES DE LOGRO LEYENDA -->
-  <div class="section-title">NIVELES DEL LOGRO:</div>
-  <table>
-    <tr class="text-center">
-      <th>NIVEL I<br>Inicio</th>
-      <th>NIVEL II<br>En Proceso</th>
-      <th>NIVEL III<br>Logro Esperado</th>
-      <th>NIVEL IV<br>Logro Destacado</th>
-    </tr>
-    <tr class="text-center" style="font-size: 10px;">
-      <td>Presenta deficiencias significativas o ausencia de la habilidad.</td>
-      <td>Evidencia avances, pero con limitaciones.</td>
-      <td>Cumple los criterios de manera adecuada.</td>
-      <td>Supera el nivel esperado con un desempeño sólido.</td>
-    </tr>
-  </table>
+  <div class="seccion" style="break-inside: auto;">
+    <div class="seccion-titulo">Rúbricas de monitoreo</div>
+    <div class="leyenda">
+      {{#if ficha.promedio}}
+      <span><i class="muestra nivel-1"></i> I · Deficiencias significativas</span>
+      <span><i class="muestra nivel-2"></i> II · Avances con limitaciones</span>
+      <span><i class="muestra nivel-3"></i> III · Cumple los criterios</span>
+      <span><i class="muestra nivel-4"></i> IV · Supera lo esperado</span>
+      {{else}}
+      <span>Lista de cotejo: se marca la valoración observada en cada desempeño.</span>
+      {{/if}}
+    </div>
+    <table>
+      <thead>
+        <tr><th>N°</th><th>Rúbrica / desempeño</th><th>{{#if ficha.promedio}}Nivel{{else}}Valoración{{/if}}</th><th>Observaciones</th></tr>
+      </thead>
+      <tbody>
+        {{#each respuestas}}
+        <tr>
+          <td class="num">{{increment @index}}</td>
+          <td>{{this.nombre}}</td>
+          <td class="regla">
+            {{#if @root.ficha.promedio}}
+            <span class="paso nivel-1{{#if (eq this.nivel 1)}} activo{{/if}}">I</span><span class="paso nivel-2{{#if (eq this.nivel 2)}} activo{{/if}}">II</span><span class="paso nivel-3{{#if (eq this.nivel 3)}} activo{{/if}}">III</span><span class="paso nivel-4{{#if (eq this.nivel 4)}} activo{{/if}}">IV</span>
+            {{else}}
+            <span class="paso texto nivel-1{{#if (eq this.nivel 1)}} activo{{/if}}">No</span><span class="paso texto nivel-2{{#if (eq this.nivel 2)}} activo{{/if}}">Parcialmente</span><span class="paso texto nivel-3{{#if (eq this.nivel 3)}} activo{{/if}}">Sí</span>
+            {{/if}}
+          </td>
+          <td class="obs">{{this.observaciones}}</td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+  </div>
 
-  <!-- RÚBRICAS (RESPUESTAS) -->
-  <div class="section-title">RÚBRICAS DE MONITOREO</div>
-  <table>
-    <tr>
-      <th width="5%">N°</th>
-      <th width="45%">RÚBRICAS / DESEMPEÑOS</th>
-      <th width="10%">NIVEL</th>
-      <th width="40%">OBSERVACIONES</th>
-    </tr>
-    {{#each respuestas}}
-    <tr>
-      <td class="text-center">{{increment @index}}</td>
-      <td>{{this.nombre}}</td>
-      <td class="text-center"><b>{{this.nivel}}</b></td>
-      <td>{{this.observaciones}}</td>
-    </tr>
-    {{/each}}
-  </table>
+  <div class="seccion">
+    <div class="seccion-titulo">Observaciones y sugerencias del monitor</div>
+    <div class="texto-libre">{{#if ficha.observaciones}}{{ficha.observaciones}}{{else}}<span class="vacio">Ninguna registrada.</span>{{/if}}{{#if ficha.sugerencias}}
 
-  <div class="page-break"></div>
+<strong>Sugerencias</strong>
+{{ficha.sugerencias}}{{/if}}</div>
+  </div>
 
-  <!-- CONSOLIDADO, OBSERVACIONES Y COMPROMISOS -->
-  <div class="section-title">CONSOLIDADO NIVELES DE LOGRO:</div>
-  <table>
-    <tr>
-      <th width="25%">NIVEL DE LOGRO ALCANZADO</th>
-      <th width="25%">PUNTAJE TOTAL</th>
-      <th width="25%">PROMEDIO</th>
-      <th width="25%">ESTADO</th>
-    </tr>
-    <tr class="text-center">
-      <td><b>{{ficha.nivelLogro}}</b></td>
-      <td><b>{{ficha.puntajeTotal}}</b></td>
-      <td><b>{{ficha.promedio}}</b></td>
-      <td><b>{{ficha.estado}}</b></td>
-    </tr>
-  </table>
+  <div class="seccion">
+    <div class="seccion-titulo">Compromisos de mejora</div>
+    <div class="texto-libre">{{#if ficha.compromisos}}{{ficha.compromisos}}{{else}}<span class="vacio">Ningún compromiso registrado.</span>{{/if}}</div>
+  </div>
 
-  <div class="section-title">OBSERVACIONES Y SUGERENCIAS DEL MONITOR:</div>
-  <table style="min-height: 100px;">
-    <tr>
-      <td style="padding: 10px;">
-        {{#if ficha.observaciones}}
-          {{ficha.observaciones}}
-        {{else}}
-          Ninguna registrada.
-        {{/if}}
-        <br><br>
-        {{#if ficha.sugerencias}}
-          <strong>Sugerencias:</strong><br>
-          {{ficha.sugerencias}}
-        {{/if}}
-      </td>
-    </tr>
-  </table>
-
-  <div class="section-title">COMPROMISOS DE MEJORA:</div>
-  <table style="min-height: 100px;">
-    <tr>
-      <td style="padding: 10px;">
-        {{#if ficha.compromisos}}
-          {{ficha.compromisos}}
-        {{else}}
-          Ningún compromiso registrado.
-        {{/if}}
-      </td>
-    </tr>
-  </table>
-
-  <!-- FIRMAS -->
-  <div class="section-title text-center" style="margin-top: 40px;">FIRMAS DIGITALES:</div>
-  <table class="signatures" style="width: 100%; text-align: center; margin-top: 20px;">
-    <tr>
+  <div class="seccion">
+    <div class="seccion-titulo">Firmas</div>
+    <div class="firmas">
       {{#each firmas}}
-      <td style="border: none; vertical-align: bottom; padding: 10px;">
-        <div style="margin-bottom: 5px;">
-          <img src="{{this.imagenB64}}" style="max-height: 100px; max-width: 200px; display: block; margin: 0 auto;" alt="Firma">
+      <div class="firma">
+        <div class="trazo">{{#if this.imagenB64}}<img src="{{this.imagenB64}}" alt="Firma">{{/if}}</div>
+        <div class="linea">
+          <div class="rol">{{this.rolFirmante}}</div>
+          <div class="nombre">{{this.firmanteNombre}}</div>
+          <div class="fecha">Firmado el {{this.fechaFirma}}</div>
         </div>
-        <div class="signature-line" style="border-top: 1px solid #000; width: 250px; margin: 0 auto; padding-top: 5px; font-size: 11px;">
-          <b>Firma del {{this.rolFirmante}}</b><br>
-          {{this.firmanteNombre}}<br>
-          <span style="font-size: 9px; color: #4b5563;">Firmado el {{this.fechaFirma}}</span>
-        </div>
-      </td>
+      </div>
       {{/each}}
       {{#unless firmas}}
-      <td style="border: none; padding: 20px;">
-        <span style="color: #6b7280; font-style: italic;">Sin firmas registradas.</span>
-      </td>
+      <span class="vacio">Sin firmas registradas.</span>
       {{/unless}}
-    </tr>
-  </table>
+    </div>
+  </div>
 
 </body>
 </html>
