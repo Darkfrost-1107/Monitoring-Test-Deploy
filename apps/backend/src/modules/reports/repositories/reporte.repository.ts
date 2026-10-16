@@ -6,6 +6,7 @@ import type {
   TipoPlantilla,
 } from '@sistema-monitoreo/shared-contracts';
 import type { SessionUser } from '../../../shared/types/session-user.js';
+import type { FichaOficialPersistida } from '../services/ficha-oficial-docente.imagenes.js';
 
 export interface QueryFichasCompletadas {
   anioAcademico?: number;
@@ -42,6 +43,14 @@ export interface PaginatedFichas {
 }
 
 export abstract class ReporteRepository {
+  /**
+   * La ficha con todo lo que pide el formulario oficial al docente. Devuelve null
+   * si no existe o la sesión no tiene alcance sobre ella.
+   */
+  abstract findFichaOficialDocente(
+    id: string,
+    session: SessionScope,
+  ): Promise<FichaOficialPersistida | null>;
   abstract findFichasCompletadas(
     filters: QueryFichasCompletadas,
     session: SessionScope,

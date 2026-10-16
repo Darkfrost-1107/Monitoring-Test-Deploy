@@ -11,6 +11,8 @@ import * as path from 'path';
 
 import { normalizarFiltrosDeReporte } from './filtros-de-reporte.helper.js';
 import { PdfGeneratorService } from './pdf-generator.service.js';
+import { construirFichaOficialDocente } from './ficha-oficial-docente.builder.js';
+import { completarImagenes } from './ficha-oficial-docente.imagenes.js';
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import { MailerService } from '../../../shared/mailer/mailer.service.js';
 
@@ -91,6 +93,10 @@ export class ReporteService {
     const f = await this.repository.findFichaByIdParaExport(id, session);
     if (!f) throw new NotFoundException(`Ficha ${id} no encontrada o sin acceso.`);
 
+    // La ficha docente se imprime en el formulario oficial de la UGEL. Los demás
+    // instrumentos conservan por ahora su plantilla.
+    if (f.instrumento === 'DOCENTE') return this.exportarFichaOficialDocente(id, session);
+
     // Mapear al modelo que espera Handlebars
     const data = {
       ficha: {
@@ -153,6 +159,14 @@ export class ReporteService {
     };
 
     return this.pdfGenerator.generatePdfFromTemplate('ficha-report', data);
+  }
+
+  private async exportarFichaOficialDocente(id: string, session: SessionScope): Promise<Buffer> {
+    const persistida = await this.repository.findFichaOficialDocente(id, session);
+    if (!persistida) throw new NotFoundException(`Ficha ${id} no encontrada o sin acceso.`);
+
+    const ficha = construirFichaOficialDocente(await completarImagenes(persistida));
+    return this.pdfGenerator.generatePdfFromTemplate('ficha-docente-oficial', ficha);
   }
 
   private renderHtml(f: IReporteFicha): string {
