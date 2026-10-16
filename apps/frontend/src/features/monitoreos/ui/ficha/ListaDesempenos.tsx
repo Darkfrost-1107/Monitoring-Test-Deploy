@@ -1,7 +1,17 @@
 import { Check, ChevronDown, Clock, Circle, Lock } from 'lucide-react';
 import type { Plantilla } from '@/entities/model-plantillas';
+import { NIVELES_ROMANOS } from '../../lib/ficha-estado';
 
 type Desempeno = Plantilla['desempenos'][number];
+
+/** Un ítem de planificación tal como se lista: su valoración y si ya tiene nivel y observación. */
+export interface ItemDePlanificacionEnLista {
+  id: string;
+  numero: number;
+  descripcion: string;
+  nivel?: number;
+  completo: boolean;
+}
 
 /** Las tres secciones de la barra lateral, en el orden del recorrido. */
 export type SeccionDeFicha = 'criterios' | 'planificacion' | 'cierre';
@@ -41,7 +51,9 @@ interface ListaDesempenosProps {
     /** Ítems con nivel y observación, y total, para el avance del encabezado. */
     hechos: number;
     total: number;
+    items: ItemDePlanificacionEnLista[];
     onSeleccionar: () => void;
+    onSeleccionarItem: (itemId: string) => void;
   };
   /** Paso de cierre activo en el panel, si el escenario no muestra un criterio. */
   pasoCierreActivo?: PasoCierreTipo | null;
@@ -109,6 +121,45 @@ function EncabezadoDeSeccion({
         />
       )}
     </button>
+  );
+}
+
+/** Ítem de planificación en el índice: navega el panel hasta ese ítem y muestra su valoración. */
+function ItemDePlanificacion({
+  item,
+  onClick,
+}: {
+  item: ItemDePlanificacionEnLista;
+  onClick: () => void;
+}) {
+  const romano = item.nivel ? NIVELES_ROMANOS[item.nivel - 1] : undefined;
+  return (
+    <div
+      data-item-planificacion={item.id}
+      data-completo={item.completo}
+      onClick={onClick}
+      className="p-3 border border-border rounded-xl cursor-pointer transition-all flex items-start gap-2 shadow-xs bg-surface hover:bg-slate-100 select-none relative"
+    >
+      <span className="h-5 w-5 rounded-full shrink-0 flex items-center justify-center text-[10px] font-black bg-slate-100 text-slate-500">
+        {item.numero}
+      </span>
+      <div className="space-y-0.5 pr-4 min-w-0">
+        <div className="text-[11px] font-bold tracking-tight leading-snug line-clamp-2">
+          {item.descripcion}
+        </div>
+        <div className="text-[9px] font-semibold text-slate-400 flex items-center gap-1">
+          <span>Valoración:</span>
+          <strong className={romano ? 'text-primary' : 'text-slate-400 font-normal italic'}>
+            {romano ? `Nivel ${romano}` : 'Sin evaluar'}
+          </strong>
+        </div>
+      </div>
+      {item.completo && (
+        <span className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 bg-emerald-50 border border-emerald-200 text-emerald-700 flex items-center justify-center rounded-full">
+          <Check className="h-2.5 w-2.5" strokeWidth={3} />
+        </span>
+      )}
+    </div>
   );
 }
 
@@ -333,16 +384,26 @@ export const ListaDesempenos = ({
     })}
 
     {planificacion && (
-      <EncabezadoDeSeccion
-        titulo="Planificación y diseño de evaluación"
-        avance={`${planificacion.hechos}/${planificacion.total}`}
-        claveAvance="planificacion"
-        completa={planificacion.completa}
-        abierta={planificacion.activa}
-        bloqueada={planificacion.bloqueada}
-        conCuerpo={false}
-        onClick={planificacion.onSeleccionar}
-      />
+      <div className="space-y-2">
+        <EncabezadoDeSeccion
+          titulo="Planificación y diseño de evaluación"
+          avance={`${planificacion.hechos}/${planificacion.total}`}
+          claveAvance="planificacion"
+          completa={planificacion.completa}
+          abierta={planificacion.activa}
+          bloqueada={planificacion.bloqueada}
+          conCuerpo
+          onClick={planificacion.onSeleccionar}
+        />
+        {planificacion.activa &&
+          planificacion.items.map((item) => (
+            <ItemDePlanificacion
+              key={item.id}
+              item={item}
+              onClick={() => planificacion.onSeleccionarItem(item.id)}
+            />
+          ))}
+      </div>
     )}
 
     {cierre && (

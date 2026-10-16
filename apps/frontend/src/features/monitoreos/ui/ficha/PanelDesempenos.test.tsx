@@ -226,8 +226,10 @@ describe('PanelDesempenos — planificación y diseño de la evaluación como pa
 
     await userEvent.click(screen.getByText(ETIQUETA));
 
-    expect(screen.getByText('Planifica el proceso de enseñanza')).toBeInTheDocument();
-    expect(screen.getByText('Diseña una evaluación pertinente')).toBeInTheDocument();
+    // Una vez en la barra lateral y otra como tarjeta en el panel.
+    expect(screen.getAllByText('Planifica el proceso de enseñanza')).toHaveLength(2);
+    // Una vez en la barra lateral y otra como tarjeta en el panel.
+    expect(screen.getAllByText('Diseña una evaluación pertinente')).toHaveLength(2);
   });
 
   it('«Siguiente» desde el último criterio lleva a la planificación, no al cierre', async () => {
@@ -236,7 +238,8 @@ describe('PanelDesempenos — planificación y diseño de la evaluación como pa
     await userEvent.click(screen.getByText('Criterio dos'));
     await userEvent.click(siguiente());
 
-    expect(screen.getByText('Planifica el proceso de enseñanza')).toBeInTheDocument();
+    // Una vez en la barra lateral y otra como tarjeta en el panel.
+    expect(screen.getAllByText('Planifica el proceso de enseñanza')).toHaveLength(2);
     expect(screen.queryByText(/Describa cómo se desarrolló la visita/)).not.toBeInTheDocument();
   });
 
@@ -455,5 +458,95 @@ describe('PanelDesempenos — secciones desplegables en la barra lateral', () =>
 
     expect(itemDelIndice('Criterios / Desempeños')).toHaveAttribute('aria-expanded', 'true');
     expect(itemDelIndice('Cierre de la evaluación')).toHaveAttribute('aria-expanded', 'false');
+  });
+});
+
+describe('PanelDesempenos — los ítems de la planificación se listan en la barra lateral', () => {
+  const COMPLETOS: RespuestasDesempenos = {
+    niveles: { d1: 'III', d2: 'IV' },
+    preguntasExtra: {},
+    observaciones: { d1: 'Uno', d2: 'Dos' },
+  };
+  const plan = (over: Partial<PlanificacionDeFicha> = {}): PlanificacionDeFicha => ({
+    items: [
+      { id: 'e1', numero: 1, descripcion: 'Planifica el proceso' },
+      { id: 'e2', numero: 2, descripcion: 'Diseña una evaluación' },
+    ],
+    niveles: NIVELES,
+    respuestas: {},
+    observaciones: {},
+    onResponder: vi.fn(),
+    onObservar: vi.fn(),
+    ...over,
+  });
+  const ETIQUETA = 'Planificación y diseño de evaluación';
+  const itemsDeLaBarra = (c: HTMLElement) => c.querySelectorAll('[data-item-planificacion]');
+  const itemDeLaBarra = (c: HTMLElement, id: string) =>
+    c.querySelector(`[data-item-planificacion="${id}"]`) as HTMLElement;
+
+  it('al abrir la planificación, la barra lista sus ítems', async () => {
+    const { container } = montar(COMPLETOS, false, plan());
+
+    await userEvent.click(screen.getByText(ETIQUETA));
+
+    expect(itemsDeLaBarra(container)).toHaveLength(2);
+  });
+
+  it('con la planificación contraída no lista ítems', () => {
+    const { container } = montar(COMPLETOS, false, plan());
+
+    expect(itemsDeLaBarra(container)).toHaveLength(0);
+  });
+
+  it('cada ítem muestra su valoración, o que está sin evaluar', async () => {
+    const { container } = montar(COMPLETOS, false, plan({ respuestas: { e1: 3 } }));
+    await userEvent.click(screen.getByText(ETIQUETA));
+
+    expect(itemDeLaBarra(container, 'e1')).toHaveTextContent('Nivel III');
+    expect(itemDeLaBarra(container, 'e2')).toHaveTextContent('Sin evaluar');
+  });
+
+  it('marca como completo sólo el ítem con nivel y observación', async () => {
+    const { container } = montar(
+      COMPLETOS,
+      false,
+      plan({ respuestas: { e1: 3, e2: 4 }, observaciones: { e1: 'Uno' } }),
+    );
+    await userEvent.click(screen.getByText(ETIQUETA));
+
+    expect(itemDeLaBarra(container, 'e1')).toHaveAttribute('data-completo', 'true');
+    expect(itemDeLaBarra(container, 'e2')).toHaveAttribute('data-completo', 'false');
+  });
+
+  it('tocar un ítem lleva el panel a ese ítem', async () => {
+    const visitados: string[] = [];
+    const original = Element.prototype.scrollIntoView;
+    Element.prototype.scrollIntoView = function (this: Element) {
+      visitados.push(this.id);
+    };
+    const { container } = montar(COMPLETOS, false, plan());
+    await userEvent.click(screen.getByText(ETIQUETA));
+
+    await userEvent.click(itemDeLaBarra(container, 'e2'));
+
+    Element.prototype.scrollIntoView = original;
+    expect(visitados).toContain('plan-item-e2');
+  });
+
+  it('volver a tocar el mismo ítem también lleva a él', async () => {
+    const visitados: string[] = [];
+    const original = Element.prototype.scrollIntoView;
+    Element.prototype.scrollIntoView = function (this: Element) {
+      visitados.push(this.id);
+    };
+    const { container } = montar(COMPLETOS, false, plan());
+    await userEvent.click(screen.getByText(ETIQUETA));
+    await userEvent.click(itemDeLaBarra(container, 'e2'));
+    visitados.length = 0;
+
+    await userEvent.click(itemDeLaBarra(container, 'e2'));
+
+    Element.prototype.scrollIntoView = original;
+    expect(visitados).toContain('plan-item-e2');
   });
 });

@@ -89,6 +89,9 @@ export const PanelDesempenos = ({
   const [activo, setActivo] = useState('');
   // Campo del cierre a resaltar/saltar al entrar desde el índice.
   const [focoCierre, setFocoCierre] = useState<PasoCierreTipo>('obs');
+  // Ítem de planificación al que saltar al entrar desde el índice. Un objeto, no un
+  // id: así volver a tocar el mismo ítem también navega.
+  const [focoPlanificacion, setFocoPlanificacion] = useState<{ id: string } | null>(null);
 
   const esEib =
     template.tipoMonitoreo === 'DOCENTE_EIB' ||
@@ -136,6 +139,7 @@ export const PanelDesempenos = ({
   // Al aterrizar en el cierre con «Siguiente», se arranca desde arriba.
   const irAClave = (clave: string) => {
     if (clave === CLAVE_CIERRE) setFocoCierre('obs');
+    setFocoPlanificacion(null);
     setActivo(clave);
     llevarAlInicio(raiz.current);
   };
@@ -156,6 +160,14 @@ export const PanelDesempenos = ({
       ),
     [template.desempenos, respuestas.niveles, respuestas.observaciones, respuestas.preguntasExtra],
   );
+  const itemsDePlanificacion = (planificacion?.items ?? []).map((item) => ({
+    id: item.id,
+    numero: item.numero,
+    descripcion: item.descripcion,
+    nivel: planificacion?.respuestas[item.id],
+    completo:
+      !!planificacion?.respuestas[item.id] && !!planificacion?.observaciones[item.id]?.trim(),
+  }));
   const planificacionHecha = planificacion
     ? planificacionCompleta(planificacion.items, planificacion.respuestas, planificacion.observaciones)
     : true;
@@ -180,8 +192,15 @@ export const PanelDesempenos = ({
 
   const seleccionarPlanificacion = () => {
     if (planificacionBloqueada) return;
+    setFocoPlanificacion(null);
     setActivo(CLAVE_PLANIFICACION);
     llevarAlInicio(raiz.current);
+  };
+
+  const seleccionarItemDePlanificacion = (itemId: string) => {
+    if (planificacionBloqueada) return;
+    setFocoPlanificacion({ id: itemId });
+    setActivo(CLAVE_PLANIFICACION);
   };
 
   const seleccionarCierre = (paso: PasoCierreTipo) => {
@@ -216,12 +235,10 @@ export const PanelDesempenos = ({
           planificacion
             ? {
                 completa: planificacionHecha,
-                hechos: planificacion.items.filter(
-                  (item) =>
-                    !!planificacion.respuestas[item.id] &&
-                    !!planificacion.observaciones[item.id]?.trim(),
-                ).length,
-                total: planificacion.items.length,
+                hechos: itemsDePlanificacion.filter((item) => item.completo).length,
+                total: itemsDePlanificacion.length,
+                items: itemsDePlanificacion,
+                onSeleccionarItem: seleccionarItemDePlanificacion,
                 activa: enPlanificacion,
                 bloqueada: planificacionBloqueada,
                 onSeleccionar: seleccionarPlanificacion,
@@ -258,6 +275,7 @@ export const PanelDesempenos = ({
           onObservar={planificacion.onObservar}
           soloLectura={soloLectura}
           completa={planificacionHecha}
+          foco={focoPlanificacion}
           onAnterior={onAnterior}
           onSiguiente={onSiguiente}
         />
