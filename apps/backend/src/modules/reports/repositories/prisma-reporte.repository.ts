@@ -17,6 +17,15 @@ import { fromPrismaFichaReporte } from './reporte.mapper.js';
 import { INCLUDE_FICHA_OFICIAL, fromPrismaFichaOficial } from './ficha-oficial.mapper.js';
 import type { FichaOficialPersistida } from '../services/ficha-oficial-docente.imagenes.js';
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const UUID_SIN_RESULTADOS = '00000000-0000-0000-0000-000000000000';
+
+/**
+ * Un id de la cadena de consulta que no es UUID no debe reventar Prisma: se
+ * resuelve como «sin resultados», que es lo correcto —nadie tiene ese id—.
+ */
+const comoUuid = (valor: string): string => (UUID.test(valor) ? valor : UUID_SIN_RESULTADOS);
+
 @Injectable()
 export class PrismaReporteRepository implements ReporteRepository {
   constructor(
@@ -58,6 +67,7 @@ export class PrismaReporteRepository implements ReporteRepository {
     if (filters.modalidad) porCronograma.modalidad = filters.modalidad;
     if (filters.nivelEducativo) porCronograma.nivelEducativo = filters.nivelEducativo;
     if (filters.docenteId) porCronograma.evaluadoId = filters.docenteId;
+    if (filters.monitorId) porCronograma.monitorId = comoUuid(filters.monitorId);
     if (filters.numeroVisita) porCronograma.numeroVisita = filters.numeroVisita;
     if (Object.keys(porCronograma).length > 0) condiciones.push({ cronograma: porCronograma });
     if (filters.tipoMonitoreo) where.plantilla = { tipoMonitoreo: filters.tipoMonitoreo };
@@ -333,6 +343,9 @@ export class PrismaReporteRepository implements ReporteRepository {
     }
     if (filters.docenteId) {
       porCronograma.evaluadoId = filters.docenteId;
+    }
+    if (filters.monitorId) {
+      porCronograma.monitorId = comoUuid(filters.monitorId);
     }
     if (filters.numeroVisita) {
       porCronograma.numeroVisita = filters.numeroVisita;

@@ -104,3 +104,46 @@ describe.each(Object.entries(endpoints))('alcance en %s', (_nombre, ep) => {
     expect(JSON.stringify(lista)).not.toContain('institucionId');
   });
 });
+
+describe.each(Object.entries(endpoints))(
+  'filtro por quien realizó el monitoreo en %s',
+  (_nombre, ep) => {
+    const MONITOR = '3f11e2af-1f65-4825-b615-0edf8d3e12f7';
+
+    it('acota a las fichas cuyo monitor es el elegido', async () => {
+      const { repo, prisma } = armar();
+
+      await ep.pedir(repo, { monitorId: MONITOR }, jefeGestion);
+
+      expect(condiciones(ep.where(prisma))).toContainEqual({ cronograma: { monitorId: MONITOR } });
+    });
+
+    it('se suma al alcance del rol: el director de I.E. sigue acotado a su institución', async () => {
+      const { repo, prisma } = armar();
+
+      await ep.pedir(repo, { monitorId: MONITOR }, directorIE);
+
+      const lista = condiciones(ep.where(prisma));
+      expect(lista).toContainEqual({ cronograma: { institucionId: 'ie-1' } });
+      expect(lista).toContainEqual({ cronograma: { monitorId: MONITOR } });
+    });
+
+    it('un identificador que no es UUID no revienta Prisma: devuelve cero resultados', async () => {
+      const { repo, prisma } = armar();
+
+      await ep.pedir(repo, { monitorId: 'no-es-uuid' }, jefeGestion);
+
+      expect(condiciones(ep.where(prisma))).toContainEqual({
+        cronograma: { monitorId: '00000000-0000-0000-0000-000000000000' },
+      });
+    });
+
+    it('sin monitor elegido no agrega ninguna condición de monitor', async () => {
+      const { repo, prisma } = armar();
+
+      await ep.pedir(repo, {}, jefeGestion);
+
+      expect(JSON.stringify(condiciones(ep.where(prisma)))).not.toContain('monitorId');
+    });
+  },
+);
