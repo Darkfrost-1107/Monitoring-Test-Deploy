@@ -1,4 +1,5 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { ReactNode } from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { Plantilla } from '@/entities/model-plantillas';
@@ -46,6 +47,29 @@ const PLANTILLA: Plantilla = {
   descripcion: 'Plantilla de prueba',
 };
 
+/**
+ * La ficha scrollea dentro de un único contenedor interno. Este contenedor de
+ * prueba hace visible cada vez que alguien le fija `scrollTop`.
+ */
+const fijarScrollTop = vi.fn();
+const Scroller = ({ children }: { children: ReactNode }) => (
+  <div
+    style={{ overflowY: 'auto' }}
+    ref={(el) => {
+      if (el)
+        Object.defineProperty(el, 'scrollTop', {
+          configurable: true,
+          get: () => 300,
+          set: fijarScrollTop,
+        });
+    }}
+  >
+    {children}
+  </div>
+);
+
+beforeEach(() => fijarScrollTop.mockClear());
+
 const VACIAS: RespuestasDesempenos = { niveles: {}, preguntasExtra: {}, observaciones: {} };
 
 const montar = (
@@ -75,6 +99,7 @@ const montar = (
         onVerImagen: vi.fn(),
       }}
     />,
+    { wrapper: Scroller },
   );
 
 const siguiente = () => screen.getByRole('button', { name: /siguiente/i });
@@ -229,5 +254,53 @@ describe('PanelDesempenos — planificación y diseño de la evaluación como pa
     montar(VACIAS, true, planificacion());
 
     expect(itemDelIndice(ETIQUETA)).toHaveAttribute('aria-disabled', 'false');
+  });
+});
+
+describe('PanelDesempenos — al cambiar de paso se vuelve al inicio de la ficha', () => {
+  const COMPLETOS: RespuestasDesempenos = {
+    niveles: { d1: 'III', d2: 'IV' },
+    preguntasExtra: {},
+    observaciones: { d1: 'Uno', d2: 'Dos' },
+  };
+
+  it('no mueve el scroll al abrir la ficha', () => {
+    montar(COMPLETOS);
+
+    expect(fijarScrollTop).not.toHaveBeenCalled();
+  });
+
+  it('«Siguiente» lleva el scroll al inicio, para ver el criterio que toca evaluar', async () => {
+    montar(COMPLETOS);
+
+    await userEvent.click(siguiente());
+
+    expect(fijarScrollTop).toHaveBeenCalledWith(0);
+  });
+
+  it('«Anterior» también vuelve al inicio', async () => {
+    montar(COMPLETOS);
+    await userEvent.click(siguiente());
+    fijarScrollTop.mockClear();
+
+    await userEvent.click(screen.getByRole('button', { name: /anterior/i }));
+
+    expect(fijarScrollTop).toHaveBeenCalledWith(0);
+  });
+
+  it('elegir un criterio desde la barra lateral vuelve al inicio', async () => {
+    montar(COMPLETOS);
+
+    await userEvent.click(screen.getByText('Criterio dos'));
+
+    expect(fijarScrollTop).toHaveBeenCalledWith(0);
+  });
+
+  it('un clic en un paso bloqueado no mueve el scroll', async () => {
+    montar(VACIAS);
+
+    await userEvent.click(screen.getByText('Criterio dos'));
+
+    expect(fijarScrollTop).not.toHaveBeenCalled();
   });
 });

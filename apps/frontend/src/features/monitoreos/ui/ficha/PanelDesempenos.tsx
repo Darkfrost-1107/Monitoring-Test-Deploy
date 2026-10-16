@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import type { Plantilla } from '@/entities/model-plantillas';
 import { ListaDesempenos, type PasoCierreTipo } from './ListaDesempenos';
 import { DetalleDesempeno } from './DetalleDesempeno';
@@ -9,6 +9,7 @@ import {
   indiceMaximoAccesible,
   planificacionCompleta,
 } from '../../lib/avance-ficha';
+import { llevarAlInicio } from '../../lib/scroll-ficha';
 
 /** Lo respondido sobre cada desempeño, indexado por su identificador. */
 export interface RespuestasDesempenos {
@@ -84,6 +85,7 @@ export const PanelDesempenos = ({
   cierre,
   soloLectura,
 }: PanelDesempenosProps) => {
+  const raiz = useRef<HTMLDivElement>(null);
   const [activo, setActivo] = useState('');
   // Campo del cierre a resaltar/saltar al entrar desde el índice.
   const [focoCierre, setFocoCierre] = useState<PasoCierreTipo>('obs');
@@ -130,6 +132,7 @@ export const PanelDesempenos = ({
   const irAClave = (clave: string) => {
     if (clave === CLAVE_CIERRE) setFocoCierre('obs');
     setActivo(clave);
+    llevarAlInicio(raiz.current);
   };
 
   // Avance lineal: sólo se llega hasta el primer paso incompleto. Una ficha en
@@ -166,7 +169,9 @@ export const PanelDesempenos = ({
       : undefined;
 
   const seleccionarPlanificacion = () => {
-    if (!planificacionBloqueada) setActivo(CLAVE_PLANIFICACION);
+    if (planificacionBloqueada) return;
+    setActivo(CLAVE_PLANIFICACION);
+    llevarAlInicio(raiz.current);
   };
 
   const seleccionarCierre = (paso: PasoCierreTipo) => {
@@ -183,7 +188,10 @@ export const PanelDesempenos = ({
   };
 
   return (
-    <div className="flex flex-col md:flex-row min-h-[300px] items-start border-b border-border bg-white">
+    <div
+      ref={raiz}
+      className="flex flex-col md:flex-row min-h-[300px] items-start border-b border-border bg-white"
+    >
       <ListaDesempenos
         desempenos={template.desempenos}
         seleccionadoId={criterioActivoId ?? ''}
@@ -204,7 +212,7 @@ export const PanelDesempenos = ({
         }
         cierre={cierreEstado}
         pasoCierreActivo={enCierre ? focoCierre : null}
-        onSeleccionar={(id) => !bloqueados.has(id) && setActivo(`${PREFIJO_CRITERIO}${id}`)}
+        onSeleccionar={(id) => !bloqueados.has(id) && irAClave(`${PREFIJO_CRITERIO}${id}`)}
         onSeleccionarCierre={seleccionarCierre}
       />
 
