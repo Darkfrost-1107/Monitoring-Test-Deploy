@@ -1,12 +1,14 @@
 import 'dotenv/config';
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory, HttpAdapterHost } from '@nestjs/core';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module.js';
 import { Logger } from 'nestjs-pino';
 import { ConfigService } from '@nestjs/config';
 import { PrismaClientExceptionFilter } from './common/filters/prisma-client-exception.filter.js';
 import { esDescargaPublica } from './shared/storage/descarga-publica.js';
+import { configurarLimiteDeCuerpo } from './config/limite-cuerpo.js';
 
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
@@ -14,9 +16,11 @@ import express from 'express';
 import path from 'path';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, {
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     bufferLogs: true,
   });
+
+  configurarLimiteDeCuerpo(app);
 
   // `validate()` (config/env.validation.ts) garantiza que estas claves existen:
   // aplica los valores por defecto o aborta el arranque. Un `??` aquí sería un

@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { LIMITE_LADO_EVIDENCIA, calcularDimensiones } from './imagen';
+import { describe, it, expect, vi, afterEach } from 'vitest';
+import { LIMITE_LADO_EVIDENCIA, calcularDimensiones, comprimirImagen } from './imagen';
 
 /**
  * Pruebas del redimensionado de evidencias.
@@ -54,5 +54,76 @@ describe('calcularDimensiones', () => {
 describe('LIMITE_LADO_EVIDENCIA', () => {
   it('declara el lado máximo de una evidencia', () => {
     expect(LIMITE_LADO_EVIDENCIA).toBe(1024);
+  });
+});
+
+/**
+ * `comprimirImagen` con el navegador sustituido: la imagen y el lienzo son dobles.
+ *
+ * Lo que se fija es qué pasa cuando la reducción falla. Antes devolvía la foto
+ * ORIGINAL —de 2 a 6 MB, y más de 20 en un celular de 48 MP— y esa evidencia
+ * viaja como texto dentro del JSON de «finalizar»: la petición superaba cualquier
+ * límite razonable y la ficha entera no se podía cerrar. Una foto que no se puede
+ * reducir debe rechazarse con un aviso, no mandarse tal cual.
+ */
+describe('comprimirImagen', () => {
+  const archivo = () => new File(['contenido'], 'foto.jpg', { type: 'image/jpeg' });
+
+  class ImagenFalsa {
+    width = 4000;
+    height = 3000;
+    onload?: () => void;
+    onerror?: () => void;
+    set src(_valor: string) {
+      queueMicrotask(() => this.onload?.());
+    }
+  }
+
+  const lienzo = (opciones: { contexto?: boolean; blob?: Blob | null } = {}) => {
+    const { contexto = true, blob = new Blob(['reducida'], { type: 'image/jpeg' }) } = opciones;
+    vi.stubGlobal('Image', ImagenFalsa);
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
+      contexto ? ({ drawImage: vi.fn() } as unknown as CanvasRenderingContext2D) : null,
+    );
+    vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation((devolver) =>
+      devolver(blob),
+    );
+  };
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it('devuelve la imagen reducida como data URL', async () => {
+    lienzo();
+
+    const resultado = await comprimirImagen(archivo());
+
+    expect(resultado).toMatch(/^data:image\/jpeg;base64,/);
+    expect(atob(resultado.split(',')[1])).toBe('reducida');
+  });
+
+  it('si el lienzo no ofrece contexto, rechaza en vez de devolver el original', async () => {
+    lienzo({ contexto: false });
+
+    await expect(comprimirImagen(archivo())).rejects.toThrow(/reducir/i);
+  });
+
+  it('si el lienzo no logra producir la imagen, rechaza en vez de devolver el original', async () => {
+    lienzo({ blob: null });
+
+    await expect(comprimirImagen(archivo())).rejects.toThrow(/reducir/i);
+  });
+
+  it('si la imagen no se puede abrir, rechaza', async () => {
+    class ImagenRota extends ImagenFalsa {
+      override set src(_valor: string) {
+        queueMicrotask(() => this.onerror?.());
+      }
+    }
+    vi.stubGlobal('Image', ImagenRota);
+
+    await expect(comprimirImagen(archivo())).rejects.toThrow();
   });
 });
