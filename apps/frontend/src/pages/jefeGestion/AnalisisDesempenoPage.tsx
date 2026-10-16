@@ -8,6 +8,7 @@ import { PageHeader } from '@shared/ui/pageHeader';
 import { MODALIDAD_NIVEL_MAP, type TipoPlantilla } from '@sistema-monitoreo/shared-contracts';
 import {
   reportesVisibles,
+  veSoloLoQueMonitoreo,
   type ReporteVisible,
 } from '@features/reportes/lib/visibilidad-reportes';
 import {
@@ -488,8 +489,9 @@ export const AnalisisDesempenoPage = () => {
   }, [completedVisits, filterModalidadEf, filterNivelEf, filterInstitucionEf, filterPlantillaEf]);
 
   // Monitores que aparecen en los datos, acotados por el mismo ámbito que los docentes.
-  // El coordinador, el jefe de taller y el especialista sólo ven lo suyo: con un único
-  // monitor no hay nada que elegir, y el filtro no se ofrece.
+  // El selector se ofrece a quien puede ver el trabajo de varios monitores, aunque hoy
+  // todas las fichas sean de uno solo: ocultarlo parecía una función que no existe. El
+  // coordinador, el jefe de taller y el especialista sólo ven lo suyo, y no lo tienen.
   const monitoresDisponibles = useMemo(
     () =>
       monitoresDelReporte(completedVisits, (v) => {
@@ -642,7 +644,7 @@ export const AnalisisDesempenoPage = () => {
         setFilterDocente={setFilterDocente}
         docentesDisponibles={docentesDisponibles}
         filterMonitor={filterMonitor}
-        setFilterMonitor={monitoresDisponibles.length > 1 ? setFilterMonitor : undefined}
+        setFilterMonitor={veSoloLoQueMonitoreo(user) ? undefined : setFilterMonitor}
         monitoresDisponibles={monitoresDisponibles}
         filterNumeroVisita={filterNumeroVisita}
         setFilterNumeroVisita={setFilterNumeroVisita}

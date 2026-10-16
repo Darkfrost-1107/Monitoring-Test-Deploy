@@ -146,13 +146,25 @@ describe('AnalisisDesempenoPage · filtro por monitor', () => {
     ]);
   });
 
-  it('con un solo monitor no ofrece el filtro: no habría nada que elegir', () => {
-    h.fichas = [ficha('f1', 'm-pedro', 'Pedro Mamani')];
+  it('con un solo monitor igual lo ofrece a quien puede ver el de varios: su ausencia parece una función que no existe', () => {
+    h.fichas = [ficha('f1', 'm-pedro', 'Pedro Mamani'), ficha('f2', 'm-pedro', 'Pedro Mamani')];
 
     render(<AnalisisDesempenoPage />);
 
-    expect(h.filtros.setFilterMonitor).toBeUndefined();
+    expect(typeof h.filtros.setFilterMonitor).toBe('function');
+    expect(h.filtros.monitoresDisponibles).toEqual([{ id: 'm-pedro', nombre: 'Pedro Mamani' }]);
   });
+
+  it.each(['especialista', 'coordinador_pedagogico', 'jefe_taller'])(
+    '%s no lo ve: solo ve lo que monitoreó',
+    (role) => {
+      h.role = role;
+
+      render(<AnalisisDesempenoPage />);
+
+      expect(h.filtros.setFilterMonitor).toBeUndefined();
+    },
+  );
 
   it('al principio no filtra por monitor', () => {
     render(<AnalisisDesempenoPage />);
@@ -193,12 +205,15 @@ describe('AnalisisDesempenoPage · filtro por monitor', () => {
     ['el nivel', 'setFilterNivel', 'Secundaria'],
     ['la institución', 'setFilterInstitucion', 'ie-1'],
     ['la plantilla', 'onSeleccionarPlantilla', 'p1'],
-  ])('cambiar %s reinicia el monitor, que puede no existir en el nuevo ámbito', (_n, setter, valor) => {
-    render(<AnalisisDesempenoPage />);
-    act(() => h.filtros.setFilterMonitor('m-ana'));
+  ])(
+    'cambiar %s reinicia el monitor, que puede no existir en el nuevo ámbito',
+    (_n, setter, valor) => {
+      render(<AnalisisDesempenoPage />);
+      act(() => h.filtros.setFilterMonitor('m-ana'));
 
-    act(() => h.filtros[setter](valor));
+      act(() => h.filtros[setter](valor));
 
-    expect(h.filtros.filterMonitor).toBe('Todos');
-  });
+      expect(h.filtros.filterMonitor).toBe('Todos');
+    },
+  );
 });

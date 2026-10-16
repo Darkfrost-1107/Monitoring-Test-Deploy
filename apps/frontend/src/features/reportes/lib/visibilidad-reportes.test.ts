@@ -3,6 +3,7 @@ import { RoleCode } from '@sistema-monitoreo/shared-contracts';
 import {
   reportesPropios,
   reportesVisibles,
+  veSoloLoQueMonitoreo,
   type ReporteVisible,
   type UsuarioDeReportes,
 } from './visibilidad-reportes';
@@ -159,5 +160,32 @@ describe('reportesVisibles — director de institución', () => {
 
   it('sin institución asignada no ve ninguno', () => {
     expect(reportesVisibles([reporte()], director({ institucion: undefined }))).toEqual([]);
+  });
+});
+
+describe('veSoloLoQueMonitoreo', () => {
+  /**
+   * Quien solo ve lo que él mismo monitoreó no tiene a quién más filtrar: el selector
+   * «Monitor» no le sirve. Quien puede ver el trabajo de varios sí lo necesita,
+   * aunque hoy todas sus fichas sean de una misma persona.
+   */
+  it.each([
+    RoleCode.ESPECIALISTA,
+    RoleCode.COORDINADOR_PEDAGOGICO,
+    RoleCode.JEFE_TALLER,
+    RoleCode.JEFE_AREA,
+  ])('%s: ve solo lo que monitoreó', (role) => {
+    expect(veSoloLoQueMonitoreo({ role })).toBe(true);
+  });
+
+  it.each([RoleCode.DIRECTOR_INSTITUCION, RoleCode.JEFE_GESTION, RoleCode.DIRECTOR_UGEL])(
+    '%s: puede ver el trabajo de varios monitores',
+    (role) => {
+      expect(veSoloLoQueMonitoreo({ role })).toBe(false);
+    },
+  );
+
+  it('sin usuario no se le limita', () => {
+    expect(veSoloLoQueMonitoreo(null)).toBe(false);
   });
 });
