@@ -36,6 +36,13 @@ const condiciones = (where: Condicion): Condicion[] => {
 const directorIE = { id: 'u-dir', role: RoleCode.DIRECTOR_INSTITUCION, institucionId: 'ie-1' };
 const jefeArea = { id: 'u-ja', role: RoleCode.JEFE_AREA, especialistaNivel: 'Primaria' };
 const jefeGestion = { id: 'u-jg', role: RoleCode.JEFE_GESTION };
+const coordinador = {
+  id: 'u-co',
+  role: RoleCode.COORDINADOR_PEDAGOGICO,
+  institucionId: 'ie-1',
+};
+const jefeDeTaller = { id: 'u-jt', role: RoleCode.JEFE_TALLER, institucionId: 'ie-1' };
+const PROPIO = { cronograma: { monitor: { persona: { usuario: { id: 'u-co' } } } } };
 
 const endpoints = {
   'la lista de fichas completadas': {
@@ -147,3 +154,58 @@ describe.each(Object.entries(endpoints))(
     });
   },
 );
+
+describe('análisis de desempeño: el coordinador y el jefe de taller sólo ven lo que monitorearon', () => {
+  const analisis = endpoints['el análisis de desempeño'];
+  const lista = endpoints['la lista de fichas completadas'];
+
+  it('el coordinador pedagógico queda acotado a sus propias evaluaciones, además de su institución', async () => {
+    const { repo, prisma } = armar();
+
+    await analisis.pedir(repo, {}, coordinador);
+
+    const c = condiciones(analisis.where(prisma));
+    expect(c).toContainEqual(PROPIO);
+    expect(c).toContainEqual({ cronograma: { institucionId: 'ie-1' } });
+  });
+
+  it('el jefe de taller también', async () => {
+    const { repo, prisma } = armar();
+
+    await analisis.pedir(repo, {}, jefeDeTaller);
+
+    expect(condiciones(analisis.where(prisma))).toContainEqual({
+      cronograma: { monitor: { persona: { usuario: { id: 'u-jt' } } } },
+    });
+  });
+
+  it('no se puede escapar de lo propio pidiendo el monitor de otro', async () => {
+    const { repo, prisma } = armar();
+
+    await analisis.pedir(repo, { monitorId: '3f11e2af-1f65-4825-b615-0edf8d3e12f7' }, coordinador);
+
+    const c = condiciones(analisis.where(prisma));
+    expect(c).toContainEqual(PROPIO);
+    expect(c).toContainEqual({ cronograma: { monitorId: '3f11e2af-1f65-4825-b615-0edf8d3e12f7' } });
+  });
+
+  it.each([
+    ['el director de I.E.', directorIE],
+    ['el jefe de área', jefeArea],
+    ['el jefe de gestión', jefeGestion],
+  ])('%s no queda limitado a lo propio', async (_n, sesion) => {
+    const { repo, prisma } = armar();
+
+    await analisis.pedir(repo, {}, sesion);
+
+    expect(JSON.stringify(condiciones(analisis.where(prisma)))).not.toContain('"usuario"');
+  });
+
+  it('la lista de fichas completadas no cambia: el análisis es el único que se acota', async () => {
+    const { repo, prisma } = armar();
+
+    await lista.pedir(repo, {}, coordinador);
+
+    expect(JSON.stringify(condiciones(lista.where(prisma)))).not.toContain('"usuario"');
+  });
+});

@@ -322,9 +322,12 @@ export class PrismaReporteRepository implements ReporteRepository {
     session: SessionScope,
   ): Promise<IAnalisisDesempenoCriterio[]> {
     // Ver el comentario de `findFichasCompletadas`: el alcance y los filtros se suman.
-    const condiciones: Prisma.FichaMonitoreoWhereInput[] = [
-      this.scopeFilter.forFicha(this.toScopeContext(session)),
-    ];
+    const contexto = this.toScopeContext(session);
+    const condiciones: Prisma.FichaMonitoreoWhereInput[] = [this.scopeFilter.forFicha(contexto)];
+    // El coordinador y el jefe de taller analizan sólo lo que ellos monitorearon.
+    if (this.scopeFilter.limitaAlAnalisisPropio(session.role)) {
+      condiciones.push(this.scopeFilter.forFichasQueMonitoreo(contexto));
+    }
     const whereFicha: Prisma.FichaMonitoreoWhereInput = {
       estado: 'FINALIZADO',
       AND: condiciones,

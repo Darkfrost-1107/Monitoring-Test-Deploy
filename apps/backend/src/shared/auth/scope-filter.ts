@@ -61,6 +61,19 @@ export class ScopeFilter {
     );
   }
 
+  /**
+   * Roles que, en el análisis de desempeño, sólo ven lo que ellos mismos monitorearon.
+   *
+   * El coordinador pedagógico y el jefe de taller pertenecen a una institución, y
+   * su alcance general es la institución entera. Pero el análisis de rúbricas mide
+   * el trabajo de quien monitorea, así que cada uno ve únicamente sus evaluaciones,
+   * no las de otros monitores de su colegio. La lista de fichas ya se acotaba así
+   * en el frontend; esto lo hace valer también en el backend, donde se consolida.
+   */
+  limitaAlAnalisisPropio(role: RoleCode): boolean {
+    return role === RoleCode.COORDINADOR_PEDAGOGICO || role === RoleCode.JEFE_TALLER;
+  }
+
   isMonitorScope(role: RoleCode): boolean {
     return role === RoleCode.ESPECIALISTA;
   }
@@ -115,6 +128,18 @@ export class ScopeFilter {
    * Especialista mira `creadoPorId` en vez de `monitorId`. La IE no es
    * campo directo de FichaMonitoreo — va via `cronograma`.
    */
+  /**
+   * Fichas cuyo monitor es el propio usuario.
+   *
+   * Se identifica por la persona del monitor (`cronograma.monitor`), la misma
+   * identidad que usa el frontend para decidir qué le pertenece, y no por
+   * `creadoPorId`: quien levantó la ficha y quien figura como monitor de la visita
+   * no tienen por qué coincidir.
+   */
+  forFichasQueMonitoreo(ctx: ScopeContext): Prisma.FichaMonitoreoWhereInput {
+    return { cronograma: { monitor: { persona: { usuario: { id: ctx.userId } } } } };
+  }
+
   forFicha(ctx: ScopeContext): Prisma.FichaMonitoreoWhereInput {
     if (this.isAllScope(ctx.role)) return {};
     if (this.isInstitucionScope(ctx.role)) {
