@@ -16,6 +16,7 @@ import {
 } from '@features/reportes/lib/analisis-desempeno';
 import { tipoDeVisitaDe } from '@features/reportes/lib/instrumento';
 import { aniosDeFiltro } from '@features/reportes/lib/anios-de-filtro';
+import { monitoresDelReporte } from '@features/reportes/lib/monitores-del-reporte';
 import {
   rubricasDeLaUgel,
   rubricasInstitucionales,
@@ -66,6 +67,8 @@ export const AnalisisDesempenoPage = () => {
   const [filterNivel, setFilterNivel] = useState('Todos');
   const [filterInstitucion, setFilterInstitucion] = useState('Todos');
   const [filterDocente, setFilterDocente] = useState('Todos');
+  // Quien realizó el monitoreo (especialista, director, coordinador o jefe de taller).
+  const [filterMonitor, setFilterMonitor] = useState('Todos');
   const [filterNumeroVisita, setFilterNumeroVisita] = useState('Todos');
   // Plantilla concreta: el análisis por criterio sólo consolida dentro de una
   // misma rúbrica. '' = usar la dominante (la más presente en los datos).
@@ -401,6 +404,7 @@ export const AnalisisDesempenoPage = () => {
     nivelEducativo: filterNivel !== 'Todos' ? filterNivel : undefined,
     institucionId: filterInstitucion !== 'Todos' ? filterInstitucion : undefined,
     docenteId: filterDocente !== 'Todos' ? filterDocente : undefined,
+    monitorId: filterMonitor !== 'Todos' ? filterMonitor : undefined,
     numeroVisita: filterNumeroVisita !== 'Todos' ? Number(filterNumeroVisita) : undefined,
     plantillaId: plantillaEsReal ? filterPlantillaEf : undefined,
     fechaDesde: rangoPeriodo.fechaDesde,
@@ -421,6 +425,7 @@ export const AnalisisDesempenoPage = () => {
     setFilterNivel('Todos');
     setFilterInstitucion('Todos');
     setFilterDocente('Todos');
+    setFilterMonitor('Todos');
   };
 
   const handleNivelChange = (nivel: string) => {
@@ -428,6 +433,7 @@ export const AnalisisDesempenoPage = () => {
     // Cada nivel tiene sus propias instituciones y docentes: se reinician.
     setFilterInstitucion('Todos');
     setFilterDocente('Todos');
+    setFilterMonitor('Todos');
   };
 
   // Cambiar de plantilla reinicia docente y N° de visita: cada rúbrica tiene sus
@@ -436,6 +442,7 @@ export const AnalisisDesempenoPage = () => {
   const handlePlantillaChange = (plantillaId: string) => {
     setFilterPlantilla(plantillaId);
     setFilterDocente('Todos');
+    setFilterMonitor('Todos');
     setFilterNumeroVisita('Todos');
   };
 
@@ -443,6 +450,7 @@ export const AnalisisDesempenoPage = () => {
     setFilterInstitucion(institucionId);
     // Cada institución tiene sus propios docentes: al cambiarla, se reinicia.
     setFilterDocente('Todos');
+    setFilterMonitor('Todos');
   };
 
   // Instituciones que aparecen en los datos, acotadas por modalidad/nivel: cada
@@ -479,6 +487,22 @@ export const AnalisisDesempenoPage = () => {
       .sort((a, b) => a.nombre.localeCompare(b.nombre));
   }, [completedVisits, filterModalidadEf, filterNivelEf, filterInstitucionEf, filterPlantillaEf]);
 
+  // Monitores que aparecen en los datos, acotados por el mismo ámbito que los docentes.
+  // El coordinador, el jefe de taller y el especialista sólo ven lo suyo: con un único
+  // monitor no hay nada que elegir, y el filtro no se ofrece.
+  const monitoresDisponibles = useMemo(
+    () =>
+      monitoresDelReporte(completedVisits, (v) => {
+        if (filterModalidadEf !== 'Todos' && v.modalidad !== filterModalidadEf) return false;
+        if (filterNivelEf !== 'Todos' && v.nivel !== filterNivelEf) return false;
+        if (filterInstitucionEf !== 'Todos' && v.institucionId !== filterInstitucionEf)
+          return false;
+        if (filterPlantillaEf && v.plantillaId !== filterPlantillaEf) return false;
+        return true;
+      }),
+    [completedVisits, filterModalidadEf, filterNivelEf, filterInstitucionEf, filterPlantillaEf],
+  );
+
   // Números de visita presentes en los datos (1er monitoreo, 2do, …), acotados
   // por el resto de los filtros (incluida la plantilla).
   const numerosDeVisitaDisponibles = useMemo(() => {
@@ -489,11 +513,12 @@ export const AnalisisDesempenoPage = () => {
       if (filterInstitucionEf !== 'Todos' && v.institucionId !== filterInstitucionEf) return;
       if (filterPlantillaEf && v.plantillaId !== filterPlantillaEf) return;
       if (filterDocente !== 'Todos' && v.evaluadoId !== filterDocente) return;
+      if (filterMonitor !== 'Todos' && v.monitorId !== filterMonitor) return;
       const n = Number(v.nroVisita);
       if (Number.isFinite(n) && n > 0) nums.add(n);
     });
     return [...nums].sort((a, b) => a - b);
-  }, [completedVisits, filterModalidadEf, filterNivelEf, filterInstitucionEf, filterPlantillaEf, filterDocente]);
+  }, [completedVisits, filterModalidadEf, filterNivelEf, filterInstitucionEf, filterPlantillaEf, filterDocente, filterMonitor]);
 
   const añosDisponibles = useMemo(() => {
     const yearsSet = new Set<string>();
@@ -527,6 +552,7 @@ export const AnalisisDesempenoPage = () => {
     filterInstitucion !== 'Todos' ||
     filterPlantilla !== '' ||
     filterDocente !== 'Todos' ||
+    filterMonitor !== 'Todos' ||
     filterNumeroVisita !== 'Todos' ||
     filterAnio !== String(ANIO_ACTUAL) ||
     filtroPeriodo !== 'TODOS';
@@ -537,6 +563,7 @@ export const AnalisisDesempenoPage = () => {
     setFilterInstitucion('Todos');
     setFilterPlantilla('');
     setFilterDocente('Todos');
+    setFilterMonitor('Todos');
     setFilterNumeroVisita('Todos');
     setFilterAnio(String(ANIO_ACTUAL));
     setFiltroPeriodo('TODOS');
@@ -552,6 +579,7 @@ export const AnalisisDesempenoPage = () => {
       if (filterInstitucionEf !== 'Todos' && visit.institucionId !== filterInstitucionEf) return false;
       if (filterPlantillaEf && visit.plantillaId !== filterPlantillaEf) return false;
       if (filterDocente !== 'Todos' && visit.evaluadoId !== filterDocente) return false;
+      if (filterMonitor !== 'Todos' && visit.monitorId !== filterMonitor) return false;
       if (filterNumeroVisita !== 'Todos' && String(visit.nroVisita) !== filterNumeroVisita) return false;
 
       if (filterAnio !== 'Todos') {
@@ -574,7 +602,7 @@ export const AnalisisDesempenoPage = () => {
 
       return true;
     });
-  }, [completedVisits, filtroPeriodo, filterModalidadEf, filterNivelEf, filterInstitucionEf, filterPlantillaEf, filterDocente, filterNumeroVisita, filterAnio]);
+  }, [completedVisits, filtroPeriodo, filterModalidadEf, filterNivelEf, filterInstitucionEf, filterPlantillaEf, filterDocente, filterMonitor, filterNumeroVisita, filterAnio]);
 
   const analisis = useMemo(
     () => calcularAnalisisPorCriterios(criteriosBackend, visitasFiltradas, plantillas, tipoEf),
@@ -613,6 +641,9 @@ export const AnalisisDesempenoPage = () => {
         filterDocente={filterDocente}
         setFilterDocente={setFilterDocente}
         docentesDisponibles={docentesDisponibles}
+        filterMonitor={filterMonitor}
+        setFilterMonitor={monitoresDisponibles.length > 1 ? setFilterMonitor : undefined}
+        monitoresDisponibles={monitoresDisponibles}
         filterNumeroVisita={filterNumeroVisita}
         setFilterNumeroVisita={setFilterNumeroVisita}
         numerosDeVisitaDisponibles={numerosDeVisitaDisponibles}

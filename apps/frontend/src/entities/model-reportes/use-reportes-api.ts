@@ -32,6 +32,8 @@ export const useAnalisisDesempenos = (
     modalidad?: string;
     nivelEducativo?: string;
     docenteId?: string;
+    /** Quien realizó el monitoreo. */
+    monitorId?: string;
     numeroVisita?: number;
     tipoMonitoreo?: TipoPlantilla;
     plantillaId?: string;
