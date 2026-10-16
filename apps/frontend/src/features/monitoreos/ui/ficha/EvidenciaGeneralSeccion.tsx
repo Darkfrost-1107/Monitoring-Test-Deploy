@@ -43,7 +43,7 @@ export const EvidenciaGeneralSeccion = ({
       onCambiar({ ...evidencias, [ranura]: await comprimirImagen(archivo) });
     } catch (error) {
       console.error('No se pudo procesar la imagen de evidencia:', error);
-      toast.error('Error al procesar la imagen.');
+      toast.error('No se pudo reducir la foto. Prueba con otra imagen.');
     }
   };
 

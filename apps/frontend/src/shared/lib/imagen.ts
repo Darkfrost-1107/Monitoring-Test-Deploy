@@ -10,6 +10,9 @@
 /** Lado máximo, en píxeles, con que se guarda una evidencia. */
 export const LIMITE_LADO_EVIDENCIA = 1024;
 
+/** Mensaje cuando la imagen no se logra reducir. */
+const NO_SE_PUDO_REDUCIR = 'No se pudo reducir la imagen.';
+
 /** Calidad JPEG del resultado. */
 const CALIDAD_JPEG = 0.7;
 
@@ -46,8 +49,10 @@ export function calcularDimensiones(
 /**
  * Reduce la imagen y la devuelve como `data:` URL.
  *
- * Ante cualquier tropiezo del lienzo devuelve el original sin comprimir: es
- * preferible una evidencia pesada a una evidencia perdida.
+ * Si la reducción falla, rechaza: NO devuelve el original. Una foto de celular pesa
+ * de 2 a 6 MB (y más de 20 con 48 MP), y esta evidencia viaja como texto dentro del
+ * JSON de «finalizar»; mandarla tal cual hace fallar la ficha entera con un 413,
+ * que es peor que pedir otra foto. Quien llama debe avisar al usuario.
  */
 export function comprimirImagen(
   archivo: File,
@@ -76,7 +81,7 @@ export function comprimirImagen(
 
         const contexto = lienzo.getContext('2d');
         if (!contexto) {
-          resolve(original);
+          reject(new Error(NO_SE_PUDO_REDUCIR));
           return;
         }
 
@@ -84,7 +89,7 @@ export function comprimirImagen(
         lienzo.toBlob(
           (blob) => {
             if (!blob) {
-              resolve(original);
+              reject(new Error(NO_SE_PUDO_REDUCIR));
               return;
             }
             const lectorComprimido = new FileReader();
