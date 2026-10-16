@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals';
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import type { IReporteFicha } from '@sistema-monitoreo/shared-contracts';
 import { ReporteService } from './reporte.service.js';
 import { fichaOficialRaw } from './ficha-oficial-docente.fixture.js';
@@ -93,5 +93,89 @@ describe('ReporteService.exportarFichaPDF', () => {
     const { servicio } = armar(fichaLegada('DOCENTE'), null);
 
     await expect(servicio.exportarFichaPDF('f1', sesion)).rejects.toBeInstanceOf(NotFoundException);
+  });
+});
+
+describe('ReporteService.enviarFichaPorCorreo — el correo lleva el mismo PDF que el botón', () => {
+  const pdfOficial = Buffer.from('%PDF-formulario-oficial');
+
+  function armarEnvio(over: { correoEnviado?: boolean; correo?: string | null } = {}) {
+    const ficha = {
+      id: '0e2a1a3b-1923-4893-b15a-2defc243c00d',
+      correoEnviado: over.correoEnviado ?? false,
+      cronograma: {
+        evaluado: {
+          persona: {
+            nombres: 'Hilda',
+            apellidos: 'Quispe Mamani',
+            correo: over.correo === undefined ? 'hilda@ugel.gob.pe' : over.correo,
+          },
+        },
+      },
+    };
+    const prisma = {
+      fichaMonitoreo: {
+        findUnique: jest.fn(() => Promise.resolve(ficha)),
+        update: jest.fn(() => Promise.resolve({})),
+      },
+      logAuditoria: { create: jest.fn(() => Promise.resolve({})) },
+    };
+    const mailer = { sendResumenFichaEmail: jest.fn((..._args: unknown[]) => Promise.resolve()) };
+    const repository = {
+      findFichaByIdParaExport: jest.fn(() => Promise.resolve(fichaLegada('DOCENTE'))),
+      findFichaOficialDocente: jest.fn(() => Promise.resolve(persistida)),
+    };
+    const generador = {
+      generatePdfFromTemplate: jest.fn((..._args: unknown[]) => Promise.resolve(pdfOficial)),
+    };
+    const servicio = new ReporteService(
+      repository as never,
+      generador as never,
+      prisma as never,
+      mailer as never,
+    );
+    return { servicio, prisma, mailer, generador };
+  }
+
+  it('adjunta al correo el PDF del formulario oficial, el mismo que abre el botón', async () => {
+    const { servicio, mailer, generador } = armarEnvio();
+
+    await servicio.enviarFichaPorCorreo('0e2a1a3b-1923-4893-b15a-2defc243c00d', sesion);
+
+    expect(generador.generatePdfFromTemplate.mock.calls[0][0]).toBe('ficha-docente-oficial');
+    const [destino, nombre, adjunto, archivo] = mailer.sendResumenFichaEmail.mock.calls[0];
+    expect(destino).toBe('hilda@ugel.gob.pe');
+    expect(nombre).toBe('Hilda Quispe Mamani');
+    expect(adjunto).toBe(pdfOficial);
+    expect(archivo).toMatch(/\.pdf$/);
+  });
+
+  it('marca la ficha como enviada y deja constancia en la auditoría', async () => {
+    const { servicio, prisma } = armarEnvio();
+
+    await servicio.enviarFichaPorCorreo('0e2a1a3b-1923-4893-b15a-2defc243c00d', sesion);
+
+    expect(prisma.fichaMonitoreo.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { correoEnviado: true } }),
+    );
+    expect(prisma.logAuditoria.create).toHaveBeenCalledTimes(1);
+  });
+
+  it('no reenvía una ficha que ya se envió', async () => {
+    const { servicio, mailer, generador } = armarEnvio({ correoEnviado: true });
+
+    await expect(servicio.enviarFichaPorCorreo('f1', sesion)).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
+    expect(generador.generatePdfFromTemplate).not.toHaveBeenCalled();
+    expect(mailer.sendResumenFichaEmail).not.toHaveBeenCalled();
+  });
+
+  it('si el docente no tiene correo, lo dice y no genera nada', async () => {
+    const { servicio, mailer, generador } = armarEnvio({ correo: null });
+
+    await expect(servicio.enviarFichaPorCorreo('f1', sesion)).rejects.toThrow(/correo registrado/);
+    expect(generador.generatePdfFromTemplate).not.toHaveBeenCalled();
+    expect(mailer.sendResumenFichaEmail).not.toHaveBeenCalled();
   });
 });
