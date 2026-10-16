@@ -19,6 +19,8 @@ interface CabeceraFichaProps {
    */
   conCarpeta: boolean;
   onImprimir: () => void;
+  /** El PDF se está generando: el botón no admite otro clic hasta que termine. */
+  imprimiendo?: boolean;
   onCerrar: () => void;
 }
 
@@ -41,6 +43,7 @@ export const CabeceraFicha = ({
   onPestana,
   conCarpeta,
   onImprimir,
+  imprimiendo = false,
   onCerrar,
 }: CabeceraFichaProps) => (
   <div className="shrink-0 bg-white border-b border-border px-4 sm:px-6 py-2.5 flex flex-wrap sm:flex-nowrap items-center justify-between gap-2.5">
@@ -98,10 +101,11 @@ export const CabeceraFicha = ({
           size="sm"
           className="border-primary text-primary hover:bg-primary/5 text-xs font-bold gap-1.5 cursor-pointer shadow-xs h-7.5 px-2.5"
           onClick={onImprimir}
+          disabled={imprimiendo}
         >
           <Download className="h-3.5 w-3.5" />
-          <span className="hidden sm:inline">Imprimir / PDF</span>
-          <span className="sm:hidden">PDF</span>
+          <span className="hidden sm:inline">{imprimiendo ? 'Generando PDF…' : 'Imprimir / PDF'}</span>
+          <span className="sm:hidden">{imprimiendo ? '…' : 'PDF'}</span>
         </Button>
       )}
       <button

@@ -41,11 +41,17 @@ const FOOTER_HTML = `<!DOCTYPE html>
 export class PdfGeneratorService {
   private readonly logger = new Logger(PdfGeneratorService.name);
   private logoUgel?: string;
+  private logoAgp?: string;
 
   // Helper custom de Handlebars
   constructor() {
     handlebars.registerHelper('increment', (value) => parseInt(String(value), 10) + 1);
-    handlebars.registerHelper('eq', (a: unknown, b: unknown) => Number(a) === Number(b));
+    // Números por valor (nivel 3 == '3') y cualquier otra cosa por igualdad estricta.
+    handlebars.registerHelper('eq', (a: unknown, b: unknown) => {
+      const na = Number(a);
+      const nb = Number(b);
+      return Number.isNaN(na) || Number.isNaN(nb) ? a === b : na === nb;
+    });
     // Posición (0–100 %) de un promedio dentro de la escala de logro de 1 a 4.
     handlebars.registerHelper('posicionEscala', (promedio: unknown) => {
       const valor = Math.min(4, Math.max(1, Number(promedio)));
@@ -71,18 +77,28 @@ export class PdfGeneratorService {
 
   private renderTemplate(templateName: string, data: any): string {
     const templateHtml = fs.readFileSync(path.join(TEMPLATES_DIR, `${templateName}.hbs`), 'utf8');
-    return handlebars.compile(templateHtml)({ ...data, logoUgel: this.getLogoUgel() });
+    return handlebars.compile(templateHtml)(this.conImagenes(data));
+  }
+
+  private conImagenes(data: object): Record<string, unknown> {
+    return { ...data, logoUgel: this.getLogoUgel(), logoAgp: this.getLogoAgp() };
   }
 
   // Se embebe como data URI para que el HTML sea autocontenido: Gotenberg no tiene por qué
   // alcanzar al frontend ni a internet para resolver imágenes.
   private getLogoUgel(): string {
-    this.logoUgel ??=
-      'data:image/webp;base64,' +
-      fs
-        .readFileSync(path.join(TEMPLATES_DIR, 'assets', 'logo-ugel-lampa.webp'))
-        .toString('base64');
+    this.logoUgel ??= this.imagenEmbebida('logo-ugel-lampa.webp');
     return this.logoUgel;
+  }
+
+  private getLogoAgp(): string {
+    this.logoAgp ??= this.imagenEmbebida('logo-agp.webp');
+    return this.logoAgp;
+  }
+
+  private imagenEmbebida(archivo: string): string {
+    const bytes = fs.readFileSync(path.join(TEMPLATES_DIR, 'assets', archivo));
+    return `data:image/webp;base64,${bytes.toString('base64')}`;
   }
 
   private buildForm(htmlContent: string): FormData {

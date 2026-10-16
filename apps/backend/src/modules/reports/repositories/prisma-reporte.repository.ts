@@ -14,6 +14,8 @@ import {
   SessionScope,
 } from './reporte.repository.js';
 import { fromPrismaFichaReporte } from './reporte.mapper.js';
+import { INCLUDE_FICHA_OFICIAL, fromPrismaFichaOficial } from './ficha-oficial.mapper.js';
+import type { FichaOficialPersistida } from '../services/ficha-oficial-docente.imagenes.js';
 
 @Injectable()
 export class PrismaReporteRepository implements ReporteRepository {
@@ -211,6 +213,39 @@ export class PrismaReporteRepository implements ReporteRepository {
     }
 
     return resumen.sort((a, b) => b.totalFichas - a.totalFichas);
+  }
+
+  async findFichaOficialDocente(
+    id: string,
+    session: SessionScope,
+  ): Promise<FichaOficialPersistida | null> {
+    const f = await this.prisma.fichaMonitoreo.findUnique({
+      where: { id },
+      include: INCLUDE_FICHA_OFICIAL,
+    });
+    if (!f) return null;
+
+    const scope = this.scopeFilter.forFicha(this.toScopeContext(session));
+    const allowed = await this.prisma.fichaMonitoreo.findFirst({
+      where: { id: f.id, ...scope },
+      select: { id: true },
+    });
+    if (!allowed) return null;
+
+    // El director y el lema no cuelgan de la ficha: el primero es quien ocupa hoy
+    // ese cargo en la institución, el segundo el del año académico de la ficha.
+    const [director, lema] = await Promise.all([
+      this.prisma.docente.findFirst({
+        where: {
+          institucionId: f.cronograma.institucionId,
+          docenteCargos: { some: { cargo: { nombre: 'Director' }, fechaFin: null } },
+        },
+        include: { persona: true },
+      }),
+      this.prisma.lemaAnual.findUnique({ where: { anio: f.anioAcademico } }),
+    ]);
+
+    return fromPrismaFichaOficial(f, director, lema?.lema ?? null);
   }
 
   async findFichaByIdParaExport(id: string, session: SessionScope): Promise<IReporteFicha | null> {
