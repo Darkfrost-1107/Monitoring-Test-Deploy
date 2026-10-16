@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { TipoMonitoreo } from '@sistema-monitoreo/shared-contracts';
 import type { Cronograma } from '@entities/model-cronogramas';
 import type { FormularioCronograma } from '../lib/formulario';
-import { numerosDeVisitaDisponibles } from '../lib/numeracion-visitas';
+import { numerosDeVisitaDisponibles, visitasDelEvaluado } from '../lib/numeracion-visitas';
 
 interface Evaluable {
   id: string;
@@ -95,9 +95,7 @@ export function useSincronizacionFormulario({
   if (!esEdicion && evaluadoResuelto && paraQuien && sugeridoPara !== paraQuien) {
     setSugeridoPara(paraQuien);
 
-    const suyas = cronogramas.filter(
-      (c) => c.evaluadoId === evaluadoResuelto.id && c.tipo === tipoDeVisita,
-    );
+    const suyas = visitasDelEvaluado(cronogramas, evaluadoResuelto.id);
     const siguiente = numerosDeVisitaDisponibles(suyas).find((n) => !n.isOcupado && !n.isFuture);
 
     if (siguiente) onCambiar('visita', siguiente.value);

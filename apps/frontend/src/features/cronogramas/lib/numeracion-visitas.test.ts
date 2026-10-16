@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { MINIMO_DE_VISITAS, numerosDeVisitaDisponibles } from './numeracion-visitas';
+import {
+  MINIMO_DE_VISITAS,
+  numerosDeVisitaDisponibles,
+  visitasDelEvaluado,
+} from './numeracion-visitas';
 
 /**
  * Pruebas de la numeración de visitas de un evaluado.
@@ -77,5 +81,40 @@ describe('numerosDeVisitaDisponibles — huecos de visitas anuladas', () => {
 
     expect(numeros[2].isOcupado).toBe(false);
     expect(numeros[2].isAnulado).toBe(true);
+  });
+});
+
+describe('visitasDelEvaluado — la numeración es de la persona, no del tipo de ficha', () => {
+  const v = (evaluadoId: string, tipo: string, nroVisita: string) => ({
+    evaluadoId,
+    tipo,
+    nroVisita,
+    estado: 'COMPLETADO',
+  });
+
+  it('incluye las visitas de ambos tipos del mismo evaluado', () => {
+    const todas = [
+      v('ana', 'DIRECTIVO', '01'),
+      v('ana', 'DIRECTIVO', '02'),
+      v('ana', 'DOCENTE', '03'),
+    ];
+
+    expect(visitasDelEvaluado(todas, 'ana')).toHaveLength(3);
+  });
+
+  it('deja afuera a los demás evaluados', () => {
+    const todas = [v('ana', 'DOCENTE', '01'), v('luis', 'DOCENTE', '01')];
+
+    expect(visitasDelEvaluado(todas, 'ana')).toEqual([todas[0]]);
+  });
+
+  it('si fue director dos veces y pasa a docente, la siguiente es la 03', () => {
+    const todas = [v('ana', 'DIRECTIVO', '01'), v('ana', 'DIRECTIVO', '02')];
+
+    const siguiente = numerosDeVisitaDisponibles(visitasDelEvaluado(todas, 'ana')).find(
+      (n) => !n.isOcupado && !n.isFuture,
+    );
+
+    expect(siguiente?.value).toBe('03');
   });
 });
