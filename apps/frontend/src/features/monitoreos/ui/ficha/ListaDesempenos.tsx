@@ -1,4 +1,4 @@
-import { Check, Clock, Circle } from 'lucide-react';
+import { Check, Clock, Circle, Lock } from 'lucide-react';
 import type { Plantilla } from '@/entities/model-plantillas';
 
 type Desempeno = Plantilla['desempenos'][number];
@@ -11,6 +11,12 @@ interface ListaDesempenosProps {
   seleccionadoId: string;
   /** Nivel elegido por desempeño; su ausencia es «sin evaluar». */
   nivelesElegidos: Record<string, string>;
+  /** Criterios con nivel y justificación: sólo ellos llevan la marca de completado. */
+  completos?: ReadonlySet<string>;
+  /** Criterios a los que todavía no se puede entrar: hay uno anterior incompleto. */
+  bloqueados?: ReadonlySet<string>;
+  /** El cierre se abre recién con todos los criterios completos. */
+  cierreBloqueado?: boolean;
   /** El instrumento EIB usa escala cualitativa (Sí/Parcialmente/No), no niveles. */
   esEib?: boolean;
   /** Completitud de cada paso de cierre, para que el índice no deje olvidar ninguno. */
@@ -25,6 +31,9 @@ interface ListaDesempenosProps {
   onSeleccionar: (desempenoId: string) => void;
   onSeleccionarCierre?: (paso: PasoCierreTipo) => void;
 }
+
+/** Por qué un paso no se abre: el recorrido es en orden y sin saltear. */
+const MOTIVO_BLOQUEO = 'Complete el paso anterior (nivel y justificación) para continuar';
 
 type EstadoCierre = 'ok' | 'pendiente' | 'opcional';
 
@@ -45,20 +54,24 @@ function ItemCierre({
   etiqueta,
   estado,
   activo,
+  bloqueado = false,
   onClick,
 }: {
   etiqueta: string;
   estado: EstadoCierre;
   activo: boolean;
+  bloqueado?: boolean;
   onClick: () => void;
 }) {
   const leyenda = LEYENDA[estado];
   return (
     <div
-      onClick={onClick}
-      className={`p-3 border rounded-xl cursor-pointer transition-all flex items-center gap-2 shadow-xs bg-surface hover:bg-slate-100 select-none ${
-        activo ? 'border-primary ring-2 ring-primary/30' : 'border-border'
-      }`}
+      onClick={bloqueado ? undefined : onClick}
+      aria-disabled={bloqueado}
+      title={bloqueado ? MOTIVO_BLOQUEO : undefined}
+      className={`p-3 border rounded-xl transition-all flex items-center gap-2 shadow-xs bg-surface select-none ${
+        bloqueado ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-slate-100'
+      } ${activo ? 'border-primary ring-2 ring-primary/30' : 'border-border'}`}
     >
       <span
         className={`h-5 w-5 rounded-full shrink-0 flex items-center justify-center border ${ESTILO_ICONO[estado]}`}
@@ -123,6 +136,9 @@ export const ListaDesempenos = ({
   desempenos,
   seleccionadoId,
   nivelesElegidos,
+  completos,
+  bloqueados,
+  cierreBloqueado = false,
   esEib = false,
   cierre,
   pasoCierreActivo = null,
@@ -137,6 +153,9 @@ export const ListaDesempenos = ({
     {desempenos.map((desempeno, indice) => {
       const seleccionado = seleccionadoId === desempeno.id;
       const nivel = nivelesElegidos[desempeno.id];
+      const bloqueado = bloqueados?.has(desempeno.id) ?? false;
+      // Sin la lista de completos (uso aislado) basta el nivel, como antes.
+      const completo = completos ? completos.has(desempeno.id) : !!nivel;
 
       // La agrupación por Sección/Subcriterio es propia del instrumento EIB, que
       // estructura la descripción como «Sección — Subcriterio». En docente regular
@@ -173,11 +192,15 @@ export const ListaDesempenos = ({
           )}
 
           <div
-            onClick={() => onSeleccionar(desempeno.id)}
-            className={`p-3 border rounded-xl cursor-pointer transition-all flex items-start gap-2 shadow-xs leading-snug text-left select-none relative ${
+            onClick={() => !bloqueado && onSeleccionar(desempeno.id)}
+            aria-disabled={bloqueado}
+            title={bloqueado ? MOTIVO_BLOQUEO : undefined}
+            className={`p-3 border rounded-xl transition-all flex items-start gap-2 shadow-xs leading-snug text-left select-none relative ${
+              bloqueado ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+            } ${
               seleccionado
                 ? 'border-primary ring-1 ring-primary/40 bg-primary-light/50 font-extrabold text-primary shadow-sm'
-                : 'border-border bg-surface text-slate-600 hover:bg-slate-100'
+                : `border-border bg-surface text-slate-600 ${bloqueado ? '' : 'hover:bg-slate-100'}`
             }`}
           >
           <span
@@ -200,10 +223,16 @@ export const ListaDesempenos = ({
             </div>
           </div>
 
-          {nivel && (
+          {completo && (
             <span className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 bg-emerald-50 border border-emerald-200 text-emerald-700 flex items-center justify-center rounded-full">
               <Check className="h-2.5 w-2.5 font-bold" strokeWidth={3} />
             </span>
+          )}
+          {bloqueado && (
+            <Lock
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400"
+              strokeWidth={2.5}
+            />
           )}
         </div>
       </div>
@@ -217,24 +246,28 @@ export const ListaDesempenos = ({
         </span>
         <ItemCierre
           etiqueta="Observaciones Generales"
+          bloqueado={cierreBloqueado}
           estado={cierre.observaciones ? 'ok' : 'pendiente'}
           activo={pasoCierreActivo === 'obs'}
           onClick={() => onSeleccionarCierre?.('obs')}
         />
         <ItemCierre
           etiqueta="Sugerencias"
+          bloqueado={cierreBloqueado}
           estado={cierre.sugerencias ? 'ok' : 'pendiente'}
           activo={pasoCierreActivo === 'sugerencias'}
           onClick={() => onSeleccionarCierre?.('sugerencias')}
         />
         <ItemCierre
           etiqueta="Compromisos"
+          bloqueado={cierreBloqueado}
           estado={cierre.compromisos ? 'ok' : 'pendiente'}
           activo={pasoCierreActivo === 'compromisos'}
           onClick={() => onSeleccionarCierre?.('compromisos')}
         />
         <ItemCierre
           etiqueta="Evidencia"
+          bloqueado={cierreBloqueado}
           estado={cierre.evidencia ? 'ok' : 'opcional'}
           activo={pasoCierreActivo === 'evidencia'}
           onClick={() => onSeleccionarCierre?.('evidencia')}

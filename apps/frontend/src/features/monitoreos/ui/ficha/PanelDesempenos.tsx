@@ -3,6 +3,7 @@ import type { Plantilla } from '@/entities/model-plantillas';
 import { ListaDesempenos, type PasoCierreTipo } from './ListaDesempenos';
 import { DetalleDesempeno } from './DetalleDesempeno';
 import { PasoCierre } from './PasoCierre';
+import { criterioCompleto, indiceMaximoAccesible } from '../../lib/avance-ficha';
 
 /** Lo respondido sobre cada desempeño, indexado por su identificador. */
 export interface RespuestasDesempenos {
@@ -39,6 +40,7 @@ interface PanelDesempenosProps {
 
 /** Clave del único paso de cierre en la secuencia del wizard. */
 const CLAVE_CIERRE = 'cierre';
+const PREFIJO_CRITERIO = 'criterio:';
 
 /**
  * Escenario de llenado de la ficha: índice a la izquierda, contenido a la
@@ -70,7 +72,7 @@ export const PanelDesempenos = ({
 
   // La secuencia del wizard: un paso por criterio y luego el cierre (uno solo).
   const claves = useMemo(
-    () => [...template.desempenos.map((d) => `criterio:${d.id}`), CLAVE_CIERRE],
+    () => [...template.desempenos.map((d) => `${PREFIJO_CRITERIO}${d.id}`), CLAVE_CIERRE],
     [template.desempenos],
   );
 
@@ -81,8 +83,8 @@ export const PanelDesempenos = ({
   const enCierre = activoResuelto === CLAVE_CIERRE;
 
   const criterioActivoId =
-    !enCierre && activoResuelto.startsWith('criterio:')
-      ? activoResuelto.slice('criterio:'.length)
+    !enCierre && activoResuelto.startsWith(PREFIJO_CRITERIO)
+      ? activoResuelto.slice(PREFIJO_CRITERIO.length)
       : null;
 
   const abierto = template.desempenos.find((d) => d.id === criterioActivoId) ?? null;
@@ -102,11 +104,36 @@ export const PanelDesempenos = ({
     setActivo(clave);
   };
 
+  // Avance lineal: sólo se llega hasta el primer paso incompleto. Una ficha en
+  // lectura es una consulta, y no se le pide nada al que la mira.
+  const completos = useMemo(
+    () =>
+      new Set(
+        template.desempenos
+          .filter((d) => criterioCompleto(respuestas.niveles[d.id], respuestas.observaciones[d.id]))
+          .map((d) => d.id),
+      ),
+    [template.desempenos, respuestas.niveles, respuestas.observaciones],
+  );
+  const maximoAccesible = soloLectura
+    ? claves.length - 1
+    : indiceMaximoAccesible(
+        claves,
+        (clave) => clave === CLAVE_CIERRE || completos.has(clave.slice(PREFIJO_CRITERIO.length)),
+      );
+  const bloqueados = new Set(
+    template.desempenos.filter((_, i) => i > maximoAccesible).map((d) => d.id),
+  );
+  const cierreBloqueado = claves.length - 1 > maximoAccesible;
+
   const onAnterior = indice > 0 ? () => irAClave(claves[indice - 1]) : undefined;
   const onSiguiente =
-    indice < claves.length - 1 ? () => irAClave(claves[indice + 1]) : undefined;
+    indice < claves.length - 1 && indice + 1 <= maximoAccesible
+      ? () => irAClave(claves[indice + 1])
+      : undefined;
 
   const seleccionarCierre = (paso: PasoCierreTipo) => {
+    if (cierreBloqueado) return;
     setFocoCierre(paso);
     setActivo(CLAVE_CIERRE);
   };
@@ -124,10 +151,13 @@ export const PanelDesempenos = ({
         desempenos={template.desempenos}
         seleccionadoId={criterioActivoId ?? ''}
         nivelesElegidos={respuestas.niveles}
+        completos={completos}
+        bloqueados={bloqueados}
+        cierreBloqueado={cierreBloqueado}
         esEib={esEib}
         cierre={cierreEstado}
         pasoCierreActivo={enCierre ? focoCierre : null}
-        onSeleccionar={(id) => setActivo(`criterio:${id}`)}
+        onSeleccionar={(id) => !bloqueados.has(id) && setActivo(`${PREFIJO_CRITERIO}${id}`)}
         onSeleccionarCierre={seleccionarCierre}
       />
 
