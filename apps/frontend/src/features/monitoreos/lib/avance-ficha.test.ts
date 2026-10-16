@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { criterioCompleto, indiceMaximoAccesible } from './avance-ficha';
+import { criterioCompleto, indiceMaximoAccesible, planificacionCompleta } from './avance-ficha';
 
 describe('criterioCompleto', () => {
   it('exige nivel y justificación, igual que la validación del cierre', () => {
@@ -18,6 +18,33 @@ describe('criterioCompleto', () => {
 
   it('una observación en blanco no cuenta', () => {
     expect(criterioCompleto('III', '   \n ')).toBe(false);
+  });
+});
+
+describe('criterioCompleto — pregunta extra Sí/No', () => {
+  const conPregunta = (respuesta?: boolean) => ({ texto: '¿Hubo maltrato?', respuesta });
+
+  it('con pregunta sin responder no está completo', () => {
+    expect(criterioCompleto('III', 'Justificado', conPregunta(undefined))).toBe(false);
+  });
+
+  it('«No» es una respuesta: cuenta como respondida', () => {
+    expect(criterioCompleto('III', 'Justificado', conPregunta(false))).toBe(true);
+  });
+
+  it('«Sí» también cuenta como respondida', () => {
+    expect(criterioCompleto('III', 'Justificado', conPregunta(true))).toBe(true);
+  });
+
+  it('sin pregunta en el criterio no se exige respuesta', () => {
+    expect(criterioCompleto('III', 'Justificado', { texto: undefined, respuesta: undefined })).toBe(
+      true,
+    );
+    expect(criterioCompleto('III', 'Justificado')).toBe(true);
+  });
+
+  it('una pregunta vacía en la plantilla no se exige', () => {
+    expect(criterioCompleto('III', 'Justificado', { texto: '', respuesta: undefined })).toBe(true);
   });
 });
 
@@ -48,5 +75,26 @@ describe('indiceMaximoAccesible', () => {
 
   it('sin pasos devuelve 0', () => {
     expect(indiceMaximoAccesible([], () => true)).toBe(0);
+  });
+});
+
+describe('planificacionCompleta', () => {
+  const items = [{ id: 'e1' }, { id: 'e2' }];
+
+  it('exige nivel y observación en cada ítem', () => {
+    expect(planificacionCompleta(items, { e1: 3, e2: 4 }, { e1: 'Uno', e2: 'Dos' })).toBe(true);
+  });
+
+  it('un ítem sin nivel la deja incompleta', () => {
+    expect(planificacionCompleta(items, { e1: 3 }, { e1: 'Uno', e2: 'Dos' })).toBe(false);
+  });
+
+  it('un ítem sin observación, o en blanco, la deja incompleta', () => {
+    expect(planificacionCompleta(items, { e1: 3, e2: 4 }, { e1: 'Uno' })).toBe(false);
+    expect(planificacionCompleta(items, { e1: 3, e2: 4 }, { e1: 'Uno', e2: '  ' })).toBe(false);
+  });
+
+  it('sin ítems no hay nada que completar', () => {
+    expect(planificacionCompleta([], {}, {})).toBe(true);
   });
 });

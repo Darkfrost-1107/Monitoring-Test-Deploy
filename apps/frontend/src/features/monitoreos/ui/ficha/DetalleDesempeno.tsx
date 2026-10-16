@@ -321,8 +321,19 @@ export const DetalleDesempeno = ({
         <NavegacionPasos
           etiqueta={`Criterio ${indiceActual + 1} de ${totalDesempenos}`}
           subEtiqueta={`${totalEvaluados} de ${totalDesempenos} evaluados`}
-          estado={criterioCompleto(respuesta.nivel, respuesta.observacion) ? 'completado' : 'pendiente'}
-          motivoSinAvance="Elija el nivel y escriba la justificación para continuar"
+          estado={
+            criterioCompleto(respuesta.nivel, respuesta.observacion, {
+              texto: desempeno.preguntaExtra,
+              respuesta: respuesta.preguntaExtra,
+            })
+              ? 'completado'
+              : 'pendiente'
+          }
+          motivoSinAvance={
+            desempeno.preguntaExtra
+              ? 'Elija el nivel, responda la pregunta extra y escriba la justificación para continuar'
+              : 'Elija el nivel y escriba la justificación para continuar'
+          }
           onAnterior={onAnterior}
           onSiguiente={onSiguiente}
         />

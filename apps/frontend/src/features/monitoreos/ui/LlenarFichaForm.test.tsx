@@ -306,8 +306,8 @@ describe('LlenarFichaForm — carga inicial', () => {
   it('abre con el estado recibido', async () => {
     montar({ initialState: FICHA_COMPLETA });
 
-    // El cierre vive como paso del panel: se navega desde el índice.
-    await userEvent.click(screen.getByText('Sugerencias'));
+    // El cierre vive como sección del panel: se abre desde su encabezado.
+    await userEvent.click(screen.getByText('Cierre de la evaluación'));
 
     expect(screen.getByDisplayValue('Reforzar el uso de material concreto.')).toBeInTheDocument();
   });

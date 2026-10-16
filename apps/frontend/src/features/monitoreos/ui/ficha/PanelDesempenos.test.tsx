@@ -1,8 +1,13 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { ReactNode } from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { Plantilla } from '@/entities/model-plantillas';
-import { PanelDesempenos, type RespuestasDesempenos } from './PanelDesempenos';
+import {
+  PanelDesempenos,
+  type PlanificacionDeFicha,
+  type RespuestasDesempenos,
+} from './PanelDesempenos';
 
 /**
  * El avance de la ficha es lineal: no se pasa al criterio siguiente, ni al
@@ -17,9 +22,14 @@ const NIVELES: Plantilla['niveles'] = [
   { nivel: 'IV', denominacion: 'Logro destacado', rangoMin: 4, color: '#0f766e' },
 ];
 
-const desempeno = (id: string, nombre: string): Plantilla['desempenos'][number] => ({
+const desempeno = (
+  id: string,
+  nombre: string,
+  preguntaExtra?: string,
+): Plantilla['desempenos'][number] => ({
   id,
   nombre,
+  preguntaExtra,
   descripcionCorta: `Descripción de ${nombre}`,
   aspectos: [],
   rubrica: NIVELES.map((n) => ({ nivel: n.nivel, descripcion: `Rúbrica ${n.nivel}` })),
@@ -42,12 +52,41 @@ const PLANTILLA: Plantilla = {
   descripcion: 'Plantilla de prueba',
 };
 
+/**
+ * La ficha scrollea dentro de un único contenedor interno. Este contenedor de
+ * prueba hace visible cada vez que alguien le fija `scrollTop`.
+ */
+const fijarScrollTop = vi.fn();
+const Scroller = ({ children }: { children: ReactNode }) => (
+  <div
+    style={{ overflowY: 'auto' }}
+    ref={(el) => {
+      if (el)
+        Object.defineProperty(el, 'scrollTop', {
+          configurable: true,
+          get: () => 300,
+          set: fijarScrollTop,
+        });
+    }}
+  >
+    {children}
+  </div>
+);
+
+beforeEach(() => fijarScrollTop.mockClear());
+
 const VACIAS: RespuestasDesempenos = { niveles: {}, preguntasExtra: {}, observaciones: {} };
 
-const montar = (respuestas: RespuestasDesempenos = VACIAS, soloLectura = false) =>
+const montar = (
+  respuestas: RespuestasDesempenos = VACIAS,
+  soloLectura = false,
+  planificacion?: PlanificacionDeFicha,
+  template: Plantilla = PLANTILLA,
+) =>
   render(
     <PanelDesempenos
-      template={PLANTILLA}
+      template={template}
+      planificacion={planificacion}
       respuestas={respuestas}
       onElegirNivel={vi.fn()}
       onResponderExtra={vi.fn()}
@@ -66,6 +105,7 @@ const montar = (respuestas: RespuestasDesempenos = VACIAS, soloLectura = false) 
         onVerImagen: vi.fn(),
       }}
     />,
+    { wrapper: Scroller },
   );
 
 const siguiente = () => screen.getByRole('button', { name: /siguiente/i });
@@ -94,7 +134,7 @@ describe('PanelDesempenos — avance bloqueado con el criterio incompleto', () =
     montar();
 
     expect(itemDelIndice('Criterio dos')).toHaveAttribute('aria-disabled', 'true');
-    expect(itemDelIndice('Observaciones Generales')).toHaveAttribute('aria-disabled', 'true');
+    expect(itemDelIndice('Cierre de la evaluación')).toHaveAttribute('aria-disabled', 'true');
   });
 
   it('un clic en un paso bloqueado no cambia de criterio', async () => {
@@ -109,7 +149,7 @@ describe('PanelDesempenos — avance bloqueado con el criterio incompleto', () =
     montar({ niveles: { d1: 'III' }, preguntasExtra: {}, observaciones: { d1: 'Justificado' } });
 
     expect(itemDelIndice('Criterio dos')).toHaveAttribute('aria-disabled', 'false');
-    expect(itemDelIndice('Observaciones Generales')).toHaveAttribute('aria-disabled', 'true');
+    expect(itemDelIndice('Cierre de la evaluación')).toHaveAttribute('aria-disabled', 'true');
   });
 
   it('con todos los criterios completos se puede entrar al cierre', () => {
@@ -119,7 +159,7 @@ describe('PanelDesempenos — avance bloqueado con el criterio incompleto', () =
       observaciones: { d1: 'Uno', d2: 'Dos' },
     });
 
-    expect(itemDelIndice('Observaciones Generales')).toHaveAttribute('aria-disabled', 'false');
+    expect(itemDelIndice('Cierre de la evaluación')).toHaveAttribute('aria-disabled', 'false');
   });
 
   it('en sólo lectura no bloquea nada: es una consulta', () => {
@@ -133,5 +173,380 @@ describe('PanelDesempenos — avance bloqueado con el criterio incompleto', () =
     montar({ niveles: { d1: 'III' }, preguntasExtra: {}, observaciones: {} });
 
     expect(screen.queryByText('Completado')).not.toBeInTheDocument();
+  });
+});
+
+describe('PanelDesempenos — planificación y diseño de la evaluación como paso', () => {
+  const COMPLETOS: RespuestasDesempenos = {
+    niveles: { d1: 'III', d2: 'IV' },
+    preguntasExtra: {},
+    observaciones: { d1: 'Uno', d2: 'Dos' },
+  };
+
+  const planificacion = (over: Partial<PlanificacionDeFicha> = {}): PlanificacionDeFicha => ({
+    items: [
+      { id: 'e1', numero: 1, descripcion: 'Planifica el proceso de enseñanza' },
+      { id: 'e2', numero: 2, descripcion: 'Diseña una evaluación pertinente' },
+    ],
+    niveles: NIVELES,
+    respuestas: {},
+    observaciones: {},
+    onResponder: vi.fn(),
+    onObservar: vi.fn(),
+    ...over,
+  });
+
+  const ETIQUETA = 'Planificación y diseño de evaluación';
+
+  it('aparece en la barra lateral entre los criterios y el cierre', () => {
+    montar(COMPLETOS, false, planificacion());
+
+    const plan = screen.getByText(ETIQUETA);
+    const criterio = screen.getByText('Criterio dos');
+    const cierre = screen.getByText('Cierre de la evaluación');
+
+    expect(criterio.compareDocumentPosition(plan) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(plan.compareDocumentPosition(cierre) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('no aparece si la ficha no la lleva', () => {
+    montar(COMPLETOS);
+
+    expect(screen.queryByText(ETIQUETA)).not.toBeInTheDocument();
+  });
+
+  it('queda bloqueada mientras haya un criterio incompleto', () => {
+    montar(VACIAS, false, planificacion());
+
+    expect(itemDelIndice(ETIQUETA)).toHaveAttribute('aria-disabled', 'true');
+  });
+
+  it('con los criterios completos se abre y se muestra en el panel derecho', async () => {
+    montar(COMPLETOS, false, planificacion());
+
+    await userEvent.click(screen.getByText(ETIQUETA));
+
+    // Una vez en la barra lateral y otra como tarjeta en el panel.
+    expect(screen.getAllByText('Planifica el proceso de enseñanza')).toHaveLength(2);
+    // Una vez en la barra lateral y otra como tarjeta en el panel.
+    expect(screen.getAllByText('Diseña una evaluación pertinente')).toHaveLength(2);
+  });
+
+  it('«Siguiente» desde el último criterio lleva a la planificación, no al cierre', async () => {
+    montar(COMPLETOS, false, planificacion());
+
+    await userEvent.click(screen.getByText('Criterio dos'));
+    await userEvent.click(siguiente());
+
+    // Una vez en la barra lateral y otra como tarjeta en el panel.
+    expect(screen.getAllByText('Planifica el proceso de enseñanza')).toHaveLength(2);
+    expect(screen.queryByText(/Describa cómo se desarrolló la visita/)).not.toBeInTheDocument();
+  });
+
+  it('el cierre sigue bloqueado hasta completar la planificación', () => {
+    montar(COMPLETOS, false, planificacion());
+
+    expect(itemDelIndice('Cierre de la evaluación')).toHaveAttribute('aria-disabled', 'true');
+  });
+
+  it('con la planificación completa se abre el cierre', () => {
+    montar(
+      COMPLETOS,
+      false,
+      planificacion({ respuestas: { e1: 3, e2: 4 }, observaciones: { e1: 'A', e2: 'B' } }),
+    );
+
+    expect(itemDelIndice('Cierre de la evaluación')).toHaveAttribute('aria-disabled', 'false');
+  });
+
+  it('en sólo lectura no bloquea la planificación', () => {
+    montar(VACIAS, true, planificacion());
+
+    expect(itemDelIndice(ETIQUETA)).toHaveAttribute('aria-disabled', 'false');
+  });
+});
+
+describe('PanelDesempenos — al cambiar de paso se vuelve al inicio de la ficha', () => {
+  const COMPLETOS: RespuestasDesempenos = {
+    niveles: { d1: 'III', d2: 'IV' },
+    preguntasExtra: {},
+    observaciones: { d1: 'Uno', d2: 'Dos' },
+  };
+
+  it('no mueve el scroll al abrir la ficha', () => {
+    montar(COMPLETOS);
+
+    expect(fijarScrollTop).not.toHaveBeenCalled();
+  });
+
+  it('«Siguiente» lleva el scroll al inicio, para ver el criterio que toca evaluar', async () => {
+    montar(COMPLETOS);
+
+    await userEvent.click(siguiente());
+
+    expect(fijarScrollTop).toHaveBeenCalledWith(0);
+  });
+
+  it('«Anterior» también vuelve al inicio', async () => {
+    montar(COMPLETOS);
+    await userEvent.click(siguiente());
+    fijarScrollTop.mockClear();
+
+    await userEvent.click(screen.getByRole('button', { name: /anterior/i }));
+
+    expect(fijarScrollTop).toHaveBeenCalledWith(0);
+  });
+
+  it('elegir un criterio desde la barra lateral vuelve al inicio', async () => {
+    montar(COMPLETOS);
+
+    await userEvent.click(screen.getByText('Criterio dos'));
+
+    expect(fijarScrollTop).toHaveBeenCalledWith(0);
+  });
+
+  it('un clic en un paso bloqueado no mueve el scroll', async () => {
+    montar(VACIAS);
+
+    await userEvent.click(screen.getByText('Criterio dos'));
+
+    expect(fijarScrollTop).not.toHaveBeenCalled();
+  });
+});
+
+describe('PanelDesempenos — la pregunta extra Sí/No también hay que responderla', () => {
+  const CON_PREGUNTA: Plantilla = {
+    ...PLANTILLA,
+    desempenos: [
+      desempeno('d1', 'Criterio uno', 'Marque «Sí» si hubo maltrato.'),
+      desempeno('d2', 'Criterio dos'),
+    ],
+  };
+  const respondido = (preguntasExtra: Record<string, boolean>): RespuestasDesempenos => ({
+    niveles: { d1: 'III' },
+    preguntasExtra,
+    observaciones: { d1: 'Justificado' },
+  });
+
+  it('con nivel y observación pero sin responder la pregunta, no deja avanzar', () => {
+    montar(respondido({}), false, undefined, CON_PREGUNTA);
+
+    expect(siguiente()).toBeDisabled();
+  });
+
+  it('responder «No» desbloquea el avance', () => {
+    montar(respondido({ d1: false }), false, undefined, CON_PREGUNTA);
+
+    expect(siguiente()).toBeEnabled();
+  });
+
+  it('bloquea los pasos siguientes mientras la pregunta esté sin responder', () => {
+    montar(respondido({}), false, undefined, CON_PREGUNTA);
+
+    expect(itemDelIndice('Criterio dos')).toHaveAttribute('aria-disabled', 'true');
+  });
+
+  it('no marca el criterio como completado sin la pregunta respondida', () => {
+    montar(respondido({}), false, undefined, CON_PREGUNTA);
+
+    expect(screen.queryByText('Completado')).not.toBeInTheDocument();
+  });
+
+  it('en sólo lectura no se exige', () => {
+    montar(respondido({}), true, undefined, CON_PREGUNTA);
+
+    expect(siguiente()).toBeEnabled();
+  });
+});
+
+describe('PanelDesempenos — secciones desplegables en la barra lateral', () => {
+  const COMPLETOS: RespuestasDesempenos = {
+    niveles: { d1: 'III', d2: 'IV' },
+    preguntasExtra: {},
+    observaciones: { d1: 'Uno', d2: 'Dos' },
+  };
+  const plan = (over: Partial<PlanificacionDeFicha> = {}): PlanificacionDeFicha => ({
+    items: [
+      { id: 'e1', numero: 1, descripcion: 'Planifica el proceso' },
+      { id: 'e2', numero: 2, descripcion: 'Diseña una evaluación' },
+    ],
+    niveles: NIVELES,
+    respuestas: {},
+    observaciones: {},
+    onResponder: vi.fn(),
+    onObservar: vi.fn(),
+    ...over,
+  });
+  const ETIQUETA = 'Planificación y diseño de evaluación';
+
+  it('muestra los criterios mientras se evalúan, y el cierre queda contraído', () => {
+    montar(COMPLETOS, false, plan());
+
+    expect(screen.getByText('Criterio dos')).toBeInTheDocument();
+    expect(screen.queryByText('Sugerencias')).not.toBeInTheDocument();
+  });
+
+  it('al pasar a la planificación se contraen los criterios', async () => {
+    montar(COMPLETOS, false, plan());
+
+    await userEvent.click(screen.getByText(ETIQUETA));
+
+    expect(screen.queryByText('Criterio dos')).not.toBeInTheDocument();
+    expect(screen.getByText('Criterios / Desempeños')).toBeInTheDocument();
+  });
+
+  it('«Siguiente» desde el último criterio contrae los criterios', async () => {
+    montar(COMPLETOS, false, plan());
+
+    await userEvent.click(screen.getByText('Criterio dos'));
+    await userEvent.click(siguiente());
+
+    expect(screen.queryByText('Criterio dos')).not.toBeInTheDocument();
+  });
+
+  it('el encabezado de una sección contraída muestra su avance', async () => {
+    montar(COMPLETOS, false, plan({ respuestas: { e1: 3 }, observaciones: { e1: 'Uno' } }));
+
+    await userEvent.click(screen.getByText(ETIQUETA));
+
+    expect(screen.getByText('2/2', { selector: '[data-avance="criterios"]' })).toBeInTheDocument();
+    expect(
+      screen.getByText('1/2', { selector: '[data-avance="planificacion"]' }),
+    ).toBeInTheDocument();
+  });
+
+  it('el encabezado de una sección completada lleva a su primer paso', async () => {
+    montar(COMPLETOS, false, plan());
+    await userEvent.click(screen.getByText(ETIQUETA));
+
+    await userEvent.click(screen.getByText('Criterios / Desempeños'));
+
+    expect(screen.getByRole('heading', { name: 'Criterio uno' })).toBeInTheDocument();
+  });
+
+  it('tocar el encabezado de la sección abierta no cambia de paso', async () => {
+    montar(COMPLETOS, false, plan());
+    await userEvent.click(screen.getByText('Criterio dos'));
+
+    await userEvent.click(screen.getByText('Criterios / Desempeños'));
+
+    expect(screen.getByRole('heading', { name: 'Criterio dos' })).toBeInTheDocument();
+  });
+
+  it('el encabezado de una sección bloqueada no responde', async () => {
+    montar(VACIAS, false, plan());
+
+    await userEvent.click(screen.getByText(ETIQUETA));
+
+    expect(screen.getByRole('heading', { name: 'Criterio uno' })).toBeInTheDocument();
+    expect(itemDelIndice(ETIQUETA)).toHaveAttribute('aria-disabled', 'true');
+  });
+
+  it('abre el cierre con sus cuatro ítems al llegar a esa sección', async () => {
+    montar(COMPLETOS);
+
+    await userEvent.click(screen.getByText('Cierre de la evaluación'));
+
+    // Cada uno aparece en la barra lateral y, otra vez, como campo del panel.
+    expect(screen.getAllByText('Compromisos')).toHaveLength(2);
+    expect(screen.getByText('Evidencia')).toBeInTheDocument();
+    expect(screen.queryByText('Criterio dos')).not.toBeInTheDocument();
+  });
+
+  it('indica con aria-expanded cuál sección está abierta', async () => {
+    montar(COMPLETOS);
+
+    expect(itemDelIndice('Criterios / Desempeños')).toHaveAttribute('aria-expanded', 'true');
+    expect(itemDelIndice('Cierre de la evaluación')).toHaveAttribute('aria-expanded', 'false');
+  });
+});
+
+describe('PanelDesempenos — los ítems de la planificación se listan en la barra lateral', () => {
+  const COMPLETOS: RespuestasDesempenos = {
+    niveles: { d1: 'III', d2: 'IV' },
+    preguntasExtra: {},
+    observaciones: { d1: 'Uno', d2: 'Dos' },
+  };
+  const plan = (over: Partial<PlanificacionDeFicha> = {}): PlanificacionDeFicha => ({
+    items: [
+      { id: 'e1', numero: 1, descripcion: 'Planifica el proceso' },
+      { id: 'e2', numero: 2, descripcion: 'Diseña una evaluación' },
+    ],
+    niveles: NIVELES,
+    respuestas: {},
+    observaciones: {},
+    onResponder: vi.fn(),
+    onObservar: vi.fn(),
+    ...over,
+  });
+  const ETIQUETA = 'Planificación y diseño de evaluación';
+  const itemsDeLaBarra = (c: HTMLElement) => c.querySelectorAll('[data-item-planificacion]');
+  const itemDeLaBarra = (c: HTMLElement, id: string) =>
+    c.querySelector(`[data-item-planificacion="${id}"]`) as HTMLElement;
+
+  it('al abrir la planificación, la barra lista sus ítems', async () => {
+    const { container } = montar(COMPLETOS, false, plan());
+
+    await userEvent.click(screen.getByText(ETIQUETA));
+
+    expect(itemsDeLaBarra(container)).toHaveLength(2);
+  });
+
+  it('con la planificación contraída no lista ítems', () => {
+    const { container } = montar(COMPLETOS, false, plan());
+
+    expect(itemsDeLaBarra(container)).toHaveLength(0);
+  });
+
+  it('cada ítem muestra su valoración, o que está sin evaluar', async () => {
+    const { container } = montar(COMPLETOS, false, plan({ respuestas: { e1: 3 } }));
+    await userEvent.click(screen.getByText(ETIQUETA));
+
+    expect(itemDeLaBarra(container, 'e1')).toHaveTextContent('Nivel III');
+    expect(itemDeLaBarra(container, 'e2')).toHaveTextContent('Sin evaluar');
+  });
+
+  it('marca como completo sólo el ítem con nivel y observación', async () => {
+    const { container } = montar(
+      COMPLETOS,
+      false,
+      plan({ respuestas: { e1: 3, e2: 4 }, observaciones: { e1: 'Uno' } }),
+    );
+    await userEvent.click(screen.getByText(ETIQUETA));
+
+    expect(itemDeLaBarra(container, 'e1')).toHaveAttribute('data-completo', 'true');
+    expect(itemDeLaBarra(container, 'e2')).toHaveAttribute('data-completo', 'false');
+  });
+
+  it('tocar un ítem lleva el panel a ese ítem', async () => {
+    const visitados: string[] = [];
+    const original = Element.prototype.scrollIntoView;
+    Element.prototype.scrollIntoView = function (this: Element) {
+      visitados.push(this.id);
+    };
+    const { container } = montar(COMPLETOS, false, plan());
+    await userEvent.click(screen.getByText(ETIQUETA));
+
+    await userEvent.click(itemDeLaBarra(container, 'e2'));
+
+    Element.prototype.scrollIntoView = original;
+    expect(visitados).toContain('plan-item-e2');
+  });
+
+  it('volver a tocar el mismo ítem también lleva a él', async () => {
+    const visitados: string[] = [];
+    const original = Element.prototype.scrollIntoView;
+    Element.prototype.scrollIntoView = function (this: Element) {
+      visitados.push(this.id);
+    };
+    const { container } = montar(COMPLETOS, false, plan());
+    await userEvent.click(screen.getByText(ETIQUETA));
+    await userEvent.click(itemDeLaBarra(container, 'e2'));
+    visitados.length = 0;
+
+    await userEvent.click(itemDeLaBarra(container, 'e2'));
+
+    Element.prototype.scrollIntoView = original;
+    expect(visitados).toContain('plan-item-e2');
   });
 });
