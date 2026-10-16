@@ -39,7 +39,16 @@ vi.mock('../hooks/use-docente-evaluado', () => ({
   useDocenteEvaluado: () => ({ docente: null, areasSugeridas: [] }),
 }));
 
-vi.mock('react-to-print', () => ({ useReactToPrint: () => () => {} }));
+const { imprimirLegado, imprimirOficial } = vi.hoisted(() => ({
+  imprimirLegado: vi.fn(),
+  imprimirOficial: vi.fn(),
+}));
+
+vi.mock('react-to-print', () => ({ useReactToPrint: () => imprimirLegado }));
+
+vi.mock('../hooks/use-imprimir-ficha-oficial', () => ({
+  useImprimirFichaOficial: () => ({ imprimir: imprimirOficial, generando: false }),
+}));
 
 vi.mock('@/shared/api/firmas.api', () => ({
   firmasApi: {
@@ -136,7 +145,13 @@ const Wrapper = ({ children }: { children: ReactNode }) => {
   );
 };
 
-const montar = (opciones: { initialState?: DatosFicha; visit?: Partial<Cronograma> } = {}) => {
+const montar = (
+  opciones: {
+    initialState?: DatosFicha;
+    visit?: Partial<Cronograma>;
+    template?: Partial<Plantilla>;
+  } = {},
+) => {
   const onFinalize = vi.fn();
   const onSave = vi.fn();
   const onClose = vi.fn();
@@ -147,7 +162,7 @@ const montar = (opciones: { initialState?: DatosFicha; visit?: Partial<Cronogram
         isOpen
         onClose={onClose}
         visit={{ ...VISITA, ...opciones.visit }}
-        template={PLANTILLA}
+        template={{ ...PLANTILLA, ...opciones.template }}
         onSave={onSave}
         onFinalize={onFinalize}
         initialState={opciones.initialState}
@@ -162,6 +177,8 @@ const finalizar = () => userEvent.click(screen.getByRole('button', { name: /Fina
 
 beforeEach(() => {
   localStorage.clear();
+  imprimirLegado.mockClear();
+  imprimirOficial.mockClear();
 });
 
 describe('LlenarFichaForm — cierre de una ficha incompleta', () => {
@@ -392,4 +409,33 @@ describe('LlenarFichaForm — flujo de firmas en ficha completada', () => {
       expect(screen.getByTestId('carpeta')).toHaveTextContent('carpeta 2026');
     });
   });
+});
+
+describe('LlenarFichaForm — «Imprimir / PDF»', () => {
+  const completada = {
+    visit: { estado: 'COMPLETADO' } as Partial<Cronograma>,
+    initialState: { ...FICHA_COMPLETA, estado: 'FINALIZADO' } as DatosFicha,
+  };
+  const imprimir = () => userEvent.click(screen.getByRole('button', { name: /Imprimir/i }));
+
+  it('una ficha docente abre el PDF oficial del backend', async () => {
+    montar({ ...completada, template: { instrumento: 'DOCENTE' } });
+
+    await imprimir();
+
+    expect(imprimirOficial).toHaveBeenCalledTimes(1);
+    expect(imprimirLegado).not.toHaveBeenCalled();
+  });
+
+  it.each(['DIRECTIVO', 'DOCENTE_EIB'] as const)(
+    'una ficha %s conserva la impresión de siempre, hasta que tenga su formato oficial',
+    async (instrumento) => {
+      montar({ ...completada, template: { instrumento } });
+
+      await imprimir();
+
+      expect(imprimirLegado).toHaveBeenCalledTimes(1);
+      expect(imprimirOficial).not.toHaveBeenCalled();
+    },
+  );
 });

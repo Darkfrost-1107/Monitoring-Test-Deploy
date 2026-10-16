@@ -8,6 +8,8 @@ import type { Plantilla } from '@/entities/model-plantillas';
 import { usePlantilla } from '@/entities/model-plantillas/use-plantillas-api';
 import { fichasApi } from '@/features/monitoreos/api/fichas.api';
 import { fichaAEstadoFormulario } from '@/features/monitoreos/lib/ficha-estado';
+import { tieneFormatoOficial } from '@/features/monitoreos/lib/formato-oficial';
+import { useImprimirFichaOficial } from '@/features/monitoreos/hooks/use-imprimir-ficha-oficial';
 import { FiltrosReportes } from './grid/FiltrosReportes';
 import { TarjetaReporte } from './grid/TarjetaReporte';
 import { TablaReportes } from './grid/TablaReportes';
@@ -232,9 +234,25 @@ export const ReportesGrid = ({
     handlePrintDirect,
   ]);
 
+  // La ficha docente se abre con el formulario oficial que genera el backend, igual que
+  // desde la pantalla de la ficha. Los demás instrumentos siguen con la impresión anterior.
+  const { imprimir: imprimirOficial } = useImprimirFichaOficial();
+  const [pdfOficialId, setPdfOficialId] = useState<string | null>(null);
+
   const handleDescargarPdf = (visita: BackendReportVisit, e: React.MouseEvent) => {
     e.stopPropagation();
-    setVisitaParaImprimir(visita);
+
+    if (!tieneFormatoOficial(visita.instrumento ?? 'DOCENTE')) {
+      setVisitaParaImprimir(visita);
+      return;
+    }
+
+    setPdfOficialId(visita.id);
+    void imprimirOficial(async () => {
+      // El listado del backend trae el id de la FICHA; el respaldo local, el de la visita.
+      if ('nivelLogro' in visita) return visita.id;
+      return (await fichasApi.findByVisita(visita.id))?.id ?? null;
+    }).finally(() => setPdfOficialId(null));
   };
 
   const [enviandoCorreoId, setEnviandoCorreoId] = useState<string | null>(null);
@@ -253,7 +271,7 @@ export const ReportesGrid = ({
   };
 
   const fichaLista = !!visitaAbierta && !!plantillaActiva && !!estadoDeLaFicha;
-  const descargandoId = visitaParaImprimir?.id ?? null;
+  const descargandoId = visitaParaImprimir?.id ?? pdfOficialId;
 
   return (
     <div className="space-y-6">

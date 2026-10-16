@@ -12,6 +12,9 @@ import { puedeEvaluarVisita, type Cronograma } from '@/entities/model-cronograma
 import type { Plantilla } from '@/entities/model-plantillas';
 import { useReactToPrint } from 'react-to-print';
 import { FichaPrintable } from '@/widgets/reportes/ui/FichaPrintable';
+import { useImprimirFichaOficial } from '../hooks/use-imprimir-ficha-oficial';
+import { tieneFormatoOficial } from '../lib/formato-oficial';
+import { fichasApi } from '../api/fichas.api';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRef } from 'react';
 import { safeSetLocalStorage } from '@/shared/lib/utils';
@@ -113,6 +116,9 @@ export const LlenarFichaForm = ({
 
   const printRef = useRef<HTMLDivElement>(null);
   const handlePrint = useReactToPrint({ contentRef: printRef });
+  // La ficha docente se imprime con el formulario oficial que genera el backend. Los
+  // demás instrumentos siguen con la impresión del navegador hasta tener el suyo.
+  const { imprimir: imprimirOficial, generando: generandoPdf } = useImprimirFichaOficial();
 
   useHidratacionDeFicha({
     abierta: isOpen,
@@ -303,7 +309,15 @@ export const LlenarFichaForm = ({
           pestana={visit.tipo !== 'DIRECTIVO' ? activeTab : null}
           onPestana={setActiveTab}
           conCarpeta={puedeVerCarpeta}
-          onImprimir={() => handlePrint()}
+          imprimiendo={generandoPdf}
+          onImprimir={() =>
+            tieneFormatoOficial(template.instrumento)
+              ? void imprimirOficial(async () => {
+                  const ficha = await fichasApi.findByVisitaYPlantilla(visit.id, template.id);
+                  return ficha?.id ?? null;
+                })
+              : handlePrint()
+          }
           onCerrar={onClose}
         />
 
