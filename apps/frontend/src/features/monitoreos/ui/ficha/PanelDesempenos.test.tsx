@@ -134,7 +134,7 @@ describe('PanelDesempenos — avance bloqueado con el criterio incompleto', () =
     montar();
 
     expect(itemDelIndice('Criterio dos')).toHaveAttribute('aria-disabled', 'true');
-    expect(itemDelIndice('Observaciones Generales')).toHaveAttribute('aria-disabled', 'true');
+    expect(itemDelIndice('Cierre de la evaluación')).toHaveAttribute('aria-disabled', 'true');
   });
 
   it('un clic en un paso bloqueado no cambia de criterio', async () => {
@@ -149,7 +149,7 @@ describe('PanelDesempenos — avance bloqueado con el criterio incompleto', () =
     montar({ niveles: { d1: 'III' }, preguntasExtra: {}, observaciones: { d1: 'Justificado' } });
 
     expect(itemDelIndice('Criterio dos')).toHaveAttribute('aria-disabled', 'false');
-    expect(itemDelIndice('Observaciones Generales')).toHaveAttribute('aria-disabled', 'true');
+    expect(itemDelIndice('Cierre de la evaluación')).toHaveAttribute('aria-disabled', 'true');
   });
 
   it('con todos los criterios completos se puede entrar al cierre', () => {
@@ -159,7 +159,7 @@ describe('PanelDesempenos — avance bloqueado con el criterio incompleto', () =
       observaciones: { d1: 'Uno', d2: 'Dos' },
     });
 
-    expect(itemDelIndice('Observaciones Generales')).toHaveAttribute('aria-disabled', 'false');
+    expect(itemDelIndice('Cierre de la evaluación')).toHaveAttribute('aria-disabled', 'false');
   });
 
   it('en sólo lectura no bloquea nada: es una consulta', () => {
@@ -203,7 +203,7 @@ describe('PanelDesempenos — planificación y diseño de la evaluación como pa
 
     const plan = screen.getByText(ETIQUETA);
     const criterio = screen.getByText('Criterio dos');
-    const cierre = screen.getByText('Observaciones Generales');
+    const cierre = screen.getByText('Cierre de la evaluación');
 
     expect(criterio.compareDocumentPosition(plan) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(plan.compareDocumentPosition(cierre) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
@@ -243,7 +243,7 @@ describe('PanelDesempenos — planificación y diseño de la evaluación como pa
   it('el cierre sigue bloqueado hasta completar la planificación', () => {
     montar(COMPLETOS, false, planificacion());
 
-    expect(itemDelIndice('Observaciones Generales')).toHaveAttribute('aria-disabled', 'true');
+    expect(itemDelIndice('Cierre de la evaluación')).toHaveAttribute('aria-disabled', 'true');
   });
 
   it('con la planificación completa se abre el cierre', () => {
@@ -253,7 +253,7 @@ describe('PanelDesempenos — planificación y diseño de la evaluación como pa
       planificacion({ respuestas: { e1: 3, e2: 4 }, observaciones: { e1: 'A', e2: 'B' } }),
     );
 
-    expect(itemDelIndice('Observaciones Generales')).toHaveAttribute('aria-disabled', 'false');
+    expect(itemDelIndice('Cierre de la evaluación')).toHaveAttribute('aria-disabled', 'false');
   });
 
   it('en sólo lectura no bloquea la planificación', () => {
@@ -353,5 +353,107 @@ describe('PanelDesempenos — la pregunta extra Sí/No también hay que responde
     montar(respondido({}), true, undefined, CON_PREGUNTA);
 
     expect(siguiente()).toBeEnabled();
+  });
+});
+
+describe('PanelDesempenos — secciones desplegables en la barra lateral', () => {
+  const COMPLETOS: RespuestasDesempenos = {
+    niveles: { d1: 'III', d2: 'IV' },
+    preguntasExtra: {},
+    observaciones: { d1: 'Uno', d2: 'Dos' },
+  };
+  const plan = (over: Partial<PlanificacionDeFicha> = {}): PlanificacionDeFicha => ({
+    items: [
+      { id: 'e1', numero: 1, descripcion: 'Planifica el proceso' },
+      { id: 'e2', numero: 2, descripcion: 'Diseña una evaluación' },
+    ],
+    niveles: NIVELES,
+    respuestas: {},
+    observaciones: {},
+    onResponder: vi.fn(),
+    onObservar: vi.fn(),
+    ...over,
+  });
+  const ETIQUETA = 'Planificación y diseño de evaluación';
+
+  it('muestra los criterios mientras se evalúan, y el cierre queda contraído', () => {
+    montar(COMPLETOS, false, plan());
+
+    expect(screen.getByText('Criterio dos')).toBeInTheDocument();
+    expect(screen.queryByText('Sugerencias')).not.toBeInTheDocument();
+  });
+
+  it('al pasar a la planificación se contraen los criterios', async () => {
+    montar(COMPLETOS, false, plan());
+
+    await userEvent.click(screen.getByText(ETIQUETA));
+
+    expect(screen.queryByText('Criterio dos')).not.toBeInTheDocument();
+    expect(screen.getByText('Criterios / Desempeños')).toBeInTheDocument();
+  });
+
+  it('«Siguiente» desde el último criterio contrae los criterios', async () => {
+    montar(COMPLETOS, false, plan());
+
+    await userEvent.click(screen.getByText('Criterio dos'));
+    await userEvent.click(siguiente());
+
+    expect(screen.queryByText('Criterio dos')).not.toBeInTheDocument();
+  });
+
+  it('el encabezado de una sección contraída muestra su avance', async () => {
+    montar(COMPLETOS, false, plan({ respuestas: { e1: 3 }, observaciones: { e1: 'Uno' } }));
+
+    await userEvent.click(screen.getByText(ETIQUETA));
+
+    expect(screen.getByText('2/2', { selector: '[data-avance="criterios"]' })).toBeInTheDocument();
+    expect(
+      screen.getByText('1/2', { selector: '[data-avance="planificacion"]' }),
+    ).toBeInTheDocument();
+  });
+
+  it('el encabezado de una sección completada lleva a su primer paso', async () => {
+    montar(COMPLETOS, false, plan());
+    await userEvent.click(screen.getByText(ETIQUETA));
+
+    await userEvent.click(screen.getByText('Criterios / Desempeños'));
+
+    expect(screen.getByRole('heading', { name: 'Criterio uno' })).toBeInTheDocument();
+  });
+
+  it('tocar el encabezado de la sección abierta no cambia de paso', async () => {
+    montar(COMPLETOS, false, plan());
+    await userEvent.click(screen.getByText('Criterio dos'));
+
+    await userEvent.click(screen.getByText('Criterios / Desempeños'));
+
+    expect(screen.getByRole('heading', { name: 'Criterio dos' })).toBeInTheDocument();
+  });
+
+  it('el encabezado de una sección bloqueada no responde', async () => {
+    montar(VACIAS, false, plan());
+
+    await userEvent.click(screen.getByText(ETIQUETA));
+
+    expect(screen.getByRole('heading', { name: 'Criterio uno' })).toBeInTheDocument();
+    expect(itemDelIndice(ETIQUETA)).toHaveAttribute('aria-disabled', 'true');
+  });
+
+  it('abre el cierre con sus cuatro ítems al llegar a esa sección', async () => {
+    montar(COMPLETOS);
+
+    await userEvent.click(screen.getByText('Cierre de la evaluación'));
+
+    // Cada uno aparece en la barra lateral y, otra vez, como campo del panel.
+    expect(screen.getAllByText('Compromisos')).toHaveLength(2);
+    expect(screen.getByText('Evidencia')).toBeInTheDocument();
+    expect(screen.queryByText('Criterio dos')).not.toBeInTheDocument();
+  });
+
+  it('indica con aria-expanded cuál sección está abierta', async () => {
+    montar(COMPLETOS);
+
+    expect(itemDelIndice('Criterios / Desempeños')).toHaveAttribute('aria-expanded', 'true');
+    expect(itemDelIndice('Cierre de la evaluación')).toHaveAttribute('aria-expanded', 'false');
   });
 });

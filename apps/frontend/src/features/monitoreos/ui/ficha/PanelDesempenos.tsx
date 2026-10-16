@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
 import type { Plantilla } from '@/entities/model-plantillas';
-import { ListaDesempenos, type PasoCierreTipo } from './ListaDesempenos';
+import { ListaDesempenos, type PasoCierreTipo, type SeccionDeFicha } from './ListaDesempenos';
 import { DetalleDesempeno } from './DetalleDesempeno';
 import { PasoCierre } from './PasoCierre';
 import { EjesItemsSeccion } from './EjesItemsSeccion';
@@ -111,6 +111,11 @@ export const PanelDesempenos = ({
   const indice = Math.max(0, claves.indexOf(activoResuelto));
   const enCierre = activoResuelto === CLAVE_CIERRE;
   const enPlanificacion = activoResuelto === CLAVE_PLANIFICACION;
+  const seccionActiva: SeccionDeFicha = enCierre
+    ? 'cierre'
+    : enPlanificacion
+      ? 'planificacion'
+      : 'criterios';
 
   const criterioActivoId =
     !enCierre && activoResuelto.startsWith(PREFIJO_CRITERIO)
@@ -205,10 +210,18 @@ export const PanelDesempenos = ({
         bloqueados={bloqueados}
         cierreBloqueado={cierreBloqueado}
         esEib={esEib}
+        seccionActiva={seccionActiva}
+        onAbrirCriterios={() => irAClave(claves[0])}
         planificacion={
           planificacion
             ? {
                 completa: planificacionHecha,
+                hechos: planificacion.items.filter(
+                  (item) =>
+                    !!planificacion.respuestas[item.id] &&
+                    !!planificacion.observaciones[item.id]?.trim(),
+                ).length,
+                total: planificacion.items.length,
                 activa: enPlanificacion,
                 bloqueada: planificacionBloqueada,
                 onSeleccionar: seleccionarPlanificacion,
