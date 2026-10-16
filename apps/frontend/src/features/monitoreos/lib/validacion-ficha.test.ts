@@ -44,6 +44,45 @@ describe('validarCierreDeFicha — ficha completa', () => {
   });
 });
 
+describe('validarCierreDeFicha — pregunta extra Sí/No', () => {
+  const conPregunta = plantilla({
+    desempenos: [
+      { id: 'd1', nombre: 'Regula el comportamiento', preguntaExtra: '¿Hubo maltrato?' },
+    ],
+  });
+
+  it('no deja cerrar con la pregunta sin responder', () => {
+    const mensaje = validarCierreDeFicha(conPregunta, respuestas({ preguntaExtraAnswers: {} }));
+
+    expect(mensaje).toContain('pregunta');
+    expect(mensaje).toContain('Regula el comportamiento');
+  });
+
+  it('deja cerrar con «No» respondido', () => {
+    expect(
+      validarCierreDeFicha(conPregunta, respuestas({ preguntaExtraAnswers: { d1: false } })),
+    ).toBeNull();
+  });
+
+  it('se informa después del nivel y antes de la justificación', () => {
+    const sinNivel = validarCierreDeFicha(
+      conPregunta,
+      respuestas({ selectedLevels: {}, preguntaExtraAnswers: {} }),
+    );
+    const sinJustificar = validarCierreDeFicha(
+      conPregunta,
+      respuestas({ rubricComments: {}, preguntaExtraAnswers: {} }),
+    );
+
+    expect(sinNivel).toContain('calificar niveles');
+    expect(sinJustificar).toContain('pregunta');
+  });
+
+  it('una ficha sin preguntas en la plantilla no cambia', () => {
+    expect(validarCierreDeFicha(plantilla(), respuestas())).toBeNull();
+  });
+});
+
 describe('validarCierreDeFicha — contexto de aula (DOCENTE)', () => {
   it('exige el área curricular (el backend la rechaza sin ella, y offline no se autocompleta)', () => {
     const mensaje = validarCierreDeFicha(

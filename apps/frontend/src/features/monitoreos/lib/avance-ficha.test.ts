@@ -21,6 +21,33 @@ describe('criterioCompleto', () => {
   });
 });
 
+describe('criterioCompleto — pregunta extra Sí/No', () => {
+  const conPregunta = (respuesta?: boolean) => ({ texto: '¿Hubo maltrato?', respuesta });
+
+  it('con pregunta sin responder no está completo', () => {
+    expect(criterioCompleto('III', 'Justificado', conPregunta(undefined))).toBe(false);
+  });
+
+  it('«No» es una respuesta: cuenta como respondida', () => {
+    expect(criterioCompleto('III', 'Justificado', conPregunta(false))).toBe(true);
+  });
+
+  it('«Sí» también cuenta como respondida', () => {
+    expect(criterioCompleto('III', 'Justificado', conPregunta(true))).toBe(true);
+  });
+
+  it('sin pregunta en el criterio no se exige respuesta', () => {
+    expect(criterioCompleto('III', 'Justificado', { texto: undefined, respuesta: undefined })).toBe(
+      true,
+    );
+    expect(criterioCompleto('III', 'Justificado')).toBe(true);
+  });
+
+  it('una pregunta vacía en la plantilla no se exige', () => {
+    expect(criterioCompleto('III', 'Justificado', { texto: '', respuesta: undefined })).toBe(true);
+  });
+});
+
 describe('indiceMaximoAccesible', () => {
   const claves = ['a', 'b', 'c', 'cierre'];
 

@@ -22,9 +22,14 @@ const NIVELES: Plantilla['niveles'] = [
   { nivel: 'IV', denominacion: 'Logro destacado', rangoMin: 4, color: '#0f766e' },
 ];
 
-const desempeno = (id: string, nombre: string): Plantilla['desempenos'][number] => ({
+const desempeno = (
+  id: string,
+  nombre: string,
+  preguntaExtra?: string,
+): Plantilla['desempenos'][number] => ({
   id,
   nombre,
+  preguntaExtra,
   descripcionCorta: `Descripción de ${nombre}`,
   aspectos: [],
   rubrica: NIVELES.map((n) => ({ nivel: n.nivel, descripcion: `Rúbrica ${n.nivel}` })),
@@ -76,10 +81,11 @@ const montar = (
   respuestas: RespuestasDesempenos = VACIAS,
   soloLectura = false,
   planificacion?: PlanificacionDeFicha,
+  template: Plantilla = PLANTILLA,
 ) =>
   render(
     <PanelDesempenos
-      template={PLANTILLA}
+      template={template}
       planificacion={planificacion}
       respuestas={respuestas}
       onElegirNivel={vi.fn()}
@@ -302,5 +308,50 @@ describe('PanelDesempenos — al cambiar de paso se vuelve al inicio de la ficha
     await userEvent.click(screen.getByText('Criterio dos'));
 
     expect(fijarScrollTop).not.toHaveBeenCalled();
+  });
+});
+
+describe('PanelDesempenos — la pregunta extra Sí/No también hay que responderla', () => {
+  const CON_PREGUNTA: Plantilla = {
+    ...PLANTILLA,
+    desempenos: [
+      desempeno('d1', 'Criterio uno', 'Marque «Sí» si hubo maltrato.'),
+      desempeno('d2', 'Criterio dos'),
+    ],
+  };
+  const respondido = (preguntasExtra: Record<string, boolean>): RespuestasDesempenos => ({
+    niveles: { d1: 'III' },
+    preguntasExtra,
+    observaciones: { d1: 'Justificado' },
+  });
+
+  it('con nivel y observación pero sin responder la pregunta, no deja avanzar', () => {
+    montar(respondido({}), false, undefined, CON_PREGUNTA);
+
+    expect(siguiente()).toBeDisabled();
+  });
+
+  it('responder «No» desbloquea el avance', () => {
+    montar(respondido({ d1: false }), false, undefined, CON_PREGUNTA);
+
+    expect(siguiente()).toBeEnabled();
+  });
+
+  it('bloquea los pasos siguientes mientras la pregunta esté sin responder', () => {
+    montar(respondido({}), false, undefined, CON_PREGUNTA);
+
+    expect(itemDelIndice('Criterio dos')).toHaveAttribute('aria-disabled', 'true');
+  });
+
+  it('no marca el criterio como completado sin la pregunta respondida', () => {
+    montar(respondido({}), false, undefined, CON_PREGUNTA);
+
+    expect(screen.queryByText('Completado')).not.toBeInTheDocument();
+  });
+
+  it('en sólo lectura no se exige', () => {
+    montar(respondido({}), true, undefined, CON_PREGUNTA);
+
+    expect(siguiente()).toBeEnabled();
   });
 });

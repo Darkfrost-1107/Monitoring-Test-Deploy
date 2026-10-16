@@ -141,10 +141,15 @@ export const PanelDesempenos = ({
     () =>
       new Set(
         template.desempenos
-          .filter((d) => criterioCompleto(respuestas.niveles[d.id], respuestas.observaciones[d.id]))
+          .filter((d) =>
+            criterioCompleto(respuestas.niveles[d.id], respuestas.observaciones[d.id], {
+              texto: d.preguntaExtra,
+              respuesta: respuestas.preguntasExtra[d.id],
+            }),
+          )
           .map((d) => d.id),
       ),
-    [template.desempenos, respuestas.niveles, respuestas.observaciones],
+    [template.desempenos, respuestas.niveles, respuestas.observaciones, respuestas.preguntasExtra],
   );
   const planificacionHecha = planificacion
     ? planificacionCompleta(planificacion.items, planificacion.respuestas, planificacion.observaciones)

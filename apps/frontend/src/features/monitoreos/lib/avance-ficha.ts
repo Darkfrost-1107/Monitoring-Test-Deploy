@@ -3,17 +3,31 @@
  *
  * El evaluador recorre los criterios en orden y luego el cierre, sin saltear
  * ninguno: no se pasa al paso siguiente con el actual a medias. «Completo» es
- * lo mismo que exige `validarCierreDeFicha` al finalizar —nivel elegido y
- * justificación escrita—, de modo que la ficha no llega al cierre con huecos
+ * lo mismo que exige `validarCierreDeFicha` al finalizar —nivel elegido,
+ * pregunta Sí/No respondida si el criterio la tiene, y justificación escrita—, de modo que la ficha no llega al cierre con huecos
  * que recién se descubrirían al firmar.
  */
 
-/** Un criterio está completo con su nivel elegido y una justificación no vacía. */
+/** La pregunta extra Sí/No de un criterio: su texto, si la plantilla la define, y lo respondido. */
+export interface PreguntaExtra {
+  texto?: string;
+  respuesta?: boolean;
+}
+
+/** ¿El criterio tiene una pregunta Sí/No que todavía no se respondió? «No» cuenta como respuesta. */
+export const preguntaExtraPendiente = (pregunta?: PreguntaExtra): boolean =>
+  !!pregunta?.texto && pregunta.respuesta === undefined;
+
+/**
+ * Un criterio está completo con su nivel elegido, una justificación no vacía y,
+ * si lleva pregunta extra, su respuesta.
+ */
 export function criterioCompleto(
   nivel: string | undefined,
   observacion: string | undefined,
+  pregunta?: PreguntaExtra,
 ): boolean {
-  return !!nivel && !!observacion?.trim();
+  return !!nivel && !!observacion?.trim() && !preguntaExtraPendiente(pregunta);
 }
 
 /**
