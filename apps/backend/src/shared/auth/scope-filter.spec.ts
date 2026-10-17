@@ -102,6 +102,37 @@ describe('ScopeFilter', () => {
 
   // ── forFicha ─────────────────────────────────────────────────────────
 
+  describe('limitaAlAnalisisPropio', () => {
+    it.each([RoleCode.COORDINADOR_PEDAGOGICO, RoleCode.JEFE_TALLER])(
+      '%s: en el análisis sólo ve lo que él mismo monitoreó',
+      (role) => {
+        expect(filter.limitaAlAnalisisPropio(role)).toBe(true);
+      },
+    );
+
+    it.each([
+      RoleCode.DIRECTOR_INSTITUCION,
+      RoleCode.ESPECIALISTA,
+      RoleCode.JEFE_AREA,
+      RoleCode.JEFE_GESTION,
+      RoleCode.DIRECTOR_UGEL,
+      RoleCode.DOCENTE,
+      RoleCode.INVITADO,
+    ])('%s: no se limita a lo propio (su alcance es otro)', (role) => {
+      expect(filter.limitaAlAnalisisPropio(role)).toBe(false);
+    });
+  });
+
+  describe('forFichasQueMonitoreo', () => {
+    it('filtra por el usuario del monitor, no por el id de la ficha ni de la institución', () => {
+      expect(
+        filter.forFichasQueMonitoreo(
+          ctx({ role: RoleCode.COORDINADOR_PEDAGOGICO, userId: 'u-co' }),
+        ),
+      ).toEqual({ cronograma: { monitor: { persona: { usuario: { id: 'u-co' } } } } });
+    });
+  });
+
   describe('forFicha', () => {
     it('MONITOR (especialista): filter por creadoPorId', () => {
       expect(filter.forFicha(ctx({ role: RoleCode.ESPECIALISTA, userId: 'esp-7' }))).toEqual({

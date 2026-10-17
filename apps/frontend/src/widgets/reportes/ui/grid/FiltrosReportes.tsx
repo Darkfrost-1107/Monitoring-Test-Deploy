@@ -175,6 +175,13 @@ interface FiltrosReportesProps {
   filterDocente?: string;
   setFilterDocente?: (id: string) => void;
   docentesDisponibles?: { id: string; nombre: string }[];
+  /**
+   * Monitor (opcional): quien realizó el monitoreo —especialista, director,
+   * coordinador o jefe de taller—. Se muestra si se pasa el setter.
+   */
+  filterMonitor?: string;
+  setFilterMonitor?: (id: string) => void;
+  monitoresDisponibles?: { id: string; nombre: string }[];
   /** Nº de monitoreo (1er, 2do, …) opcional. Se muestra si se pasa el setter. */
   filterNumeroVisita?: string;
   setFilterNumeroVisita?: (n: string) => void;
@@ -250,6 +257,9 @@ export const FiltrosReportes = ({
   filterDocente,
   setFilterDocente,
   docentesDisponibles = [],
+  filterMonitor,
+  setFilterMonitor,
+  monitoresDisponibles = [],
   filterNumeroVisita,
   setFilterNumeroVisita,
   numerosDeVisitaDisponibles = [],
@@ -483,6 +493,20 @@ export const FiltrosReportes = ({
               options={[
                 { value: TODOS, label: 'Todos los docentes' },
                 ...docentesDisponibles.map((d) => ({ value: d.id, label: d.nombre })),
+              ]}
+            />
+          )}
+
+          {setFilterMonitor && (
+            <SelectField
+              label="Monitor"
+              value={filterMonitor ?? TODOS}
+              onChange={setFilterMonitor}
+              disabled={monitoresDisponibles.length === 0}
+              placeholder="Todos los monitores"
+              options={[
+                { value: TODOS, label: 'Todos los monitores' },
+                ...monitoresDisponibles.map((m) => ({ value: m.id, label: m.nombre })),
               ]}
             />
           )}

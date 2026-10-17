@@ -15,6 +15,11 @@ export interface QueryFichasCompletadas {
   modalidad?: string;
   /** Nivel educativo de la visita; se aplica sobre `cronograma.nivelEducativo`. */
   nivelEducativo?: string;
+  /**
+   * Quien realizó el monitoreo (especialista, director, coordinador o jefe de taller);
+   * se aplica sobre `cronograma.monitorId`.
+   */
+  monitorId?: string;
   /** Docente evaluado; se aplica sobre `cronograma.evaluadoId`. */
   docenteId?: string;
   /** Número de visita (1er monitoreo, 2do, …); sobre `cronograma.numeroVisita`. */
