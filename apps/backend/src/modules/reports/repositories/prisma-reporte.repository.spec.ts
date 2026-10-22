@@ -155,57 +155,49 @@ describe.each(Object.entries(endpoints))(
   },
 );
 
-describe('análisis de desempeño: el coordinador y el jefe de taller sólo ven lo que monitorearon', () => {
-  const analisis = endpoints['el análisis de desempeño'];
-  const lista = endpoints['la lista de fichas completadas'];
+describe.each(Object.entries(endpoints))(
+  'el coordinador y el jefe de taller sólo ven lo que monitorearon en %s',
+  (_nombre, ep) => {
+    it('el coordinador pedagógico queda acotado a sus propias evaluaciones, además de su institución', async () => {
+      const { repo, prisma } = armar();
 
-  it('el coordinador pedagógico queda acotado a sus propias evaluaciones, además de su institución', async () => {
-    const { repo, prisma } = armar();
+      await ep.pedir(repo, {}, coordinador);
 
-    await analisis.pedir(repo, {}, coordinador);
-
-    const c = condiciones(analisis.where(prisma));
-    expect(c).toContainEqual(PROPIO);
-    expect(c).toContainEqual({ cronograma: { institucionId: 'ie-1' } });
-  });
-
-  it('el jefe de taller también', async () => {
-    const { repo, prisma } = armar();
-
-    await analisis.pedir(repo, {}, jefeDeTaller);
-
-    expect(condiciones(analisis.where(prisma))).toContainEqual({
-      cronograma: { monitor: { persona: { usuario: { id: 'u-jt' } } } },
+      const c = condiciones(ep.where(prisma));
+      expect(c).toContainEqual(PROPIO);
+      expect(c).toContainEqual({ cronograma: { institucionId: 'ie-1' } });
     });
-  });
 
-  it('no se puede escapar de lo propio pidiendo el monitor de otro', async () => {
-    const { repo, prisma } = armar();
+    it('el jefe de taller también', async () => {
+      const { repo, prisma } = armar();
 
-    await analisis.pedir(repo, { monitorId: '3f11e2af-1f65-4825-b615-0edf8d3e12f7' }, coordinador);
+      await ep.pedir(repo, {}, jefeDeTaller);
 
-    const c = condiciones(analisis.where(prisma));
-    expect(c).toContainEqual(PROPIO);
-    expect(c).toContainEqual({ cronograma: { monitorId: '3f11e2af-1f65-4825-b615-0edf8d3e12f7' } });
-  });
+      expect(condiciones(ep.where(prisma))).toContainEqual({
+        cronograma: { monitor: { persona: { usuario: { id: 'u-jt' } } } },
+      });
+    });
 
-  it.each([
-    ['el director de I.E.', directorIE],
-    ['el jefe de área', jefeArea],
-    ['el jefe de gestión', jefeGestion],
-  ])('%s no queda limitado a lo propio', async (_n, sesion) => {
-    const { repo, prisma } = armar();
+    it('no se puede escapar de lo propio pidiendo el monitor de otro', async () => {
+      const { repo, prisma } = armar();
 
-    await analisis.pedir(repo, {}, sesion);
+      await ep.pedir(repo, { monitorId: '3f11e2af-1f65-4825-b615-0edf8d3e12f7' }, coordinador);
 
-    expect(JSON.stringify(condiciones(analisis.where(prisma)))).not.toContain('"usuario"');
-  });
+      const c = condiciones(ep.where(prisma));
+      expect(c).toContainEqual(PROPIO);
+      expect(c).toContainEqual({ cronograma: { monitorId: '3f11e2af-1f65-4825-b615-0edf8d3e12f7' } });
+    });
 
-  it('la lista de fichas completadas no cambia: el análisis es el único que se acota', async () => {
-    const { repo, prisma } = armar();
+    it.each([
+      ['el director de I.E.', directorIE],
+      ['el jefe de área', jefeArea],
+      ['el jefe de gestión', jefeGestion],
+    ])('%s no queda limitado a lo propio', async (_n, sesion) => {
+      const { repo, prisma } = armar();
 
-    await lista.pedir(repo, {}, coordinador);
+      await ep.pedir(repo, {}, sesion);
 
-    expect(JSON.stringify(condiciones(lista.where(prisma)))).not.toContain('"usuario"');
-  });
-});
+      expect(JSON.stringify(condiciones(ep.where(prisma)))).not.toContain('"usuario"');
+    });
+  },
+);

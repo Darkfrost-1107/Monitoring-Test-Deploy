@@ -53,9 +53,13 @@ export class PrismaReporteRepository implements ReporteRepository {
     // El alcance del usuario y sus filtros se SUMAN (AND): asignar `where.cronograma`
     // reemplazaba el alcance de institución o de nivel cada vez que llegaba un
     // filtro de cronograma, y el usuario veía fichas que no le correspondían.
+    const contexto = this.toScopeContext(session);
     const condiciones: Prisma.FichaMonitoreoWhereInput[] = [
-      this.scopeFilter.forFicha(this.toScopeContext(session)),
+      this.scopeFilter.forFicha(contexto),
     ];
+    if (this.scopeFilter.limitaAlAnalisisPropio(session.role)) {
+      condiciones.push(this.scopeFilter.forFichasQueMonitoreo(contexto));
+    }
     const where: Prisma.FichaMonitoreoWhereInput = { estado: 'FINALIZADO', AND: condiciones };
     if (filters.anioAcademico !== undefined) where.anioAcademico = filters.anioAcademico;
 
