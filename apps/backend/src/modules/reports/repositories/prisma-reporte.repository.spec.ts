@@ -185,7 +185,9 @@ describe.each(Object.entries(endpoints))(
 
       const c = condiciones(ep.where(prisma));
       expect(c).toContainEqual(PROPIO);
-      expect(c).toContainEqual({ cronograma: { monitorId: '3f11e2af-1f65-4825-b615-0edf8d3e12f7' } });
+      expect(c).toContainEqual({
+        cronograma: { monitorId: '3f11e2af-1f65-4825-b615-0edf8d3e12f7' },
+      });
     });
 
     it.each([

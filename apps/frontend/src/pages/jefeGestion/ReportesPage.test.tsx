@@ -4,8 +4,13 @@ import { MemoryRouter } from 'react-router-dom';
 import { ReportesPage } from './ReportesPage';
 
 const h = vi.hoisted(() => ({
-  user: { role: 'director_institucion', institucion: 'ie-1', especialistaId: undefined as string | undefined },
+  user: {
+    role: 'director_institucion',
+    institucion: 'ie-1',
+    especialistaId: undefined as string | undefined,
+  },
   fichas: [] as unknown[],
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   gridProps: {} as any,
 }));
 
