@@ -269,7 +269,8 @@ describe('PdfGeneratorService — ficha oficial al docente', () => {
   });
 
   it('la leyenda no se pega al consolidado: puede pasar sola a la hoja siguiente', async () => {
-    const { html } = await render();
+    const raw = await render();
+    const html = raw.html.replace(/\r\n/g, '\n');
 
     const consolidado = html.indexOf('CONSOLIDADO DE NIVELES DE LOGRO');
     const leyenda = html.indexOf('class="leyenda-titulo"');

@@ -5,7 +5,16 @@ import { Label } from './label';
 import { Textarea } from './textarea';
 import { Card, CardHeader, CardTitle, CardContent } from './card';
 import { Button } from './button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './select';
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectSeparator,
+  SelectTrigger,
+  SelectValue,
+} from './select';
 import type { Option } from './form-controls.types';
 
 /* ============================================================
@@ -133,6 +142,7 @@ export const SelectField = ({
   disabled?: boolean;
 }) => {
   const id = useId();
+  const hasGroups = options.some((o) => !!o.group);
 
   return (
   <div className="flex flex-col gap-1 w-full">
@@ -149,11 +159,37 @@ export const SelectField = ({
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent className="max-h-[300px] z-50">
-        {options.map((o) => (
-          <SelectItem key={o.value} value={o.value} disabled={o.disabled} className="text-sm">
-            {o.label}
-          </SelectItem>
-        ))}
+        {hasGroups
+          ? Array.from(
+              options.reduce((acc, opt) => {
+                const groupName = opt.group ?? '';
+                const list = acc.get(groupName) ?? [];
+                list.push(opt);
+                acc.set(groupName, list);
+                return acc;
+              }, new Map<string, Option[]>()),
+            ).map(([groupName, groupOptions], idx) => (
+              <SelectGroup key={groupName || `ungrouped-${idx}`}>
+                {groupName ? (
+                  <>
+                    {idx > 0 && <SelectSeparator />}
+                    <SelectLabel className="text-[10px] font-extrabold tracking-wider uppercase text-slate-400 px-2 py-1">
+                      {groupName}
+                    </SelectLabel>
+                  </>
+                ) : null}
+                {groupOptions.map((o) => (
+                  <SelectItem key={o.value} value={o.value} disabled={o.disabled} className="text-sm">
+                    {o.label}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            ))
+          : options.map((o) => (
+              <SelectItem key={o.value} value={o.value} disabled={o.disabled} className="text-sm">
+                {o.label}
+              </SelectItem>
+            ))}
       </SelectContent>
     </Select>
     <ErrorText message={error} />

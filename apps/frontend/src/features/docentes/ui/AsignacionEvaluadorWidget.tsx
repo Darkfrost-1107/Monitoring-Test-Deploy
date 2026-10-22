@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/ui/card';
 import { Button } from '@shared/ui/button';
 import { Search, AlertCircle, Save, CheckCircle2 } from 'lucide-react';
@@ -38,6 +39,7 @@ export const AsignacionEvaluadorWidget: React.FC<AsignacionEvaluadorWidgetProps>
   evaluadorNombre,
   evaluadorCargo,
 }) => {
+  const queryClient = useQueryClient();
   const [docentes, setDocentes] = useState<Docente[]>([]);
   const [asignados, setAsignados] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -89,6 +91,11 @@ export const AsignacionEvaluadorWidget: React.FC<AsignacionEvaluadorWidgetProps>
     try {
       const res = await teachersApi.saveAsignaciones(evaluadorId, asignados);
       if (res.ok) {
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ['docentes-lite'] }),
+          queryClient.invalidateQueries({ queryKey: ['docentes'] }),
+          queryClient.invalidateQueries({ queryKey: ['cronogramas'] }),
+        ]);
         setShowSuccessModal(true);
       } else {
         toast.error('Error al guardar las asignaciones');

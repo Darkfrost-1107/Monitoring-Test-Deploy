@@ -105,6 +105,7 @@ export function fromPrismaFichaReporte(f: FichaReportePayload): IReporteFicha {
     evaluadoTelefono: f.cronograma.evaluado.persona.telefono ?? undefined,
     especialistaId: f.cronograma.monitorId,
     especialistaNombre: `${f.cronograma.monitor.persona.nombres} ${f.cronograma.monitor.persona.apellidos}`,
+    especialistaCargo: f.cronograma.monitor.cargo,
     instrumento,
     anioAcademico: f.anioAcademico,
     // El EIB informativo se guarda sin nivel ni puntaje (null).

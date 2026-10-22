@@ -7,6 +7,11 @@ import {
   type FiltroPeriodoTipo,
 } from '@/features/reportes/lib/filtro-temporal';
 import type { FiltroDeInstrumento } from '@/features/reportes/lib/instrumento';
+import {
+  rotuloDeMonitor,
+  grupoDeMonitor,
+  type MonitorDelReporte,
+} from '@/features/reportes/lib/monitores-del-reporte';
 
 const MODALIDADES = ['EBR', 'EBA', 'EBE', 'CEPTRO'];
 
@@ -181,7 +186,7 @@ interface FiltrosReportesProps {
    */
   filterMonitor?: string;
   setFilterMonitor?: (id: string) => void;
-  monitoresDisponibles?: { id: string; nombre: string }[];
+  monitoresDisponibles?: (MonitorDelReporte | { id: string; nombre: string; cargo?: string; origen?: 'INTERNO' | 'EXTERNO' })[];
   /** Nº de monitoreo (1er, 2do, …) opcional. Se muestra si se pasa el setter. */
   filterNumeroVisita?: string;
   setFilterNumeroVisita?: (n: string) => void;
@@ -506,7 +511,11 @@ export const FiltrosReportes = ({
               placeholder="Todos los monitores"
               options={[
                 { value: TODOS, label: 'Todos los monitores' },
-                ...monitoresDisponibles.map((m) => ({ value: m.id, label: m.nombre })),
+                ...monitoresDisponibles.map((m) => ({
+                  value: m.id,
+                  label: rotuloDeMonitor(m),
+                  group: grupoDeMonitor(m),
+                })),
               ]}
             />
           )}

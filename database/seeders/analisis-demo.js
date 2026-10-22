@@ -227,6 +227,9 @@ export async function seedAnalisisDemo() {
   }
 
   const monitoresRaw = await prisma.especialista.findMany({
+    where: {
+      cargo: { in: ['Especialista', 'Jefe de Gestión', 'Jefe de Área'] },
+    },
     include: { persona: { include: { usuario: { select: { id: true } } } } },
     orderBy: { createdAt: 'asc' },
   });

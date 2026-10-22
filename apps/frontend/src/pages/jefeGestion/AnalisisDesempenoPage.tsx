@@ -150,6 +150,7 @@ export const AnalisisDesempenoPage = () => {
           .map((n) => n[0] || '')
           .join('')
           .toUpperCase(),
+        especialistaCargo: f.especialistaCargo,
         monitorId: f.especialistaId,
         institucion: `${f.institucionNombre} - ${f.institucionCodigoModular}`,
         institucionId: f.institucionId,
@@ -543,10 +544,16 @@ export const AnalisisDesempenoPage = () => {
     return aniosDeFiltro([...yearsSet], ANIO_ACTUAL);
   }, [completedVisits]);
 
-  const conteosPeriodo = useMemo(
-    () => calcularConteosPorPeriodo(completedVisits),
-    [completedVisits],
-  );
+  const conteosPeriodo = useMemo(() => {
+    const visitasDeLaPlantilla = completedVisits.filter((v) => {
+      if (filterModalidadEf !== 'Todos' && v.modalidad !== filterModalidadEf) return false;
+      if (filterNivelEf !== 'Todos' && v.nivel !== filterNivelEf) return false;
+      if (filterInstitucionEf !== 'Todos' && v.institucionId !== filterInstitucionEf) return false;
+      if (filterPlantillaEf && v.plantillaId !== filterPlantillaEf) return false;
+      return true;
+    });
+    return calcularConteosPorPeriodo(visitasDeLaPlantilla);
+  }, [completedVisits, filterModalidadEf, filterNivelEf, filterInstitucionEf, filterPlantillaEf]);
 
   const isAnyFilterActive =
     filterModalidad !== 'Todos' ||
