@@ -43,8 +43,29 @@ export function useImprimirFichaOficial() {
         pdf.type === 'application/pdf' ? pdf : new Blob([pdf], { type: 'application/pdf' });
       const url = URL.createObjectURL(pdfBlob);
 
-      if (ventana) ventana.location.href = url;
-      else descargar(url, `Ficha_Monitoreo_${fichaId.split('-')[0]}.pdf`);
+      if (ventana) {
+        try {
+          ventana.document.write(`<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Ficha de Monitoreo</title>
+  <style>
+    html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #525659; }
+    iframe { border: none; width: 100%; height: 100%; }
+  </style>
+</head>
+<body>
+  <iframe src="${url}"></iframe>
+</body>
+</html>`);
+          ventana.document.close();
+        } catch {
+          ventana.location.href = url;
+        }
+      } else {
+        descargar(url, `Ficha_Monitoreo_${fichaId.split('-')[0]}.pdf`);
+      }
 
       setTimeout(() => URL.revokeObjectURL(url), VIDA_DE_LA_URL_MS);
     } catch (error) {

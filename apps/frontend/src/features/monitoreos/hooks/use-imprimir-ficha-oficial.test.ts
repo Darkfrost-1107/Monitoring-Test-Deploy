@@ -28,11 +28,19 @@ const idDeFicha =
 const pdf = new Blob(['%PDF'], { type: 'application/pdf' });
 
 describe('useImprimirFichaOficial', () => {
-  let ventana: { location: { href: string }; close: ReturnType<typeof vi.fn> };
+  let ventana: {
+    location: { href: string };
+    close: ReturnType<typeof vi.fn>;
+    document: { write: ReturnType<typeof vi.fn>; close: ReturnType<typeof vi.fn> };
+  };
 
   beforeEach(() => {
     vi.clearAllMocks();
-    ventana = { location: { href: '' }, close: vi.fn() };
+    ventana = {
+      location: { href: '' },
+      close: vi.fn(),
+      document: { write: vi.fn(), close: vi.fn() },
+    };
     vi.spyOn(window, 'open').mockReturnValue(ventana as unknown as Window);
     vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:pdf-1');
     vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
@@ -69,7 +77,8 @@ describe('useImprimirFichaOficial', () => {
 
     await act(() => result.current.imprimir(idDeFicha()));
 
-    expect(ventana.location.href).toBe('blob:pdf-1');
+    expect(ventana.document.write).toHaveBeenCalledWith(expect.stringContaining('blob:pdf-1'));
+    expect(ventana.document.close).toHaveBeenCalled();
     expect(ventana.close).not.toHaveBeenCalled();
   });
 
