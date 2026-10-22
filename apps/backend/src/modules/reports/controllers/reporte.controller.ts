@@ -75,14 +75,14 @@ export class ReporteController {
 
   @Get('ficha/:id/pdf')
   @RequirePermissions('reports:read')
-  @Header('Content-Type', 'application/pdf')
   async exportarFichaPDF(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Req() req: AuthenticatedRequest,
     @Res() res: Response,
   ): Promise<void> {
     const pdfBuffer = await this.service.exportarFichaPDF(id, this.toSession(req));
-    res.setHeader('Content-Disposition', `attachment; filename="ficha_${id}.pdf"`);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="ficha_${id}.pdf"`);
     res.send(pdfBuffer);
   }
 

@@ -39,7 +39,9 @@ export function useImprimirFichaOficial() {
       if (!fichaId) throw new Error('La ficha todavía no está guardada.');
 
       const pdf = await fichasApi.descargarPdf(fichaId);
-      const url = URL.createObjectURL(pdf);
+      const pdfBlob =
+        pdf.type === 'application/pdf' ? pdf : new Blob([pdf], { type: 'application/pdf' });
+      const url = URL.createObjectURL(pdfBlob);
 
       if (ventana) ventana.location.href = url;
       else descargar(url, `Ficha_Monitoreo_${fichaId.split('-')[0]}.pdf`);
