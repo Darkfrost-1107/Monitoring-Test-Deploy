@@ -31,6 +31,7 @@ import { toast } from 'sonner';
 import type { FiltroPeriodoTipo } from '@/features/reportes/lib/filtro-temporal';
 import { PLANTILLA_DE_INSTRUMENTO } from '@/features/reportes/lib/instrumento';
 import type { FiltroDeInstrumento } from '@/features/reportes/lib/instrumento';
+import type { MonitorDelReporte } from '@/features/reportes/lib/monitores-del-reporte';
 
 export interface BackendReportVisit extends Cronograma {
   /**
@@ -57,6 +58,8 @@ export interface BackendReportVisit extends Cronograma {
   horaInicio?: string;
   horaFin?: string;
   anioAcademico?: number;
+  /** Cargo del monitor (Director, Coordinador, etc.) para rotular el filtro. */
+  especialistaCargo?: string;
 }
 
 interface ReportesGridProps {
@@ -76,6 +79,9 @@ interface ReportesGridProps {
   filtroPeriodo: FiltroPeriodoTipo;
   setFiltroPeriodo: (p: FiltroPeriodoTipo) => void;
   conteosPeriodo?: Record<FiltroPeriodoTipo, number>;
+  filterMonitor?: string;
+  setFilterMonitor?: (id: string) => void;
+  monitoresDisponibles?: (MonitorDelReporte | { id: string; nombre: string; cargo?: string; origen?: 'INTERNO' | 'EXTERNO' })[];
   nivelesDisponibles: string[];
   añosDisponibles: string[];
   isAnyFilterActive: boolean;

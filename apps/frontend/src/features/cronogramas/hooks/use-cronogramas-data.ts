@@ -61,6 +61,8 @@ export const useCronogramasData = (enabled = true) => {
     queryKey: ['cronogramas'],
     queryFn: () => cronogramasApi.findAll(),
     staleTime: STALE_TIMES.DEFAULT,
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: false,
     enabled,
   });
 
@@ -89,6 +91,8 @@ export const useCronogramasData = (enabled = true) => {
     queryKey: ['solicitudes-all'],
     queryFn: () => cronogramasApi.findAllSolicitudes(),
     staleTime: STALE_TIMES.DEFAULT,
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: false,
     enabled,
   });
 

@@ -5,6 +5,12 @@ import type { TipoPlantilla } from '@sistema-monitoreo/shared-contracts';
 export const useFichasCompletadas = (filters?: {
   anioAcademico?: number;
   institucionId?: string;
+  modalidad?: string;
+  nivelEducativo?: string;
+  docenteId?: string;
+  /** Quien realizó el monitoreo. */
+  monitorId?: string;
+  numeroVisita?: number;
   tipoMonitoreo?: TipoPlantilla;
   fechaDesde?: string;
   fechaHasta?: string;
