@@ -1,0 +1,135 @@
+  <style>
+    :root {
+      --azul: #c5d9f1;
+      --azul-medio: #b8cce4;
+      --azul-suave: #dce6f1;
+      --gris: #d9d9d9;
+      --linea: #000;
+    }
+    * { box-sizing: border-box; }
+    html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    body {
+      margin: 0;
+      font-family: Carlito, Calibri, 'Liberation Sans', Arial, sans-serif;
+      font-size: 12px;
+      line-height: 1.25;
+      color: #000;
+    }
+
+    .titulo { margin: 6px 0 4px; text-align: center; font-size: 17px; font-weight: bold; text-transform: uppercase; }
+    .seccion {
+      margin: 9px 0 3px; padding: 3px 8px; font-size: 12px; font-weight: bold; text-transform: uppercase;
+      letter-spacing: 0.3px; color: #14305f; background: var(--azul-suave); border-left: 4px solid #1f4f9c;
+      break-after: avoid;
+    }
+    .seccion.centrada { text-align: center; border-left: 0; border-top: 2px solid #1f4f9c; margin-top: 10px; }
+
+    table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    td, th { border: 1px solid var(--linea); padding: 2px 4px; vertical-align: middle; overflow-wrap: anywhere; }
+    tr { break-inside: avoid; }
+    .l { font-weight: bold; text-transform: uppercase; font-size: 11px; color: #14305f; background: var(--azul-suave); }
+    .datos td { padding: 3px 6px; height: 22px; }
+    .datos td:not(.l):not(.chk) { font-size: 12px; }
+    .fuerte { font-weight: bold; color: #0b1b3a; }
+    .correo { font-size: 11px; overflow-wrap: anywhere; }
+    .centro { text-align: center; }
+    .negrita { font-weight: bold; }
+    .relleno { background: var(--azul-suave); font-weight: bold; text-align: center; }
+    .chk { text-align: center; }
+    .caja-x {
+      display: inline-block; width: 15px; height: 15px; border: 1.3px solid #1f4f9c; border-radius: 3px;
+      background: #fff; color: #fff; text-align: center; font-size: 12px; font-weight: bold; line-height: 13px; vertical-align: middle;
+    }
+    .caja-x.marcada { background: #1f4f9c; }
+
+    .monitor-opciones { float: right; font-weight: bold; text-transform: uppercase; font-size: 11px; color: #14305f; }
+    .monitor-opciones .caja-x { margin: 0 8px 0 3px; }
+
+    .lineamiento {
+      margin: 6px 0 0; padding: 2px 6px; background: var(--azul-medio); border: 1px solid var(--linea);
+      font-weight: bold; font-size: 10.5px; text-align: center;
+    }
+    .aula {
+      margin: 0 0 6px; padding: 5px; background: var(--gris); border: 1px solid var(--linea);
+      text-align: center; font-weight: bold; font-style: italic; font-size: 15px; text-transform: uppercase;
+    }
+
+    /* ── Desempeño ──
+       Tres tablas apiladas con bordes propios (border-collapse: separate): la cabecera con la
+       descripción y los aspectos, y la rúbrica. La rúbrica no usa celdas que abarquen varias
+       filas, así que puede partirse entre filas, y su cabecera de niveles se repite. */
+    .desempeno { margin-bottom: 8px; }
+    .dt { width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 0; border-top: 1px solid var(--linea); border-left: 1px solid var(--linea); }
+    .dt + .dt { border-top: 0; }
+    .dt td, .dt th { border: 0; border-right: 1px solid var(--linea); border-bottom: 1px solid var(--linea); padding: 2px 5px; vertical-align: top; overflow-wrap: anywhere; }
+    .d-titulo { background: var(--azul); font-weight: bold; text-transform: uppercase; font-size: 12.5px; padding: 3px 5px; }
+    .d-bloque { background: var(--azul); padding: 3px 6px; text-align: justify; }
+    .d-bloque ul { margin: 2px 0 0 18px; padding: 0; }
+    .d-bloque li { margin: 1px 0; }
+    .dt td.nivel-vertical { background: var(--azul-medio); text-align: center; vertical-align: middle; }
+    .nivel-vertical span { display: inline-block; writing-mode: vertical-rl; transform: rotate(180deg); font-weight: bold; letter-spacing: 1px; }
+    .dt td.nv { background: var(--azul-medio); border-bottom: 0; }
+    .dt tr.ultima td.nv { border-bottom: 1px solid var(--linea); }
+    .d-cabecera { background: var(--azul); font-weight: bold; text-align: center; font-size: 11.5px; vertical-align: middle; }
+    .romano { text-align: center; font-size: 11px; }
+    .rubrica-texto { text-align: justify; font-size: 11.5px; }
+    .libre, .gris, .marca { text-align: center; font-weight: bold; font-size: 15px; vertical-align: middle; }
+    .gris { background: var(--gris); }
+    .marca { background: #fff; color: #1f4f9c; }
+    /* La pregunta extra y las evidencias no se quedan solas bajo una cabecera repetida: viajan con la última fila de niveles. */
+    .dt tr.junto { break-before: avoid; }
+    .pregunta td { font-style: italic; font-size: 11.5px; }
+    .pregunta .si-no { text-align: right; font-weight: bold; font-style: normal; white-space: nowrap; }
+    .casilla { display: inline-block; min-width: 14px; height: 13px; border-bottom: 1px solid #000; text-align: center; line-height: 13px; vertical-align: baseline; }
+
+    .evidencias-titulo { font-weight: bold; text-transform: uppercase; font-size: 11.5px; margin-bottom: 1px; }
+    .renglones {
+      min-height: 54px; line-height: 18px; white-space: pre-line; padding: 0 2px;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='8' height='18'><line x1='0' y1='17.5' x2='8' y2='17.5' stroke='%23222' stroke-width='1.2' stroke-dasharray='1 2'/></svg>");
+      background-repeat: repeat;
+    }
+
+    /* ── Planificación ── */
+    .plan th { background: var(--azul-suave); font-weight: bold; text-align: center; font-size: 11.5px; }
+    .plan td { height: 62px; vertical-align: top; }
+    .plan .r { width: 5%; text-align: center; vertical-align: middle; }
+    .plan .eje { width: 28%; }
+    .plan .nl { width: 5%; text-align: center; font-weight: bold; font-size: 15px; vertical-align: middle; }
+    .plan .marca-plan { text-align: center; font-weight: bold; font-size: 15px; vertical-align: middle; color: #1f4f9c; }
+
+    .caja { border: 1px solid var(--linea); padding: 3px 5px; margin-bottom: 4px; break-inside: avoid; }
+    .caja .renglones { min-height: 72px; }
+    .etiqueta-caja { font-weight: bold; text-transform: uppercase; margin-top: 4px; font-size: 11px; letter-spacing: 0.3px; color: #14305f; break-after: avoid; }
+
+    .consolidado .cab { background: var(--azul-suave); text-align: center; font-weight: bold; }
+    .consolidado td { text-align: center; }
+    .leyenda { width: 62%; margin-top: 8px; }
+    .leyenda-titulo { font-weight: bold; font-size: 11px; margin-top: 8px; }
+    .leyenda th { background: var(--azul-suave); font-size: 10.5px; font-weight: bold; }
+    .leyenda td { text-align: center; font-size: 10.5px; padding: 1px 4px; }
+
+    .evidencias-fotos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 4px 3px 0 0; }
+    .evidencias-fotos figure { margin: 0; border: 1px solid var(--linea); padding: 4px; text-align: center; break-inside: avoid; }
+    .evidencia-img { max-width: 100%; max-height: 230px; object-fit: contain; }
+    .evidencias-fotos figcaption { font-size: 10px; margin-top: 2px; }
+
+    .firmas { display: flex; justify-content: center; gap: 40px; margin-top: 18px; break-inside: avoid; }
+    .firma { flex: 1; max-width: 280px; text-align: center; }
+    .firma .trazo { height: 70px; display: flex; align-items: flex-end; justify-content: center; }
+    .firma-img { max-height: 66px; max-width: 220px; }
+    .firma .linea { border-top: 1px solid #000; padding-top: 3px; }
+    .firma .rol { font-weight: bold; text-transform: uppercase; font-size: 11px; }
+    .firma .fecha { font-size: 10px; }
+    .bloque { break-inside: avoid; }
+
+    /* ── Envoltura: el banner vive en el thead y el navegador lo repite en cada página ── */
+    .envoltura, .envoltura > thead > tr > td, .envoltura > tbody > tr > td { border: none; padding: 0; }
+    .envoltura > tbody > tr { break-inside: auto; }
+    thead { display: table-header-group; }
+    .banner { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .banner-izquierda { height: 44px; width: auto; }
+    .banner .logos { display: flex; align-items: center; gap: 14px; }
+    .banner .logo { height: 40px; width: auto; }
+    .banner-derecha { height: 44px; width: auto; }
+    .lema { margin: 2px 0 6px; text-align: center; font-style: italic; font-size: 12px; }
+  </style>

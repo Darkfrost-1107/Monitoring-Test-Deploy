@@ -1,0 +1,47 @@
+  {{#each desempenos}}
+  <div class="desempeno">
+    <table class="dt" style="break-after: avoid;">
+      <tr><td class="d-titulo">{{this.nombre}}</td></tr>
+      <tr><td class="d-bloque"><b>Descripción del desempeño:</b><br>{{this.descripcion}}</td></tr>
+      <tr>
+        <td class="d-bloque">
+          <b>{{this.introAspectos}}</b>
+          <ul>{{#each this.aspectos}}<li>{{this}}</li>{{/each}}</ul>
+        </td>
+      </tr>
+    </table>
+    <table class="dt">
+      <colgroup><col style="width:4%"><col style="width:4%"><col style="width:66%"><col style="width:6.5%"><col style="width:6.5%"><col style="width:6.5%"><col style="width:6.5%"></colgroup>
+      <thead>
+        <tr>
+          <td class="nivel-vertical" rowspan="2"><span>NIVEL</span></td>
+          <td class="d-cabecera" colspan="2" rowspan="2">DESCRIPCIÓN DEL NIVEL A QUE CORRESPONDE<br>(Marcar sólo un nivel de desempeño)</td>
+          <td class="d-cabecera" colspan="4">NIVELES</td>
+        </tr>
+        <tr><td class="d-cabecera">I</td><td class="d-cabecera">II</td><td class="d-cabecera">III</td><td class="d-cabecera">IV</td></tr>
+      </thead>
+      <tbody>
+        {{#each this.rubrica}}
+        <tr{{#if @last}} class="ultima"{{/if}}>
+          <td class="nv"></td>
+          <td class="romano">{{this.romano}}</td>
+          <td class="rubrica-texto">{{this.descripcion}}</td>
+          {{#each this.celdas}}{{#if (eq this "marcada")}}<td class="marca">X</td>{{else}}{{#if (eq this "gris")}}<td class="gris"></td>{{else}}<td class="libre"></td>{{/if}}{{/if}}{{/each}}
+        </tr>
+        {{/each}}
+        {{#if this.preguntaExtra}}
+        <tr class="pregunta junto">
+          <td colspan="5">{{this.preguntaExtra.texto}}</td>
+          <td class="si-no" colspan="2">Sí: <span class="casilla">{{#if this.preguntaExtra.si}}X{{/if}}</span> &nbsp; No: <span class="casilla">{{#if this.preguntaExtra.no}}X{{/if}}</span></td>
+        </tr>
+        {{/if}}
+        <tr class="junto">
+          <td colspan="7">
+            <div class="evidencias-titulo">EVIDENCIAS (CONDUCTAS OBSERVADAS)</div>
+            <div class="renglones">{{this.evidencias}}</div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  {{/each}}

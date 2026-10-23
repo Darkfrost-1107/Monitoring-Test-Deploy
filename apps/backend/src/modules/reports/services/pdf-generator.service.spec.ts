@@ -210,15 +210,14 @@ describe('PdfGeneratorService — ficha oficial al docente', () => {
     expect(html).toMatch(/\.seccion\s*\{[^}]*border-left/);
   });
 
-  it('el banner institucional va en la cabecera de la tabla, que se repite en cada página', async () => {
+  it('el banner es la imagen oficial, con el escudo, y va en la cabecera que se repite en cada página', async () => {
     const { html } = await render();
 
-    expect(html).toContain('GOBIERNO');
-    expect(html).toContain('REGIONAL PUNO');
-    expect(html).toContain('Regional de Educación');
-    expect(html).toContain('Gestión Pedagógica');
     expect(html).toMatch(/<thead>\s*<tr>\s*<td[^>]*>\s*<div class="banner">/);
     expect(html).toMatch(/thead\s*\{[^}]*display:\s*table-header-group/);
+    expect(html).toMatch(
+      /<img class="banner-izquierda" src="data:image\/png;base64,[A-Za-z0-9+/=]{100,}" alt="Gobierno Regional Puno/,
+    );
   });
 
   it('muestra el lema oficial entre comillas, debajo del banner', async () => {
@@ -269,15 +268,13 @@ describe('PdfGeneratorService — ficha oficial al docente', () => {
   });
 
   it('la leyenda no se pega al consolidado: puede pasar sola a la hoja siguiente', async () => {
-    const raw = await render();
-    const html = raw.html.replace(/\r\n/g, '\n');
+    const { html } = await render();
 
     const consolidado = html.indexOf('CONSOLIDADO DE NIVELES DE LOGRO');
     const leyenda = html.indexOf('class="leyenda-titulo"');
-    const cierreDelBloque = html.indexOf('</table>\n  </div>', consolidado);
 
-    expect(cierreDelBloque).toBeGreaterThan(consolidado);
-    expect(cierreDelBloque).toBeLessThan(leyenda);
+    // Entre la tabla del consolidado y la leyenda se cierra el bloque que las agrupaba.
+    expect(html.slice(consolidado, leyenda)).toMatch(/<\/table>\s*<\/div>/);
   });
 
   it('marca una casilla por desempeño calificado y deja el resto en gris', async () => {
