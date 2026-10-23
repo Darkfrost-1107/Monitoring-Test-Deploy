@@ -175,7 +175,6 @@ export function useProgramacionCronograma({
       usuario,
       form.modalidad,
       form.nivel,
-      form.tipo,
       form.monitorId,
       editandoId,
       especialistas,

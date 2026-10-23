@@ -43,7 +43,17 @@ export const AppConfig = ({ children }: AppConfigProps) => {
   return (
     <PersistQueryClientProvider
       client={queryClient}
-      persistOptions={{ persister, maxAge: MAX_AGE_CACHE }}
+      persistOptions={{
+        persister,
+        maxAge: MAX_AGE_CACHE,
+        dehydrateOptions: {
+          shouldDehydrateQuery: (query) => {
+            // Persistir consultas exitosas o con datos en memoria; evita descartar
+            // datos de IndexedDB si un refetch temporal recibe 429 o fallo de red.
+            return query.state.status === 'success' || query.state.data !== undefined;
+          },
+        },
+      }}
     >
       <UserProvider>
         {children}

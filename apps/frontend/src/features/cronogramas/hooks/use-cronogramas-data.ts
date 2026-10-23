@@ -68,21 +68,33 @@ export const useCronogramasData = (enabled = true) => {
 
   const espQuery = useQuery({
     queryKey: ['especialistas-lite'],
-    queryFn: () => especialistasApi.findAll(),
+    queryFn: async () => {
+      const res = await especialistasApi.findAll();
+      if (!res.ok) throw (res.error instanceof Error ? res.error : new Error('No se pudo cargar especialistas'));
+      return res;
+    },
     staleTime: STALE_TIMES.REPORTES,
     enabled,
   });
 
   const instQuery = useQuery({
     queryKey: ['instituciones-lite'],
-    queryFn: () => institutionsApi.findAll({ limit: PAGINATION.MAX_LIMIT }),
+    queryFn: async () => {
+      const res = await institutionsApi.findAll({ limit: PAGINATION.MAX_LIMIT });
+      if (!res.ok) throw (res.error instanceof Error ? res.error : new Error('No se pudo cargar instituciones'));
+      return res;
+    },
     staleTime: STALE_TIMES.REPORTES,
     enabled,
   });
 
   const docQuery = useQuery({
     queryKey: ['docentes-lite'],
-    queryFn: () => teachersApi.findAll(),
+    queryFn: async () => {
+      const res = await teachersApi.findAll();
+      if (!res.ok) throw (res.error instanceof Error ? res.error : new Error('No se pudo cargar docentes'));
+      return res;
+    },
     staleTime: STALE_TIMES.REPORTES,
     enabled,
   });
