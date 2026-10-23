@@ -89,6 +89,11 @@ export const fichaOficialRaw = (over: Partial<FichaOficialRaw> = {}): FichaOfici
       codigoModular: '0548081',
       modalidad: 'EBR',
       nivelEducativo: 'Secundaria',
+      departamento: 'Puno',
+      provincia: 'Lampa',
+      distrito: 'Palca',
+      direccion: 'Jr. Los Andes 123',
+      zona: 'Rural',
     },
     evaluado: {
       condicionLaboral: 'Nombrado',

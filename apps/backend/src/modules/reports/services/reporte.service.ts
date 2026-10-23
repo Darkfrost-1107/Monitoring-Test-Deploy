@@ -16,6 +16,7 @@ import {
   type FichaOficialRaw,
 } from './ficha-oficial-docente.builder.js';
 import { construirFichaOficialDirectivo } from './ficha-oficial-directivo.builder.js';
+import { construirFichaOficialEib } from './ficha-oficial-eib.builder.js';
 import { completarImagenes } from './ficha-oficial-docente.imagenes.js';
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import { MailerService } from '../../../shared/mailer/mailer.service.js';
@@ -97,7 +98,7 @@ export class ReporteService {
     const f = await this.repository.findFichaByIdParaExport(id, session);
     if (!f) throw new NotFoundException(`Ficha ${id} no encontrada o sin acceso.`);
 
-    // Las fichas docente y directiva se imprimen en el formulario oficial de la UGEL. Los demás
+    // Las fichas docente, directiva y EIB se imprimen en el formulario oficial de la UGEL. Los demás
     // instrumentos conservan por ahora su plantilla.
     if (f.instrumento === 'DOCENTE') {
       return this.exportarFichaOficial(
@@ -114,6 +115,9 @@ export class ReporteService {
         'ficha-directivo-oficial',
         construirFichaOficialDirectivo,
       );
+    }
+    if (f.instrumento === 'DOCENTE_EIB') {
+      return this.exportarFichaOficial(id, session, 'ficha-eib-oficial', construirFichaOficialEib);
     }
 
     // Mapear al modelo que espera Handlebars

@@ -84,13 +84,18 @@ describe('ReporteService.exportarFichaPDF', () => {
     expect(repository.findFichaOficial).toHaveBeenCalledTimes(1);
   });
 
-  it('una ficha EIB conserva su plantilla hasta tener su formulario oficial', async () => {
+  it('una ficha EIB se imprime en el formulario oficial de observación en aula', async () => {
     const { servicio, generador, repository } = armar(fichaLegada('DOCENTE_EIB'));
 
     await servicio.exportarFichaPDF('f1', sesion);
 
-    expect(generador.generatePdfFromTemplate.mock.calls[0][0]).toBe('ficha-report');
-    expect(repository.findFichaOficial).not.toHaveBeenCalled();
+    const [plantilla, datos] = generador.generatePdfFromTemplate.mock.calls[0] as [
+      string,
+      { titulo: string },
+    ];
+    expect(plantilla).toBe('ficha-eib-oficial');
+    expect(datos.titulo).toContain('Ficha de observación en aula para II. EE. EIB');
+    expect(repository.findFichaOficial).toHaveBeenCalledTimes(1);
   });
 
   it('una ficha inexistente o sin acceso da 404 y no genera nada', async () => {

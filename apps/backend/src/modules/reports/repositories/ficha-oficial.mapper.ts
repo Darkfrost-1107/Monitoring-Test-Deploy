@@ -119,6 +119,11 @@ export function fromPrismaFichaOficial(
         codigoModular: cronograma.institucion.codigoModular,
         modalidad: cronograma.institucion.modalidad,
         nivelEducativo: cronograma.institucion.nivelEducativo,
+        departamento: cronograma.institucion.departamento,
+        provincia: cronograma.institucion.provincia,
+        distrito: cronograma.institucion.distrito,
+        direccion: cronograma.institucion.direccion,
+        zona: cronograma.institucion.zona,
       },
       evaluado: {
         condicionLaboral: cronograma.evaluado.condicionLaboral,
