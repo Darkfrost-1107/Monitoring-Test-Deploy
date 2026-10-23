@@ -52,7 +52,7 @@ export abstract class ReporteRepository {
    * La ficha con todo lo que pide el formulario oficial al docente. Devuelve null
    * si no existe o la sesión no tiene alcance sobre ella.
    */
-  abstract findFichaOficialDocente(
+  abstract findFichaOficial(
     id: string,
     session: SessionScope,
   ): Promise<FichaOficialPersistida | null>;

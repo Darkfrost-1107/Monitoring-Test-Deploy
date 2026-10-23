@@ -14,6 +14,14 @@ const MARGIN_TOP_IN = '0.4';
 const MARGIN_BOTTOM_IN = '0.6';
 
 const TEMPLATES_DIR = path.join(process.cwd(), 'src', 'modules', 'reports', 'templates');
+const PARTIALS_DIR = path.join(TEMPLATES_DIR, 'partials');
+
+const TIPOS_DE_IMAGEN: Record<string, string> = {
+  '.png': 'image/png',
+  '.webp': 'image/webp',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+};
 
 const FOOTER_HTML = `<!DOCTYPE html>
 <html lang="es">
@@ -40,11 +48,11 @@ const FOOTER_HTML = `<!DOCTYPE html>
 @Injectable()
 export class PdfGeneratorService {
   private readonly logger = new Logger(PdfGeneratorService.name);
-  private logoUgel?: string;
-  private logoAgp?: string;
+  private readonly imagenes = new Map<string, string>();
 
   // Helper custom de Handlebars
   constructor() {
+    this.registrarPartials();
     handlebars.registerHelper('increment', (value) => parseInt(String(value), 10) + 1);
     // Números por valor (nivel 3 == '3') y cualquier otra cosa por igualdad estricta.
     handlebars.registerHelper('eq', (a: unknown, b: unknown) => {
@@ -80,25 +88,48 @@ export class PdfGeneratorService {
     return handlebars.compile(templateHtml)(this.conImagenes(data));
   }
 
+  /**
+   * Los fragmentos comunes de las fichas oficiales (estilos, banner, rúbricas, cierre)
+   * viven en `templates/partials/` y se usan con `{{> nombre}}`: así docente, directivo
+   * y EIB comparten el diseño en vez de copiarlo.
+   */
+  private registrarPartials(): void {
+    for (const archivo of fs.readdirSync(PARTIALS_DIR)) {
+      if (!archivo.endsWith('.hbs')) continue;
+      const contenido = fs.readFileSync(path.join(PARTIALS_DIR, archivo), 'utf8');
+      handlebars.registerPartial(archivo.replace(/\.hbs$/, ''), contenido);
+    }
+  }
+
   private conImagenes(data: object): Record<string, unknown> {
-    return { ...data, logoUgel: this.getLogoUgel(), logoAgp: this.getLogoAgp() };
+    return {
+      ...data,
+      logoUgel: this.getLogoUgel(),
+      logoAgp: this.getLogoAgp(),
+      bannerIzquierda: this.imagenEmbebida('banner-oficial-izquierda.png'),
+      bannerDerechaEib: this.imagenEmbebida('banner-oficial-derecha-eib.png'),
+    };
   }
 
   // Se embebe como data URI para que el HTML sea autocontenido: Gotenberg no tiene por qué
   // alcanzar al frontend ni a internet para resolver imágenes.
   private getLogoUgel(): string {
-    this.logoUgel ??= this.imagenEmbebida('logo-ugel-lampa.webp');
-    return this.logoUgel;
+    return this.imagenEmbebida('logo-ugel-lampa.webp');
   }
 
   private getLogoAgp(): string {
-    this.logoAgp ??= this.imagenEmbebida('logo-agp.webp');
-    return this.logoAgp;
+    return this.imagenEmbebida('logo-agp.webp');
   }
 
   private imagenEmbebida(archivo: string): string {
-    const bytes = fs.readFileSync(path.join(TEMPLATES_DIR, 'assets', archivo));
-    return `data:image/webp;base64,${bytes.toString('base64')}`;
+    let uri = this.imagenes.get(archivo);
+    if (!uri) {
+      const bytes = fs.readFileSync(path.join(TEMPLATES_DIR, 'assets', archivo));
+      const tipo = TIPOS_DE_IMAGEN[path.extname(archivo).toLowerCase()] ?? 'image/png';
+      uri = `data:${tipo};base64,${bytes.toString('base64')}`;
+      this.imagenes.set(archivo, uri);
+    }
+    return uri;
   }
 
   private buildForm(htmlContent: string): FormData {

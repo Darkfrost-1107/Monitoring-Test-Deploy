@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Ficha de observación en aula EIB</title>
+  {{> estilos-eib}}
+</head>
+<body>
+<table class="envoltura">
+{{> banner-oficial derechaEib=true}}
+<tbody><tr><td>
+
+  <div class="titulo">{{titulo}}</div>
+
+  <div class="parte">1. DATOS DE LA INSTITUCIÓN EDUCATIVA</div>
+  <table class="datos">
+    <tr><td class="l">Nombre de la IE</td><td colspan="3">{{ie.nombre}}</td></tr>
+    <tr><td class="l">Código modular</td><td>{{ie.codigoModular}}</td><td class="l">Forma de atención</td><td>{{ie.formaDeAtencion}}</td></tr>
+    <tr><td class="l">Lugar</td><td>{{ie.lugar}}</td><td class="l">Distrito</td><td>{{ie.distrito}}</td></tr>
+    <tr><td class="l">Provincia</td><td>{{ie.provincia}}</td><td class="l">Región</td><td>{{ie.region}}</td></tr>
+  </table>
+
+  <div class="parte">2. DATOS DEL DOCENTE</div>
+  <table class="datos">
+    <tr><td class="l">Apellidos y nombres</td><td colspan="3">{{docente.nombre}}</td></tr>
+    <tr><td class="l">Código modular</td><td>{{docente.codigoModular}}</td><td class="l">DNI</td><td>{{docente.dni}}</td></tr>
+  </table>
+
+  <div class="parte">3. DATOS DE LA OBSERVACIÓN</div>
+  <table class="datos">
+    <tr><td class="l">Fecha</td><td>{{fecha}}</td><td class="l">Hora de inicio</td><td>{{horaInicio}}</td><td class="l">Hora final</td><td>{{horaFinal}}</td></tr>
+  </table>
+
+  <div class="parte">4. PLANIFICACIÓN DE LA SESIÓN</div>
+  <table class="datos">
+    <tr><td class="l">Nombre de la planificación</td><td colspan="3">{{planificacion.nombre}}</td></tr>
+    <tr><td class="l">Duración</td><td>{{planificacion.duracion}}</td><td class="l">Sesión</td><td>{{planificacion.sesion}}</td></tr>
+    <tr><td class="l">Área</td><td>{{planificacion.area}}</td><td class="l">Competencias</td><td>{{planificacion.competencias}}</td></tr>
+  </table>
+
+  {{#each bloques}}
+  <div class="seccion-eib">{{#if (eq this.tipo "AULA")}}5. {{else}}6. {{/if}}{{this.seccion}}</div>
+  {{#each this.subcriterios}}
+  <table class="items">
+    <colgroup><col style="width:40%"><col style="width:8%"><col style="width:12%"><col style="width:8%"><col style="width:32%"></colgroup>
+    <thead>
+      {{#if this.titulo}}<tr class="sub"><td colspan="5">{{this.titulo}}</td></tr>{{/if}}
+      <tr><th>Ítems</th><th>Sí</th><th>Parcialmente</th><th>No</th><th>Observación</th></tr>
+    </thead>
+    <tbody>
+      {{#each this.items}}
+      <tr>
+        <td>{{this.texto}}</td>
+        <td class="n">{{#if (eq this.valor "si")}}<span class="marca">X</span>{{/if}}</td>
+        <td class="n">{{#if (eq this.valor "parcial")}}<span class="marca">X</span>{{/if}}</td>
+        <td class="n">{{#if (eq this.valor "no")}}<span class="marca">X</span>{{/if}}</td>
+        <td class="obs">{{this.observacion}}</td>
+      </tr>
+      {{/each}}
+    </tbody>
+  </table>
+  {{/each}}
+  {{/each}}
+
+  <div class="parte">7. FORTALEZAS</div>
+  <div class="recuadro">{{fortalezas}}</div>
+
+  <div class="parte">8. ASPECTOS A MEJORAR</div>
+  <div class="recuadro">{{aspectosAMejorar}}</div>
+
+  {{#if observacionesGenerales}}
+  <div class="parte">OBSERVACIONES GENERALES</div>
+  <div class="recuadro">{{observacionesGenerales}}</div>
+  {{/if}}
+
+  <div class="parte">9. COMPROMISOS</div>
+  <table class="datos">
+    <tr><td class="l">COMPROMISO DEL DOCENTE</td><td><div class="recuadro" style="border:0">{{compromisoDelDocente}}</div></td></tr>
+    <tr><td class="l">COMPROMISO DEL ESPECIALISTA</td><td><div class="recuadro" style="border:0">{{compromisoDelEspecialista}}</div></td></tr>
+  </table>
+
+  <table class="legend">
+    <tr><th>Valor</th><th>Significado</th></tr>
+    <tr><td>Sí</td><td>Cumple el ítem</td></tr>
+    <tr><td>Parcialmente</td><td>Cumple en parte el ítem</td></tr>
+    <tr><td>No</td><td>No cumple el ítem</td></tr>
+  </table>
+
+  {{#if evidencias.length}}
+  <div class="parte">EVIDENCIAS DEL MONITOREO</div>
+  <div class="evidencias-fotos">
+    {{#each evidencias}}
+    <figure><img class="evidencia-img" src="{{this}}" alt="Evidencia"><figcaption>Evidencia {{increment @index}}</figcaption></figure>
+    {{/each}}
+  </div>
+  {{/if}}
+
+  <table class="firmas-eib">
+    <tr>
+      {{#each firmasEib}}
+      <td>{{#if this.imagen}}<img class="firma-img" src="{{this.imagen}}" alt="Firma">{{/if}}<div class="rol">{{this.rol}}</div></td>
+      {{/each}}
+    </tr>
+  </table>
+
+</td></tr></tbody>
+</table>
+</body>
+</html>

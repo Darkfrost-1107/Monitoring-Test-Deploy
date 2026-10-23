@@ -2,6 +2,7 @@ import { jest } from '@jest/globals';
 import { PdfGeneratorService } from './pdf-generator.service.js';
 import { construirFichaOficialDocente } from './ficha-oficial-docente.builder.js';
 import { fichaOficialRaw } from './ficha-oficial-docente.fixture.js';
+import { construirFichaOficialDirectivo } from './ficha-oficial-directivo.builder.js';
 
 const PDF_BYTES = Buffer.from('%PDF-1.7 fake');
 
@@ -210,15 +211,14 @@ describe('PdfGeneratorService — ficha oficial al docente', () => {
     expect(html).toMatch(/\.seccion\s*\{[^}]*border-left/);
   });
 
-  it('el banner institucional va en la cabecera de la tabla, que se repite en cada página', async () => {
+  it('el banner es la imagen oficial, con el escudo, y va en la cabecera que se repite en cada página', async () => {
     const { html } = await render();
 
-    expect(html).toContain('GOBIERNO');
-    expect(html).toContain('REGIONAL PUNO');
-    expect(html).toContain('Regional de Educación');
-    expect(html).toContain('Gestión Pedagógica');
     expect(html).toMatch(/<thead>\s*<tr>\s*<td[^>]*>\s*<div class="banner">/);
     expect(html).toMatch(/thead\s*\{[^}]*display:\s*table-header-group/);
+    expect(html).toMatch(
+      /<img class="banner-izquierda" src="data:image\/png;base64,[A-Za-z0-9+/=]{100,}" alt="Gobierno Regional Puno/,
+    );
   });
 
   it('muestra el lema oficial entre comillas, debajo del banner', async () => {
@@ -261,6 +261,14 @@ describe('PdfGeneratorService — ficha oficial al docente', () => {
     expect(html.match(/<thead>/g)).toHaveLength(1 + 5);
   });
 
+  it('el título, la descripción y los aspectos de cada desempeño no se separan entre páginas', async () => {
+    const { html } = await render();
+
+    // Una por cada uno de los 5 desempeños.
+    expect(html.match(/<table class="dt d-cabecera-tabla"/g)).toHaveLength(5);
+    expect(html).toMatch(/\.d-cabecera-tabla\s*\{[^}]*break-inside:\s*avoid/);
+  });
+
   it('las evidencias de cada desempeño viajan con su última fila de niveles', async () => {
     const { html } = await render();
 
@@ -269,15 +277,13 @@ describe('PdfGeneratorService — ficha oficial al docente', () => {
   });
 
   it('la leyenda no se pega al consolidado: puede pasar sola a la hoja siguiente', async () => {
-    const raw = await render();
-    const html = raw.html.replace(/\r\n/g, '\n');
+    const { html } = await render();
 
     const consolidado = html.indexOf('CONSOLIDADO DE NIVELES DE LOGRO');
     const leyenda = html.indexOf('class="leyenda-titulo"');
-    const cierreDelBloque = html.indexOf('</table>\n  </div>', consolidado);
 
-    expect(cierreDelBloque).toBeGreaterThan(consolidado);
-    expect(cierreDelBloque).toBeLessThan(leyenda);
+    // Entre la tabla del consolidado y la leyenda se cierra el bloque que las agrupaba.
+    expect(html.slice(consolidado, leyenda)).toMatch(/<\/table>\s*<\/div>/);
   });
 
   it('marca una casilla por desempeño calificado y deja el resto en gris', async () => {
@@ -396,5 +402,103 @@ describe('PdfGeneratorService — ficha oficial al docente', () => {
 
     expect(html).not.toMatch(/data-consolidado="nivel">\s*LOGRO ESPERADO/);
     expect(html).not.toMatch(/data-consolidado="promedio">\s*\d/);
+  });
+});
+
+describe('PdfGeneratorService — ficha oficial al director', () => {
+  let fetchMock: jest.SpiedFunction<typeof fetch>;
+
+  beforeEach(() => {
+    process.env.GOTENBERG_URL = 'http://gotenberg.test:3000';
+    fetchMock = jest.spyOn(globalThis, 'fetch').mockResolvedValue(okResponse());
+  });
+
+  afterEach(() => jest.restoreAllMocks());
+
+  async function render(over: Parameters<typeof fichaOficialRaw>[0] = {}) {
+    const base = fichaOficialRaw();
+    const vista = construirFichaOficialDirectivo(
+      fichaOficialRaw({
+        plantilla: { ...base.plantilla, ejesItems: [] },
+        respuestasEjeItem: [],
+        contexto: null,
+        cronograma: {
+          ...base.cronograma,
+          evaluado: { ...base.cronograma.evaluado, condicionLaboral: 'Designado' },
+        },
+        ...over,
+      }),
+    );
+    await new PdfGeneratorService().generatePdfFromTemplate('ficha-directivo-oficial', vista);
+    const form = fetchMock.mock.calls[0][1]?.body as FormData;
+    const index = (form.getAll('files') as File[]).find((f) => f.name === 'index.html') as File;
+    return { html: await index.text() };
+  }
+
+  it('lleva el título y las secciones del formulario', async () => {
+    const { html } = await render();
+
+    for (const texto of [
+      'FICHA DE MONITOREO Y ACOMPAÑAMIENTO AL DIRECTOR(A) DE I.E. - 2026',
+      'DATOS DE LA INSTITUCIÓN EDUCATIVA:',
+      'DATOS DEL DIRECTOR(A) MONITOREADO:',
+      'DATOS DEL(OS) MONITOR(ES):',
+      'FECHA Y DURACIÓN:',
+      'NIVELES DEL LOGRO:',
+      'DESEMPEÑOS EVALUADOS',
+      'SUGERENCIAS Y COMPROMISOS:',
+      'CONSOLIDADO DE NIVELES DE LOGRO:',
+      'LEYENDA',
+    ]) {
+      expect(html).toContain(texto);
+    }
+  });
+
+  it('no arrastra nada propio de la ficha docente', async () => {
+    const { html } = await render();
+
+    for (const texto of [
+      'PLANIFICACIÓN Y DISEÑO DE EVALUACIÓN',
+      'LINEAMIENTO 2',
+      'OBSERVACIÓN DE AULA',
+      'DATOS DEL DOCENTE',
+      'CANT. ESTUDIANTES',
+    ]) {
+      expect(html).not.toContain(texto);
+    }
+  });
+
+  it('muestra al director monitoreado con su condición como casilla marcada', async () => {
+    const { html } = await render();
+
+    expect(html).toContain('JOSE CARLOS MARIATEGUI');
+    expect(html).toContain('MARLENE GAONA MACHACA');
+    // Director: encargado, designado, nombrado (3). Monitor: DREP, UGEL, director IE, coordinador (4).
+    expect(html.match(/class="caja-x marcada"/g)).toHaveLength(2);
+    expect(html.match(/class="caja-x"/g)).toHaveLength(5);
+  });
+
+  it('usa el banner oficial y el diseño de rúbricas de la ficha docente', async () => {
+    const { html } = await render();
+
+    expect(html).toMatch(/<img class="banner-izquierda" src="data:image\/png;base64,/);
+    expect(html.match(/class="marca"/g)).toHaveLength(5);
+    expect(html.match(/<thead>/g)).toHaveLength(1 + 5);
+  });
+
+  it('el consolidado trae solo las columnas de los desempeños', async () => {
+    const { html } = await render();
+
+    expect(html).toMatch(/<td class="cab">D5<\/td>/);
+    expect(html).not.toMatch(/<td class="cab">R6<\/td>/);
+  });
+
+  it('el evaluado firma como Director', async () => {
+    const { html } = await render({
+      firmas: [{ rolFirmante: 'EVALUADO', nombre: 'JUAN PEREZ', fecha: new Date(), imagen: null }],
+    });
+
+    expect(html).toMatch(/class="rol">Director</);
+    expect(html).not.toMatch(/class="rol">Docente</);
   });
 });

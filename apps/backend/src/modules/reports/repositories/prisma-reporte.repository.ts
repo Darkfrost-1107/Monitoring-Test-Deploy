@@ -230,7 +230,7 @@ export class PrismaReporteRepository implements ReporteRepository {
     return resumen.sort((a, b) => b.totalFichas - a.totalFichas);
   }
 
-  async findFichaOficialDocente(
+  async findFichaOficial(
     id: string,
     session: SessionScope,
   ): Promise<FichaOficialPersistida | null> {

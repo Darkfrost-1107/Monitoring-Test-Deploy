@@ -88,6 +88,11 @@ export interface FichaOficialRaw {
       codigoModular: string;
       modalidad: string;
       nivelEducativo: string;
+      departamento: string;
+      provincia: string;
+      distrito: string;
+      direccion: string;
+      zona: string;
     };
     evaluado: {
       condicionLaboral: string | null;

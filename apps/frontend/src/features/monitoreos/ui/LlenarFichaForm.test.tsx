@@ -418,24 +418,15 @@ describe('LlenarFichaForm — «Imprimir / PDF»', () => {
   };
   const imprimir = () => userEvent.click(screen.getByRole('button', { name: /Imprimir/i }));
 
-  it('una ficha docente abre el PDF oficial del backend', async () => {
-    montar({ ...completada, template: { instrumento: 'DOCENTE' } });
-
-    await imprimir();
-
-    expect(imprimirOficial).toHaveBeenCalledTimes(1);
-    expect(imprimirLegado).not.toHaveBeenCalled();
-  });
-
-  it.each(['DIRECTIVO', 'DOCENTE_EIB'] as const)(
-    'una ficha %s conserva la impresión de siempre, hasta que tenga su formato oficial',
+  it.each(['DOCENTE', 'DIRECTIVO', 'DOCENTE_EIB'] as const)(
+    'una ficha %s abre el PDF oficial del backend',
     async (instrumento) => {
       montar({ ...completada, template: { instrumento } });
 
       await imprimir();
 
-      expect(imprimirLegado).toHaveBeenCalledTimes(1);
-      expect(imprimirOficial).not.toHaveBeenCalled();
+      expect(imprimirOficial).toHaveBeenCalledTimes(1);
+      expect(imprimirLegado).not.toHaveBeenCalled();
     },
   );
 });
