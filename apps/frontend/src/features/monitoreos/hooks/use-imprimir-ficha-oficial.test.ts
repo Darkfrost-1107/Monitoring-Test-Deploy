@@ -1,25 +1,25 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 
-const { descargarPdf, toastError } = vi.hoisted(() => ({
+const { descargarPdf, toastError, toastLoading, toastSuccess } = vi.hoisted(() => ({
   descargarPdf: vi.fn(),
   toastError: vi.fn(),
+  toastLoading: vi.fn().mockReturnValue('toast-1'),
+  toastSuccess: vi.fn(),
 }));
 
 vi.mock('../api/fichas.api', () => ({
   fichasApi: { descargarPdf },
 }));
-vi.mock('sonner', () => ({ toast: { error: toastError } }));
+vi.mock('sonner', () => ({
+  toast: {
+    error: toastError,
+    loading: toastLoading,
+    success: toastSuccess,
+  },
+}));
 
 const { useImprimirFichaOficial } = await import('./use-imprimir-ficha-oficial');
-
-/**
- * «Imprimir / PDF» abre el PDF oficial que genera el backend.
- *
- * La ventana se abre en el instante del clic, antes de esperar al servidor: si
- * se abriera después, el navegador la tomaría por una ventana emergente no
- * pedida y la bloquearía.
- */
 
 const idDeFicha =
   (id: string | null = 'ficha-9') =>
@@ -28,39 +28,17 @@ const idDeFicha =
 const pdf = new Blob(['%PDF'], { type: 'application/pdf' });
 
 describe('useImprimirFichaOficial', () => {
-  let ventana: {
-    location: { href: string };
-    close: ReturnType<typeof vi.fn>;
-    document: { write: ReturnType<typeof vi.fn>; close: ReturnType<typeof vi.fn> };
-  };
+  let clicSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    ventana = {
-      location: { href: '' },
-      close: vi.fn(),
-      document: { write: vi.fn(), close: vi.fn() },
-    };
-    vi.spyOn(window, 'open').mockReturnValue(ventana as unknown as Window);
+    clicSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
     vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:pdf-1');
     vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
     descargarPdf.mockResolvedValue(pdf);
   });
 
   afterEach(() => vi.restoreAllMocks());
-
-  it('abre la ventana en el momento del clic, antes de pedir nada al servidor', async () => {
-    const { result } = renderHook(() => useImprimirFichaOficial());
-
-    let promesa: Promise<void>;
-    act(() => {
-      promesa = result.current.imprimir(idDeFicha());
-    });
-
-    expect(window.open).toHaveBeenCalledTimes(1);
-    expect(descargarPdf).not.toHaveBeenCalled();
-    await act(() => promesa);
-  });
 
   it('pregunta qué ficha es y pide el PDF de esa ficha', async () => {
     const obtener = vi.fn(idDeFicha('ficha-9'));
@@ -72,14 +50,16 @@ describe('useImprimirFichaOficial', () => {
     expect(descargarPdf).toHaveBeenCalledWith('ficha-9');
   });
 
-  it('lleva la ventana abierta al PDF', async () => {
+  it('descarga el archivo PDF directamente vía enlace simulado', async () => {
     const { result } = renderHook(() => useImprimirFichaOficial());
 
-    await act(() => result.current.imprimir(idDeFicha()));
+    await act(() => result.current.imprimir(idDeFicha('ficha-12345')));
 
-    expect(ventana.document.write).toHaveBeenCalledWith(expect.stringContaining('blob:pdf-1'));
-    expect(ventana.document.close).toHaveBeenCalled();
-    expect(ventana.close).not.toHaveBeenCalled();
+    expect(clicSpy).toHaveBeenCalledTimes(1);
+    expect(toastSuccess).toHaveBeenCalledWith(
+      expect.stringContaining('descargado'),
+      expect.anything(),
+    );
   });
 
   it('indica que está generando mientras espera, y deja de indicarlo al terminar', async () => {
@@ -111,17 +91,19 @@ describe('useImprimirFichaOficial', () => {
       void result.current.imprimir(idDeFicha());
     });
 
-    expect(window.open).toHaveBeenCalledTimes(1);
+    expect(descargarPdf).toHaveBeenCalledTimes(1);
   });
 
-  it('si el servidor falla, cierra la ventana en blanco y avisa con el motivo', async () => {
+  it('si el servidor falla, avisa con el motivo y limpia el estado', async () => {
     descargarPdf.mockRejectedValue(new Error('Gotenberg respondió 503'));
     const { result } = renderHook(() => useImprimirFichaOficial());
 
     await act(() => result.current.imprimir(idDeFicha()));
 
-    expect(ventana.close).toHaveBeenCalled();
-    expect(toastError).toHaveBeenCalledWith(expect.stringContaining('Gotenberg respondió 503'));
+    expect(toastError).toHaveBeenCalledWith(
+      expect.stringContaining('Gotenberg respondió 503'),
+      expect.anything(),
+    );
     expect(result.current.generando).toBe(false);
   });
 
@@ -131,18 +113,10 @@ describe('useImprimirFichaOficial', () => {
     await act(() => result.current.imprimir(idDeFicha(null)));
 
     expect(descargarPdf).not.toHaveBeenCalled();
-    expect(ventana.close).toHaveBeenCalled();
-    expect(toastError).toHaveBeenCalledWith(expect.stringMatching(/no está guardada/i));
-  });
-
-  it('si el navegador bloquea la ventana, descarga el archivo en su lugar', async () => {
-    vi.spyOn(window, 'open').mockReturnValue(null);
-    const clic = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
-    const { result } = renderHook(() => useImprimirFichaOficial());
-
-    await act(() => result.current.imprimir(idDeFicha()));
-
-    expect(clic).toHaveBeenCalledTimes(1);
-    expect(toastError).not.toHaveBeenCalled();
+    expect(toastError).toHaveBeenCalledWith(
+      expect.stringMatching(/no está guardada/i),
+      expect.anything(),
+    );
   });
 });
+

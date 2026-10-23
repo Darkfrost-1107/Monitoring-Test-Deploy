@@ -2,28 +2,34 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { fichasApi } from '../api/fichas.api';
 
-/** Cuánto vive la URL del PDF: lo bastante para que el visor lo cargue y se pueda reabrir. */
-const VIDA_DE_LA_URL_MS = 60_000;
+/** Cuánto vive la URL del PDF antes de revocarla de la memoria. */
+const REVOCAR_URL_MS = 10_000;
 
-function descargar(url: string, nombre: string) {
+function descargarBlob(blob: Blob, nombre: string) {
+  const url = URL.createObjectURL(blob);
   const enlace = document.createElement('a');
   enlace.href = url;
   enlace.download = nombre;
+  enlace.style.display = 'none';
   document.body.appendChild(enlace);
   enlace.click();
-  enlace.remove();
+
+  setTimeout(() => {
+    enlace.remove();
+    URL.revokeObjectURL(url);
+  }, REVOCAR_URL_MS);
 }
 
 /** Cómo saber de qué ficha se trata: quien llama la conoce por la visita, por la fila del listado… */
 export type ObtenerIdDeFicha = () => Promise<string | null>;
 
 /**
- * «Imprimir / PDF» de una ficha: abre el PDF oficial que genera el backend.
+ * «Imprimir / PDF» de una ficha: descarga directamente el PDF oficial generado por el backend.
  *
- * La ventana se abre en el instante del clic y recién después se espera al
- * servidor. Si se abriera al terminar, el navegador la tomaría por una ventana
- * emergente que nadie pidió y la bloquearía. Si aun así la bloquea, se descarga
- * el archivo, que no depende de ventanas.
+ * En dispositivos móviles y PWAs (Android WebAPK / iOS), abrir `window.open` con un iframe
+ * o URL blob genera pantallas `about:blank` y bloqueos de seguridad de Chromium.
+ * La descarga directa vía `<a download>` delega la descarga al sistema operativo,
+ * permitiendo abrir el documento con cualquier lector PDF nativo sin errores de visor.
  */
 export function useImprimirFichaOficial() {
   const [generando, setGenerando] = useState(false);
@@ -31,8 +37,8 @@ export function useImprimirFichaOficial() {
   const imprimir = async (obtenerIdDeFicha: ObtenerIdDeFicha): Promise<void> => {
     if (generando) return;
 
-    const ventana = window.open('', '_blank');
     setGenerando(true);
+    const toastId = toast.loading('Generando PDF oficial…');
 
     try {
       const fichaId = await obtenerIdDeFicha();
@@ -41,37 +47,15 @@ export function useImprimirFichaOficial() {
       const pdf = await fichasApi.descargarPdf(fichaId);
       const pdfBlob =
         pdf.type === 'application/pdf' ? pdf : new Blob([pdf], { type: 'application/pdf' });
-      const url = URL.createObjectURL(pdfBlob);
 
-      if (ventana) {
-        try {
-          ventana.document.write(`<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <title>Ficha de Monitoreo</title>
-  <style>
-    html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #525659; }
-    iframe { border: none; width: 100%; height: 100%; }
-  </style>
-</head>
-<body>
-  <iframe src="${url}"></iframe>
-</body>
-</html>`);
-          ventana.document.close();
-        } catch {
-          ventana.location.href = url;
-        }
-      } else {
-        descargar(url, `Ficha_Monitoreo_${fichaId.split('-')[0]}.pdf`);
-      }
+      const nombreArchivo = `Ficha_Monitoreo_${fichaId.split('-')[0]}.pdf`;
+      descargarBlob(pdfBlob, nombreArchivo);
 
-      setTimeout(() => URL.revokeObjectURL(url), VIDA_DE_LA_URL_MS);
+      toast.success('PDF descargado correctamente.', { id: toastId });
     } catch (error) {
-      ventana?.close();
       toast.error(
         `No se pudo generar el PDF: ${error instanceof Error ? error.message : 'error desconocido'}`,
+        { id: toastId },
       );
     } finally {
       setGenerando(false);
@@ -80,3 +64,4 @@ export function useImprimirFichaOficial() {
 
   return { imprimir, generando };
 }
+
