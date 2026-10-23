@@ -34,7 +34,7 @@ const fichaLegada = (instrumento: string) =>
 function armar(ficha: IReporteFicha | null, oficial: FichaOficialPersistida | null = persistida) {
   const repository = {
     findFichaByIdParaExport: jest.fn(() => Promise.resolve(ficha)),
-    findFichaOficialDocente: jest.fn(() => Promise.resolve(oficial)),
+    findFichaOficial: jest.fn(() => Promise.resolve(oficial)),
   };
   const generador = {
     generatePdfFromTemplate: jest.fn((..._args: unknown[]) => Promise.resolve(Buffer.from('%PDF'))),
@@ -70,17 +70,28 @@ describe('ReporteService.exportarFichaPDF', () => {
     expect((await servicio.exportarFichaPDF('f1', sesion)).toString()).toBe('%PDF');
   });
 
-  it.each(['DIRECTIVO', 'DOCENTE_EIB'])(
-    'una ficha %s conserva su plantilla',
-    async (instrumento) => {
-      const { servicio, generador, repository } = armar(fichaLegada(instrumento));
+  it('una ficha directiva se imprime en el formulario oficial del director', async () => {
+    const { servicio, generador, repository } = armar(fichaLegada('DIRECTIVO'));
 
-      await servicio.exportarFichaPDF('f1', sesion);
+    await servicio.exportarFichaPDF('f1', sesion);
 
-      expect(generador.generatePdfFromTemplate.mock.calls[0][0]).toBe('ficha-report');
-      expect(repository.findFichaOficialDocente).not.toHaveBeenCalled();
-    },
-  );
+    const [plantilla, datos] = generador.generatePdfFromTemplate.mock.calls[0] as [
+      string,
+      { titulo: string },
+    ];
+    expect(plantilla).toBe('ficha-directivo-oficial');
+    expect(datos.titulo).toContain('DIRECTOR(A) DE I.E.');
+    expect(repository.findFichaOficial).toHaveBeenCalledTimes(1);
+  });
+
+  it('una ficha EIB conserva su plantilla hasta tener su formulario oficial', async () => {
+    const { servicio, generador, repository } = armar(fichaLegada('DOCENTE_EIB'));
+
+    await servicio.exportarFichaPDF('f1', sesion);
+
+    expect(generador.generatePdfFromTemplate.mock.calls[0][0]).toBe('ficha-report');
+    expect(repository.findFichaOficial).not.toHaveBeenCalled();
+  });
 
   it('una ficha inexistente o sin acceso da 404 y no genera nada', async () => {
     const { servicio, generador } = armar(null);
@@ -123,7 +134,7 @@ describe('ReporteService.enviarFichaPorCorreo — el correo lleva el mismo PDF q
     const mailer = { sendResumenFichaEmail: jest.fn((..._args: unknown[]) => Promise.resolve()) };
     const repository = {
       findFichaByIdParaExport: jest.fn(() => Promise.resolve(fichaLegada('DOCENTE'))),
-      findFichaOficialDocente: jest.fn(() => Promise.resolve(persistida)),
+      findFichaOficial: jest.fn(() => Promise.resolve(persistida)),
     };
     const generador = {
       generatePdfFromTemplate: jest.fn((..._args: unknown[]) => Promise.resolve(pdfOficial)),

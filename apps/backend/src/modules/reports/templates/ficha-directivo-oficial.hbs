@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Ficha de monitoreo al director</title>
+  {{> estilos-oficial}}
+</head>
+<body>
+<table class="envoltura">
+{{> banner-oficial}}
+<tbody><tr><td>
+
+  <div class="titulo">{{titulo}}</div>
+
+  <div class="seccion">DATOS DE LA INSTITUCIÓN EDUCATIVA:</div>
+  <table class="datos">
+    <tr><td class="l" colspan="2">UGEL:</td><td colspan="10">UGEL LAMPA</td></tr>
+    <tr>
+      <td class="l" colspan="2">INSTITUCIÓN EDUCATIVA:</td><td class="fuerte" colspan="6">{{institucion.nombre}}</td>
+      <td class="l" colspan="2">CÓD. MODULAR:</td><td colspan="2">{{institucion.codigoModular}}</td>
+    </tr>
+    <tr>
+      <td class="l" colspan="2">MODALIDAD:</td><td colspan="4">{{institucion.modalidad}}</td>
+      <td class="l" colspan="2">NIVEL:</td><td colspan="4">{{institucion.nivel}}</td>
+    </tr>
+  </table>
+
+  <div class="seccion">DATOS DEL DIRECTOR(A) MONITOREADO:</div>
+  <table class="datos">
+    <tr><td class="l" colspan="4">APELLIDOS Y NOMBRES DEL DIRECTOR(A):</td><td class="fuerte" colspan="8">{{director.nombre}}</td></tr>
+    <tr>
+      <td class="l" colspan="1">DNI:</td><td colspan="2">{{director.dni}}</td>
+      <td class="l" colspan="1">E-MAIL:</td><td colspan="4" class="correo">{{director.correo}}</td>
+      <td class="l" colspan="2">N° CELULAR:</td><td colspan="2">{{director.celular}}</td>
+    </tr>
+    <tr>
+      <td class="l" colspan="2">ENCARGADO:</td><td class="chk" colspan="2"><span class="caja-x{{#if director.encargado}} marcada{{/if}}">{{#if director.encargado}}X{{/if}}</span></td>
+      <td class="l" colspan="2">DESIGNADO:</td><td class="chk" colspan="2"><span class="caja-x{{#if director.designado}} marcada{{/if}}">{{#if director.designado}}X{{/if}}</span></td>
+      <td class="l" colspan="2">NOMBRADO:</td><td class="chk" colspan="2"><span class="caja-x{{#if director.nombrado}} marcada{{/if}}">{{#if director.nombrado}}X{{/if}}</span></td>
+    </tr>
+  </table>
+
+  {{> monitor-fecha-niveles-oficial}}
+
+  <div class="aula">DESEMPEÑOS EVALUADOS</div>
+
+  {{> rubricas-oficial}}
+
+  {{> cierre-oficial}}
+</td></tr></tbody>
+</table>
+</body>
+</html>

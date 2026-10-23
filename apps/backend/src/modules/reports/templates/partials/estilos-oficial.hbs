@@ -61,6 +61,8 @@
     .desempeno { margin-bottom: 8px; }
     .dt { width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 0; border-top: 1px solid var(--linea); border-left: 1px solid var(--linea); }
     .dt + .dt { border-top: 0; }
+    /* Título, descripción y aspectos son una unidad: no se parten, y van con la rúbrica. */
+    .d-cabecera-tabla { break-inside: avoid; break-after: avoid; }
     .dt td, .dt th { border: 0; border-right: 1px solid var(--linea); border-bottom: 1px solid var(--linea); padding: 2px 5px; vertical-align: top; overflow-wrap: anywhere; }
     .d-titulo { background: var(--azul); font-weight: bold; text-transform: uppercase; font-size: 12.5px; padding: 3px 5px; }
     .d-bloque { background: var(--azul); padding: 3px 6px; text-align: justify; }
