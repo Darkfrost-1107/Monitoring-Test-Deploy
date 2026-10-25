@@ -153,6 +153,7 @@ export function useFichaPersistence({
         }
         await qc.invalidateQueries({ queryKey: ['fichas'] });
         await qc.invalidateQueries({ queryKey: ['cronogramas'] });
+        await qc.invalidateQueries({ queryKey: ['reportes'] });
         onPersistido();
       } catch (error) {
         // Sin señal, no es un fallo: la ficha se encola y se envía al reconectar.
@@ -176,6 +177,7 @@ export function useFichaPersistence({
         marcarEstadoVisita(visitId, 'COMPLETADO');
         await qc.invalidateQueries({ queryKey: ['fichas'] });
         await qc.invalidateQueries({ queryKey: ['cronogramas'] });
+        await qc.invalidateQueries({ queryKey: ['reportes'] });
         onPersistido();
       } catch (error) {
         if (esErrorDeRed(error)) await encolarEnvio('finalizar-ficha', payload, 'FINALIZADO');

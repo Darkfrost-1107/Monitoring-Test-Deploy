@@ -14,6 +14,17 @@ import {
   SessionScope,
 } from './reporte.repository.js';
 import { fromPrismaFichaReporte } from './reporte.mapper.js';
+import { INCLUDE_FICHA_OFICIAL, fromPrismaFichaOficial } from './ficha-oficial.mapper.js';
+import type { FichaOficialPersistida } from '../services/ficha-oficial-docente.imagenes.js';
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const UUID_SIN_RESULTADOS = '00000000-0000-0000-0000-000000000000';
+
+/**
+ * Un id de la cadena de consulta que no es UUID no debe reventar Prisma: se
+ * resuelve como «sin resultados», que es lo correcto —nadie tiene ese id—.
+ */
+const comoUuid = (valor: string): string => (UUID.test(valor) ? valor : UUID_SIN_RESULTADOS);
 
 @Injectable()
 export class PrismaReporteRepository implements ReporteRepository {
@@ -39,10 +50,15 @@ export class PrismaReporteRepository implements ReporteRepository {
     const limit = Number(filters.limit ?? 20);
     const skip = (page - 1) * limit;
 
-    const where: Prisma.FichaMonitoreoWhereInput = {
-      estado: 'FINALIZADO',
-      ...this.scopeFilter.forFicha(this.toScopeContext(session)),
-    };
+    // El alcance del usuario y sus filtros se SUMAN (AND): asignar `where.cronograma`
+    // reemplazaba el alcance de institución o de nivel cada vez que llegaba un
+    // filtro de cronograma, y el usuario veía fichas que no le correspondían.
+    const contexto = this.toScopeContext(session);
+    const condiciones: Prisma.FichaMonitoreoWhereInput[] = [this.scopeFilter.forFicha(contexto)];
+    if (this.scopeFilter.limitaAlAnalisisPropio(session.role)) {
+      condiciones.push(this.scopeFilter.forFichasQueMonitoreo(contexto));
+    }
+    const where: Prisma.FichaMonitoreoWhereInput = { estado: 'FINALIZADO', AND: condiciones };
     if (filters.anioAcademico !== undefined) where.anioAcademico = filters.anioAcademico;
 
     // Ambos filtros apuntan a Cronograma, no a FichaMonitoreo. `institucionId`
@@ -53,8 +69,9 @@ export class PrismaReporteRepository implements ReporteRepository {
     if (filters.modalidad) porCronograma.modalidad = filters.modalidad;
     if (filters.nivelEducativo) porCronograma.nivelEducativo = filters.nivelEducativo;
     if (filters.docenteId) porCronograma.evaluadoId = filters.docenteId;
+    if (filters.monitorId) porCronograma.monitorId = comoUuid(filters.monitorId);
     if (filters.numeroVisita) porCronograma.numeroVisita = filters.numeroVisita;
-    if (Object.keys(porCronograma).length > 0) where.cronograma = porCronograma;
+    if (Object.keys(porCronograma).length > 0) condiciones.push({ cronograma: porCronograma });
     if (filters.tipoMonitoreo) where.plantilla = { tipoMonitoreo: filters.tipoMonitoreo };
     if (filters.nivelLogro) where.nivelLogro = filters.nivelLogro;
     if (filters.fechaDesde || filters.fechaHasta) {
@@ -213,6 +230,39 @@ export class PrismaReporteRepository implements ReporteRepository {
     return resumen.sort((a, b) => b.totalFichas - a.totalFichas);
   }
 
+  async findFichaOficial(
+    id: string,
+    session: SessionScope,
+  ): Promise<FichaOficialPersistida | null> {
+    const f = await this.prisma.fichaMonitoreo.findUnique({
+      where: { id },
+      include: INCLUDE_FICHA_OFICIAL,
+    });
+    if (!f) return null;
+
+    const scope = this.scopeFilter.forFicha(this.toScopeContext(session));
+    const allowed = await this.prisma.fichaMonitoreo.findFirst({
+      where: { id: f.id, ...scope },
+      select: { id: true },
+    });
+    if (!allowed) return null;
+
+    // El director y el lema no cuelgan de la ficha: el primero es quien ocupa hoy
+    // ese cargo en la institución, el segundo el del año académico de la ficha.
+    const [director, lema] = await Promise.all([
+      this.prisma.docente.findFirst({
+        where: {
+          institucionId: f.cronograma.institucionId,
+          docenteCargos: { some: { cargo: { nombre: 'Director' }, fechaFin: null } },
+        },
+        include: { persona: true },
+      }),
+      this.prisma.lemaAnual.findUnique({ where: { anio: f.anioAcademico } }),
+    ]);
+
+    return fromPrismaFichaOficial(f, director, lema?.lema ?? null);
+  }
+
   async findFichaByIdParaExport(id: string, session: SessionScope): Promise<IReporteFicha | null> {
     const f = await this.prisma.fichaMonitoreo.findUnique({
       where: { id },
@@ -273,9 +323,16 @@ export class PrismaReporteRepository implements ReporteRepository {
     filters: QueryFichasCompletadas,
     session: SessionScope,
   ): Promise<IAnalisisDesempenoCriterio[]> {
+    // Ver el comentario de `findFichasCompletadas`: el alcance y los filtros se suman.
+    const contexto = this.toScopeContext(session);
+    const condiciones: Prisma.FichaMonitoreoWhereInput[] = [this.scopeFilter.forFicha(contexto)];
+    // El coordinador y el jefe de taller analizan sólo lo que ellos monitorearon.
+    if (this.scopeFilter.limitaAlAnalisisPropio(session.role)) {
+      condiciones.push(this.scopeFilter.forFichasQueMonitoreo(contexto));
+    }
     const whereFicha: Prisma.FichaMonitoreoWhereInput = {
       estado: 'FINALIZADO',
-      ...this.scopeFilter.forFicha(this.toScopeContext(session)),
+      AND: condiciones,
     };
     if (filters.anioAcademico !== undefined) whereFicha.anioAcademico = filters.anioAcademico;
 
@@ -292,11 +349,14 @@ export class PrismaReporteRepository implements ReporteRepository {
     if (filters.docenteId) {
       porCronograma.evaluadoId = filters.docenteId;
     }
+    if (filters.monitorId) {
+      porCronograma.monitorId = comoUuid(filters.monitorId);
+    }
     if (filters.numeroVisita) {
       porCronograma.numeroVisita = filters.numeroVisita;
     }
     if (Object.keys(porCronograma).length > 0) {
-      whereFicha.cronograma = porCronograma;
+      condiciones.push({ cronograma: porCronograma });
     }
     if (filters.tipoMonitoreo) {
       whereFicha.plantilla = { tipoMonitoreo: filters.tipoMonitoreo };

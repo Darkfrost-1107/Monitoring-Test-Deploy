@@ -18,7 +18,7 @@ import {
   opcionesDeInstitucion,
   type InstitucionOfrecible,
 } from '../lib/opciones-de-asignacion';
-import { numerosDeVisitaDisponibles } from '../lib/numeracion-visitas';
+import { numerosDeVisitaDisponibles, visitasDelEvaluado } from '../lib/numeracion-visitas';
 import { useFormularioCronograma } from './use-formulario-cronograma';
 import { useOpcionesDeEvaluacion } from './use-opciones-de-evaluacion';
 import { useSincronizacionFormulario } from './use-sincronizacion-formulario';
@@ -167,9 +167,7 @@ export function useProgramacionCronograma({
       evaluadores: opcionesDeEvaluador,
       tiposPermitidos,
       visitas: numerosDeVisitaDisponibles(
-        evaluadoResuelto
-          ? cronogramas.filter((c) => c.evaluadoId === evaluadoResuelto.id && c.tipo === form.tipo)
-          : [],
+        evaluadoResuelto ? visitasDelEvaluado(cronogramas, evaluadoResuelto.id) : [],
       ),
     }),
     [
@@ -177,7 +175,6 @@ export function useProgramacionCronograma({
       usuario,
       form.modalidad,
       form.nivel,
-      form.tipo,
       form.monitorId,
       editandoId,
       especialistas,

@@ -8,6 +8,9 @@ import type { Plantilla } from '@/entities/model-plantillas';
 import { usePlantilla } from '@/entities/model-plantillas/use-plantillas-api';
 import { fichasApi } from '@/features/monitoreos/api/fichas.api';
 import { fichaAEstadoFormulario } from '@/features/monitoreos/lib/ficha-estado';
+import { tieneFormatoOficial } from '@/features/monitoreos/lib/formato-oficial';
+import { idDeFicha } from '@/features/monitoreos/lib/id-de-ficha';
+import { useImprimirFichaOficial } from '@/features/monitoreos/hooks/use-imprimir-ficha-oficial';
 import { FiltrosReportes } from './grid/FiltrosReportes';
 import { TarjetaReporte } from './grid/TarjetaReporte';
 import { TablaReportes } from './grid/TablaReportes';
@@ -28,6 +31,7 @@ import { toast } from 'sonner';
 import type { FiltroPeriodoTipo } from '@/features/reportes/lib/filtro-temporal';
 import { PLANTILLA_DE_INSTRUMENTO } from '@/features/reportes/lib/instrumento';
 import type { FiltroDeInstrumento } from '@/features/reportes/lib/instrumento';
+import type { MonitorDelReporte } from '@/features/reportes/lib/monitores-del-reporte';
 
 export interface BackendReportVisit extends Cronograma {
   /**
@@ -54,6 +58,8 @@ export interface BackendReportVisit extends Cronograma {
   horaInicio?: string;
   horaFin?: string;
   anioAcademico?: number;
+  /** Cargo del monitor (Director, Coordinador, etc.) para rotular el filtro. */
+  especialistaCargo?: string;
 }
 
 interface ReportesGridProps {
@@ -73,6 +79,9 @@ interface ReportesGridProps {
   filtroPeriodo: FiltroPeriodoTipo;
   setFiltroPeriodo: (p: FiltroPeriodoTipo) => void;
   conteosPeriodo?: Record<FiltroPeriodoTipo, number>;
+  filterMonitor?: string;
+  setFilterMonitor?: (id: string) => void;
+  monitoresDisponibles?: (MonitorDelReporte | { id: string; nombre: string; cargo?: string; origen?: 'INTERNO' | 'EXTERNO' })[];
   nivelesDisponibles: string[];
   añosDisponibles: string[];
   isAnyFilterActive: boolean;
@@ -232,9 +241,24 @@ export const ReportesGrid = ({
     handlePrintDirect,
   ]);
 
+  // La ficha docente se abre con el formulario oficial que genera el backend, igual que
+  // desde la pantalla de la ficha. Los demás instrumentos siguen con la impresión anterior.
+  const { imprimir: imprimirOficial } = useImprimirFichaOficial();
+  const [pdfOficialId, setPdfOficialId] = useState<string | null>(null);
+
   const handleDescargarPdf = (visita: BackendReportVisit, e: React.MouseEvent) => {
     e.stopPropagation();
-    setVisitaParaImprimir(visita);
+
+    if (!tieneFormatoOficial(visita.instrumento ?? 'DOCENTE')) {
+      setVisitaParaImprimir(visita);
+      return;
+    }
+
+    setPdfOficialId(visita.id);
+    // El listado del backend trae el id de la FICHA; el respaldo local, el de la visita.
+    void imprimirOficial(() =>
+      idDeFicha(visita, '', (visitaId) => fichasApi.findByVisita(visitaId)),
+    ).finally(() => setPdfOficialId(null));
   };
 
   const [enviandoCorreoId, setEnviandoCorreoId] = useState<string | null>(null);
@@ -253,7 +277,7 @@ export const ReportesGrid = ({
   };
 
   const fichaLista = !!visitaAbierta && !!plantillaActiva && !!estadoDeLaFicha;
-  const descargandoId = visitaParaImprimir?.id ?? null;
+  const descargandoId = visitaParaImprimir?.id ?? pdfOficialId;
 
   return (
     <div className="space-y-6">

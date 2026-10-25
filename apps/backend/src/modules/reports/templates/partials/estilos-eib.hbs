@@ -1,0 +1,40 @@
+  <style>
+    * { box-sizing: border-box; }
+    html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    body { margin: 0; font-family: Arial, 'Liberation Sans', sans-serif; font-size: 10px; line-height: 1.25; color: #000; }
+
+    table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    td, th { border: 1px solid #000; padding: 2px 4px; vertical-align: middle; overflow-wrap: anywhere; }
+    tr { break-inside: avoid; }
+
+    .titulo { margin: 6px 0 8px; text-align: center; font-size: 15px; font-weight: bold; color: #1f4e79; }
+    .parte { margin: 10px 0 3px; font-size: 11px; font-weight: bold; color: #1f4e79; break-after: avoid; }
+    .seccion-eib { margin: 12px 0 3px; font-size: 12px; font-weight: bold; color: #2e75b6; break-after: avoid; }
+
+    th, .cab-azul { background: #2e75b6; color: #fff; font-weight: bold; text-align: center; }
+    .sub td { background: #bdd7ee; font-weight: bold; }
+    .l { background: #bdd7ee; font-weight: bold; width: 22%; }
+
+    .items td.n { text-align: center; }
+    .items .marca { font-weight: bold; font-size: 12px; }
+    .items thead { display: table-header-group; }
+    .nota { margin: 3px 0 0; font-size: 9px; }
+
+    .legend { width: auto; margin: 4px 0; }
+    .legend th, .legend td { padding: 2px 8px; }
+
+    .recuadro { min-height: 54px; border: 1px solid #000; padding: 4px 6px; white-space: pre-wrap; break-inside: avoid; }
+    .evidencias-fotos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 4px; }
+    .evidencias-fotos figure { margin: 0; border: 1px solid #000; padding: 4px; text-align: center; break-inside: avoid; }
+    .evidencia-img { max-width: 100%; max-height: 240px; }
+    .evidencias-fotos figcaption { font-size: 9px; margin-top: 2px; }
+
+    .firmas-eib { margin-top: 18px; break-inside: avoid; }
+    .firmas-eib td { height: 90px; vertical-align: bottom; text-align: center; border: 0; padding: 0 10px; }
+    .firmas-eib .firma-img { max-height: 66px; max-width: 200px; display: block; margin: 0 auto 2px; }
+    .firmas-eib .rol { border-top: 1px solid #000; padding-top: 2px; font-weight: bold; }
+
+    {{> estilos-banner}}
+    /* Los bordes colapsados salen medio punto del ancho útil y el borde derecho se recortaba. */
+    .envoltura > tbody > tr > td { padding-right: 2px; }
+  </style>

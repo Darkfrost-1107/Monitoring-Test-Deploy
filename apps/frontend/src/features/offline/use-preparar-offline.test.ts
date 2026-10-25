@@ -134,4 +134,12 @@ describe('usePrepararOffline', () => {
     expect(exito).toBe(false);
     expect(result.current.estado).toBe('error');
   });
+
+  it('inicializa en estado listo si ya se habia preparado en las ultimas 24 horas', () => {
+    localStorage.setItem('sistema-monitoreo:offline-preparado-at', new Date().toISOString());
+
+    const { result } = renderHook(() => usePrepararOffline(), { wrapper });
+
+    expect(result.current.estado).toBe('listo');
+  });
 });

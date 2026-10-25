@@ -1,6 +1,7 @@
 import { FileText } from 'lucide-react';
 import type { Plantilla } from '@/entities/model-plantillas';
 import { NavegacionPasos } from './NavegacionPasos';
+import { criterioCompleto } from '../../lib/avance-ficha';
 
 type Desempeno = Plantilla['desempenos'][number];
 type NivelPlantilla = Plantilla['niveles'][number];
@@ -320,7 +321,19 @@ export const DetalleDesempeno = ({
         <NavegacionPasos
           etiqueta={`Criterio ${indiceActual + 1} de ${totalDesempenos}`}
           subEtiqueta={`${totalEvaluados} de ${totalDesempenos} evaluados`}
-          estado={respuesta.nivel ? 'completado' : 'pendiente'}
+          estado={
+            criterioCompleto(respuesta.nivel, respuesta.observacion, {
+              texto: desempeno.preguntaExtra,
+              respuesta: respuesta.preguntaExtra,
+            })
+              ? 'completado'
+              : 'pendiente'
+          }
+          motivoSinAvance={
+            desempeno.preguntaExtra
+              ? 'Elija el nivel, responda la pregunta extra y escriba la justificación para continuar'
+              : 'Elija el nivel y escriba la justificación para continuar'
+          }
           onAnterior={onAnterior}
           onSiguiente={onSiguiente}
         />

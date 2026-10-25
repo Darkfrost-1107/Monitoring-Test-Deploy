@@ -12,6 +12,10 @@ import { puedeEvaluarVisita, type Cronograma } from '@/entities/model-cronograma
 import type { Plantilla } from '@/entities/model-plantillas';
 import { useReactToPrint } from 'react-to-print';
 import { FichaPrintable } from '@/widgets/reportes/ui/FichaPrintable';
+import { useImprimirFichaOficial } from '../hooks/use-imprimir-ficha-oficial';
+import { tieneFormatoOficial } from '../lib/formato-oficial';
+import { idDeFicha } from '../lib/id-de-ficha';
+import { fichasApi } from '../api/fichas.api';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRef } from 'react';
 import { safeSetLocalStorage } from '@/shared/lib/utils';
@@ -27,7 +31,6 @@ import {
 } from '../lib/estado-formulario';
 import { ContextoDeAulaSeccion } from './ficha/ContextoDeAulaSeccion';
 import { PanelDesempenos } from './ficha/PanelDesempenos';
-import { EjesItemsSeccion } from './ficha/EjesItemsSeccion';
 import { ConsolidadoSeccion } from './ficha/ConsolidadoSeccion';
 import { PieDeFicha } from './ficha/PieDeFicha';
 import { VistaPreviaEvidencia } from './ficha/VistaPreviaEvidencia';
@@ -114,6 +117,9 @@ export const LlenarFichaForm = ({
 
   const printRef = useRef<HTMLDivElement>(null);
   const handlePrint = useReactToPrint({ contentRef: printRef });
+  // La ficha docente se imprime con el formulario oficial que genera el backend. Los
+  // demás instrumentos siguen con la impresión del navegador hasta tener el suyo.
+  const { imprimir: imprimirOficial, generando: generandoPdf } = useImprimirFichaOficial();
 
   useHidratacionDeFicha({
     abierta: isOpen,
@@ -304,7 +310,14 @@ export const LlenarFichaForm = ({
           pestana={visit.tipo !== 'DIRECTIVO' ? activeTab : null}
           onPestana={setActiveTab}
           conCarpeta={puedeVerCarpeta}
-          onImprimir={() => handlePrint()}
+          imprimiendo={generandoPdf}
+          onImprimir={() =>
+            tieneFormatoOficial(template.instrumento)
+              ? void imprimirOficial(() =>
+                  idDeFicha(visit, template.id, fichasApi.findByVisitaYPlantilla),
+                )
+              : handlePrint()
+          }
           onCerrar={onClose}
         />
 
@@ -350,6 +363,25 @@ export const LlenarFichaForm = ({
               }
               onObservar={(id, texto) => setRubricComments((prev) => ({ ...prev, [id]: texto }))}
               mostrarAspectos={!isDirectivo}
+              /* Planificación y diseño de evaluación existe sólo en el instrumento
+                 docente. Se condiciona al tipo y no sólo a que haya ítems: una
+                 plantilla directiva que los tenga cargados —el formulario ya no lo
+                 permite, pero la base puede traerlos— le mostraría al evaluador un
+                 paso que su ficha no lleva. */
+              planificacion={
+                !isDirectivo && template.ejesItems && template.ejesItems.length > 0
+                  ? {
+                      items: template.ejesItems,
+                      niveles: template.niveles,
+                      respuestas: respuestasEjeItem,
+                      observaciones: observacionesEjeItem,
+                      onResponder: (itemId, nivel) =>
+                        setRespuestasEjeItem((prev) => ({ ...prev, [itemId]: nivel })),
+                      onObservar: (itemId, texto) =>
+                        setObservacionesEjeItem((prev) => ({ ...prev, [itemId]: texto })),
+                    }
+                  : undefined
+              }
               cierre={{
                 observaciones: generalComments,
                 sugerencias,
@@ -373,27 +405,6 @@ export const LlenarFichaForm = ({
               }}
               soloLectura={isCompleted}
             />
-
-        {/* Planificación y diseño de evaluación existe sólo en el instrumento
-            docente. Se condiciona al tipo y no sólo a que haya ítems: una
-            plantilla directiva que los tenga cargados —el formulario ya no lo
-            permite, pero la base puede traerlos— le mostraría al evaluador una
-            sección que su ficha no lleva. */}
-        {!isDirectivo && template.ejesItems && template.ejesItems.length > 0 && (
-          <EjesItemsSeccion
-            items={template.ejesItems}
-            niveles={template.niveles}
-            respuestas={respuestasEjeItem}
-            observaciones={observacionesEjeItem}
-            onResponder={(itemId, nivel) =>
-              setRespuestasEjeItem((prev) => ({ ...prev, [itemId]: nivel }))
-            }
-            onObservar={(itemId, texto) =>
-              setObservacionesEjeItem((prev) => ({ ...prev, [itemId]: texto }))
-            }
-            soloLectura={isCompleted}
-          />
-        )}
 
         {calificacion && (
           <ConsolidadoSeccion

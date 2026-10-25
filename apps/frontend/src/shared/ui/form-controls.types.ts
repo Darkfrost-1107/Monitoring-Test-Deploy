@@ -13,6 +13,7 @@ export interface Option {
   value: string;
   label: string;
   disabled?: boolean;
+  group?: string;
 }
 
 export const toOptions = (values: string[]): Option[] =>

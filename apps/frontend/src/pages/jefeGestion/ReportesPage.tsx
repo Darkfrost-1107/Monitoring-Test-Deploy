@@ -12,7 +12,9 @@ import { useScope, useCan } from '@shared/auth';
 import {
   reportesPropios,
   reportesVisibles,
+  veSoloLoQueMonitoreo,
 } from '@features/reportes/lib/visibilidad-reportes';
+import { monitoresDelReporte } from '@features/reportes/lib/monitores-del-reporte';
 import { calcularEstadisticas } from '@features/reportes/lib/estadisticas-reportes';
 import {
   esInstrumentoEib,
@@ -63,6 +65,7 @@ export const ReportesPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterModalidad, setFilterModalidad] = useState('Todos');
   const [filterNivel, setFilterNivel] = useState('Todos');
+  const [filterMonitor, setFilterMonitor] = useState('Todos');
   const [filterAnio, setFilterAnio] = useState('Todos');
   const [filterTipo, setFilterTipo] = useState<FiltroDeInstrumento>('Todos');
   const [filtroPeriodo, setFiltroPeriodo] = useState<FiltroPeriodoTipo>('TODOS');
@@ -76,6 +79,12 @@ export const ReportesPage = () => {
   const handleModalidadChange = (modalidad: string) => {
     setFilterModalidad(modalidad);
     setFilterNivel('Todos');
+    setFilterMonitor('Todos');
+  };
+
+  const handleNivelChange = (nivel: string) => {
+    setFilterNivel(nivel);
+    setFilterMonitor('Todos');
   };
 
   // ── Filtrado de Fichas Completadas (Backend con Fallback Local) ──
@@ -107,6 +116,7 @@ export const ReportesPage = () => {
         puntajeTotal: f.puntajeTotal ?? undefined,
         nivelLogro: f.nivelLogro ?? undefined,
         monitorId: f.especialistaId,
+        especialistaCargo: f.especialistaCargo,
         institucionId: f.institucionId,
         evaluadoId: f.evaluadoId,
         correoEnviado: f.correoEnviado,
@@ -124,6 +134,17 @@ export const ReportesPage = () => {
       ? reportesPropios(completadas, user)
       : reportesVisibles(completadas, user);
   }, [fichasCompletadasData, cronogramas, user, isEvaluatedView]);
+
+  // Monitores que aparecen en los datos, acotados por modalidad y nivel.
+  const monitoresDisponibles = useMemo(
+    () =>
+      monitoresDelReporte(completedVisits, (v) => {
+        if (filterModalidad !== 'Todos' && v.modalidad !== filterModalidad) return false;
+        if (filterNivel !== 'Todos' && v.nivel !== filterNivel) return false;
+        return true;
+      }),
+    [completedVisits, filterModalidad, filterNivel],
+  );
 
   const añosDisponibles = useMemo(() => {
     const yearsSet = new Set<string>();
@@ -190,6 +211,7 @@ export const ReportesPage = () => {
 
         if (filterModalidad !== 'Todos' && visit.modalidad !== filterModalidad) return false;
         if (filterNivel !== 'Todos' && visit.nivel !== filterNivel) return false;
+        if (filterMonitor !== 'Todos' && visit.monitorId !== filterMonitor) return false;
 
         if (filterAnio !== 'Todos') {
           let visitYear = '';
@@ -212,12 +234,13 @@ export const ReportesPage = () => {
         return true;
       })
       .sort((a, b) => new Date(b.fechaHora).getTime() - new Date(a.fechaHora).getTime());
-  }, [completedVisits, filtroPeriodo, filterTipo, searchQuery, filterModalidad, filterNivel, filterAnio]);
+  }, [completedVisits, filtroPeriodo, filterTipo, searchQuery, filterModalidad, filterNivel, filterMonitor, filterAnio]);
 
   const handleClearFilters = () => {
     setSearchQuery('');
     setFilterModalidad('Todos');
     setFilterNivel('Todos');
+    setFilterMonitor('Todos');
     setFilterAnio('Todos');
     setFilterTipo('Todos');
     setFiltroPeriodo('TODOS');
@@ -227,6 +250,7 @@ export const ReportesPage = () => {
     searchQuery !== '' ||
     filterModalidad !== 'Todos' ||
     filterNivel !== 'Todos' ||
+    filterMonitor !== 'Todos' ||
     filterAnio !== 'Todos' ||
     filterTipo !== 'Todos' ||
     filtroPeriodo !== 'TODOS';
@@ -321,7 +345,10 @@ export const ReportesPage = () => {
         filterModalidad={filterModalidad}
         setFilterModalidad={handleModalidadChange}
         filterNivel={filterNivel}
-        setFilterNivel={setFilterNivel}
+        setFilterNivel={handleNivelChange}
+        filterMonitor={filterMonitor}
+        setFilterMonitor={veSoloLoQueMonitoreo(user) ? undefined : setFilterMonitor}
+        monitoresDisponibles={monitoresDisponibles}
         filterAnio={filterAnio}
         setFilterAnio={setFilterAnio}
         filterTipo={filterTipo}

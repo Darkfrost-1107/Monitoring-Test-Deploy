@@ -15,6 +15,7 @@ export interface IReporteFicha {
   evaluadoTelefono?: string;
   especialistaId: string;
   especialistaNombre: string;
+  especialistaCargo?: string;
   /**
    * Instrumento con el que se llenó esta ficha.
    *

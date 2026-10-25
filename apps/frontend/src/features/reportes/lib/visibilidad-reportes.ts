@@ -71,6 +71,19 @@ export function reportesPropios<T extends ReporteVisible>(
 }
 
 /**
+ * ¿Quien mira ve solo lo que él mismo monitoreó?
+ *
+ * Es el caso de quien puede figurar como evaluador: los monitores de campo y el jefe
+ * de área, que se suma porque su cargo de especialista le concede `monitoreo:execute`.
+ * Sirve tanto para acotar sus reportes como para saber que un selector de «Monitor»
+ * no tiene nada que ofrecerle. Una sola definición, para que no diverjan.
+ */
+export const veSoloLoQueMonitoreo = (usuario: UsuarioDeReportes | null | undefined): boolean =>
+  !!usuario &&
+  ((MONITOR_CAMPO_ROLES as readonly string[]).includes(usuario.role) ||
+    usuario.role === RoleCode.JEFE_AREA);
+
+/**
  * Los reportes que corresponden a la vista de monitoreos **realizados**.
  *
  * Excluye siempre lo que evalúa al propio usuario —eso vive en «mis reportes»—
@@ -85,14 +98,7 @@ export function reportesVisibles<T extends ReporteVisible>(
 
   const ajenos = reportes.filter((r) => !evaluaAlUsuario(r, usuario));
 
-  // El jefe de área se suma a los monitores de campo porque su cargo de
-  // especialista le concede `monitoreo:execute` y puede quedar asignado a una
-  // visita, igual que ellos.
-  const esEvaluadorAsignable =
-    (MONITOR_CAMPO_ROLES as readonly string[]).includes(usuario.role) ||
-    usuario.role === RoleCode.JEFE_AREA;
-
-  if (esEvaluadorAsignable) {
+  if (veSoloLoQueMonitoreo(usuario)) {
     if (!usuario.especialistaId) return [];
     return ajenos.filter((r) => r.monitorId === usuario.especialistaId);
   }

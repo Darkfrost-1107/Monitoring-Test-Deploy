@@ -10,11 +10,13 @@
  * sostiene la evaluación —el nivel de logro— hacia lo que la cierra.
  */
 
+import { preguntaExtraPendiente } from './avance-ficha';
+
 /** Longitud a la que se recortan los nombres en los mensajes de falta. */
 const LARGO_MAXIMO_EN_LISTA = 45;
 
 export interface PlantillaValidable {
-  desempenos: readonly { id: string; nombre: string }[];
+  desempenos: readonly { id: string; nombre: string; preguntaExtra?: string }[];
   /** `numero` llega como número desde el contrato de plantilla. */
   ejesItems?: readonly { id: string; numero: string | number; descripcion: string }[];
   /** Decide si la ficha lleva planificación y diseño de evaluación. */
@@ -32,6 +34,8 @@ export interface ContextoAValidar {
 
 export interface RespuestasAValidar {
   selectedLevels: Record<string, string>;
+  /** Respuestas Sí/No de las preguntas extra, por desempeño. */
+  preguntaExtraAnswers?: Record<string, boolean>;
   rubricComments: Record<string, string>;
   observacionesEjeItem: Record<string, string>;
   generalComments: string;
@@ -61,6 +65,18 @@ export function validarCierreDeFicha(
   if (sinCalificar.length > 0) {
     return `Faltan calificar niveles. Por favor califique el nivel de logro para: \n${listar(
       sinCalificar.map((d) => recortar(d.nombre)),
+    )}`;
+  }
+
+  const sinResponder = plantilla.desempenos.filter((d) =>
+    preguntaExtraPendiente({
+      texto: d.preguntaExtra,
+      respuesta: respuestas.preguntaExtraAnswers?.[d.id],
+    }),
+  );
+  if (sinResponder.length > 0) {
+    return `Faltan responder preguntas Sí/No. Responda la pregunta extra de: \n${listar(
+      sinResponder.map((d) => recortar(d.nombre)),
     )}`;
   }
 

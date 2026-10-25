@@ -1,0 +1,59 @@
+  <div class="cierre">
+    <div class="seccion" style="margin-top:16px;">SUGERENCIAS Y COMPROMISOS:</div>
+    {{#if observaciones}}
+    <div class="etiqueta-caja">OBSERVACIONES GENERALES:</div>
+    <div class="caja"><div class="renglones">{{observaciones}}</div></div>
+    {{/if}}
+    <div class="etiqueta-caja">SUGERENCIAS:</div>
+    <div class="caja"><div class="renglones">{{sugerencias}}</div></div>
+    <div class="etiqueta-caja">COMPROMISOS:</div>
+    <div class="caja"><div class="renglones">{{compromisos}}</div></div>
+  </div>
+
+  <div class="bloque">
+    <div class="seccion" style="margin-top:12px;">CONSOLIDADO DE NIVELES DE LOGRO:</div>
+    <table class="consolidado">
+      <tr>
+        <td class="cab" style="width:14%">ASPECTOS</td>
+        {{#each consolidado.columnas}}<td class="cab">{{this.etiqueta}}</td>{{/each}}
+      </tr>
+      <tr>
+        <td class="cab">PUNTAJE</td>
+        {{#each consolidado.columnas}}<td>{{this.puntaje}}</td>{{/each}}
+      </tr>
+      <tr><td class="cab">TOTAL</td><td colspan="{{consolidado.columnas.length}}" class="negrita">{{consolidado.total}}</td></tr>
+      <tr><td class="cab">PROMEDIO</td><td colspan="{{consolidado.columnas.length}}" class="negrita" data-consolidado="promedio">{{consolidado.promedio}}</td></tr>
+      <tr><td class="cab">NIVEL DE LOGRO</td><td colspan="{{consolidado.columnas.length}}" class="negrita" data-consolidado="nivel">{{consolidado.nivel}}</td></tr>
+    </table>
+  </div>
+
+  <div class="bloque">
+    <div class="leyenda-titulo">LEYENDA</div>
+    <table class="leyenda">
+      <tr><th>TOTAL</th><th>PROMEDIO</th><th>NIVEL DE LOGRO ALCANZADO</th></tr>
+      {{#each leyenda}}<tr><td>{{this.total}}</td><td>{{this.promedio}}</td><td>{{this.nivel}}</td></tr>{{/each}}
+    </table>
+  </div>
+
+  {{#if evidencias.length}}
+  <div class="seccion" style="margin-top:14px;">EVIDENCIAS DEL MONITOREO:</div>
+  <div class="evidencias-fotos">
+    {{#each evidencias}}
+    <figure><img class="evidencia-img" src="{{this}}" alt="Evidencia"><figcaption>Evidencia {{increment @index}}</figcaption></figure>
+    {{/each}}
+  </div>
+  {{/if}}
+
+  <div class="firmas">
+    {{#each firmas}}
+    <div class="firma">
+      <div class="trazo">{{#if this.imagen}}<img class="firma-img" src="{{this.imagen}}" alt="Firma">{{/if}}</div>
+      <div class="linea">
+        <div class="rol">{{this.rol}}</div>
+        <div class="negrita">{{this.nombre}}</div>
+        <div class="fecha">Firmado el {{this.fecha}}</div>
+      </div>
+    </div>
+    {{/each}}
+  </div>
+

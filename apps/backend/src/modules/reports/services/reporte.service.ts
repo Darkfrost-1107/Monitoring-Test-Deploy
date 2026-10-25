@@ -11,6 +11,13 @@ import * as path from 'path';
 
 import { normalizarFiltrosDeReporte } from './filtros-de-reporte.helper.js';
 import { PdfGeneratorService } from './pdf-generator.service.js';
+import {
+  construirFichaOficialDocente,
+  type FichaOficialRaw,
+} from './ficha-oficial-docente.builder.js';
+import { construirFichaOficialDirectivo } from './ficha-oficial-directivo.builder.js';
+import { construirFichaOficialEib } from './ficha-oficial-eib.builder.js';
+import { completarImagenes } from './ficha-oficial-docente.imagenes.js';
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import { MailerService } from '../../../shared/mailer/mailer.service.js';
 
@@ -91,6 +98,28 @@ export class ReporteService {
     const f = await this.repository.findFichaByIdParaExport(id, session);
     if (!f) throw new NotFoundException(`Ficha ${id} no encontrada o sin acceso.`);
 
+    // Las fichas docente, directiva y EIB se imprimen en el formulario oficial de la UGEL. Los demás
+    // instrumentos conservan por ahora su plantilla.
+    if (f.instrumento === 'DOCENTE') {
+      return this.exportarFichaOficial(
+        id,
+        session,
+        'ficha-docente-oficial',
+        construirFichaOficialDocente,
+      );
+    }
+    if (f.instrumento === 'DIRECTIVO') {
+      return this.exportarFichaOficial(
+        id,
+        session,
+        'ficha-directivo-oficial',
+        construirFichaOficialDirectivo,
+      );
+    }
+    if (f.instrumento === 'DOCENTE_EIB') {
+      return this.exportarFichaOficial(id, session, 'ficha-eib-oficial', construirFichaOficialEib);
+    }
+
     // Mapear al modelo que espera Handlebars
     const data = {
       ficha: {
@@ -153,6 +182,19 @@ export class ReporteService {
     };
 
     return this.pdfGenerator.generatePdfFromTemplate('ficha-report', data);
+  }
+
+  private async exportarFichaOficial(
+    id: string,
+    session: SessionScope,
+    plantilla: string,
+    construir: (raw: FichaOficialRaw) => object,
+  ): Promise<Buffer> {
+    const persistida = await this.repository.findFichaOficial(id, session);
+    if (!persistida) throw new NotFoundException(`Ficha ${id} no encontrada o sin acceso.`);
+
+    const ficha = construir(await completarImagenes(persistida));
+    return this.pdfGenerator.generatePdfFromTemplate(plantilla, ficha);
   }
 
   private renderHtml(f: IReporteFicha): string {

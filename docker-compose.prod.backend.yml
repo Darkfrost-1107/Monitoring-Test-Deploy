@@ -14,6 +14,15 @@ services:
     networks:
       - monitoring-network
 
+  gotenberg:
+    image: gotenberg/gotenberg:8
+    container_name: monitoring-gotenberg-prod
+    restart: unless-stopped
+    expose:
+      - '3000'
+    networks:
+      - monitoring-network
+
   backend:
     build:
       context: .
@@ -22,6 +31,7 @@ services:
     restart: unless-stopped
     depends_on:
       - postgres
+      - gotenberg
     environment:
       - NODE_ENV=production
       - PORT=3000
@@ -38,6 +48,7 @@ services:
       - SMTP_PASS=${SMTP_PASS}
       - SMTP_TLS_INSECURE=${SMTP_TLS_INSECURE:-false}
       - EMAIL_FROM=${EMAIL_FROM}
+      - GOTENBERG_URL=http://gotenberg:3000
     expose:
       - '3000'
     volumes:

@@ -20,5 +20,12 @@ services:
       - '1025:1025' # SMTP server
       - '8025:8025' # Web UI
 
+  gotenberg:
+    image: gotenberg/gotenberg:8
+    container_name: monitoring-gotenberg
+    restart: always
+    ports:
+      - '3001:3000'
+
 volumes:
   postgres_data:

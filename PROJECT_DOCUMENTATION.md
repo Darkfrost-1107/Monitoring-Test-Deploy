@@ -1780,7 +1780,7 @@ Existen datos históricos en Excel que deben migrarse al sistema. No hay un proc
 - Agregar **mecanismo de caché** (Redis) para tokens de refresh y consultas frecuentes
 - Implementar **refresh programado** de la vista materializada mensual
 - **Diseñar una estrategia offline:** Service Workers + IndexedDB para caché local de catálogos y fichas, con cola de sincronización al recuperar conexión. Esto es prioritario porque los especialistas usan el sistema desde celular/tablet en campo y llenan fichas directamente en digital.
-- **Implementar exportación a PDF** de fichas y reportes (librería como Puppeteer, jsPDF o similar)
+- **Implementar exportación a PDF** de fichas y reportes (servicio Gotenberg)
 - **Crear proceso de migración** de datos históricos desde Excel
 - **Definir entornos** (staging, producción) y un pipeline CI/CD antes del despliegue real
 

@@ -1,0 +1,10 @@
+    /* ── Envoltura: el banner vive en el thead y el navegador lo repite en cada página ── */
+    .envoltura, .envoltura > thead > tr > td, .envoltura > tbody > tr > td { border: none; padding: 0; }
+    .envoltura > tbody > tr { break-inside: auto; }
+    thead { display: table-header-group; }
+    .banner { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .banner-izquierda { height: 44px; width: auto; }
+    .banner .logos { display: flex; align-items: center; gap: 14px; }
+    .banner .logo { height: 40px; width: auto; }
+    .banner-derecha { height: 44px; width: auto; }
+    .lema { margin: 2px 0 6px; text-align: center; font-style: italic; font-size: 12px; }
