@@ -10,6 +10,7 @@ import { PrismaTeachersRepository } from './repositories/prisma-teachers.reposit
 import { DocentesCargosRepository } from './repositories/docentes-cargos.repository.js';
 import { PrismaDocentesCargosRepository } from './repositories/prisma-docentes-cargos.repository.js';
 import { CargoCompatibilityService } from './services/cargo-compatibility.service.js';
+import { RestablecerContrasenaService } from './services/restablecer-contrasena.service.js';
 import { CatalogsModule } from '../catalogs/catalogs.module.js';
 
 @Module({
@@ -17,6 +18,7 @@ import { CatalogsModule } from '../catalogs/catalogs.module.js';
   controllers: [TeachersController, DocentesCargosController],
   providers: [
     TeachersService,
+    RestablecerContrasenaService,
     DocentesCargosService,
     CargoCompatibilityService,
     {

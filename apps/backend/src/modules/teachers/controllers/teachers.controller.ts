@@ -13,6 +13,11 @@ import {
 } from '@nestjs/common';
 import { TeachersService } from '../services/teachers.service.js';
 import { CreateDocenteDto } from '../dto/create-docente.dto.js';
+import { Capability } from '@sistema-monitoreo/shared-contracts';
+import {
+  RestablecerContrasenaResponse,
+  RestablecerContrasenaService,
+} from '../services/restablecer-contrasena.service.js';
 import { UpdateDocenteDto } from '../dto/update-docente.dto.js';
 import { AuthGuard } from '../../auth/guards/auth.guard.js';
 import { PermissionsGuard } from '../../auth/guards/permissions.guard.js';
@@ -28,7 +33,10 @@ interface AuthenticatedRequest extends Request {
 @Controller('docentes')
 @UseGuards(AuthGuard, PermissionsGuard)
 export class TeachersController {
-  constructor(private readonly teachersService: TeachersService) {}
+  constructor(
+    private readonly teachersService: TeachersService,
+    private readonly restablecerContrasenaService: RestablecerContrasenaService,
+  ) {}
 
   @Post()
   @RequirePermissions('docentes:write')
@@ -118,6 +126,19 @@ export class TeachersController {
     };
   }> {
     return this.teachersService.altaDocente(id, req.user);
+  }
+
+  @Post(':id/restablecer-contrasena')
+  @RequirePermissions(Capability.PERSONAL_RESTABLECER_CONTRASENA)
+  @HttpCode(HttpStatus.OK)
+  async restablecerContrasena(
+    @Param('id') id: string,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<RestablecerContrasenaResponse> {
+    return this.restablecerContrasenaService.restablecer(id, req.user, {
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
   }
 
   @Get(':evaluadorId/asignaciones')

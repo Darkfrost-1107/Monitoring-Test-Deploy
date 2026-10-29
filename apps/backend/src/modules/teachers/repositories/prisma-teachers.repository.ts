@@ -8,8 +8,11 @@ import {
   AsignacionConflicto,
   DocenteEntity,
   DocenteFilter,
+  RestablecerContrasenaData,
   TeachersRepository,
+  UsuarioDePersona,
 } from './teachers.repository.js';
+import { findUsuarioPorPersonaId, restablecerContrasena } from './docente-contrasena.helper.js';
 import { findDocenteById, findDocentes, findPersonaByDni } from './docente-read.helper.js';
 import { updateDocenteEstado, bajaDirector } from './docente-update-estado.helper.js';
 import { createDocenteWithTransaction } from './docente-create.helper.js';
@@ -144,5 +147,13 @@ export class PrismaTeachersRepository implements TeachersRepository {
         },
       },
     });
+  }
+
+  async findUsuarioPorPersonaId(personaId: string): Promise<UsuarioDePersona | null> {
+    return findUsuarioPorPersonaId(this.prisma, personaId);
+  }
+
+  async restablecerContrasena(data: RestablecerContrasenaData): Promise<void> {
+    return restablecerContrasena(this.prisma, data);
   }
 }

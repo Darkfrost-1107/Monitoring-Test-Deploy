@@ -62,6 +62,23 @@ export interface DocenteFilter {
   especialistaNivel?: string;
 }
 
+export interface UsuarioDePersona {
+  id: string;
+  rolCodigo: string;
+}
+
+export interface RestablecerContrasenaData {
+  usuarioId: string;
+  passwordHash: string;
+  auditoria: {
+    actorUsuarioId: string;
+    eventType: string;
+    eventDetail: string;
+    ipAddress?: string;
+    userAgent?: string;
+  };
+}
+
 export abstract class TeachersRepository {
   abstract findDocenteById(id: string): Promise<DocenteEntity | null>;
   abstract findDocentes(filter?: DocenteFilter): Promise<DocenteEntity[]>;
@@ -86,4 +103,11 @@ export abstract class TeachersRepository {
     evaluadorId: string,
     evaluadoIds: string[],
   ): Promise<AsignacionConflicto[]>;
+  abstract findUsuarioPorPersonaId(personaId: string): Promise<UsuarioDePersona | null>;
+  /**
+   * Fija la clave, deja al usuario en primer ingreso, lo desbloquea, cierra sus
+   * sesiones, anula sus tokens de recuperación pendientes y deja la auditoría,
+   * todo en una sola transacción.
+   */
+  abstract restablecerContrasena(data: RestablecerContrasenaData): Promise<void>;
 }
