@@ -6,6 +6,10 @@ import { useEntityTable } from '@shared/hooks/useEntityTable';
 import { EntityTable } from '@shared/ui/EntityTable';
 import { ConfirmModal } from '@shared/ui/ConfirmModal';
 import { TableHead } from '@shared/ui/table';
+import { Capability } from '@sistema-monitoreo/shared-contracts';
+import { useCan } from '@shared/auth/use-can';
+import { useUser } from '@entities/model-user';
+import { ModalRestablecerContrasena } from '@features/docentes/ui/ModalRestablecerContrasena';
 import { teachersApi } from '@shared/api/teachers.api';
 import { hoyISO } from '@shared/lib/fecha/fecha';
 import {
@@ -16,6 +20,7 @@ import {
 } from '@features/docentes/lib/padron-docentes';
 import { FilaDeDocente } from './FilaDeDocente';
 import { ModalAsignarEvaluados } from './ModalAsignarEvaluados';
+import { puedeRestablecerContrasena } from './puede-restablecer-contrasena';
 
 /**
  * Padrón de docentes, reutilizado por las seis pantallas de personal.
@@ -56,11 +61,15 @@ export const DocentesTableWidget = ({
   itemName = 'directores/docentes',
 }: DocentesTableWidgetProps) => {
   const navigate = useNavigate();
+  const { can } = useCan();
+  const { user } = useUser();
+  const tieneCapacidad = can(Capability.PERSONAL_RESTABLECER_CONTRASENA);
 
   const [aDesactivar, setADesactivar] = useState<Docente | null>(null);
   const [aReactivar, setAReactivar] = useState<Docente | null>(null);
   const [aFinalizar, setAFinalizar] = useState<Docente | null>(null);
   const [aAsignar, setAAsignar] = useState<Docente | null>(null);
+  const [aRestablecer, setARestablecer] = useState<Docente | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const filtro = useMemo(() => filtroDelPadron(targetCargo), [targetCargo]);
@@ -219,6 +228,14 @@ export const DocentesTableWidget = ({
                   (targetCargo === 'Coordinador Pedagógico' || targetCargo === 'Jefe de Taller')
                     ? () => setAAsignar(docente)
                     : undefined,
+                onRestablecerContrasena: puedeRestablecerContrasena({
+                  tieneCapacidad,
+                  miDocenteId: user?.docenteId,
+                  docenteId: docente.id,
+                  activo: docente.activo,
+                })
+                  ? () => setARestablecer(docente)
+                  : undefined,
                 rotuloFinalizar: esDesignacion
                   ? `Finalizar Cargo de ${targetCargo}`
                   : 'Desactivar docente',
@@ -261,6 +278,10 @@ export const DocentesTableWidget = ({
           onConfirm={confirmarFinalizacion}
           onCancel={() => setAFinalizar(null)}
         />
+      )}
+
+      {aRestablecer && (
+        <ModalRestablecerContrasena docente={aRestablecer} onClose={() => setARestablecer(null)} />
       )}
 
       {aAsignar && (

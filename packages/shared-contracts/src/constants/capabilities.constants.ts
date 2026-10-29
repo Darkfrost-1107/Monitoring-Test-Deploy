@@ -74,6 +74,13 @@ export const Capability = {
   SOLICITUDES_PLANTILLA_SOLICITAR: 'solicitudes_plantilla:solicitar',
   /** Aprobar o rechazar los pedidos de plantilla de las instituciones. */
   SOLICITUDES_PLANTILLA_GESTIONAR: 'solicitudes_plantilla:gestionar',
+  /**
+   * Restablecer a su DNI la contraseña del personal de la propia institución.
+   *
+   * Sólo el director de la I.E. El alcance (misma institución, nunca uno mismo,
+   * nunca otro directivo ni roles de la UGEL) lo impone el servicio.
+   */
+  PERSONAL_RESTABLECER_CONTRASENA: 'personal:restablecer_contrasena',
 } as const;
 
 export type Capability = (typeof Capability)[keyof typeof Capability];
@@ -101,6 +108,7 @@ export const CAPABILITY_LABELS: Record<Capability, string> = {
   [Capability.CARPETA_PEDAGOGICA_READ]: 'Ver carpetas pedagógicas',
   [Capability.SOLICITUDES_PLANTILLA_SOLICITAR]: 'Solicitar plantillas propias',
   [Capability.SOLICITUDES_PLANTILLA_GESTIONAR]: 'Aprobar solicitudes de plantilla',
+  [Capability.PERSONAL_RESTABLECER_CONTRASENA]: 'Restablecer contraseña del personal',
 };
 
 /** Verifica en tiempo de ejecución que una cadena sea una capacidad conocida. */

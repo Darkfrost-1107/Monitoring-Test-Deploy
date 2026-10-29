@@ -16,6 +16,8 @@ export interface AccionesDeFila {
   onReactivar?: () => void;
   onFinalizar?: () => void;
   onAsignar?: () => void;
+  /** Sólo se ofrece a quien tiene la capacidad y sobre la fila de otra persona. */
+  onRestablecerContrasena?: () => void;
   /** Rótulo del botón de baja: depende de si el cargo se finaliza o el docente se desactiva. */
   rotuloFinalizar: string;
 }
@@ -80,6 +82,7 @@ export const FilaDeDocente = ({ docente, cargoFinalizado, acciones }: Props) => 
         onRestore={acciones.onReactivar}
         onFinalize={acciones.onFinalizar}
         onAssign={acciones.onAsignar}
+        onResetPassword={acciones.onRestablecerContrasena}
         viewTitle="Ver ficha"
         restoreTitle="Reactivar docente"
         finalizeTitle={acciones.rotuloFinalizar}
