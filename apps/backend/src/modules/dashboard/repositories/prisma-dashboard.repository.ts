@@ -21,6 +21,7 @@ import { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import { ScopeFilter, ScopeContext } from '../../../shared/auth/scope-filter.js';
 import { DashboardRepository, SessionScope } from './dashboard.repository.js';
 import { esDirectorEnEjercicio } from './cargo-del-evaluado.js';
+import { CargoNombre } from '../../../common/enums/cargo.enum.js';
 
 /** Cuántos monitoreos recientes devuelve el dashboard. */
 const RECIENTES_LIMIT = 5;
@@ -259,7 +260,7 @@ export class PrismaDashboardRepository implements DashboardRepository {
                 // La designación abierta de Director. Es lo que dice qué cargo ocupa
                 // la persona; el tipo de ficha sólo dice con qué se la evaluó.
                 docenteCargos: {
-                  where: { fechaFin: null, cargo: { nombre: 'Director' } },
+                  where: { fechaFin: null, cargo: { nombre: CargoNombre.DIRECTOR } },
                   select: { id: true },
                   take: 1,
                 },
@@ -701,7 +702,7 @@ export class PrismaDashboardRepository implements DashboardRepository {
         this.prisma.docente.findFirst({
           where: {
             institucionId,
-            docenteCargos: { some: { cargo: { nombre: 'Director' }, fechaFin: null } },
+            docenteCargos: { some: { cargo: { nombre: CargoNombre.DIRECTOR }, fechaFin: null } },
           },
           select: { persona: { select: { nombres: true, apellidos: true } } },
         }),
@@ -747,7 +748,7 @@ export class PrismaDashboardRepository implements DashboardRepository {
                     // La designación abierta de Director. Es lo que dice qué cargo ocupa
                     // la persona; el tipo de ficha sólo dice con qué se la evaluó.
                     docenteCargos: {
-                      where: { fechaFin: null, cargo: { nombre: 'Director' } },
+                      where: { fechaFin: null, cargo: { nombre: CargoNombre.DIRECTOR } },
                       select: { id: true },
                       take: 1,
                     },

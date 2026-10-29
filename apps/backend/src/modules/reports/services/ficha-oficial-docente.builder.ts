@@ -1,3 +1,4 @@
+import { CargoNombre } from '../../../common/enums/cargo.enum.js';
 /**
  * Ficha oficial de monitoreo al docente, lista para pintar.
  *
@@ -13,8 +14,11 @@
 const NIVELES_ROMANOS = ['I', 'II', 'III', 'IV'] as const;
 
 const CARGO_DREP = 'DREP';
-const CARGO_DIRECTOR = 'Director';
-const CARGOS_DE_COORDINACION = ['Coordinador Pedagógico', 'Jefe de Taller'];
+const CARGO_DIRECTOR: string = CargoNombre.DIRECTOR;
+const CARGOS_DE_COORDINACION: string[] = [
+  CargoNombre.COORDINADOR_PEDAGOGICO,
+  CargoNombre.JEFE_TALLER,
+];
 
 const ASPECTOS_EN_LETRAS = [
   '',

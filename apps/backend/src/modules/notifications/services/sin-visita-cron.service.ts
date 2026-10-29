@@ -3,6 +3,8 @@ import { ConfigService } from '@nestjs/config';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import { NotificationsService } from './notifications.service.js';
+import { CargoNombre } from '../../../common/enums/cargo.enum.js';
+import { RoleCode } from '../../../common/enums/role.enum.js';
 
 const DIA_MS = 24 * 60 * 60 * 1000;
 const DIAS_DEFAULT = 90;
@@ -36,8 +38,8 @@ export class SinVisitaCronService {
 
     // Destinatarios de supervisión (comunes a todas): jefe_gestion + director_ugel.
     const supervisores = [
-      ...(await this.usuariosDeRol('jefe_gestion')),
-      ...(await this.usuariosDeRol('director_ugel')),
+      ...(await this.usuariosDeRol(RoleCode.JEFE_GESTION)),
+      ...(await this.usuariosDeRol(RoleCode.DIRECTOR_UGEL)),
     ];
 
     let alertadas = 0;
@@ -95,7 +97,7 @@ export class SinVisitaCronService {
     const docente = await this.prisma.docente.findFirst({
       where: {
         institucionId,
-        docenteCargos: { some: { cargo: { nombre: 'Director' }, fechaFin: null } },
+        docenteCargos: { some: { cargo: { nombre: CargoNombre.DIRECTOR }, fechaFin: null } },
       },
       select: {
         persona: { select: { correo: true, usuario: { select: { id: true } } } },

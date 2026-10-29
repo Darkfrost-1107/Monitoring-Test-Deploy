@@ -11,6 +11,8 @@ import { MailerService } from '../../../shared/mailer/mailer.service.js';
 import { CrearAlertaDistritoDto, CrearAlertaInstitucionDto } from '../dto/crear-alerta.dto.js';
 import { RoleCode } from '../../../common/enums/role.enum.js';
 import { separarAutonotificacion } from './autonotificacion.helper.js';
+import { CargoNombre } from '../../../common/enums/cargo.enum.js';
+import { DESTINATARIO_ALERTA } from '../constants/destinatario-alerta.js';
 
 /** Destinatario de notificación resuelto (usuario + su correo para el canal best-effort). */
 type NotifRecipient = { usuarioId: string; correo?: string | null };
@@ -87,7 +89,7 @@ export class NotificationsService {
           inApp: false,
           email: false,
           motivo:
-            rol === 'director_ie'
+            rol === DESTINATARIO_ALERTA.DIRECTOR_IE
               ? 'La IE no tiene Director registrado.'
               : 'No hay Responsable de Nivel del nivel de la IE.',
         });
@@ -598,7 +600,7 @@ export class NotificationsService {
 
   private async getJefesGestion(): Promise<NotifRecipient[]> {
     const jefes = await this.prisma.usuario.findMany({
-      where: { rol: { codigo: 'jefe_gestion' }, isActive: true },
+      where: { rol: { codigo: RoleCode.JEFE_GESTION }, isActive: true },
       select: { id: true, persona: { select: { correo: true } } },
     });
     return jefes.map((j) => ({ usuarioId: j.id, correo: j.persona?.correo }));
@@ -607,7 +609,7 @@ export class NotificationsService {
   private async getJefesArea(nivelEducativo: string | null): Promise<NotifRecipient[]> {
     if (!nivelEducativo) return [];
     const jefesArea = await this.prisma.especialista.findMany({
-      where: { cargo: 'Jefe de Área', nivelEducativo, estado: 'Activo' },
+      where: { cargo: CargoNombre.JEFE_AREA, nivelEducativo, estado: 'Activo' },
       select: { persona: { select: { correo: true, usuario: { select: { id: true } } } } },
     });
     return jefesArea.flatMap((ja) => {
@@ -621,7 +623,7 @@ export class NotificationsService {
     const dir = await this.prisma.docente.findFirst({
       where: {
         institucionId,
-        docenteCargos: { some: { cargo: { nombre: 'Director' }, fechaFin: null } },
+        docenteCargos: { some: { cargo: { nombre: CargoNombre.DIRECTOR }, fechaFin: null } },
       },
       select: { persona: { select: { correo: true, usuario: { select: { id: true } } } } },
     });
@@ -645,11 +647,11 @@ export class NotificationsService {
     institucionId: string,
     nivelEducativo: string | null,
   ): Promise<Destinatario[]> {
-    if (rol === 'director_ie') {
+    if (rol === DESTINATARIO_ALERTA.DIRECTOR_IE) {
       const docente = await this.prisma.docente.findFirst({
         where: {
           institucionId,
-          docenteCargos: { some: { cargo: { nombre: 'Director' }, fechaFin: null } },
+          docenteCargos: { some: { cargo: { nombre: CargoNombre.DIRECTOR }, fechaFin: null } },
         },
         select: {
           id: true,
@@ -679,7 +681,7 @@ export class NotificationsService {
     // jefe_area: Jefe(s) de Área del nivel educativo de la IE.
     if (!nivelEducativo) return [];
     const jefesArea = await this.prisma.especialista.findMany({
-      where: { cargo: 'Jefe de Área', nivelEducativo, estado: 'Activo' },
+      where: { cargo: CargoNombre.JEFE_AREA, nivelEducativo, estado: 'Activo' },
       select: {
         persona: {
           select: {

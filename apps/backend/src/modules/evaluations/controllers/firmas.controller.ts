@@ -43,6 +43,7 @@ import {
   type PartesDeLaVisita,
   type RolFirmante,
 } from '../services/firmas.helper.js';
+import { CargoNombre } from '../../../common/enums/cargo.enum.js';
 
 /**
  * Firmas estampadas en las fichas de monitoreo.
@@ -125,7 +126,9 @@ export class FirmasController {
               select: {
                 docentes: {
                   where: {
-                    docenteCargos: { some: { cargo: { nombre: 'Director' }, fechaFin: null } },
+                    docenteCargos: {
+                      some: { cargo: { nombre: CargoNombre.DIRECTOR }, fechaFin: null },
+                    },
                   },
                   select: { personaId: true },
                   take: 1,

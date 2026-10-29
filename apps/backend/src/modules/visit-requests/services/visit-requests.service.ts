@@ -11,6 +11,7 @@ import {
   ResolverSolicitudVisitaDto,
 } from '../dto/crear-solicitud-visita.dto.js';
 import { aFechaDeCalendario } from '../../../common/utils/fecha-calendario.js';
+import { RoleCode } from '../../../common/enums/role.enum.js';
 
 type SolicitudRow = {
   id: string;
@@ -86,7 +87,7 @@ export class VisitRequestsService {
     });
 
     // Notificar al Jefe de Gestión (in-app + correo best-effort).
-    const jefes = await this.usuariosDeRol('jefe_gestion');
+    const jefes = await this.usuariosDeRol(RoleCode.JEFE_GESTION);
     if (jefes.length > 0) {
       const prioridadTxt = creada.prioridad === 'ALTA' ? 'PRIORITARIA' : 'normal';
       const objetivo = docenteNombre

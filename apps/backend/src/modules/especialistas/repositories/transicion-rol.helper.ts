@@ -4,6 +4,7 @@ import { CreateEspecialistaDto } from '../dto/create-especialista.dto.js';
 import { EstadoRegistro } from '../../../common/enums/estado.enum.js';
 import { CondicionLaboral } from '../../../common/enums/condicion-laboral.enum.js';
 import { mapEspecialista } from './especialista-mapper.helper.js';
+import { CargoNombre } from '../../../common/enums/cargo.enum.js';
 
 export async function transicionDocenteAEspecialista(
   prisma: PrismaService,
@@ -12,11 +13,11 @@ export async function transicionDocenteAEspecialista(
   rolEspecialistaId: string,
 ) {
   return prisma.$transaction(async (tx) => {
-    if (dto.cargo === 'Jefe de Área') {
+    if (dto.cargo === CargoNombre.JEFE_AREA) {
       const existingJefe = await tx.especialista.findFirst({
         where: {
           nivelEducativo: dto.nivelEducativo,
-          cargo: 'Jefe de Área',
+          cargo: CargoNombre.JEFE_AREA,
           estado: EstadoRegistro.ACTIVO,
           personaId: { not: personaId },
         },
