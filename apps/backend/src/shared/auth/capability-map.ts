@@ -23,22 +23,25 @@
  */
 
 import { RoleCode } from '../../common/enums/role.enum.js';
+import { CargoNombre as Cargo } from '../../common/enums/cargo.enum.js';
 import { Capability } from '@sistema-monitoreo/shared-contracts';
 
+// Los valores viven en `common/enums/cargo.enum.ts` (fuente canónica); aquí sólo se
+// expone el subconjunto de cargos de docente con los nombres históricos de sus miembros.
 export const CargoNombre = {
-  DIRECTOR: 'Director',
-  SUBDIRECTOR: 'Subdirector',
-  COORDINADOR_PEDAGOGICO: 'Coordinador Pedagógico',
-  JEFE_DE_TALLER: 'Jefe de Taller',
-  DOCENTE_DE_AULA: 'Docente de Aula',
-  PIP: 'PIP',
+  DIRECTOR: Cargo.DIRECTOR,
+  SUBDIRECTOR: Cargo.SUBDIRECTOR,
+  COORDINADOR_PEDAGOGICO: Cargo.COORDINADOR_PEDAGOGICO,
+  JEFE_DE_TALLER: Cargo.JEFE_TALLER,
+  DOCENTE_DE_AULA: Cargo.DOCENTE_AULA,
+  PIP: Cargo.PIP,
 } as const;
 export type CargoNombre = (typeof CargoNombre)[keyof typeof CargoNombre];
 
 export const EspecialistaCargoEnum = {
-  ESPECIALISTA: 'Especialista',
-  JEFE_AREA: 'Jefe de Área',
-  JEFE_GESTION: 'Jefe de Gestión',
+  ESPECIALISTA: Cargo.ESPECIALISTA,
+  JEFE_AREA: Cargo.JEFE_AREA,
+  JEFE_GESTION: Cargo.JEFE_GESTION,
 } as const;
 export type EspecialistaCargoEnum =
   (typeof EspecialistaCargoEnum)[keyof typeof EspecialistaCargoEnum];

@@ -10,6 +10,7 @@ import {
   syncEspecialista,
   resolveRoleCode,
 } from './docente-shared.helper.js';
+import { CargoNombre } from '../../../common/enums/cargo.enum.js';
 
 const DOCENTE_INCLUDE = {
   persona: true,
@@ -29,7 +30,7 @@ export async function updateDocenteWithTransaction(
   return prisma.$transaction(async (tx) => {
     const cargo = await tx.cargo.findUnique({ where: { id: dto.cargoId } });
 
-    if (cargo?.nombre === 'Director') {
+    if (cargo?.nombre === CargoNombre.DIRECTOR) {
       const targetInstitucionId =
         dto.institucionId || (await tx.docente.findUnique({ where: { id } }))?.institucionId;
       if (targetInstitucionId) {

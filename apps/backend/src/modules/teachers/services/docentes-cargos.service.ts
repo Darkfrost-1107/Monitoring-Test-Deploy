@@ -3,6 +3,7 @@ import { CargoCompatibilityService } from './cargo-compatibility.service.js';
 import { SessionRepository } from '../../auth/repositories/session.repository.js';
 import { CargoNombre, resolvePrincipalCargo } from '../../../shared/auth/capability-map.js';
 import { DocentesCargosRepository } from '../repositories/docentes-cargos.repository.js';
+import { RoleCode } from '../../../common/enums/role.enum.js';
 
 /**
  * Servicio de gestion de cargos del docente.
@@ -118,7 +119,11 @@ export class DocentesCargosService {
         : null;
 
     // Resolver side effects para cargos de monitor
-    const MONITOR_CARGOS = ['Director', 'Coordinador Pedagógico', 'Jefe de Taller'];
+    const MONITOR_CARGOS: string[] = [
+      CargoNombre.DIRECTOR,
+      CargoNombre.COORDINADOR_PEDAGOGICO,
+      CargoNombre.JEFE_DE_TALLER,
+    ];
     let roleUpdate: { usuarioId: string; roleCodigo: string } | null = null;
     let especialistaUpdate: { especialistaId: string; cargo: string; estado: string } | null = null;
     let monitorEspecialistaId: string | null = null;
@@ -141,7 +146,7 @@ export class DocentesCargosService {
         docenteUpdate = { estado: 'Inactivo', institucionId: null };
 
         if (docenteInfo.usuarioId) {
-          roleUpdate = { usuarioId: docenteInfo.usuarioId, roleCodigo: 'docente' };
+          roleUpdate = { usuarioId: docenteInfo.usuarioId, roleCodigo: RoleCode.DOCENTE };
         }
         if (docenteInfo.especialistaId) {
           especialistaUpdate = {
@@ -152,17 +157,17 @@ export class DocentesCargosService {
           monitorEspecialistaId = docenteInfo.especialistaId;
         }
       } else {
-        let targetRole = 'docente';
+        let targetRole: string = RoleCode.DOCENTE;
         let highestCargo = '';
-        if (remainingMonitors.includes('Director')) {
-          targetRole = 'director_institucion';
-          highestCargo = 'Director';
-        } else if (remainingMonitors.includes('Coordinador Pedagógico')) {
-          targetRole = 'coordinador_pedagogico';
-          highestCargo = 'Coordinador Pedagógico';
-        } else if (remainingMonitors.includes('Jefe de Taller')) {
-          targetRole = 'jefe_taller';
-          highestCargo = 'Jefe de Taller';
+        if (remainingMonitors.includes(CargoNombre.DIRECTOR)) {
+          targetRole = RoleCode.DIRECTOR_INSTITUCION;
+          highestCargo = CargoNombre.DIRECTOR;
+        } else if (remainingMonitors.includes(CargoNombre.COORDINADOR_PEDAGOGICO)) {
+          targetRole = RoleCode.COORDINADOR_PEDAGOGICO;
+          highestCargo = CargoNombre.COORDINADOR_PEDAGOGICO;
+        } else if (remainingMonitors.includes(CargoNombre.JEFE_DE_TALLER)) {
+          targetRole = RoleCode.JEFE_TALLER;
+          highestCargo = CargoNombre.JEFE_DE_TALLER;
         }
 
         if (docenteInfo.usuarioId) {

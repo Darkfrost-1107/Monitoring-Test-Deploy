@@ -1,5 +1,6 @@
 import type { Prisma } from '../../../generated/prisma/client.js';
 import { Institucion } from '../entities/institucion.entity.js';
+import { CargoNombre } from '../../../common/enums/cargo.enum.js';
 
 type InstitucionWithDirector = Prisma.InstitucionEducativaGetPayload<{
   include: {
@@ -29,7 +30,7 @@ export function mapInstitucion(record: InstitucionWithDirector | null): Instituc
   if (!record) return record as unknown as Institucion;
 
   const directorDocente = record.docentes?.find((d) =>
-    d.docenteCargos?.some((dc) => dc.cargo?.nombre === 'Director' && !dc.fechaFin),
+    d.docenteCargos?.some((dc) => dc.cargo?.nombre === CargoNombre.DIRECTOR && !dc.fechaFin),
   );
 
   return {

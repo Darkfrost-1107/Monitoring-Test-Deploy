@@ -2,6 +2,7 @@ import type { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import type { DocenteFilter } from './teachers.repository.js';
 import { mapDocente } from './docente-mapper.helper.js';
 import type { Prisma } from '../../../generated/prisma/client.js';
+import { CargoNombre } from '../../../common/enums/cargo.enum.js';
 
 const DOCENTE_INCLUDE = {
   persona: true,
@@ -105,10 +106,10 @@ export async function findPersonaByDni(prisma: PrismaService, dni: string) {
   if (!persona) return null;
 
   const docenteCargosActivos = persona.docente?.docenteCargos?.map((dc) => dc.cargo.nombre) ?? [];
-  const esDirector = docenteCargosActivos.includes('Director');
-  const esCoordinadorPedagogico = docenteCargosActivos.includes('Coordinador Pedagógico');
-  const esJefeTaller = docenteCargosActivos.includes('Jefe de Taller');
-  const esDocenteAula = docenteCargosActivos.includes('Docente de Aula');
+  const esDirector = docenteCargosActivos.includes(CargoNombre.DIRECTOR);
+  const esCoordinadorPedagogico = docenteCargosActivos.includes(CargoNombre.COORDINADOR_PEDAGOGICO);
+  const esJefeTaller = docenteCargosActivos.includes(CargoNombre.JEFE_TALLER);
+  const esDocenteAula = docenteCargosActivos.includes(CargoNombre.DOCENTE_AULA);
 
   const especialistaCargoActivo =
     persona.especialista?.cargos?.[0]?.cargo ?? persona.especialista?.cargo ?? null;

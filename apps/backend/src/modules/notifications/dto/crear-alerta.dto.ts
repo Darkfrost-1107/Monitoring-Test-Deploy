@@ -13,6 +13,7 @@ import type {
   ICrearAlertaDistritoRequest,
   ICrearAlertaInstitucionRequest,
 } from '@sistema-monitoreo/shared-contracts';
+import { DESTINATARIO_ALERTA } from '../constants/destinatario-alerta.js';
 
 export class CrearAlertaInstitucionDto implements ICrearAlertaInstitucionRequest {
   @IsUUID()
@@ -29,7 +30,7 @@ export class CrearAlertaInstitucionDto implements ICrearAlertaInstitucionRequest
 
   @IsArray()
   @ArrayNotEmpty({ message: 'Debe indicar al menos un destinatario' })
-  @IsIn(['director_ie', 'jefe_area'], { each: true })
+  @IsIn(Object.values(DESTINATARIO_ALERTA), { each: true })
   destinatarios!: DestinatarioAlerta[];
 
   @IsOptional()

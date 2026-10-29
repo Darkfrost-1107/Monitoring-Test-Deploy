@@ -16,6 +16,7 @@ import {
 import { fromPrismaFichaReporte } from './reporte.mapper.js';
 import { INCLUDE_FICHA_OFICIAL, fromPrismaFichaOficial } from './ficha-oficial.mapper.js';
 import type { FichaOficialPersistida } from '../services/ficha-oficial-docente.imagenes.js';
+import { CargoNombre } from '../../../common/enums/cargo.enum.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const UUID_SIN_RESULTADOS = '00000000-0000-0000-0000-000000000000';
@@ -253,7 +254,7 @@ export class PrismaReporteRepository implements ReporteRepository {
       this.prisma.docente.findFirst({
         where: {
           institucionId: f.cronograma.institucionId,
-          docenteCargos: { some: { cargo: { nombre: 'Director' }, fechaFin: null } },
+          docenteCargos: { some: { cargo: { nombre: CargoNombre.DIRECTOR }, fechaFin: null } },
         },
         include: { persona: true },
       }),
