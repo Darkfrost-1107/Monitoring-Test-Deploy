@@ -2,6 +2,8 @@ import { ConflictException, BadRequestException } from '@nestjs/common';
 import type { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import type { Prisma } from '../../../generated/prisma/client.js';
 import { EstadoRegistro } from '../../../common/enums/estado.enum.js';
+import { CargoNombre } from '../../../common/enums/cargo.enum.js';
+import { RoleCode } from '../../../common/enums/role.enum.js';
 
 export async function checkDirectorConflict(
   tx: Prisma.TransactionClient,
@@ -10,7 +12,7 @@ export async function checkDirectorConflict(
 ): Promise<void> {
   const where: Prisma.DocenteCargoWhereInput = {
     docente: { institucionId },
-    cargo: { nombre: 'Director' },
+    cargo: { nombre: CargoNombre.DIRECTOR },
     fechaFin: null,
   };
   if (excludeDocenteId) {
@@ -49,7 +51,7 @@ export async function checkPersonaYaEsDirector(
 ): Promise<void> {
   const where: Prisma.DocenteCargoWhereInput = {
     docente: { personaId },
-    cargo: { nombre: 'Director' },
+    cargo: { nombre: CargoNombre.DIRECTOR },
     fechaFin: null,
   };
   if (excludeDocenteId) {
@@ -197,7 +199,9 @@ export async function syncEspecialista(
   escalaMagisterial: number | string | null,
   estado?: string,
 ): Promise<void> {
-  const isMonitor = ['Coordinador Pedagógico', 'Jefe de Taller'].includes(cargoNombre);
+  const isMonitor = (
+    [CargoNombre.COORDINADOR_PEDAGOGICO, CargoNombre.JEFE_TALLER] as string[]
+  ).includes(cargoNombre);
   const escalaNum = escalaMagisterial != null ? Number(escalaMagisterial) : null;
   if (isMonitor) {
     await tx.especialista.upsert({
@@ -206,7 +210,8 @@ export async function syncEspecialista(
         cargo: cargoNombre,
         nivelEducativo,
         condicionLaboral: condicionLaboral || 'Nombrado',
-        cargaLaboral: cargaLaboral ?? (cargoNombre === 'Coordinador Pedagógico' ? 40 : 30),
+        cargaLaboral:
+          cargaLaboral ?? (cargoNombre === CargoNombre.COORDINADOR_PEDAGOGICO ? 40 : 30),
         estado: estado ?? EstadoRegistro.ACTIVO,
         modalidad: modalidad ?? 'EBR',
         escalaMagisterial: escalaNum,
@@ -216,7 +221,8 @@ export async function syncEspecialista(
         cargo: cargoNombre,
         nivelEducativo,
         condicionLaboral: condicionLaboral || 'Nombrado',
-        cargaLaboral: cargaLaboral ?? (cargoNombre === 'Coordinador Pedagógico' ? 40 : 30),
+        cargaLaboral:
+          cargaLaboral ?? (cargoNombre === CargoNombre.COORDINADOR_PEDAGOGICO ? 40 : 30),
         estado: estado ?? EstadoRegistro.ACTIVO,
         modalidad: modalidad ?? 'EBR',
         escalaMagisterial: escalaNum,
@@ -231,8 +237,8 @@ export async function syncEspecialista(
 }
 
 export function resolveRoleCode(cargoNombre: string): string {
-  if (cargoNombre === 'Director') return 'director_institucion';
-  if (cargoNombre === 'Coordinador Pedagógico') return 'coordinador_pedagogico';
-  if (cargoNombre === 'Jefe de Taller') return 'jefe_taller';
-  return 'docente';
+  if (cargoNombre === CargoNombre.DIRECTOR) return RoleCode.DIRECTOR_INSTITUCION;
+  if (cargoNombre === CargoNombre.COORDINADOR_PEDAGOGICO) return RoleCode.COORDINADOR_PEDAGOGICO;
+  if (cargoNombre === CargoNombre.JEFE_TALLER) return RoleCode.JEFE_TALLER;
+  return RoleCode.DOCENTE;
 }

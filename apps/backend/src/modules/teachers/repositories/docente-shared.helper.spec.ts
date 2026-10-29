@@ -1,6 +1,10 @@
 import { jest } from '@jest/globals';
 import { ConflictException } from '@nestjs/common';
-import { checkDirectorConflict, checkPersonaYaEsDirector } from './docente-shared.helper.js';
+import {
+  checkDirectorConflict,
+  checkPersonaYaEsDirector,
+  resolveRoleCode,
+} from './docente-shared.helper.js';
 
 /**
  * Pruebas de los dos conflictos que impiden asignar un cargo de Director.
@@ -114,5 +118,19 @@ describe('checkPersonaYaEsDirector', () => {
 
     const where = filtroUsado(consulta);
     expect(where.docenteId).toEqual({ not: 'doc-1' });
+  });
+});
+
+describe('resolveRoleCode', () => {
+  it.each([
+    ['Director', 'director_institucion'],
+    ['Coordinador Pedagógico', 'coordinador_pedagogico'],
+    ['Jefe de Taller', 'jefe_taller'],
+    ['Subdirector', 'docente'],
+    ['PIP', 'docente'],
+    ['Docente de Aula', 'docente'],
+    ['Cargo desconocido', 'docente'],
+  ])('cargo %s resuelve a %s', (cargo, rol) => {
+    expect(resolveRoleCode(cargo)).toBe(rol);
   });
 });

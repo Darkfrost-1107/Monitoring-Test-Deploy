@@ -23,6 +23,7 @@ import {
   validateJefeAreaCanManageDocente,
   findActiveCargo,
 } from './docente-service.validator.js';
+import { CargoNombre } from '../../../common/enums/cargo.enum.js';
 
 export type CurrentUser = Pick<
   JwtPayload,
@@ -174,7 +175,7 @@ export class TeachersService {
     let isDirector = false;
     if (activeCargo) {
       const cargoCurrent = await this.catalogsRepository.findCargoById(activeCargo.cargoId);
-      if (cargoCurrent?.nombre === 'Director') {
+      if (cargoCurrent?.nombre === CargoNombre.DIRECTOR) {
         isDirector = true;
       }
     }
