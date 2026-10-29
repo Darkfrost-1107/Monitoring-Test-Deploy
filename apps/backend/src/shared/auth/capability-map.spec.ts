@@ -46,6 +46,15 @@ describe('capability-map', () => {
       expect(new Set(perms)).toEqual(new Set([...BASE_CAPABILITIES, 'carpeta_pedagogica:write']));
     });
 
+    it('solo el director de I.E. puede restablecer la contraseña del personal', () => {
+      for (const rol of Object.values(RoleCode)) {
+        const perms = computeEffectivePermissions(rol, null, []);
+        expect(perms.includes('personal:restablecer_contrasena')).toBe(
+          rol === RoleCode.DIRECTOR_INSTITUCION,
+        );
+      }
+    });
+
     it('un docente sin cargos NO puede leer la carpeta pedagogica de otros', () => {
       const perms = computeEffectivePermissions(RoleCode.DOCENTE, null, []);
       expect(perms).not.toContain('carpeta_pedagogica:read');
