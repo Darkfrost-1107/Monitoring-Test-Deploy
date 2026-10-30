@@ -289,6 +289,18 @@ function celdasDe(indiceNivel: number, elegido: number | null): CeldaDeNivel[] {
 const casillasDe = (nivel: number | null): boolean[] =>
   NIVELES_ROMANOS.map((_, i) => nivel === i + 1);
 
+/**
+ * Asegura que el título del desempeño comience con la numeración oficial «DESEMPEÑO N: NOMBRE».
+ * Si el nombre ya trae un prefijo («DESEMPEÑO 1:», «Desempeño 1 -», «1.»),
+ * lo normaliza para no duplicar la numeración.
+ */
+export function formatearTituloDesempeno(numero: number, nombre: string): string {
+  const sinPrefijo = (nombre || '')
+    .replace(/^(?:desempe[nñ]o\s*\d+\s*[:\-–—.]?|\d+\s*[:\-–—.]\s*)/i, '')
+    .trim();
+  return sinPrefijo ? `DESEMPEÑO ${numero}: ${sinPrefijo}` : `DESEMPEÑO ${numero}`;
+}
+
 export function construirFichaOficialDocente(raw: FichaOficialRaw): FichaOficialDocente {
   const { cronograma, contexto, plantilla } = raw;
   const evaluado = cronograma.evaluado;
@@ -316,9 +328,11 @@ export function construirFichaOficialDocente(raw: FichaOficialRaw): FichaOficial
         : [];
     });
 
+    const numero = indice + 1;
+
     return {
-      numero: indice + 1,
-      nombre: d.nombre,
+      numero,
+      nombre: formatearTituloDesempeno(numero, d.nombre),
       descripcion: d.descripcionCorta ?? '',
       introAspectos: introDeAspectos(aspectos.length),
       aspectos,

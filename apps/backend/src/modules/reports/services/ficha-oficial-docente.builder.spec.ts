@@ -108,6 +108,32 @@ describe('construirFichaOficialDocente — encabezado y datos', () => {
 });
 
 describe('construirFichaOficialDocente — desempeños', () => {
+  it('numera cada desempeño con el formato «DESEMPEÑO N: NOMBRE» sin duplicar prefijos', () => {
+    const base = raw();
+    const v = construirFichaOficialDocente(
+      raw({
+        plantilla: {
+          ...base.plantilla,
+          desempenos: [
+            desempeno(1, { nombre: 'Regula positivamente el comportamiento de los estudiantes' }),
+            desempeno(2, { nombre: 'DESEMPEÑO 2: Maximiza el tiempo dedicado al aprendizaje' }),
+            desempeno(3, { nombre: '3. Fomenta el razonamiento y pensamiento crítico' }),
+          ],
+        },
+      }),
+    );
+
+    expect(v.desempenos[0].nombre).toBe(
+      'DESEMPEÑO 1: Regula positivamente el comportamiento de los estudiantes',
+    );
+    expect(v.desempenos[1].nombre).toBe(
+      'DESEMPEÑO 2: Maximiza el tiempo dedicado al aprendizaje',
+    );
+    expect(v.desempenos[2].nombre).toBe(
+      'DESEMPEÑO 3: Fomenta el razonamiento y pensamiento crítico',
+    );
+  });
+
   it('ordena los desempeños, sus aspectos y su rúbrica de I a IV', () => {
     const [d1] = construirFichaOficialDocente(raw()).desempenos;
 
