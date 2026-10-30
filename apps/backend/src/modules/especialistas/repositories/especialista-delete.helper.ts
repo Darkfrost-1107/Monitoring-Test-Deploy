@@ -4,6 +4,7 @@ import type { IEspecialistaResponse } from '@sistema-monitoreo/shared-contracts'
 import { EstadoRegistro } from '../../../common/enums/estado.enum.js';
 import { mapEspecialista, ESPECIALISTA_INCLUDE } from './especialista-mapper.helper.js';
 import { findById } from './especialista-read.helper.js';
+import { RoleCode } from '../../../common/enums/role.enum.js';
 
 /**
  * Cierra los cargos vigentes de un especialista.
@@ -94,12 +95,12 @@ export async function deleteEspecialista(
       });
     }
 
-    if (rolCodigo === 'jefe_area') {
+    if (rolCodigo === RoleCode.JEFE_AREA) {
       const rolJefeArea = await tx.role.findUnique({
-        where: { codigo: 'jefe_area' },
+        where: { codigo: RoleCode.JEFE_AREA },
       });
       const rolEspecialista = await tx.role.findUnique({
-        where: { codigo: 'especialista' },
+        where: { codigo: RoleCode.ESPECIALISTA },
       });
       if (rolJefeArea && rolEspecialista) {
         await tx.usuario.updateMany({

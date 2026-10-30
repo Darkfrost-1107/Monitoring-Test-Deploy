@@ -1,3 +1,4 @@
+import { CargoNombre } from '../../../common/enums/cargo.enum.js';
 /**
  * Ficha oficial de monitoreo al docente, lista para pintar.
  *
@@ -13,8 +14,11 @@
 const NIVELES_ROMANOS = ['I', 'II', 'III', 'IV'] as const;
 
 const CARGO_DREP = 'DREP';
-const CARGO_DIRECTOR = 'Director';
-const CARGOS_DE_COORDINACION = ['Coordinador Pedagógico', 'Jefe de Taller'];
+const CARGO_DIRECTOR: string = CargoNombre.DIRECTOR;
+const CARGOS_DE_COORDINACION: string[] = [
+  CargoNombre.COORDINADOR_PEDAGOGICO,
+  CargoNombre.JEFE_TALLER,
+];
 
 const ASPECTOS_EN_LETRAS = [
   '',
@@ -285,6 +289,18 @@ function celdasDe(indiceNivel: number, elegido: number | null): CeldaDeNivel[] {
 const casillasDe = (nivel: number | null): boolean[] =>
   NIVELES_ROMANOS.map((_, i) => nivel === i + 1);
 
+/**
+ * Asegura que el título del desempeño comience con la numeración oficial «DESEMPEÑO N: NOMBRE».
+ * Si el nombre ya trae un prefijo («DESEMPEÑO 1:», «Desempeño 1 -», «1.»),
+ * lo normaliza para no duplicar la numeración.
+ */
+export function formatearTituloDesempeno(numero: number, nombre: string): string {
+  const sinPrefijo = (nombre || '')
+    .replace(/^(?:desempe[nñ]o\s*\d+\s*[:\-–—.]?|\d+\s*[:\-–—.]\s*)/i, '')
+    .trim();
+  return sinPrefijo ? `DESEMPEÑO ${numero}: ${sinPrefijo}` : `DESEMPEÑO ${numero}`;
+}
+
 export function construirFichaOficialDocente(raw: FichaOficialRaw): FichaOficialDocente {
   const { cronograma, contexto, plantilla } = raw;
   const evaluado = cronograma.evaluado;
@@ -312,9 +328,11 @@ export function construirFichaOficialDocente(raw: FichaOficialRaw): FichaOficial
         : [];
     });
 
+    const numero = indice + 1;
+
     return {
-      numero: indice + 1,
-      nombre: d.nombre,
+      numero,
+      nombre: formatearTituloDesempeno(numero, d.nombre),
       descripcion: d.descripcionCorta ?? '',
       introAspectos: introDeAspectos(aspectos.length),
       aspectos,

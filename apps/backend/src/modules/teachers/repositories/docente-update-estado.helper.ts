@@ -1,6 +1,7 @@
 import type { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import { EstadoRegistro } from '../../../common/enums/estado.enum.js';
 import { mapDocente } from './docente-mapper.helper.js';
+import { CargoNombre } from '../../../common/enums/cargo.enum.js';
 
 const DOCENTE_INCLUDE = {
   persona: true,
@@ -62,7 +63,7 @@ export async function bajaDirector(prisma: PrismaService, id: string) {
     await tx.docenteCargo.deleteMany({
       where: {
         docenteId: id,
-        cargo: { nombre: 'Director' },
+        cargo: { nombre: CargoNombre.DIRECTOR },
         fechaFin: null,
       },
     });

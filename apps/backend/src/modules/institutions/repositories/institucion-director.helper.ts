@@ -1,6 +1,8 @@
 import { ConflictException, BadRequestException } from '@nestjs/common';
 import type { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import { INCLUDE_DOCENTE_DIRECTOR } from './institucion-mapper.helper.js';
+import { CargoNombre } from '../../../common/enums/cargo.enum.js';
+import { RoleCode } from '../../../common/enums/role.enum.js';
 
 export async function assignDirector(
   prisma: PrismaService,
@@ -16,11 +18,11 @@ export async function assignDirector(
 
   const currentDirectorDocente =
     currentInst?.docentes?.find((d) =>
-      d.docenteCargos?.some((dc) => dc.cargo?.nombre === 'Director' && !dc.fechaFin),
+      d.docenteCargos?.some((dc) => dc.cargo?.nombre === CargoNombre.DIRECTOR && !dc.fechaFin),
     ) || null;
 
   const directorCargo = await prisma.cargo.findFirst({
-    where: { nombre: 'Director' },
+    where: { nombre: CargoNombre.DIRECTOR },
   });
 
   if (!directorCargo) return;
@@ -42,7 +44,7 @@ export async function assignDirector(
     const activeDirectorCargo = await prisma.docenteCargo.findFirst({
       where: {
         docenteId: newDirectorDocente.id,
-        cargo: { nombre: 'Director' },
+        cargo: { nombre: CargoNombre.DIRECTOR },
         fechaFin: null,
       },
       include: {
@@ -82,7 +84,7 @@ export async function assignDirector(
     await prisma.especialista.upsert({
       where: { personaId: newDirectorPersona.id },
       update: {
-        cargo: 'Director',
+        cargo: CargoNombre.DIRECTOR,
         nivelEducativo: newDirectorDocente.nivelEducativo,
         condicionLaboral: newDirectorDocente.condicionLaboral || 'Nombrado',
         cargaLaboral: newDirectorDocente.cargaLaboral ?? 40,
@@ -92,7 +94,7 @@ export async function assignDirector(
       },
       create: {
         personaId: newDirectorPersona.id,
-        cargo: 'Director',
+        cargo: CargoNombre.DIRECTOR,
         nivelEducativo: newDirectorDocente.nivelEducativo,
         condicionLaboral: newDirectorDocente.condicionLaboral || 'Nombrado',
         cargaLaboral: newDirectorDocente.cargaLaboral ?? 40,
@@ -103,7 +105,7 @@ export async function assignDirector(
     });
 
     const directorRole = await prisma.role.findUnique({
-      where: { codigo: 'director_institucion' },
+      where: { codigo: RoleCode.DIRECTOR_INSTITUCION },
     });
     if (directorRole) {
       await prisma.usuario.updateMany({
@@ -126,7 +128,7 @@ async function finalizeCurrentDirector(
   await prisma.docenteCargo.updateMany({
     where: {
       docenteId: currentDocente.id,
-      cargo: { nombre: { in: ['Director', 'Coordinador Pedagógico'] } },
+      cargo: { nombre: { in: [CargoNombre.DIRECTOR, CargoNombre.COORDINADOR_PEDAGOGICO] } },
       fechaFin: null,
     },
     data: { fechaFin: now },

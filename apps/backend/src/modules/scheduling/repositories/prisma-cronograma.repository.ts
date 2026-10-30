@@ -24,6 +24,7 @@ import {
   type VisitaPayload,
   type SolicitudPayload,
 } from './cronograma.mapper.js';
+import { CargoNombre } from '../../../common/enums/cargo.enum.js';
 
 /**
  * Con qué plantilla monitorea cada rol.
@@ -159,7 +160,7 @@ export class PrismaCronogramaRepository implements CronogramaRepository {
         // para comprobar que comparte área con el monitor en Secundaria.
         include: {
           docenteCargos: {
-            where: { fechaFin: null, cargo: { nombre: 'Director' } },
+            where: { fechaFin: null, cargo: { nombre: CargoNombre.DIRECTOR } },
             select: { id: true },
             take: 1,
           },

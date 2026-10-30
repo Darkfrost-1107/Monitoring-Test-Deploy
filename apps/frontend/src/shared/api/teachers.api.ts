@@ -71,6 +71,20 @@ export const teachersApi = {
     }
   },
 
+  restablecerContrasena: async (
+    id: string,
+  ): Promise<{ ok: boolean; data?: { success: boolean; message: string }; error?: unknown }> => {
+    try {
+      const data = await request<{ success: boolean; message: string }>(
+        `/api/docentes/${id}/restablecer-contrasena`,
+        { method: 'POST' },
+      );
+      return { ok: true, data };
+    } catch (err) {
+      return { ok: false, error: err };
+    }
+  },
+
   getCargos: async (): Promise<{
     ok: boolean;
     data?: Array<{ id: string; nombre: string }>;

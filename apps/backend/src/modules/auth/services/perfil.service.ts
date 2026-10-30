@@ -3,6 +3,7 @@ import { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import { AuthUserWithRelations, UserRepository } from '../repositories/user.repository.js';
 import { UpdatePerfilDto } from '../dto/update-perfil.dto.js';
 import type { IPerfilResponse } from '@sistema-monitoreo/shared-contracts';
+import { CargoNombre } from '../../../common/enums/cargo.enum.js';
 
 @Injectable()
 export class PerfilService {
@@ -22,7 +23,7 @@ export class PerfilService {
       const doc = user.persona.docente;
       const primaryCargo = doc.docenteCargos?.[0]?.cargo?.nombre;
       cargo = primaryCargo
-        ? primaryCargo === 'Director'
+        ? primaryCargo === CargoNombre.DIRECTOR
           ? `Director de ${doc.nivelEducativo}`
           : primaryCargo
         : (user.rol?.nombre ?? 'Docente');

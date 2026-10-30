@@ -251,7 +251,7 @@ export async function crearVisita(
   }
   // Un Responsable de Nivel (Jefe de Área) puede realizar visitas de monitoreo
   // en su nivel educativo asignado.
-  if (activas.monitorCargo === 'Jefe de Área' && activas.monitorNivel) {
+  if (activas.monitorCargo === CargoNombre.JEFE_AREA && activas.monitorNivel) {
     const targetMod = dto.modalidad || 'EBR';
     const targetNivel = dto.nivelEducativo;
 
@@ -325,7 +325,7 @@ export async function crearVisita(
   // personal; ninguno tiene registro de especialista, así que su lista de áreas
   // llega vacía y esta regla los dejaba sin poder programar una sola visita.
   if (
-    activas.monitorCargo !== 'Jefe de Área' &&
+    activas.monitorCargo !== CargoNombre.JEFE_AREA &&
     requiereEspecialidadCompartida(dto.nivelEducativo, dto.tipoMonitoreo, session.role) &&
     !compartenEspecialidad(activas.monitorEspecialidades, activas.evaluadoEspecialidades)
   ) {

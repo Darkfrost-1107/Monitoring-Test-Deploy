@@ -1,3 +1,4 @@
+import { RoleCode } from '../../../common/enums/role.enum.js';
 /**
  * En Secundaria el monitoreo es POR ÁREA: un especialista sólo evalúa a docentes
  * de una especialidad que él mismo maneja (un especialista de Matemática no
@@ -30,9 +31,9 @@ const norm = (s: string): string => s.normalize('NFD').replace(/[̀-ͯ]/g, '').t
  * alcanza y a quién no.
  */
 const ROLES_DE_INSTITUCION: readonly string[] = [
-  'director_institucion',
-  'coordinador_pedagogico',
-  'jefe_taller',
+  RoleCode.DIRECTOR_INSTITUCION,
+  RoleCode.COORDINADOR_PEDAGOGICO,
+  RoleCode.JEFE_TALLER,
 ];
 
 /**

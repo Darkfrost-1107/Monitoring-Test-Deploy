@@ -13,6 +13,7 @@ import {
   syncEspecialista,
   resolveRoleCode,
 } from './docente-shared.helper.js';
+import { CargoNombre } from '../../../common/enums/cargo.enum.js';
 
 const DOCENTE_INCLUDE = {
   persona: true,
@@ -35,7 +36,7 @@ export async function createDocenteWithTransaction(
       include: { docente: true },
     });
 
-    if (cargo?.nombre === 'Director') {
+    if (cargo?.nombre === CargoNombre.DIRECTOR) {
       await checkDirectorConflict(tx, dto.institucionId);
       // Un director dirige un solo colegio. Sin esta comprobación, una
       // institución todavía sin director aceptaba a alguien que ya dirige otra.
@@ -60,7 +61,7 @@ export async function createDocenteWithTransaction(
       });
 
       if (existingPersona.docente) {
-        if (cargo?.nombre !== 'Director') {
+        if (cargo?.nombre !== CargoNombre.DIRECTOR) {
           throw new ConflictException('El docente con este DNI ya se encuentra registrado.');
         }
         docente = await tx.docente.update({
