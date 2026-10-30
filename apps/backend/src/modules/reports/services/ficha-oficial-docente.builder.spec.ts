@@ -126,9 +126,7 @@ describe('construirFichaOficialDocente — desempeños', () => {
     expect(v.desempenos[0].nombre).toBe(
       'DESEMPEÑO 1: Regula positivamente el comportamiento de los estudiantes',
     );
-    expect(v.desempenos[1].nombre).toBe(
-      'DESEMPEÑO 2: Maximiza el tiempo dedicado al aprendizaje',
-    );
+    expect(v.desempenos[1].nombre).toBe('DESEMPEÑO 2: Maximiza el tiempo dedicado al aprendizaje');
     expect(v.desempenos[2].nombre).toBe(
       'DESEMPEÑO 3: Fomenta el razonamiento y pensamiento crítico',
     );
