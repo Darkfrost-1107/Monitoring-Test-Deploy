@@ -14,7 +14,11 @@ import {
   adjuntoDeSolicitud,
   nombreDelAprobador,
 } from '@features/reprogramaciones/lib/adjunto-de-solicitud';
-import type { ICreateVisitaRequest, IUpdateVisitaRequest } from '@sistema-monitoreo/shared-contracts';
+import type {
+  ICreateVisitaRequest,
+  IUpdateVisitaRequest,
+  IAccionExcepcionalInput,
+} from '@sistema-monitoreo/shared-contracts';
 
 export interface EspecialistaLite {
   id: string;
@@ -226,6 +230,16 @@ export const useCronogramasData = (enabled = true) => {
     await eliminarVisita.mutateAsync(id);
   };
 
+  const ejecutarAccionExcepcional = async (id: string, data: IAccionExcepcionalInput) => {
+    const res = await cronogramasApi.ejecutarAccionExcepcional(id, data);
+    await Promise.all([
+      qc.invalidateQueries({ queryKey: ['cronogramas'] }),
+      qc.invalidateQueries({ queryKey: ['fichas'] }),
+      qc.invalidateQueries({ queryKey: ['operacion-excepcional', id] }),
+    ]);
+    return res;
+  };
+
   const refetch = async () => {
     await Promise.all([
       qc.invalidateQueries({ queryKey: ['cronogramas'] }),
@@ -293,5 +307,6 @@ export const useCronogramasData = (enabled = true) => {
     approveRescheduleRequest,
     rejectRescheduleRequest,
     deleteCronograma,
+    ejecutarAccionExcepcional,
   };
 };

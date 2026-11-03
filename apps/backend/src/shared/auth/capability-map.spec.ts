@@ -1,4 +1,5 @@
 import { RoleCode } from '../../common/enums/role.enum.js';
+import { Capability } from '@sistema-monitoreo/shared-contracts';
 import {
   BASE_CAPABILITIES,
   CargoNombre,
@@ -87,6 +88,26 @@ describe('capability-map', () => {
       );
       expect(perms).toContain('especialistas:write');
       expect(perms).toContain('monitoreo:execute');
+    });
+
+    it('solo Jefe de Gestion y Superusuario tienen acceso a acciones excepcionales de monitoreo', () => {
+      const permsJefe = computeEffectivePermissions(RoleCode.JEFE_GESTION, null, []);
+      const permsSuper = computeEffectivePermissions(RoleCode.SUPERUSUARIO, null, []);
+      const permsEspJefe = computeEffectivePermissions(
+        RoleCode.ESPECIALISTA,
+        EspecialistaCargoEnum.JEFE_GESTION,
+        [],
+      );
+      const permsDirector = computeEffectivePermissions(RoleCode.DIRECTOR_INSTITUCION, null, [
+        CargoNombre.DIRECTOR,
+      ]);
+      const permsDocente = computeEffectivePermissions(RoleCode.DOCENTE, null, []);
+
+      expect(permsJefe).toContain(Capability.MONITOREO_ACCION_EXCEPCIONAL);
+      expect(permsSuper).toContain(Capability.MONITOREO_ACCION_EXCEPCIONAL);
+      expect(permsEspJefe).toContain(Capability.MONITOREO_ACCION_EXCEPCIONAL);
+      expect(permsDirector).not.toContain(Capability.MONITOREO_ACCION_EXCEPCIONAL);
+      expect(permsDocente).not.toContain(Capability.MONITOREO_ACCION_EXCEPCIONAL);
     });
 
     it('el resultado no tiene duplicados aunque la misma capability venga de varias fuentes', () => {

@@ -19,6 +19,7 @@ describe('SchedulingService - Reprogramaciones', () => {
   let cronogramaRepo: jest.Mocked<CronogramaRepository>;
   let solicitudRepo: jest.Mocked<SolicitudReprogramacionRepository>;
   let storage: any;
+  let eventEmitter: EventEmitter2;
 
   const sesionEspecialista = { id: 'esp-1', role: RoleCode.ESPECIALISTA };
   const sesionJefe = { id: 'jefe-1', role: RoleCode.JEFE_GESTION };
@@ -70,6 +71,8 @@ describe('SchedulingService - Reprogramaciones', () => {
       remove: jest.fn<any>(),
       findMonitorEspecialidades: jest.fn<any>().mockResolvedValue([]),
       applyReprogramacion: jest.fn<any>().mockResolvedValue(undefined),
+      ejecutarAccionExcepcional: jest.fn<any>(),
+      findOperacionExcepcionalByCronograma: jest.fn<any>(),
     };
     const mockSol: Partial<jest.Mocked<SolicitudReprogramacionRepository>> = {
       findAll: jest.fn<any>(),
@@ -116,6 +119,7 @@ describe('SchedulingService - Reprogramaciones', () => {
     cronogramaRepo = moduleRef.get(CronogramaRepository);
     solicitudRepo = moduleRef.get(SolicitudReprogramacionRepository);
     storage = moduleRef.get(STORAGE_SERVICE);
+    eventEmitter = moduleRef.get(EventEmitter2);
   });
 
   describe('crearVisita - plan vigente requerido', () => {
@@ -897,6 +901,61 @@ describe('SchedulingService - Reprogramaciones', () => {
         detalles: undefined,
         estado: 'EN_PROCESO',
       });
+    });
+  });
+
+  describe('ejecutarAccionExcepcional', () => {
+    it('ejecuta accion y emite evento cronograma.accion_excepcional', async () => {
+      const mockOp = {
+        id: 'op-1',
+        cronogramaId: 'vis-1',
+        tipoAccion: 'ANULACION_TOTAL' as const,
+        numeroExpediente: 'EXP-123',
+        motivo: 'Motivo explicativo mayor a diez caracteres',
+        archivoSustentoUrl: '/storage/sustento.pdf',
+        ejecutadoPorId: 'user-jefe',
+        createdAt: '2026-05-01T10:00:00Z',
+      };
+      cronogramaRepo.findById.mockResolvedValue(visitaBase);
+      (cronogramaRepo.ejecutarAccionExcepcional as any).mockResolvedValue(mockOp);
+
+      const res = await service.ejecutarAccionExcepcional(
+        'vis-1',
+        {
+          tipoAccion: 'ANULACION_TOTAL',
+          numeroExpediente: 'EXP-123',
+          motivo: 'Motivo explicativo mayor a diez caracteres',
+          archivoSustentoBase64: 'QUJD',
+        },
+        sesionJefe,
+      );
+
+      expect(res).toEqual(mockOp);
+      expect(eventEmitter.emit).toHaveBeenCalledWith(
+        'cronograma.accion_excepcional',
+        expect.objectContaining({
+          cronogramaId: 'vis-1',
+          tipoAccion: 'ANULACION_TOTAL',
+        }),
+      );
+    });
+
+    it('obtiene la operacion excepcional por cronograma', async () => {
+      const mockOp = {
+        id: 'op-1',
+        cronogramaId: 'vis-1',
+        tipoAccion: 'ANULACION_TOTAL' as const,
+        numeroExpediente: 'EXP-123',
+        motivo: 'Motivo explicativo',
+        archivoSustentoUrl: '/storage/sustento.pdf',
+        ejecutadoPorId: 'user-jefe',
+        createdAt: '2026-05-01T10:00:00Z',
+      };
+      cronogramaRepo.findById.mockResolvedValue(visitaBase);
+      (cronogramaRepo.findOperacionExcepcionalByCronograma as any).mockResolvedValue(mockOp);
+
+      const res = await service.findOperacionExcepcionalByCronograma('vis-1', sesionJefe);
+      expect(res).toEqual(mockOp);
     });
   });
 });
