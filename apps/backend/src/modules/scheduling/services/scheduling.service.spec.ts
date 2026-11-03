@@ -317,11 +317,16 @@ describe('SchedulingService - Reprogramaciones', () => {
     });
   });
 
-  describe('crearVisita - max 3 pendientes por especialista', () => {
-    it('rechaza crear si el especialista ya tiene 3 o más visitas activas', async () => {
+  describe('crearVisita - límite de visitas por monitor (máximo 3 por día, ilimitado en días distintos)', () => {
+    it('rechaza crear si el monitor ya tiene 3 visitas en el mismo día', async () => {
       cronogramaRepo.findPlanVigentePara.mockResolvedValue('plan-ugel-2026');
-      cronogramaRepo.countPendientesByMonitor.mockResolvedValue(3);
+      cronogramaRepo.findVisitasMonitorPorFecha.mockResolvedValue([
+        { ...visitaBase, id: 'v-1', horaInicio: '08:00:00' },
+        { ...visitaBase, id: 'v-2', horaInicio: '11:00:00' },
+        { ...visitaBase, id: 'v-3', horaInicio: '14:00:00' },
+      ]);
       cronogramaRepo.create.mockResolvedValue(visitaBase);
+
       await expect(
         service.crearVisita(
           {
@@ -331,13 +336,45 @@ describe('SchedulingService - Reprogramaciones', () => {
             tipoMonitoreo: 'DOCENTE',
             numeroVisita: 2,
             fechaProgramada: '2099-04-01',
-            horaInicio: '10:00:00',
+            horaInicio: '17:00:00',
             modalidad: 'EBR',
             nivelEducativo: 'Primaria',
           } as any,
           sesionJefe,
         ),
-      ).rejects.toThrow(BadRequestException);
+      ).rejects.toThrow(
+        new BadRequestException(
+          'El monitor ya tiene 3 visitas programadas para este día. El límite máximo es de 3 visitas por día.',
+        ),
+      );
+    });
+
+    it('permite crear visita si el monitor tiene 3 o más visitas en días distintos pero menos de 3 el mismo día', async () => {
+      cronogramaRepo.findPlanVigentePara.mockResolvedValue('plan-ugel-2026');
+      // En el mismo día sólo tiene 1 visita programada
+      cronogramaRepo.findVisitasMonitorPorFecha.mockResolvedValue([
+        { ...visitaBase, id: 'v-1', horaInicio: '08:00:00' },
+      ]);
+      // En otros días tiene muchas visitas pendientes (simuladas con countPendientesByMonitor = 10)
+      cronogramaRepo.countPendientesByMonitor.mockResolvedValue(10);
+      cronogramaRepo.create.mockResolvedValue(visitaBase);
+
+      const r = await service.crearVisita(
+        {
+          monitorId: 'esp-1',
+          institucionId: 'ie-1',
+          evaluadoId: 'doc-1',
+          tipoMonitoreo: 'DOCENTE',
+          numeroVisita: 1,
+          fechaProgramada: '2099-04-01',
+          horaInicio: '11:00:00',
+          modalidad: 'EBR',
+          nivelEducativo: 'Primaria',
+        } as any,
+        sesionJefe,
+      );
+
+      expect(r.id).toBe('vis-1');
     });
   });
 
