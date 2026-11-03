@@ -1,6 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
-import { EspecialistaRepository, CargoRecord } from './especialista.repository.js';
+import {
+  EspecialistaRepository,
+  CargoRecord,
+  RestablecerContrasenaData,
+} from './especialista.repository.js';
 import type {
   IEspecialistaResponse,
   ICreateEspecialistaRequest,
@@ -26,6 +30,7 @@ import {
 import { createCargo, finalizeCargo } from './especialista-cargo.helper.js';
 import { transicionDocenteAEspecialista } from './transicion-rol.helper.js';
 import { relevarDelCargo } from '../../superuser/relevar-del-cargo.helper.js';
+import { restablecerContrasena } from './especialista-contrasena.helper.js';
 
 @Injectable()
 export class PrismaEspecialistaRepository implements EspecialistaRepository {
@@ -128,5 +133,9 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
     roleId: string,
   ): Promise<IEspecialistaResponse> {
     return transicionDocenteAEspecialista(this.prisma, personaId, data, roleId);
+  }
+
+  async restablecerContrasena(data: RestablecerContrasenaData): Promise<void> {
+    return restablecerContrasena(this.prisma, data);
   }
 }

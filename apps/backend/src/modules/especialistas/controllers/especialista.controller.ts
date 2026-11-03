@@ -22,6 +22,7 @@ import { QueryEspecialistaDto } from '../dto/query-especialista.dto.js';
 import { AuthGuard } from '../../auth/guards/auth.guard.js';
 import { PermissionsGuard } from '../../auth/guards/permissions.guard.js';
 import { RequirePermissions } from '../../auth/decorators/permissions.decorator.js';
+import { Capability } from '@sistema-monitoreo/shared-contracts';
 import type { IEspecialistaResponse } from '@sistema-monitoreo/shared-contracts';
 
 export interface AuthenticatedRequest extends Request {
@@ -103,5 +104,18 @@ export class EspecialistaController {
   @HttpCode(HttpStatus.OK)
   async deactivate(@Param('id') id: string): Promise<IEspecialistaResponse> {
     return this.service.deactivate(id);
+  }
+
+  @Post(':id/restablecer-contrasena')
+  @RequirePermissions(Capability.PERSONAL_RESTABLECER_CONTRASENA)
+  @HttpCode(HttpStatus.OK)
+  async resetPassword(
+    @Param('id') id: string,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<{ success: true; message: string }> {
+    return this.service.restablecerContrasena(id, req.user, {
+      ipAddress: req.ip,
+      userAgent: req.get('user-agent'),
+    });
   }
 }

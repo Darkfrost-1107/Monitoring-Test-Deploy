@@ -78,4 +78,27 @@ describe('ModalRestablecerContrasena', () => {
     expect(toastSuccess).not.toHaveBeenCalled();
     expect(onClose).not.toHaveBeenCalled();
   });
+
+  it('si se pasa onConfirm personalizado, ejecuta onConfirm en lugar de teachersApi', async () => {
+    const onConfirmCustom = vi.fn<() => Promise<void>>().mockResolvedValue(undefined);
+    const onClose = vi.fn();
+    montar(
+      <ModalRestablecerContrasena
+        docente={docente}
+        onClose={onClose}
+        onConfirm={onConfirmCustom}
+      />,
+    );
+
+    await userEvent.click(screen.getByRole('button', { name: 'Restablecer' }));
+
+    await waitFor(() =>
+      expect(toastSuccess).toHaveBeenCalledWith(
+        'Contraseña restablecida. Indícale que ingrese con su DNI',
+      ),
+    );
+    expect(onConfirmCustom).toHaveBeenCalled();
+    expect(restablecer).not.toHaveBeenCalled();
+    expect(onClose).toHaveBeenCalled();
+  });
 });

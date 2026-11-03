@@ -14,6 +14,18 @@ export interface CargoRecord {
   esPrincipal: boolean;
 }
 
+export interface RestablecerContrasenaData {
+  usuarioId: string;
+  passwordHash: string;
+  auditoria: {
+    actorUsuarioId: string;
+    eventType: string;
+    eventDetail: string;
+    ipAddress?: string;
+    userAgent?: string;
+  };
+}
+
 export abstract class EspecialistaRepository {
   /**
    * Devuelve al rol de Especialista a quien ostentaba un cargo único.
@@ -69,4 +81,5 @@ export abstract class EspecialistaRepository {
     data: ICreateEspecialistaRequest,
     roleId: string,
   ): Promise<IEspecialistaResponse>;
+  abstract restablecerContrasena(data: RestablecerContrasenaData): Promise<void>;
 }
