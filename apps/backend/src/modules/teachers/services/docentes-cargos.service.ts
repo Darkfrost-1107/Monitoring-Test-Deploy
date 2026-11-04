@@ -121,6 +121,7 @@ export class DocentesCargosService {
     // Resolver side effects para cargos de monitor
     const MONITOR_CARGOS: string[] = [
       CargoNombre.DIRECTOR,
+      CargoNombre.SUBDIRECTOR,
       CargoNombre.COORDINADOR_PEDAGOGICO,
       CargoNombre.JEFE_DE_TALLER,
     ];
@@ -162,6 +163,9 @@ export class DocentesCargosService {
         if (remainingMonitors.includes(CargoNombre.DIRECTOR)) {
           targetRole = RoleCode.DIRECTOR_INSTITUCION;
           highestCargo = CargoNombre.DIRECTOR;
+        } else if (remainingMonitors.includes(CargoNombre.SUBDIRECTOR)) {
+          targetRole = RoleCode.SUBDIRECTOR;
+          highestCargo = CargoNombre.SUBDIRECTOR;
         } else if (remainingMonitors.includes(CargoNombre.COORDINADOR_PEDAGOGICO)) {
           targetRole = RoleCode.COORDINADOR_PEDAGOGICO;
           highestCargo = CargoNombre.COORDINADOR_PEDAGOGICO;

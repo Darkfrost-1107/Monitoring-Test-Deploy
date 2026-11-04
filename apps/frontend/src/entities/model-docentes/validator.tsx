@@ -34,7 +34,7 @@ export const docenteSchema = z.object({
   escala: escalaMagisterial(),
   institucionId: z.string().min(1, 'La institución de destino es requerida'),
   activo: z.boolean().default(true),
-  cargo: z.enum(['Director', 'Coordinador Pedagógico', 'Jefe de Taller', 'Docente de Aula']),
+  cargo: z.enum(['Director', 'Subdirector', 'Coordinador Pedagógico', 'Jefe de Taller', 'Docente de Aula']),
 }).refine((data) => {
   if (data.nivelEducativo === 'SECUNDARIA' && (!data.especialidad || !data.especialidad.trim())) {
     return false;

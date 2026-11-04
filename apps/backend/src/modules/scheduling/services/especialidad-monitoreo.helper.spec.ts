@@ -61,6 +61,7 @@ describe('compartenEspecialidad', () => {
      */
     it.each([
       ['el director de la I.E.', 'director_institucion'],
+      ['el subdirector de la I.E.', 'subdirector'],
       ['el coordinador pedagogico', 'coordinador_pedagogico'],
       ['el jefe de taller', 'jefe_taller'],
     ])('no se le exige compartir area a %s', (_caso, rol) => {

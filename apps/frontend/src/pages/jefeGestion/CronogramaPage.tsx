@@ -26,7 +26,7 @@ import { useScope } from '@shared/auth';
 
 export const CronogramaPage = () => {
   const { user } = useUser();
-  const { isInstitution, isMonitorCampo } = useScope();
+  const { isInstitution } = useScope();
 
   // Se llamaba `isDirector`, pero incluía al coordinador pedagógico y al jefe de
   // taller: es todo el personal del lado de la institución educativa. Se conserva
@@ -34,7 +34,8 @@ export const CronogramaPage = () => {
   // es el de la derecha.
   const isDirector = isInstitution;
 
-  const isCoordOrTaller = isMonitorCampo && isInstitution;
+  const isCoordOrTaller =
+    user?.role === RoleCode.COORDINADOR_PEDAGOGICO || user?.role === RoleCode.JEFE_TALLER;
 
   const puedeRegistrar =
     user?.role !== RoleCode.ESPECIALISTA && user?.role !== RoleCode.DIRECTOR_UGEL;

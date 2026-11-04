@@ -124,9 +124,9 @@ describe('checkPersonaYaEsDirector', () => {
 describe('resolveRoleCode', () => {
   it.each([
     ['Director', 'director_institucion'],
+    ['Subdirector', 'subdirector'],
     ['Coordinador Pedagógico', 'coordinador_pedagogico'],
     ['Jefe de Taller', 'jefe_taller'],
-    ['Subdirector', 'docente'],
     ['PIP', 'docente'],
     ['Docente de Aula', 'docente'],
     ['Cargo desconocido', 'docente'],

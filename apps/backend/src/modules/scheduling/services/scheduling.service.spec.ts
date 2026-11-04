@@ -764,6 +764,33 @@ describe('SchedulingService - Reprogramaciones', () => {
       );
       expect(solicitudRepo.create).toHaveBeenCalled();
     });
+
+    it('permite a un Subdirector solicitar reprogramación para visita de su institución', async () => {
+      cronogramaRepo.findById.mockResolvedValue({
+        ...visitaBase,
+        institucionId: 'ie-1',
+        nivelEducativo: 'Primaria',
+      });
+      solicitudRepo.findPendienteByCronograma.mockResolvedValue(null);
+      solicitudRepo.create.mockResolvedValue({ id: 'sol-sub' } as any);
+
+      const res = await service.crearSolicitud(
+        {
+          cronogramaId: 'vis-1',
+          fechaPropuesta: '2026-04-05',
+          horaPropuesta: '09:00:00',
+          justificacion: 'Feria de ciencias institucional',
+        },
+        { id: 'sub-1', role: RoleCode.SUBDIRECTOR, institucionId: 'ie-1' },
+      );
+
+      expect(res.id).toBe('sol-sub');
+      expect(solicitudRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          solicitanteRolAlCrear: RoleCode.SUBDIRECTOR,
+        }),
+      );
+    });
   });
 
   describe('aprobarSolicitud - mutacion sincrona del cronograma (ESP-0054A)', () => {
@@ -814,6 +841,40 @@ describe('SchedulingService - Reprogramaciones', () => {
       });
 
       const r = await service.aprobarSolicitud('sol-1', { comentario: 'Aprobado' }, sesionJefe);
+      expect(cronogramaRepo.applyReprogramacion).toHaveBeenCalledWith(
+        'vis-1',
+        new Date('2026-04-01'),
+        '10:00:00',
+      );
+      expect(r.estado).toBe('APROBADO');
+    });
+
+    it('permite al Director de IE aprobar solicitud de reprogramación del Subdirector', async () => {
+      const solicitudSub = {
+        ...solicitudPendiente,
+        solicitanteRolAlCrear: RoleCode.SUBDIRECTOR,
+      };
+      solicitudRepo.findById.mockResolvedValue(solicitudSub);
+      cronogramaRepo.findById.mockResolvedValue({
+        ...visitaBase,
+        institucionId: 'ie-1',
+        nivelEducativo: 'Primaria',
+      });
+      solicitudRepo.resolver.mockResolvedValue({
+        ...solicitudSub,
+        estado: 'APROBADO' as const,
+      });
+      cronogramaRepo.update.mockResolvedValue({
+        ...visitaBase,
+        estado: 'REPROGRAMADO' as const,
+      });
+
+      const r = await service.aprobarSolicitud(
+        'sol-1',
+        { comentario: 'Aprobado por el Director' },
+        sesionDirector,
+      );
+
       expect(cronogramaRepo.applyReprogramacion).toHaveBeenCalledWith(
         'vis-1',
         new Date('2026-04-01'),

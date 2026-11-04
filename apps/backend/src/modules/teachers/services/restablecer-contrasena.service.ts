@@ -14,6 +14,7 @@ import {
 /** Roles del personal de una I.E. cuya clave puede restablecer su director. */
 const ROLES_RESTABLECIBLES: readonly string[] = [
   RoleCode.DOCENTE,
+  RoleCode.SUBDIRECTOR,
   RoleCode.COORDINADOR_PEDAGOGICO,
   RoleCode.JEFE_TALLER,
 ];

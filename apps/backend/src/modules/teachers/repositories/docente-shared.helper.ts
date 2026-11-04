@@ -200,7 +200,11 @@ export async function syncEspecialista(
   estado?: string,
 ): Promise<void> {
   const isMonitor = (
-    [CargoNombre.COORDINADOR_PEDAGOGICO, CargoNombre.JEFE_TALLER] as string[]
+    [
+      CargoNombre.SUBDIRECTOR,
+      CargoNombre.COORDINADOR_PEDAGOGICO,
+      CargoNombre.JEFE_TALLER,
+    ] as string[]
   ).includes(cargoNombre);
   const escalaNum = escalaMagisterial != null ? Number(escalaMagisterial) : null;
   if (isMonitor) {
@@ -211,7 +215,11 @@ export async function syncEspecialista(
         nivelEducativo,
         condicionLaboral: condicionLaboral || 'Nombrado',
         cargaLaboral:
-          cargaLaboral ?? (cargoNombre === CargoNombre.COORDINADOR_PEDAGOGICO ? 40 : 30),
+          cargaLaboral ??
+          (cargoNombre === CargoNombre.COORDINADOR_PEDAGOGICO ||
+          cargoNombre === CargoNombre.SUBDIRECTOR
+            ? 40
+            : 30),
         estado: estado ?? EstadoRegistro.ACTIVO,
         modalidad: modalidad ?? 'EBR',
         escalaMagisterial: escalaNum,
@@ -222,7 +230,11 @@ export async function syncEspecialista(
         nivelEducativo,
         condicionLaboral: condicionLaboral || 'Nombrado',
         cargaLaboral:
-          cargaLaboral ?? (cargoNombre === CargoNombre.COORDINADOR_PEDAGOGICO ? 40 : 30),
+          cargaLaboral ??
+          (cargoNombre === CargoNombre.COORDINADOR_PEDAGOGICO ||
+          cargoNombre === CargoNombre.SUBDIRECTOR
+            ? 40
+            : 30),
         estado: estado ?? EstadoRegistro.ACTIVO,
         modalidad: modalidad ?? 'EBR',
         escalaMagisterial: escalaNum,
@@ -238,6 +250,7 @@ export async function syncEspecialista(
 
 export function resolveRoleCode(cargoNombre: string): string {
   if (cargoNombre === CargoNombre.DIRECTOR) return RoleCode.DIRECTOR_INSTITUCION;
+  if (cargoNombre === CargoNombre.SUBDIRECTOR) return RoleCode.SUBDIRECTOR;
   if (cargoNombre === CargoNombre.COORDINADOR_PEDAGOGICO) return RoleCode.COORDINADOR_PEDAGOGICO;
   if (cargoNombre === CargoNombre.JEFE_TALLER) return RoleCode.JEFE_TALLER;
   return RoleCode.DOCENTE;

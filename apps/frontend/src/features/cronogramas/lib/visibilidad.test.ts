@@ -146,6 +146,7 @@ describe('cronogramasVisibles — director de institución', () => {
 describe('cronogramasVisibles — monitores de campo', () => {
   it.each([
     [RoleCode.ESPECIALISTA],
+    [RoleCode.SUBDIRECTOR],
     [RoleCode.COORDINADOR_PEDAGOGICO],
     [RoleCode.JEFE_TALLER],
   ])('%s ve sólo las visitas que tiene asignadas', (rol) => {
@@ -159,6 +160,19 @@ describe('cronogramasVisibles — monitores de campo', () => {
   it('sin identificador de especialista no ve ninguna, en vez de verlas todas', () => {
     const actor = usuario({ role: RoleCode.ESPECIALISTA, especialistaId: undefined });
     expect(idsVisibles([cronograma()], actor)).toEqual([]);
+  });
+
+  it('ve la visita donde él mismo es el evaluado aunque no sea el monitor', () => {
+    const actor = usuario({
+      role: RoleCode.SUBDIRECTOR,
+      especialistaId: 'esp-7',
+      docenteId: 'doc-sub',
+    });
+    const propiaMonitoreada = cronograma({ monitorId: 'esp-7', evaluadoId: 'doc-otro' });
+    const evaluacionRecibida = cronograma({ monitorId: 'esp-dir', evaluadoId: 'doc-sub' });
+    const ajena = cronograma({ monitorId: 'esp-9', evaluadoId: 'doc-otro' });
+
+    expect(idsVisibles([propiaMonitoreada, evaluacionRecibida, ajena], actor)).toEqual(['c0', 'c1']);
   });
 });
 

@@ -100,12 +100,14 @@ export function cronogramasVisibles<T extends CronogramaVisible>(
 ): T[] {
   if (!usuario) return [...cronogramas];
 
-  // Quien levanta la ficha en el aula ve sólo lo que tiene asignado. Se
-  // reconoce por identificador de especialista; sin él no hay asignación
-  // demostrable y no se muestra nada, en vez de mostrarlo todo.
+  // Quien levanta la ficha en el aula ve lo que tiene asignado como monitor,
+  // y también la visita donde él mismo es el evaluado (por ejemplo, el subdirector
+  // o coordinador evaluado por su director).
   if ((MONITOR_CAMPO_ROLES as readonly string[]).includes(usuario.role)) {
     return cronogramas.filter(
-      (c) => !!usuario.especialistaId && c.monitorId === usuario.especialistaId,
+      (c) =>
+        (!!usuario.especialistaId && c.monitorId === usuario.especialistaId) ||
+        (!!usuario.docenteId && !!c.evaluadoId && c.evaluadoId === usuario.docenteId),
     );
   }
 

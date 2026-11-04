@@ -44,18 +44,20 @@ export async function crearSolicitud(
   const esEspecialista = (session.role as string) === (RoleCode.ESPECIALISTA as string);
   const esSolicitanteIE =
     (session.role as string) === (RoleCode.COORDINADOR_PEDAGOGICO as string) ||
-    (session.role as string) === (RoleCode.JEFE_TALLER as string);
+    (session.role as string) === (RoleCode.JEFE_TALLER as string) ||
+    (session.role as string) === (RoleCode.SUBDIRECTOR as string);
 
   if (!esEspecialista && !esSolicitanteIE) {
     throw new ForbiddenException(
-      'Solo los Especialistas (a nivel UGEL) o los Coordinadores Pedagógicos y Jefes de Taller (a nivel IE Secundaria) pueden solicitar reprogramaciones.',
+      'Solo los Especialistas (a nivel UGEL) o el personal de monitoreo de IE (Subdirector, Coordinador, Jefe de Taller) pueden solicitar reprogramaciones.',
     );
   }
 
   if (esSolicitanteIE) {
-    if (cronograma.nivelEducativo !== 'Secundaria') {
+    const esSubdirector = (session.role as string) === (RoleCode.SUBDIRECTOR as string);
+    if (!esSubdirector && cronograma.nivelEducativo !== 'Secundaria') {
       throw new ForbiddenException(
-        'A nivel institucional (IE), solo existe reprogramación en nivel Secundaria.',
+        'A nivel institucional (IE), solo existe reprogramación en nivel Secundaria para coordinadores y jefes de taller.',
       );
     }
     if (session.institucionId && cronograma.institucionId !== session.institucionId) {
@@ -152,18 +154,20 @@ async function resolverSolicitud(
 
   const esSolicitudIE =
     solicitud.solicitanteRolAlCrear === (RoleCode.COORDINADOR_PEDAGOGICO as string) ||
-    solicitud.solicitanteRolAlCrear === (RoleCode.JEFE_TALLER as string);
+    solicitud.solicitanteRolAlCrear === (RoleCode.JEFE_TALLER as string) ||
+    solicitud.solicitanteRolAlCrear === (RoleCode.SUBDIRECTOR as string);
 
   if (esSolicitudIE) {
-    // 2do: Nivel IE (Secundaria) -> Dirigida única y exclusivamente a su Director de IE
+    // 2do: Nivel IE -> Dirigida única y exclusivamente a su Director de IE
     if ((session.role as string) !== (RoleCode.DIRECTOR_INSTITUCION as string)) {
       throw new ForbiddenException(
         'Las solicitudes de reprogramación a nivel institucional (IE) están dirigidas única y exclusivamente a su Director de IE.',
       );
     }
-    if (cronograma.nivelEducativo !== 'Secundaria') {
+    const esSubdirector = solicitud.solicitanteRolAlCrear === (RoleCode.SUBDIRECTOR as string);
+    if (!esSubdirector && cronograma.nivelEducativo !== 'Secundaria') {
       throw new ForbiddenException(
-        'A nivel institucional (IE), solo existe reprogramación en nivel Secundaria.',
+        'A nivel institucional (IE), solo existe reprogramación en nivel Secundaria para coordinadores y jefes de taller.',
       );
     }
     if (session.institucionId && cronograma.institucionId !== session.institucionId) {
