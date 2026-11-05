@@ -14,10 +14,15 @@ import {
   HttpStatus,
   ForbiddenException,
 } from '@nestjs/common';
-import type { IVisita, ISolicitudReprogramacion } from '@sistema-monitoreo/shared-contracts';
+import type {
+  IVisita,
+  ISolicitudReprogramacion,
+  IOperacionExcepcional,
+} from '@sistema-monitoreo/shared-contracts';
 import { SchedulingService } from '../services/scheduling.service.js';
 import type { SessionUser } from '../../../shared/types/session-user.js';
 import { CreateVisitaDto, UpdateVisitaDto } from '../dto/create-visita.dto.js';
+import { AccionExcepcionalDto } from '../dto/accion-excepcional.dto.js';
 import {
   CreateSolicitudReprogramacionDto,
   ResolverSolicitudDto,
@@ -82,6 +87,28 @@ export class SchedulingController {
     await this.service.eliminarVisita(id, this.toSession(req));
   }
 
+  // ============== Acciones Excepcionales (UGEL / JGP) ==============
+
+  @Post('cronogramas/:id/accion-excepcional')
+  @RequirePermissions('monitoreo:accion_excepcional')
+  @HttpCode(HttpStatus.OK)
+  async ejecutarAccionExcepcional(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() dto: AccionExcepcionalDto,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<IOperacionExcepcional> {
+    return this.service.ejecutarAccionExcepcional(id, dto, this.toSession(req));
+  }
+
+  @Get('cronogramas/:id/operacion-excepcional')
+  @RequirePermissions('monitoreo:read')
+  async getOperacionExcepcional(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<IOperacionExcepcional | null> {
+    return this.service.findOperacionExcepcionalByCronograma(id, this.toSession(req));
+  }
+
   // ============== Solicitudes de Reprogramacion ==============
 
   @Post('solicitudes-reprogramacion')
@@ -140,6 +167,7 @@ export class SchedulingController {
       institucionId: req.user.institucion_id ?? null,
       especialistaNivel: req.user.especialista_nivel ?? null,
       especialistaEspecialidades: req.user.especialista_especialidades ?? null,
+      capabilities: req.user.permissions ?? null,
     };
   }
 }

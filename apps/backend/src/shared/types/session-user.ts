@@ -14,4 +14,5 @@ export interface SessionUser {
   especialistaId?: string | null;
   especialistaNivel?: string | null;
   especialistaEspecialidades?: string[] | null;
+  capabilities?: string[] | readonly string[] | null;
 }

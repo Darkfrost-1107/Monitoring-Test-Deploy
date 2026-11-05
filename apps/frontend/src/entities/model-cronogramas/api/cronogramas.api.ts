@@ -4,6 +4,8 @@ import type {
   EstadoSolicitudReprogramacion,
   TipoMonitoreo,
   EstadoVisita,
+  IAccionExcepcionalInput,
+  IOperacionExcepcional,
 } from '@sistema-monitoreo/shared-contracts';
 import { request } from '@shared/config/api';
 
@@ -88,4 +90,13 @@ export const cronogramasApi = {
       method: 'POST',
       body: JSON.stringify({ comentario }),
     }),
+
+  ejecutarAccionExcepcional: (id: string, data: IAccionExcepcionalInput) =>
+    request<IOperacionExcepcional>(`/api/cronogramas/${id}/accion-excepcional`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  findOperacionExcepcional: (id: string) =>
+    request<IOperacionExcepcional | null>(`/api/cronogramas/${id}/operacion-excepcional`),
 };

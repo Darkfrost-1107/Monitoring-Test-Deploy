@@ -1,6 +1,10 @@
 export const STORAGE_SERVICE = Symbol('STORAGE_SERVICE');
 
-export type StorageBucket = 'planes' | 'reprogramaciones' | 'evidencias';
+export type StorageBucket =
+  | 'planes'
+  | 'reprogramaciones'
+  | 'evidencias'
+  | 'sustentos-excepcionales';
 
 export interface StoragePutResult {
   url: string;

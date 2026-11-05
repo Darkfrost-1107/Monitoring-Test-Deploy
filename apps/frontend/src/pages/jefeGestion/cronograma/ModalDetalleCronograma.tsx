@@ -1,8 +1,10 @@
 import type { ReactNode } from 'react';
-import { BookOpen, Calendar, Compass, Layers, User, X } from 'lucide-react';
+import { BookOpen, Calendar, Compass, ExternalLink, FileText, Layers, ShieldAlert, User, X } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { Badge } from '@shared/ui/badge';
 import { Button } from '@shared/ui/button';
 import type { Cronograma } from '@entities/model-cronogramas';
+import { cronogramasApi } from '@features/cronogramas/api/cronogramas.api';
 
 interface ModalDetalleCronogramaProps {
   cronograma: Cronograma;
@@ -13,6 +15,8 @@ interface ModalDetalleCronogramaProps {
   colorDeIniciales: (iniciales: string) => string;
   estiloTipo: (tipo: Cronograma['tipo']) => string;
   estiloEstado: (estado: Cronograma['estado']) => string;
+  puedeAccionExcepcional?: boolean;
+  onAbrirAccionExcepcional?: (cronograma: Cronograma) => void;
 }
 
 const Separador = () => <div className="border-t border-border/60 my-1" />;
@@ -44,8 +48,19 @@ export const ModalDetalleCronograma = ({
   colorDeIniciales,
   estiloTipo,
   estiloEstado,
+  puedeAccionExcepcional = false,
+  onAbrirAccionExcepcional,
 }: ModalDetalleCronogramaProps) => {
   const { datePart, timePart } = formatearFechaHora(cronograma.fechaHora);
+
+  const { data: operacionExcepcional } = useQuery({
+    queryKey: ['operacion-excepcional', cronograma.id],
+    queryFn: async () => {
+      const res = await cronogramasApi.findOperacionExcepcional(cronograma.id);
+      return res ?? null;
+    },
+    enabled: cronograma.estado === 'ANULADO',
+  });
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in-0 duration-200">
@@ -162,9 +177,64 @@ export const ModalDetalleCronograma = ({
                 </Dato>
               </>
             )}
+
+            {operacionExcepcional && (
+              <>
+                <Separador />
+                <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl flex flex-col gap-2">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-amber-700 dark:text-amber-400">
+                    <ShieldAlert className="w-4 h-4 shrink-0" />
+                    Trámite Excepcional (Mesa de Partes)
+                  </div>
+                  <div className="text-xs text-text flex flex-col gap-1">
+                    <div>
+                      <span className="font-semibold text-text-muted">Expediente:</span>{' '}
+                      <span className="font-mono font-bold">{operacionExcepcional.numeroExpediente}</span>
+                    </div>
+                    <div>
+                      <span className="font-semibold text-text-muted">Acción:</span>{' '}
+                      <Badge className="text-[9px] font-bold px-1.5 py-0.2 bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500/40">
+                        {operacionExcepcional.tipoAccion}
+                      </Badge>
+                    </div>
+                    <div>
+                      <span className="font-semibold text-text-muted">Motivo:</span>{' '}
+                      <span>{operacionExcepcional.motivo}</span>
+                    </div>
+                    {operacionExcepcional.archivoSustentoUrl && (
+                      <div className="pt-1">
+                        <a
+                          href={operacionExcepcional.archivoSustentoUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-[11px] font-bold text-primary hover:underline"
+                        >
+                          <FileText className="w-3.5 h-3.5" />
+                          Ver Documento de Sustento
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
 
-          <div className="flex justify-end mt-4 border-t border-border pt-4">
+          <div className="flex items-center justify-between mt-4 border-t border-border pt-4">
+            {puedeAccionExcepcional && cronograma.estado !== 'ANULADO' && onAbrirAccionExcepcional ? (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onAbrirAccionExcepcional(cronograma)}
+                className="text-xs font-bold text-amber-600 dark:text-amber-400 border-amber-500/30 hover:bg-amber-500/10 cursor-pointer"
+              >
+                <ShieldAlert className="w-3.5 h-3.5 mr-1.5" />
+                Trámite Excepcional
+              </Button>
+            ) : (
+              <div />
+            )}
             <Button
               onClick={onCerrar}
               className="bg-primary hover:bg-primary/95 text-white font-bold cursor-pointer transition-colors"

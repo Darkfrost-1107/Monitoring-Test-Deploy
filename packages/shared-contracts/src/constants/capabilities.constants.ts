@@ -81,6 +81,12 @@ export const Capability = {
    * nunca otro directivo ni roles de la UGEL) lo impone el servicio.
    */
   PERSONAL_RESTABLECER_CONTRASENA: 'personal:restablecer_contrasena',
+  /**
+   * Ejecutar acciones excepcionales sobre monitoreos (anulación total o reapertura de fichas).
+   *
+   * Exclusivo del Jefe de Gestión Pedagógica (y Superusuario) con sustento documental formal.
+   */
+  MONITOREO_ACCION_EXCEPCIONAL: 'monitoreo:accion_excepcional',
 } as const;
 
 export type Capability = (typeof Capability)[keyof typeof Capability];
@@ -109,6 +115,7 @@ export const CAPABILITY_LABELS: Record<Capability, string> = {
   [Capability.SOLICITUDES_PLANTILLA_SOLICITAR]: 'Solicitar plantillas propias',
   [Capability.SOLICITUDES_PLANTILLA_GESTIONAR]: 'Aprobar solicitudes de plantilla',
   [Capability.PERSONAL_RESTABLECER_CONTRASENA]: 'Restablecer contraseña del personal',
+  [Capability.MONITOREO_ACCION_EXCEPCIONAL]: 'Ejecutar acciones excepcionales de monitoreo',
 };
 
 /** Verifica en tiempo de ejecución que una cadena sea una capacidad conocida. */
