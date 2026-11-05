@@ -3,7 +3,11 @@ import type {
   ISolicitudReprogramacion,
   TipoMonitoreo,
   EstadoVisita,
+  TipoAccionExcepcional,
+  IOperacionExcepcional,
 } from '@sistema-monitoreo/shared-contracts';
+
+export type { IVisita };
 
 export interface CreateVisitaData {
   monitorId: string;
@@ -36,6 +40,16 @@ export interface CreateSolicitudData {
   horaPropuesta: string;
   justificacion: string;
   archivoSustentoUrl: string;
+}
+
+export interface CreateOperacionExcepcionalData {
+  cronogramaId: string;
+  fichaId?: string | null;
+  tipoAccion: TipoAccionExcepcional;
+  numeroExpediente: string;
+  motivo: string;
+  archivoSustentoUrl: string;
+  ejecutadoPorId: string;
 }
 
 export interface ResolverSolicitudData {
@@ -126,6 +140,12 @@ export abstract class CronogramaRepository {
     fechaProgramada: Date,
     horaInicio: string,
   ): Promise<void>;
+  abstract ejecutarAccionExcepcional(
+    data: CreateOperacionExcepcionalData,
+  ): Promise<IOperacionExcepcional>;
+  abstract findOperacionExcepcionalByCronograma(
+    cronogramaId: string,
+  ): Promise<IOperacionExcepcional | null>;
 }
 
 export abstract class SolicitudReprogramacionRepository {

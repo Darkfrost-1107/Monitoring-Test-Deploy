@@ -120,6 +120,7 @@ model Usuario {
   solicitudesPlantilla          SolicitudPlantilla[]      @relation("SolicitudPlantillaSolicitante")
   solicitudesPlantillaResueltas SolicitudPlantilla[]      @relation("SolicitudPlantillaResolutor")
   valesPlantillaRecibidos       SolicitudPlantillaItem[]  @relation("ValePlantillaBeneficiario")
+  operacionesExcepcionales      OperacionExcepcional[]    @relation("OperacionExcepcionalEjecutor")
 
   // Firmas
   firmaUrl String?      @map("firma_url") @db.Text
@@ -758,6 +759,7 @@ model Cronograma {
   creadoPor   Usuario?                  @relation("CronogramaCreador", fields: [creadoPorId], references: [id], onDelete: SetNull)
   solicitudes SolicitudReprogramacion[]
   fichas      FichaMonitoreo[]
+  operacionesExcepcionales OperacionExcepcional[]
 
   @@index([institucionId, fechaProgramada])
   @@index([monitorId, fechaProgramada])
@@ -790,6 +792,30 @@ model SolicitudReprogramacion {
   @@index([cronogramaId])
   @@index([estado])
   @@map("solicitudes_reprogramacion")
+}
+
+
+// ==========================================
+// 8.1 OPERACIONES EXCEPCIONALES (UGEL)
+// ==========================================
+
+model OperacionExcepcional {
+  id                 String   @id @default(uuid()) @db.Uuid
+  cronogramaId       String   @map("cronograma_id") @db.Uuid
+  fichaId            String?  @map("ficha_id") @db.Uuid
+  tipoAccion         String   @map("tipo_accion") @db.VarChar(50) // ANULACION_TOTAL | REAPERTURA_FICHA
+  numeroExpediente   String   @map("numero_expediente") @db.VarChar(100)
+  motivo             String   @db.Text
+  archivoSustentoUrl String   @map("archivo_sustento_url") @db.VarChar(500)
+  ejecutadoPorId     String   @map("ejecutado_por_id") @db.Uuid
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  cronograma   Cronograma @relation(fields: [cronogramaId], references: [id], onDelete: Restrict)
+  ejecutadoPor Usuario    @relation("OperacionExcepcionalEjecutor", fields: [ejecutadoPorId], references: [id], onDelete: Restrict)
+
+  @@index([cronogramaId])
+  @@index([ejecutadoPorId])
+  @@map("operaciones_excepcionales")
 }
 
 // ==========================================

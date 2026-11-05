@@ -6,11 +6,14 @@ import type {
   IVisita,
   ISolicitudReprogramacion,
   TipoMonitoreo,
+  TipoAccionExcepcional,
+  IOperacionExcepcional,
 } from '@sistema-monitoreo/shared-contracts';
 import {
   CronogramaRepository,
   CreateVisitaData,
   UpdateVisitaData,
+  CreateOperacionExcepcionalData,
   SolicitudReprogramacionRepository,
   CreateSolicitudData,
   ResolverSolicitudData,
@@ -296,6 +299,105 @@ export class PrismaCronogramaRepository implements CronogramaRepository {
         },
       }),
     ]);
+  }
+
+  async ejecutarAccionExcepcional(
+    data: CreateOperacionExcepcionalData,
+  ): Promise<IOperacionExcepcional> {
+    return this.prisma.$transaction(async (tx) => {
+      // 1. Si la acción es ANULACION_TOTAL:
+      if (data.tipoAccion === 'ANULACION_TOTAL') {
+        await tx.cronograma.update({
+          where: { id: data.cronogramaId },
+          data: { estado: 'ANULADO' },
+        });
+
+        if (data.fichaId) {
+          await tx.fichaMonitoreo.update({
+            where: { id: data.fichaId },
+            data: { estado: 'ANULADO' },
+          });
+        } else {
+          const ficha = await tx.fichaMonitoreo.findFirst({
+            where: { cronogramaId: data.cronogramaId },
+            select: { id: true },
+          });
+          if (ficha) {
+            await tx.fichaMonitoreo.update({
+              where: { id: ficha.id },
+              data: { estado: 'ANULADO' },
+            });
+          }
+        }
+      } else if (data.tipoAccion === 'REAPERTURA_FICHA') {
+        const ficha = data.fichaId
+          ? await tx.fichaMonitoreo.findUnique({
+              where: { id: data.fichaId },
+              select: { id: true, fichaContextoId: true },
+            })
+          : await tx.fichaMonitoreo.findFirst({
+              where: { cronogramaId: data.cronogramaId },
+              select: { id: true, fichaContextoId: true },
+            });
+
+        if (ficha) {
+          await tx.fichaMonitoreo.delete({ where: { id: ficha.id } });
+          if (ficha.fichaContextoId) {
+            await tx.fichaContexto.delete({ where: { id: ficha.fichaContextoId } });
+          }
+        }
+
+        await tx.cronograma.update({
+          where: { id: data.cronogramaId },
+          data: { estado: 'PROGRAMADO' },
+        });
+      }
+
+      const operacion = await tx.operacionExcepcional.create({
+        data: {
+          cronogramaId: data.cronogramaId,
+          fichaId: data.fichaId ?? null,
+          tipoAccion: data.tipoAccion,
+          numeroExpediente: data.numeroExpediente,
+          motivo: data.motivo,
+          archivoSustentoUrl: data.archivoSustentoUrl,
+          ejecutadoPorId: data.ejecutadoPorId,
+        },
+      });
+
+      return {
+        id: operacion.id,
+        cronogramaId: operacion.cronogramaId,
+        fichaId: operacion.fichaId,
+        tipoAccion: operacion.tipoAccion as TipoAccionExcepcional,
+        numeroExpediente: operacion.numeroExpediente,
+        motivo: operacion.motivo,
+        archivoSustentoUrl: operacion.archivoSustentoUrl,
+        ejecutadoPorId: operacion.ejecutadoPorId,
+        createdAt: operacion.createdAt.toISOString(),
+      };
+    });
+  }
+
+  async findOperacionExcepcionalByCronograma(
+    cronogramaId: string,
+  ): Promise<IOperacionExcepcional | null> {
+    const row = await this.prisma.operacionExcepcional.findFirst({
+      where: { cronogramaId },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (!row) return null;
+    return {
+      id: row.id,
+      cronogramaId: row.cronogramaId,
+      fichaId: row.fichaId,
+      tipoAccion: row.tipoAccion as TipoAccionExcepcional,
+      numeroExpediente: row.numeroExpediente,
+      motivo: row.motivo,
+      archivoSustentoUrl: row.archivoSustentoUrl,
+      ejecutadoPorId: row.ejecutadoPorId,
+      createdAt: row.createdAt.toISOString(),
+    };
   }
 }
 

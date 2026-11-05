@@ -14,18 +14,21 @@ import { BarraFiltros } from './cronograma/BarraFiltros';
 import { ModalCronograma } from './cronograma/ModalCronograma';
 import { TablaCronogramas } from './cronograma/TablaCronogramas';
 import { ModalDetalleCronograma } from './cronograma/ModalDetalleCronograma';
+import { ModalAccionExcepcional } from '@features/cronogramas/ui/ModalAccionExcepcional';
 import { PageHeader } from '@shared/ui/pageHeader';
 import { ConfirmModal } from '@shared/ui/ConfirmModal';
 import { useUser } from '@entities/model-user';
 import { useCronogramasData } from '@features/cronogramas/hooks/use-cronogramas-data';
 import type { Cronograma } from '@entities/model-cronogramas';
 import {
+  Capability,
   RoleCode,
 } from '@sistema-monitoreo/shared-contracts';
-import { useScope } from '@shared/auth';
+import { useCan, useScope } from '@shared/auth';
 
 export const CronogramaPage = () => {
   const { user } = useUser();
+  const { can } = useCan();
   const { isInstitution } = useScope();
 
   // Se llamaba `isDirector`, pero incluía al coordinador pedagógico y al jefe de
@@ -40,6 +43,11 @@ export const CronogramaPage = () => {
   const puedeRegistrar =
     user?.role !== RoleCode.ESPECIALISTA && user?.role !== RoleCode.DIRECTOR_UGEL;
 
+  const puedeAccionExcepcional =
+    can(Capability.MONITOREO_ACCION_EXCEPCIONAL) ||
+    user?.role === RoleCode.JEFE_GESTION ||
+    user?.role === RoleCode.SUPERUSUARIO;
+
   const {
     cronogramas,
     especialistas,
@@ -49,6 +57,7 @@ export const CronogramaPage = () => {
     createCronograma,
     updateCronograma,
     deleteCronograma: deleteFromContext,
+    ejecutarAccionExcepcional,
   } = useCronogramasData();
 
   // --- Estados de Filtro ---
@@ -67,6 +76,9 @@ export const CronogramaPage = () => {
 
   // --- Estados de Detalles / Ver ---
   const [viewCronograma, setViewCronograma] = useState<Cronograma | null>(null);
+
+  // --- Estado de Trámite Excepcional ---
+  const [accionExcepcionalCronograma, setAccionExcepcionalCronograma] = useState<Cronograma | null>(null);
 
   // --- Estado de Eliminado / Desactivación ---
   const [deleteCronogramaId, setDeleteCronogramaId] = useState<string | null>(null);
@@ -166,6 +178,22 @@ export const CronogramaPage = () => {
           colorDeIniciales={colorDeIniciales}
           estiloTipo={estiloDeTipo}
           estiloEstado={estiloDeEstado}
+          puedeAccionExcepcional={puedeAccionExcepcional}
+          onAbrirAccionExcepcional={(c) => {
+            setViewCronograma(null);
+            setAccionExcepcionalCronograma(c);
+          }}
+        />
+      )}
+
+      {accionExcepcionalCronograma && (
+        <ModalAccionExcepcional
+          cronograma={accionExcepcionalCronograma}
+          onCerrar={() => setAccionExcepcionalCronograma(null)}
+          onConfirmar={async (data) => {
+            await ejecutarAccionExcepcional(accionExcepcionalCronograma.id, data);
+            setAccionExcepcionalCronograma(null);
+          }}
         />
       )}
 
