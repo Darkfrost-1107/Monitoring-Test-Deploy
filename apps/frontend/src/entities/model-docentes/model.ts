@@ -40,7 +40,7 @@ export interface Docente {
   institucionId: string; // Relación con I.E.
   activo: boolean;
   fechaCreacion: string;
-  cargo: 'Director' | 'Coordinador Pedagógico' | 'Jefe de Taller' | 'Docente de Aula';
+  cargo: 'Director' | 'Subdirector' | 'Coordinador Pedagógico' | 'Jefe de Taller' | 'Docente de Aula';
   cargosList?: Array<{
     id: string;
     nombre: string;

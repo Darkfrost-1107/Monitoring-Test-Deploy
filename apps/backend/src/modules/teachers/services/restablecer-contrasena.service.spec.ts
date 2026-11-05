@@ -188,11 +188,13 @@ describe('RestablecerContrasenaService', () => {
     expect(restablecerContrasena).not.toHaveBeenCalled();
   });
 
-  it.each([RoleCode.DOCENTE, RoleCode.COORDINADOR_PEDAGOGICO, RoleCode.JEFE_TALLER])(
-    'permite al objetivo con rol %s',
-    async (rolCodigo) => {
-      findUsuarioPorPersonaId.mockResolvedValue(usuarioObjetivo({ rolCodigo }));
-      await expect(service.restablecer('docente-1', director, {})).resolves.toBeDefined();
-    },
-  );
+  it.each([
+    RoleCode.DOCENTE,
+    RoleCode.SUBDIRECTOR,
+    RoleCode.COORDINADOR_PEDAGOGICO,
+    RoleCode.JEFE_TALLER,
+  ])('permite al objetivo con rol %s', async (rolCodigo) => {
+    findUsuarioPorPersonaId.mockResolvedValue(usuarioObjetivo({ rolCodigo }));
+    await expect(service.restablecer('docente-1', director, {})).resolves.toBeDefined();
+  });
 });

@@ -22,6 +22,7 @@ const CODIGOS_SEMBRADOS = [
   'jefe_gestion',
   'especialista',
   'director_institucion',
+  'subdirector',
   'coordinador_pedagogico',
   'jefe_taller',
   'docente',

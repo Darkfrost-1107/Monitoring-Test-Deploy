@@ -71,6 +71,17 @@ describe('capability-map', () => {
       expect(perms).toContain('monitoreo:execute');
     });
 
+    it('un subdirector tiene dashboard, monitoreo:execute, docentes:read y carpeta pedagógica (+ base)', () => {
+      const perms = computeEffectivePermissions(RoleCode.SUBDIRECTOR, null, []);
+      expect(perms).toContain('dashboard:read');
+      expect(perms).toContain('monitoreo:execute');
+      expect(perms).toContain('docentes:read');
+      expect(perms).toContain('carpeta_pedagogica:read');
+      expect(perms).toContain('carpeta_pedagogica:write');
+      expect(perms).not.toContain('personal:restablecer_contrasena');
+      expect(perms).not.toContain('solicitudes_plantilla:solicitar');
+    });
+
     it('un jefe_taller con docente de aula combina capacidades de ambos', () => {
       const perms = computeEffectivePermissions(RoleCode.JEFE_TALLER, null, [
         CargoNombre.JEFE_DE_TALLER,

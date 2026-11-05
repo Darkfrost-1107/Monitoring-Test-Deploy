@@ -14,6 +14,7 @@ import {
 /** Roles del personal de una I.E. cuya clave puede restablecer su director. */
 const ROLES_RESTABLECIBLES_POR_DIRECTOR: readonly string[] = [
   RoleCode.DOCENTE,
+  RoleCode.SUBDIRECTOR,
   RoleCode.COORDINADOR_PEDAGOGICO,
   RoleCode.JEFE_TALLER,
 ];
@@ -22,6 +23,7 @@ const ROLES_RESTABLECIBLES_POR_DIRECTOR: readonly string[] = [
 const ROLES_RESTABLECIBLES_POR_JEFE_GESTION: readonly string[] = [
   RoleCode.DIRECTOR_INSTITUCION,
   RoleCode.DOCENTE,
+  RoleCode.SUBDIRECTOR,
   RoleCode.COORDINADOR_PEDAGOGICO,
   RoleCode.JEFE_TALLER,
 ];

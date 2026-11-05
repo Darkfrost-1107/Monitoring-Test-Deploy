@@ -63,6 +63,7 @@ describe('getDefaultLandingPage', () => {
       [RoleCode.COORDINADOR_PEDAGOGICO, '/monitoreo/calendario'],
       [RoleCode.JEFE_TALLER, '/monitoreo/calendario'],
       [RoleCode.DIRECTOR_INSTITUCION, '/dashboard'],
+      [RoleCode.SUBDIRECTOR, '/dashboard'],
       [RoleCode.DOCENTE, '/reportes'],
     ])('%s aterriza en %s', (rol, esperado) => {
       expect(getDefaultLandingPage(rol)).toBe(esperado);

@@ -32,6 +32,7 @@ export const RoleCode = {
   JEFE_GESTION: 'jefe_gestion',
   ESPECIALISTA: 'especialista',
   DIRECTOR_INSTITUCION: 'director_institucion',
+  SUBDIRECTOR: 'subdirector',
   COORDINADOR_PEDAGOGICO: 'coordinador_pedagogico',
   JEFE_TALLER: 'jefe_taller',
   DOCENTE: 'docente',
@@ -57,6 +58,7 @@ export const ROLE_LABELS: Record<RoleCode, string> = {
   [RoleCode.JEFE_GESTION]: 'Jefe de Gestión',
   [RoleCode.ESPECIALISTA]: 'Especialista',
   [RoleCode.DIRECTOR_INSTITUCION]: 'Director de Institución',
+  [RoleCode.SUBDIRECTOR]: 'Subdirector',
   [RoleCode.COORDINADOR_PEDAGOGICO]: 'Coordinador Pedagógico',
   [RoleCode.JEFE_TALLER]: 'Jefe de Taller',
   [RoleCode.DOCENTE]: 'Docente',
@@ -99,6 +101,7 @@ const ROLE_SCOPES: Record<RoleCode, RoleScope> = {
   [RoleCode.JEFE_GESTION]: 'ugel',
   [RoleCode.ESPECIALISTA]: 'ugel',
   [RoleCode.DIRECTOR_INSTITUCION]: 'institucion',
+  [RoleCode.SUBDIRECTOR]: 'institucion',
   [RoleCode.COORDINADOR_PEDAGOGICO]: 'institucion',
   [RoleCode.JEFE_TALLER]: 'institucion',
   [RoleCode.DOCENTE]: 'institucion',
@@ -166,6 +169,7 @@ export const READ_ONLY_ROLES: readonly RoleCode[] = [RoleCode.INVITADO];
  */
 export const MONITOR_CAMPO_ROLES: readonly RoleCode[] = [
   RoleCode.ESPECIALISTA,
+  RoleCode.SUBDIRECTOR,
   RoleCode.COORDINADOR_PEDAGOGICO,
   RoleCode.JEFE_TALLER,
 ];

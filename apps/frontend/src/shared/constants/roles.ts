@@ -114,6 +114,22 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
     'carpeta_pedagogica',
   ],
 
+  subdirector: [
+    'dashboard',
+    'monitoreo',
+    'monitoreo_plan_anual',
+    'monitoreo_cronograma',
+    'monitoreo_calendario',
+    'monitoreo_reportes',
+    'plantillas',
+    'plantillas_ies',
+    'reportes',
+    'reportes_fichas',
+    'reportes_analisis',
+    'mi_firma',
+    'carpeta_pedagogica',
+  ],
+
   jefe_taller: [
     'monitoreo',
     'monitoreo_plan_anual',
@@ -222,6 +238,7 @@ export const getDefaultLandingPage = (role: UserRole): string => {
     case RoleCode.ESPECIALISTA:
       return '/monitoreo/calendario';
     case RoleCode.DIRECTOR_INSTITUCION:
+    case RoleCode.SUBDIRECTOR:
       return '/dashboard';
     case RoleCode.COORDINADOR_PEDAGOGICO:
     case RoleCode.JEFE_TALLER:
