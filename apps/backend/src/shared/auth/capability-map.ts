@@ -75,6 +75,7 @@ export const ROL_CAPABILITIES: Record<RoleCode, readonly Capability[]> = {
     Capability.VISITAS_SOLICITAR,
     Capability.CARPETA_PEDAGOGICA_READ,
     Capability.SOLICITUDES_PLANTILLA_GESTIONAR,
+    Capability.PERSONAL_RESTABLECER_CONTRASENA,
     Capability.MONITOREO_ACCION_EXCEPCIONAL,
   ],
   [RoleCode.JEFE_AREA]: [
@@ -133,6 +134,7 @@ export const ROL_CAPABILITIES: Record<RoleCode, readonly Capability[]> = {
     Capability.SUPERADMIN_ACCESS,
     Capability.ESPECIALISTAS_READ,
     Capability.ESPECIALISTAS_WRITE,
+    Capability.PERSONAL_RESTABLECER_CONTRASENA,
     Capability.MONITOREO_ACCION_EXCEPCIONAL,
   ],
 };
@@ -152,6 +154,7 @@ export const ESPECIALISTA_CARGO_CAPABILITIES: Record<EspecialistaCargoEnum, read
       Capability.INSTITUCIONES_WRITE,
       Capability.DOCENTES_WRITE,
       Capability.VISITAS_GESTIONAR,
+      Capability.PERSONAL_RESTABLECER_CONTRASENA,
       Capability.MONITOREO_ACCION_EXCEPCIONAL,
     ],
   };
