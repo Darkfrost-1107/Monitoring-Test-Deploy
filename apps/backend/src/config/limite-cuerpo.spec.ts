@@ -44,8 +44,15 @@ describe('configurarLimiteDeCuerpo', () => {
     expect(respuesta.body).toEqual({ bytes: 288_000 });
   });
 
+  it('acepta un documento de sustento PDF en base64 de hasta ~6 MB', async () => {
+    const respuesta = await enviar(6 * 1024 * 1024);
+
+    expect(respuesta.status).toBe(201);
+    expect(respuesta.body).toEqual({ bytes: 6 * 1024 * 1024 });
+  });
+
   it('sigue rechazando un cuerpo desmesurado', async () => {
-    const respuesta = await enviar(3 * 1024 * 1024);
+    const respuesta = await enviar(18 * 1024 * 1024);
 
     expect(respuesta.status).toBe(413);
   });
