@@ -64,8 +64,8 @@ export const ModalDetalleCronograma = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in-0 duration-200">
-      <div className="bg-surface border border-border w-full max-w-md rounded-2xl shadow-xl overflow-hidden animate-in zoom-in-95 duration-200">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+      <div className="bg-surface border border-border w-full max-w-md rounded-2xl shadow-xl overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
           <h3 className="text-base font-bold text-text flex items-center gap-2">
             <Compass className="w-5 h-5 text-primary" />
             Detalle del Cronograma
@@ -78,7 +78,7 @@ export const ModalDetalleCronograma = ({
           </button>
         </div>
 
-        <div className="p-5 flex flex-col gap-4">
+        <div className="p-5 flex flex-col gap-4 overflow-y-auto flex-1 min-h-0">
           <div className="flex flex-col gap-3">
             <div className="flex items-center gap-3 p-3 bg-muted/40 rounded-xl border border-border/80">
               <div
@@ -220,28 +220,28 @@ export const ModalDetalleCronograma = ({
               </>
             )}
           </div>
+        </div>
 
-          <div className="flex items-center justify-between mt-4 border-t border-border pt-4">
-            {puedeAccionExcepcional && cronograma.estado !== 'ANULADO' && onAbrirAccionExcepcional ? (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onAbrirAccionExcepcional(cronograma)}
-                className="text-xs font-bold text-amber-600 dark:text-amber-400 border-amber-500/30 hover:bg-amber-500/10 cursor-pointer"
-              >
-                <ShieldAlert className="w-3.5 h-3.5 mr-1.5" />
-                Trámite Excepcional
-              </Button>
-            ) : (
-              <div />
-            )}
+        <div className="flex items-center justify-between px-5 py-3.5 border-t border-border shrink-0 bg-muted/20">
+          {puedeAccionExcepcional && cronograma.estado !== 'ANULADO' && onAbrirAccionExcepcional ? (
             <Button
-              onClick={onCerrar}
-              className="bg-primary hover:bg-primary/95 text-white font-bold cursor-pointer transition-colors"
+              type="button"
+              variant="outline"
+              onClick={() => onAbrirAccionExcepcional(cronograma)}
+              className="text-xs font-bold text-amber-600 dark:text-amber-400 border-amber-500/30 hover:bg-amber-500/10 cursor-pointer"
             >
-              Cerrar
+              <ShieldAlert className="w-3.5 h-3.5 mr-1.5" />
+              Trámite Excepcional
             </Button>
-          </div>
+          ) : (
+            <div />
+          )}
+          <Button
+            onClick={onCerrar}
+            className="bg-primary hover:bg-primary/95 text-white font-bold cursor-pointer transition-colors"
+          >
+            Cerrar
+          </Button>
         </div>
       </div>
     </div>
