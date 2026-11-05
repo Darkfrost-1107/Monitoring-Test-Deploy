@@ -335,21 +335,20 @@ export async function crearVisita(
     );
   }
 
-  // REGLA DE NEGOCIO EDU-0002: Máximo 3 visitas pendientes (Programada/Reprogramada) por monitor
-  const pendingVisitsCount = await cronogramaRepo.countPendientesByMonitor(dto.monitorId);
-  if (pendingVisitsCount >= 3) {
-    throw new BadRequestException(
-      'El monitor ya tiene 3 visitas pendientes. Complete las visitas programadas antes de crear nuevas.',
-    );
-  }
-
-  // Validar solapamiento de visitas para el monitor
+  // Validar visitas y solapamiento del monitor en la misma fecha
   const fechaToUse =
     typeof dto.fechaProgramada === 'string' ? new Date(dto.fechaProgramada) : dto.fechaProgramada;
   const visitasMismoDia = await cronogramaRepo.findVisitasMonitorPorFecha(
     dto.monitorId,
     fechaToUse,
   );
+
+  // REGLA DE NEGOCIO: Máximo 3 visitas para un mismo día por monitor (ilimitado en días distintos)
+  if (visitasMismoDia.length >= 3) {
+    throw new BadRequestException(
+      'El monitor ya tiene 3 visitas programadas para este día. El límite máximo es de 3 visitas por día.',
+    );
+  }
   const [horaProp, minProp] = dto.horaInicio.split(':').map(Number);
   const tiempoProp = horaProp * 60 + minProp;
 
