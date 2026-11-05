@@ -46,12 +46,15 @@ describe('capability-map', () => {
       expect(new Set(perms)).toEqual(new Set([...BASE_CAPABILITIES, 'carpeta_pedagogica:write']));
     });
 
-    it('solo el director de I.E. puede restablecer la contraseña del personal', () => {
+    it('el director de I.E., jefe de gestion y superusuario pueden restablecer la contraseña del personal', () => {
+      const rolesConPermiso = new Set<string>([
+        RoleCode.DIRECTOR_INSTITUCION,
+        RoleCode.JEFE_GESTION,
+        RoleCode.SUPERUSUARIO,
+      ]);
       for (const rol of Object.values(RoleCode)) {
         const perms = computeEffectivePermissions(rol, null, []);
-        expect(perms.includes('personal:restablecer_contrasena')).toBe(
-          rol === RoleCode.DIRECTOR_INSTITUCION,
-        );
+        expect(perms.includes('personal:restablecer_contrasena')).toBe(rolesConPermiso.has(rol));
       }
     });
 
@@ -87,6 +90,7 @@ describe('capability-map', () => {
       );
       expect(perms).toContain('especialistas:write');
       expect(perms).toContain('monitoreo:execute');
+      expect(perms).toContain('personal:restablecer_contrasena');
     });
 
     it('el resultado no tiene duplicados aunque la misma capability venga de varias fuentes', () => {

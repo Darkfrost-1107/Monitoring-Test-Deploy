@@ -100,7 +100,7 @@ export async function create(
     });
 
     const cargoInicial = data.cargo || CargoNombre.ESPECIALISTA;
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
+
     if (cargoInicial !== CargoNombre.ESPECIALISTA) {
       await tx.especialistaCargo.create({
         data: {

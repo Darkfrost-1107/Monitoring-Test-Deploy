@@ -1,4 +1,8 @@
 import { useState } from 'react';
+import { Capability } from '@sistema-monitoreo/shared-contracts';
+import { useCan } from '@shared/auth/use-can';
+import { useUser } from '@entities/model-user';
+import { ModalRestablecerContrasena } from '@features/docentes/ui/ModalRestablecerContrasena';
 import { FastActions } from '@shared/ui/FastActions';
 import type { Docente, CondicionDirectiva } from '@entities/model-docentes';
 import { CONDICION_DIRECTIVA_COLOR } from '@entities/model-docentes';
@@ -54,8 +58,13 @@ export const DirectoresTableWidget = ({
   onView,
   onEdit,
 }: DirectoresTableWidgetProps) => {
+  const { can } = useCan();
+  const { user } = useUser();
+  const tieneCapacidadRestablecer = can(Capability.PERSONAL_RESTABLECER_CONTRASENA);
+
   const [finalizing, setFinalizing] = useState<Docente | null>(null);
   const [restoring, setRestoring] = useState<Docente | null>(null);
+  const [aRestablecer, setARestablecer] = useState<Docente | null>(null);
 
   const pagination = useEntityTable({ data: directores, filterFn: directorFilter });
 
@@ -189,6 +198,11 @@ export const DirectoresTableWidget = ({
                   // director ya cesado.
                   onFinalize={designacionVigente(dir) ? () => setFinalizing(dir) : undefined}
                   onRestore={!dir.activo ? () => setRestoring(dir) : undefined}
+                  onResetPassword={
+                    tieneCapacidadRestablecer && dir.activo && dir.id !== user?.docenteId
+                      ? () => setARestablecer(dir)
+                      : undefined
+                  }
                   viewTitle="Ver ficha"
                   restoreTitle="Reactivar director"
                   finalizeTitle="Cesar como Director"
@@ -218,6 +232,13 @@ export const DirectoresTableWidget = ({
           cancelLabel="Cancelar"
           onConfirm={confirmRestore}
           onCancel={() => setRestoring(null)}
+        />
+      )}
+
+      {aRestablecer && (
+        <ModalRestablecerContrasena
+          docente={aRestablecer}
+          onClose={() => setARestablecer(null)}
         />
       )}
     </>

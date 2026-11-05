@@ -11,7 +11,7 @@ import { CreateEspecialistaDto } from '../dto/create-especialista.dto.js';
 import { UpdateEspecialistaDto } from '../dto/update-especialista.dto.js';
 import { QueryEspecialistaDto } from '../dto/query-especialista.dto.js';
 import type { IEspecialistaResponse } from '@sistema-monitoreo/shared-contracts';
-import { CargoEspecialista } from '@sistema-monitoreo/shared-contracts';
+import { Capability, CargoEspecialista } from '@sistema-monitoreo/shared-contracts';
 import { CatalogsRepository } from '../../catalogs/repositories/catalogs.repository.js';
 import { SessionRepository } from '../../auth/repositories/session.repository.js';
 import { CargoNombre } from '../../../common/enums/cargo.enum.js';
@@ -339,6 +339,50 @@ export class EspecialistaService {
     }
 
     return this.repository.transicionDocenteAEspecialista(personaId, dto, role.id);
+  }
+
+  async restablecerContrasena(
+    especialistaId: string,
+    currentUser: JwtPayload,
+    meta: { ipAddress?: string; userAgent?: string },
+  ): Promise<{ success: true; message: string }> {
+    if (!currentUser.permissions?.includes(Capability.PERSONAL_RESTABLECER_CONTRASENA)) {
+      throw new ForbiddenException('No tiene permisos para realizar esta acción.');
+    }
+
+    if (currentUser.role !== RoleCode.JEFE_GESTION && currentUser.role !== RoleCode.SUPERUSUARIO) {
+      throw new ForbiddenException('No tiene permisos para realizar esta acción.');
+    }
+
+    const esp = await this.repository.findById(especialistaId);
+    if (!esp) {
+      throw new NotFoundException('El especialista especificado no existe.');
+    }
+
+    const usuarioId = await this.repository.findUserIdByEspecialistaId(especialistaId);
+    if (!usuarioId) {
+      throw new NotFoundException('El especialista no tiene una cuenta de usuario.');
+    }
+
+    if (usuarioId === currentUser.sub) {
+      throw new ForbiddenException('No puede restablecer su propia contraseña desde aquí.');
+    }
+
+    const saltRounds = this.configService.get<number>('BCRYPT_SALT_ROUNDS') ?? 12;
+    const passwordHash = await bcrypt.hash(esp.persona.dni, saltRounds);
+
+    await this.repository.restablecerContrasena({
+      usuarioId,
+      passwordHash,
+      auditoria: {
+        actorUsuarioId: currentUser.sub,
+        eventType: 'PASSWORD_RESET_BY_JEFE_GESTION',
+        eventDetail: `Restablecida la contraseña del especialista ${usuarioId} (DNI ${esp.persona.dni})`,
+        ...meta,
+      },
+    });
+
+    return { success: true, message: 'Contraseña restablecida.' };
   }
 }
 
