@@ -18,7 +18,12 @@ export class DiskStorageService implements StorageService, OnModuleInit {
   }
 
   onModuleInit() {
-    for (const bucket of ['planes', 'reprogramaciones', 'evidencias'] as StorageBucket[]) {
+    for (const bucket of [
+      'planes',
+      'reprogramaciones',
+      'evidencias',
+      'sustentos-excepcionales',
+    ] as StorageBucket[]) {
       const dir = this.getBucketPath(bucket);
       if (!existsSync(dir)) {
         mkdirSync(dir, { recursive: true });
@@ -34,7 +39,11 @@ export class DiskStorageService implements StorageService, OnModuleInit {
   ): Promise<StoragePutResult> {
     const ext = extname(originalName).toLowerCase() || '.pdf';
     const filename = `${bucket}-${randomUUID()}${ext}`;
-    const dest = join(this.getBucketPath(bucket), filename);
+    const dir = this.getBucketPath(bucket);
+    if (!existsSync(dir)) {
+      mkdirSync(dir, { recursive: true });
+    }
+    const dest = join(dir, filename);
     await fs.writeFile(dest, buffer);
 
     const relativePath = `/${bucket}/${filename}`;

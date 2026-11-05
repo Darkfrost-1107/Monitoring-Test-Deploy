@@ -3,6 +3,7 @@ import { BookOpen, Calendar, Compass, ExternalLink, FileText, Layers, ShieldAler
 import { useQuery } from '@tanstack/react-query';
 import { Badge } from '@shared/ui/badge';
 import { Button } from '@shared/ui/button';
+import { rutaDeDescarga } from '@shared/lib/archivo-guardado';
 import type { Cronograma } from '@entities/model-cronogramas';
 import { cronogramasApi } from '@features/cronogramas/api/cronogramas.api';
 
@@ -204,7 +205,7 @@ export const ModalDetalleCronograma = ({
                     {operacionExcepcional.archivoSustentoUrl && (
                       <div className="pt-1">
                         <a
-                          href={operacionExcepcional.archivoSustentoUrl}
+                          href={rutaDeDescarga(operacionExcepcional.archivoSustentoUrl) ?? operacionExcepcional.archivoSustentoUrl}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="inline-flex items-center gap-1 text-[11px] font-bold text-primary hover:underline"

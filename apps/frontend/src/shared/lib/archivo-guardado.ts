@@ -13,7 +13,12 @@
  */
 
 /** Cajones que el endpoint sabe entregar. Deben coincidir con los del backend. */
-const CAJONES = ['evidencias', 'planes', 'reprogramaciones'] as const;
+const CAJONES = [
+  'evidencias',
+  'planes',
+  'reprogramaciones',
+  'sustentos-excepcionales',
+] as const;
 
 /** Prefijo histórico de las rutas guardadas antes de que existieran los cajones. */
 const PREFIJO_VIEJO = '/uploads';
