@@ -832,7 +832,7 @@ model FichaMonitoreo {
   puntajeTotal     Int?      @map("puntaje_total") @db.SmallInt
   promedio         Decimal?  @db.Decimal(4, 2)
   nivelLogro       String?   @map("nivel_logro") @db.VarChar(20) // INICIO | EN_PROCESO | LOGRO_ESPERADO | LOGRO_DESTACADO | null (EIB)
-  estado           String    @default("BORRADOR") @db.VarChar(20) // BORRADOR | FINALIZADO | MIGRADA
+  estado           String    @default("BORRADOR") @db.VarChar(20) // BORRADOR | FINALIZADO | MIGRADA | ANULADO
   creadoPorId      String?   @map("creado_por_id") @db.Uuid
   finalizadaPorId  String?   @map("finalizada_por_id") @db.Uuid
   observaciones    String?   @db.Text
