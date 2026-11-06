@@ -33,7 +33,7 @@ interface Props {
   isLoading: boolean;
   initialData?: DocenteFormData;
   instituciones: { id: string; nombre: string; nivel?: string }[];
-  defaultCargo?: 'Director' | 'Coordinador Pedagógico' | 'Jefe de Taller' | 'Docente de Aula';
+  defaultCargo?: 'Director' | 'Subdirector' | 'Coordinador Pedagógico' | 'Jefe de Taller' | 'Docente de Aula';
   submitLabel?: string;
   serverError?: string | null;
 }
@@ -79,7 +79,7 @@ export const DocenteFormBase = ({
     return {
       ...FORMULARIO_VACIO,
       cargo: defaultCargo,
-      condicion: defaultCargo === 'Director' ? 'Designado' : 'Nombrado',
+      condicion: defaultCargo === 'Director' || defaultCargo === 'Subdirector' ? 'Designado' : 'Nombrado',
       institucionId: propia ?? '',
       nivelEducativo: (nivelPropio?.toUpperCase() as DocenteFormData['nivelEducativo']) ?? 'PRIMARIA',
     };
@@ -151,7 +151,7 @@ export const DocenteFormBase = ({
       cargo,
       // Las condiciones directivas y las docentes son conjuntos distintos:
       // conservar la anterior dejaría un valor fuera del catálogo nuevo.
-      condicion: cargo === 'Director' ? 'Designado' : 'Nombrado',
+      condicion: cargo === 'Director' || cargo === 'Subdirector' ? 'Designado' : 'Nombrado',
     }));
 
   const cambiarNivel = (nivelEducativo: DocenteFormData['nivelEducativo']) =>
@@ -193,8 +193,8 @@ export const DocenteFormBase = ({
         institucionBloqueada={!!persona?.docente?.institucionId}
       />
 
-      {/* El director de I.E. no tiene grados a cargo. */}
-      {form.cargo !== 'Director' && (
+      {/* El personal directivo de I.E. no tiene grados a cargo. */}
+      {form.cargo !== 'Director' && form.cargo !== 'Subdirector' && (
         <SeccionesACargo
           nivel={form.nivelEducativo}
           secciones={form.secciones ?? []}

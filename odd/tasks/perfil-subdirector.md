@@ -15,6 +15,9 @@ Implementación del rol y permisos del **Subdirector** dependiente del Director 
 - [x] **T3** (S3, S4): Adaptar reglas de evaluación y asignación en backend (`scheduling.service.ts`, validadores) y frontend (`use-opciones-de-evaluacion.ts`, `visibilidad.ts`) para que el Subdirector monitoree a toda la I.E. y sea evaluable por el Director.
 - [x] **T4** (S5): Configurar permisos, navegación (`sidebar`), scope (`useScope`, `useCan`) y presentación en frontend para el rol `SUBDIRECTOR`.
 - [x] **T5**: Pruebas unitarias en backend (teachers, auth, scheduling) y frontend (opciones de evaluación, visibilidad, roles).
+- [ ] **T6** (S5): Agregar ítem de navegación y permisos para `instituciones_subdirectores` en frontend (`roles.ts`, `menu-capabilities.ts`, `sidebar/config/config.tsx`).
+- [ ] **T7** (S1, S5): Crear vista dedicada `SubdirectoresPage`, `SubdirectorCreatePage`, `SubdirectorEditPage` e integrar `Subdirector` a `CARGOS_DE_MONITOREO` y `cargosDisponibles`.
+- [ ] **T8**: Pruebas unitarias de frontend para navegación, permisos y padrón de Subdirectores.
 
 ## Allowed edit surfaces
 packages/shared-contracts/src/constants/roles.constants.ts

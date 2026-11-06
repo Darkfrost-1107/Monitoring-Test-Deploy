@@ -20,6 +20,8 @@ import {
   JefeTallerAssignPage,
   JefesAreaPage,
   JefesTallerPage,
+  SubdirectorCreatePage,
+  SubdirectoresPage,
 } from './jefeArea.lazy';
 
 // ── Instituciones ──
@@ -102,6 +104,28 @@ export const adminRoutes: RouteObject[] = [
         element: (
           <LazyLoader>
             <DocenteDetailPage />
+          </LazyLoader>
+        ),
+      },
+    ],
+  },
+  // Padrón de Subdirectores
+  {
+    element: <ProtectedRoute permission="instituciones_subdirectores" />,
+    children: [
+      {
+        path: 'instituciones/subdirectores',
+        element: (
+          <LazyLoader>
+            <SubdirectoresPage />
+          </LazyLoader>
+        ),
+      },
+      {
+        path: 'instituciones/subdirectores/nuevo',
+        element: (
+          <LazyLoader>
+            <SubdirectorCreatePage />
           </LazyLoader>
         ),
       },

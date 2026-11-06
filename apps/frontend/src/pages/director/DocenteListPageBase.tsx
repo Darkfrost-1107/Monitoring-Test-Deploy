@@ -19,7 +19,7 @@ interface DocenteListPageBaseProps {
   description: string;
   actionText: string;
   createPath: string;
-  targetCargo: 'Docente de Aula' | 'Coordinador Pedagógico' | 'Jefe de Taller' | 'Director';
+  targetCargo: 'Docente de Aula' | 'Coordinador Pedagógico' | 'Jefe de Taller' | 'Director' | 'Subdirector';
   itemName: string;
   loadingLabel: string;
   filterCargoOut?: string;

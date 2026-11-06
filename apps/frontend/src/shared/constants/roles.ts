@@ -31,6 +31,7 @@ export type MenuItem =
   | 'instituciones_padron'
   | 'instituciones_padron_lista'
   | 'instituciones_padron_personal'
+  | 'instituciones_subdirectores'
   | 'instituciones_docentes'
   | 'instituciones_coordinadores'
   | 'instituciones_jefes_taller'
@@ -80,6 +81,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
     'reportes_fichas',
     'reportes_analisis',
     'instituciones_padron',
+    'instituciones_subdirectores',
     'instituciones_docentes',
     'mi_firma',
     'plantillas_solicitudes',
@@ -87,6 +89,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
 
   jefe_area: [
     'instituciones_padron',
+    'instituciones_subdirectores',
     'instituciones_docentes',
     'monitoreo',
     'monitoreo_cronograma',
@@ -165,6 +168,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
     'plantillas',
     'plantillas_ugel',
     'plantillas_ies',
+    'instituciones_subdirectores',
     'instituciones_docentes',
     'instituciones_coordinadores',
     // El director de I.E. gestiona a su Coordinador Pedagógico Y a su Jefe de

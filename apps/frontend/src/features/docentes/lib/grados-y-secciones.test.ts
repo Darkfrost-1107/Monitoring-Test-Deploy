@@ -104,6 +104,16 @@ describe('cargosDisponibles', () => {
   it('antepone Director cuando ya es el cargo actual', () => {
     expect(cargosDisponibles('PRIMARIA', 'Director')).toEqual(['Director', 'Docente de Aula']);
   });
+
+  it('antepone Subdirector cuando ya es el cargo actual', () => {
+    expect(cargosDisponibles('PRIMARIA', 'Subdirector')).toEqual(['Subdirector', 'Docente de Aula']);
+    expect(cargosDisponibles('SECUNDARIA', 'Subdirector')).toEqual([
+      'Subdirector',
+      'Coordinador Pedagógico',
+      'Jefe de Taller',
+      'Docente de Aula',
+    ]);
+  });
 });
 
 describe('agregarSeccion', () => {

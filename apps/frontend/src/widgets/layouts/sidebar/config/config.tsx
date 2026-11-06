@@ -85,6 +85,13 @@ export const SIDEBAR_CONFIG: MenuCategory[] = [
     children: [],
   },
   {
+    id: 'instituciones_subdirectores',
+    label: 'Subdirectores',
+    icon: <Users className="h-[18px] w-[18px]" />,
+    path: '/instituciones/subdirectores',
+    children: [],
+  },
+  {
     id: 'instituciones_coordinadores',
     label: 'Coordinador Pedagógico',
     icon: <Users className="h-[18px] w-[18px]" />,

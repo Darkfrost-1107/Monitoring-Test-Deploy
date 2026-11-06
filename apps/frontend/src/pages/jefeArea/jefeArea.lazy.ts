@@ -50,6 +50,14 @@ export const CoordinadorCreatePage = lazy(() =>
   import('../director/DocenteSwitchers').then((m) => ({ default: m.CoordinadorCreateSwitcher })),
 );
 
+export const SubdirectoresPage = lazy(() =>
+  import('../director/SubdirectoresPage').then((m) => ({ default: m.SubdirectoresPage })),
+);
+
+export const SubdirectorCreatePage = lazy(() =>
+  import('../director/SubdirectorCreatePage').then((m) => ({ default: m.SubdirectorCreatePage })),
+);
+
 export const JefesTallerPage = lazy(() =>
   import('../director/JefesTallerPage').then((m) => ({ default: m.JefesTallerPage })),
 );
