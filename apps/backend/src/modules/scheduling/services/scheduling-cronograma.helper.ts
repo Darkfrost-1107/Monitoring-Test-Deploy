@@ -178,7 +178,7 @@ export async function crearVisita(
     }
   }
 
-  const anio = new Date(dto.fechaProgramada).getFullYear();
+  const anio = parseInt(dto.fechaProgramada.split('T')[0].split('-')[0], 10);
   const planId = await cronogramaRepo.findPlanVigentePara(dto.institucionId, anio);
   if (!planId) {
     throw new BadRequestException(
@@ -336,8 +336,10 @@ export async function crearVisita(
   }
 
   // Validar visitas y solapamiento del monitor en la misma fecha
-  const fechaToUse =
-    typeof dto.fechaProgramada === 'string' ? new Date(dto.fechaProgramada) : dto.fechaProgramada;
+  // Se construye a mediodía local para que setHours(0,0,0,0) en findVisitasMonitorPorFecha
+  // no retroceda al día anterior en husos con desfase negativo (Perú UTC-5).
+  const [y, m, d] = dto.fechaProgramada.split('T')[0].split('-').map(Number);
+  const fechaToUse = new Date(y, m - 1, d, 12, 0, 0);
   const visitasMismoDia = await cronogramaRepo.findVisitasMonitorPorFecha(
     dto.monitorId,
     fechaToUse,
