@@ -1,10 +1,11 @@
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Search, FileText, ExternalLink, Loader2, Inbox } from 'lucide-react';
+import { Search, FileText, ExternalLink, Loader2, Inbox, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@shared/ui/badge';
 import { Card } from '@shared/ui/card';
 import { Input } from '@shared/ui/input';
+import { Button } from '@shared/ui/button';
 import {
   Table,
   TableBody,
@@ -17,6 +18,7 @@ import { cronogramasApi } from '@features/cronogramas/api/cronogramas.api';
 import { requestBlob } from '@shared/config/api';
 import { rutaDeDescarga } from '@shared/lib/archivo-guardado';
 import type { IOperacionExcepcionalDetalle, TipoAccionExcepcional } from '@sistema-monitoreo/shared-contracts';
+import { ModalDetalleOperacionExcepcional } from './ModalDetalleOperacionExcepcional';
 
 const CLASES_ENCABEZADO = 'font-bold text-[0.7rem] uppercase tracking-wider py-3';
 
@@ -24,6 +26,7 @@ export const TablaHistorialMesaPartes = () => {
   const [busqueda, setBusqueda] = useState('');
   const [tipoFiltro, setTipoFiltro] = useState<'TODOS' | TipoAccionExcepcional>('TODOS');
   const [descargandoId, setDescargandoId] = useState<string | null>(null);
+  const [detalleSeleccionado, setDetalleSeleccionado] = useState<IOperacionExcepcionalDetalle | null>(null);
 
   const { data: operaciones = [], isLoading } = useQuery({
     queryKey: ['operaciones-excepcionales'],
@@ -124,7 +127,7 @@ export const TablaHistorialMesaPartes = () => {
         </div>
       </div>
 
-      {/* Tabla de Resultados */}
+      {/* Tabla Desahogada */}
       <Card className="overflow-hidden border-border bg-surface p-0 shadow-xs">
         <div className="overflow-x-auto">
           <Table>
@@ -134,23 +137,21 @@ export const TablaHistorialMesaPartes = () => {
                 <TableHead className={`${CLASES_ENCABEZADO} w-36`}>Expediente</TableHead>
                 <TableHead className={`${CLASES_ENCABEZADO} w-36`}>Acción</TableHead>
                 <TableHead className={CLASES_ENCABEZADO}>Institución Educativa</TableHead>
-                <TableHead className={CLASES_ENCABEZADO}>Docente / Directivo</TableHead>
-                <TableHead className={CLASES_ENCABEZADO}>Operador UGEL</TableHead>
-                <TableHead className={CLASES_ENCABEZADO}>Motivo</TableHead>
-                <TableHead className={`${CLASES_ENCABEZADO} text-right pr-5 w-28`}>Sustento</TableHead>
+                <TableHead className={CLASES_ENCABEZADO}>Docente / Evaluado</TableHead>
+                <TableHead className={`${CLASES_ENCABEZADO} text-right pr-5 w-44`}>Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="py-12 text-center text-text-muted">
+                  <TableCell colSpan={6} className="py-12 text-center text-text-muted">
                     <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-primary" />
                     <span className="text-xs">Cargando historial de trámites excepcionales...</span>
                   </TableCell>
                 </TableRow>
               ) : filtradas.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="py-14 text-center text-text-muted">
+                  <TableCell colSpan={6} className="py-14 text-center text-text-muted">
                     <Inbox className="w-10 h-10 mx-auto mb-2 text-text-muted/40" />
                     <p className="text-sm font-semibold text-text">No se encontraron trámites excepcionales</p>
                     <p className="text-xs text-text-muted mt-1">
@@ -162,7 +163,11 @@ export const TablaHistorialMesaPartes = () => {
                 </TableRow>
               ) : (
                 filtradas.map((op) => (
-                  <TableRow key={op.id} className="border-b border-border/60 hover:bg-muted/30 transition-colors">
+                  <TableRow
+                    key={op.id}
+                    className="border-b border-border/60 hover:bg-muted/30 transition-colors cursor-pointer"
+                    onClick={() => setDetalleSeleccionado(op)}
+                  >
                     <TableCell className="pl-5 py-3 text-xs text-text-muted whitespace-nowrap">
                       {formatearFecha(op.createdAt)}
                     </TableCell>
@@ -207,35 +212,36 @@ export const TablaHistorialMesaPartes = () => {
                       </div>
                     </TableCell>
 
-                    <TableCell className="py-3 text-xs text-text">
-                      <span className="text-xs text-text">{op.ejecutadoPorNombre}</span>
-                    </TableCell>
-
-                    <TableCell className="py-3 max-w-xs">
-                      <p className="text-xs text-text-muted line-clamp-2" title={op.motivo}>
-                        {op.motivo}
-                      </p>
-                    </TableCell>
-
                     <TableCell className="py-3 pr-5 text-right">
-                      {op.archivoSustentoUrl ? (
-                        <button
+                      <div className="inline-flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                        <Button
                           type="button"
-                          onClick={() => abrirSustento(op)}
-                          disabled={descargandoId === op.id}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-bold bg-primary/10 text-primary hover:bg-primary/20 transition-colors cursor-pointer disabled:opacity-60"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setDetalleSeleccionado(op)}
+                          className="h-7 px-2 text-xs font-semibold text-text-muted hover:text-text hover:bg-muted cursor-pointer"
                         >
-                          {descargandoId === op.id ? (
-                            <Loader2 className="w-3 h-3 animate-spin" />
-                          ) : (
-                            <FileText className="w-3 h-3" />
-                          )}
-                          Ver PDF
-                          <ExternalLink className="w-2.5 h-2.5 ml-0.5" />
-                        </button>
-                      ) : (
-                        <span className="text-[10px] text-text-muted italic">Sin archivo</span>
-                      )}
+                          <Eye className="w-3.5 h-3.5 mr-1 text-primary" />
+                          Detalle
+                        </Button>
+
+                        {op.archivoSustentoUrl && (
+                          <button
+                            type="button"
+                            onClick={() => abrirSustento(op)}
+                            disabled={descargandoId === op.id}
+                            className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-bold bg-primary/10 text-primary hover:bg-primary/20 transition-colors cursor-pointer disabled:opacity-60"
+                          >
+                            {descargandoId === op.id ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <FileText className="w-3 h-3" />
+                            )}
+                            PDF
+                            <ExternalLink className="w-2.5 h-2.5 ml-0.5" />
+                          </button>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
@@ -244,6 +250,16 @@ export const TablaHistorialMesaPartes = () => {
           </Table>
         </div>
       </Card>
+
+      {/* Modal de Detalle */}
+      {detalleSeleccionado && (
+        <ModalDetalleOperacionExcepcional
+          operacion={detalleSeleccionado}
+          onCerrar={() => setDetalleSeleccionado(null)}
+          onAbrirPdf={abrirSustento}
+          descargando={descargandoId === detalleSeleccionado.id}
+        />
+      )}
     </div>
   );
 };
