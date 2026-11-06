@@ -170,10 +170,7 @@ describe('ModalDetalleCronograma', () => {
       expect(screen.getByText(/Trámite Excepcional \(Mesa de Partes\)/i)).toBeInTheDocument();
       expect(screen.getByText('OFICIO-099-2026-UGEL')).toBeInTheDocument();
       expect(screen.getByText('Docente con licencia médica en la fecha programada.')).toBeInTheDocument();
-      expect(screen.getByRole('link', { name: /Ver Documento de Sustento/i })).toHaveAttribute(
-        'href',
-        '/uploads/sustento.pdf',
-      );
+      expect(screen.getByRole('button', { name: /Ver Documento de Sustento/i })).toBeInTheDocument();
     });
   });
 

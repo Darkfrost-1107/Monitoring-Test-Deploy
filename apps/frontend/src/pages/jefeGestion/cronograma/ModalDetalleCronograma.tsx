@@ -1,8 +1,10 @@
-import type { ReactNode } from 'react';
-import { BookOpen, Calendar, Compass, ExternalLink, FileText, Layers, ShieldAlert, User, X } from 'lucide-react';
+import { useState, type ReactNode } from 'react';
+import { BookOpen, Calendar, Compass, ExternalLink, FileText, Layers, Loader2, ShieldAlert, User, X } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { Badge } from '@shared/ui/badge';
 import { Button } from '@shared/ui/button';
+import { requestBlob } from '@shared/config/api';
 import { rutaDeDescarga } from '@shared/lib/archivo-guardado';
 import type { Cronograma } from '@entities/model-cronogramas';
 import { cronogramasApi } from '@features/cronogramas/api/cronogramas.api';
@@ -62,6 +64,31 @@ export const ModalDetalleCronograma = ({
     },
     enabled: cronograma.estado === 'ANULADO',
   });
+
+  const [abriendoSustento, setAbriendoSustento] = useState(false);
+
+  const abrirSustento = async () => {
+    if (!operacionExcepcional?.archivoSustentoUrl) return;
+    const ruta = rutaDeDescarga(operacionExcepcional.archivoSustentoUrl);
+    if (!ruta) {
+      toast.error('Ruta de archivo no válida.');
+      return;
+    }
+    setAbriendoSustento(true);
+    try {
+      const blob = await requestBlob(ruta);
+      const url = URL.createObjectURL(blob);
+      const nuevaVentana = window.open(url, '_blank', 'noopener,noreferrer');
+      if (!nuevaVentana) {
+        toast.error('El navegador bloqueó la ventana emergente. Permití las ventanas emergentes.');
+      }
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch {
+      toast.error('No se pudo abrir el documento de sustento.');
+    } finally {
+      setAbriendoSustento(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in-0 duration-200">
@@ -204,16 +231,20 @@ export const ModalDetalleCronograma = ({
                     </div>
                     {operacionExcepcional.archivoSustentoUrl && (
                       <div className="pt-1">
-                        <a
-                          href={rutaDeDescarga(operacionExcepcional.archivoSustentoUrl) ?? operacionExcepcional.archivoSustentoUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-[11px] font-bold text-primary hover:underline"
+                        <button
+                          type="button"
+                          onClick={abrirSustento}
+                          disabled={abriendoSustento}
+                          className="inline-flex items-center gap-1.5 text-[11px] font-bold text-primary hover:underline cursor-pointer disabled:opacity-60"
                         >
-                          <FileText className="w-3.5 h-3.5" />
+                          {abriendoSustento ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <FileText className="w-3.5 h-3.5" />
+                          )}
                           Ver Documento de Sustento
                           <ExternalLink className="w-3 h-3" />
-                        </a>
+                        </button>
                       </div>
                     )}
                   </div>
