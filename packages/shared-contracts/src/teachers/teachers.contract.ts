@@ -56,6 +56,8 @@ export interface IDocenteResponse {
   condicionLaboral?: string | null;
   escalaMagisterial?: number | null;
   estado: string;
+  /** `true` mientras la cuenta conserva la clave inicial (DNI): aún no la cambió o se restableció. */
+  contrasenaInicial?: boolean;
   createdAt: Date | string;
   updatedAt: Date | string;
   persona: {

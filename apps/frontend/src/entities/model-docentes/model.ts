@@ -39,6 +39,8 @@ export interface Docente {
   escala: EscalaMagisterial | null;
   institucionId: string; // Relación con I.E.
   activo: boolean;
+  /** La cuenta conserva la clave inicial (DNI): aún no la cambió o se restableció. */
+  contrasenaInicial?: boolean;
   fechaCreacion: string;
   cargo: 'Director' | 'Subdirector' | 'Coordinador Pedagógico' | 'Jefe de Taller' | 'Docente de Aula';
   cargosList?: Array<{

@@ -7,6 +7,7 @@ import {
   cargaHorariaDelCargo,
   condicionInicial,
   CONDICIONES_DEL_CARGO,
+  nivelEducativoAlAsignar,
   type DocenteCandidato,
 } from './asignacion-de-cargo';
 
@@ -201,6 +202,26 @@ describe('condicionInicial', () => {
 describe('CARGOS_ASIGNABLES', () => {
   it('son los cargos que esta pantalla asigna', () => {
     expect(CARGOS_ASIGNABLES).toEqual(['Coordinador Pedagógico', 'Jefe de Taller', 'Subdirector']);
+  });
+});
+
+describe('nivelEducativoAlAsignar', () => {
+  it('Coordinador y Jefe de Taller se asignan siempre en Secundaria', () => {
+    expect(nivelEducativoAlAsignar('Coordinador Pedagógico', { nivelEducativo: 'PRIMARIA' })).toBe(
+      'Secundaria',
+    );
+    expect(nivelEducativoAlAsignar('Jefe de Taller', { nivelEducativo: 'INICIAL' })).toBe(
+      'Secundaria',
+    );
+  });
+
+  it('el Subdirector conserva su nivel, en formato de título', () => {
+    expect(nivelEducativoAlAsignar('Subdirector', { nivelEducativo: 'PRIMARIA' })).toBe('Primaria');
+    expect(nivelEducativoAlAsignar('Subdirector', { nivelEducativo: 'Inicial' })).toBe('Inicial');
+  });
+
+  it('el Subdirector sin nivel conocido cae en Secundaria', () => {
+    expect(nivelEducativoAlAsignar('Subdirector', null)).toBe('Secundaria');
   });
 });
 

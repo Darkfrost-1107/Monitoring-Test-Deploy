@@ -85,6 +85,7 @@ export const mapApiDocenteToFrontend = (apiDoc: IDocenteResponse): Docente => {
     escala: escalaARomano(apiDoc.escalaMagisterial),
     institucionId: apiDoc.institucionId,
     activo: apiDoc.estado === 'Activo',
+    contrasenaInicial: apiDoc.contrasenaInicial,
     // Vacía si el registro no la trae; poner la de hoy sería afirmar una fecha
     // de alta que nadie registró.
     fechaCreacion: apiDoc.createdAt ? aFechaISOLocal(apiDoc.createdAt) : '',

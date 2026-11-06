@@ -23,6 +23,8 @@ export interface DocenteEntity {
   condicionLaboral?: string | null;
   escalaMagisterial?: number | null;
   estado: string;
+  /** `true` mientras la cuenta conserva la clave inicial (DNI). Ausente si no se consultó el usuario. */
+  contrasenaInicial?: boolean;
   createdAt: Date;
   updatedAt: Date;
   persona: {
@@ -65,6 +67,9 @@ export interface DocenteFilter {
 export interface UsuarioDePersona {
   id: string;
   rolCodigo: string;
+  /** La cuenta aún no estrenó una clave propia (recién creada o restablecida). */
+  isFirstLogin?: boolean;
+  passwordHash?: string;
 }
 
 export interface RestablecerContrasenaData {

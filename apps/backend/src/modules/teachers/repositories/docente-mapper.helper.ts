@@ -16,10 +16,13 @@ type DocenteWithRelations = Prisma.DocenteGetPayload<{
 }> & {
   // Solo lo incluyen algunos lectores (findDocenteById/findDocentes); opcional.
   evaluadoresAsignados?: AsignacionConEvaluador[];
+  // Solo los lectores del padrón traen el usuario de la persona.
+  persona: { usuario?: { isFirstLogin: boolean } | null };
 };
 
 export function mapDocente(docente: DocenteWithRelations): DocenteEntity {
   const asig = docente.evaluadoresAsignados?.[0];
+  const isFirstLogin = docente.persona.usuario?.isFirstLogin;
 
   // La principal primero, luego las extras: así el string `especialidad` la
   // ofrece por defecto y el formulario puede separar unas de otras al reeditar.
@@ -45,6 +48,7 @@ export function mapDocente(docente: DocenteWithRelations): DocenteEntity {
     condicionLaboral: docente.condicionLaboral,
     escalaMagisterial: docente.escalaMagisterial,
     estado: docente.estado,
+    ...(isFirstLogin !== undefined && { contrasenaInicial: isFirstLogin }),
     createdAt: docente.createdAt,
     updatedAt: docente.updatedAt,
     persona: {

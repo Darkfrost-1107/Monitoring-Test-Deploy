@@ -199,7 +199,7 @@ export const DirectoresTableWidget = ({
                   onFinalize={designacionVigente(dir) ? () => setFinalizing(dir) : undefined}
                   onRestore={!dir.activo ? () => setRestoring(dir) : undefined}
                   onResetPassword={
-                    tieneCapacidadRestablecer && dir.activo && dir.id !== user?.docenteId
+                    tieneCapacidadRestablecer && dir.activo && dir.id !== user?.docenteId && !dir.contrasenaInicial
                       ? () => setARestablecer(dir)
                       : undefined
                   }
@@ -239,6 +239,11 @@ export const DirectoresTableWidget = ({
         <ModalRestablecerContrasena
           docente={aRestablecer}
           onClose={() => setARestablecer(null)}
+          onRestablecida={() =>
+            setDirectores((prev) =>
+              prev.map((d) => (d.id === aRestablecer.id ? { ...d, contrasenaInicial: true } : d)),
+            )
+          }
         />
       )}
     </>

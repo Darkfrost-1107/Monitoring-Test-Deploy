@@ -6,6 +6,7 @@ import {
   candidatosParaCargo,
   cargaHorariaDelCargo,
   condicionInicial,
+  nivelEducativoAlAsignar,
   type CargoAsignable,
   type CondicionDelCargo,
   type CondicionSubdirector,
@@ -105,8 +106,9 @@ export function useAsignacionDeCargo({ cargo, onAsignado }: Opciones) {
         apellidos: elegido.apellidos,
         correo: elegido.correo || undefined,
         telefono: elegido.celular || undefined,
-        // Coordinador Pedagógico y Jefe de Taller sólo existen en Secundaria.
-        nivelEducativo: 'Secundaria',
+        // Coordinador Pedagógico y Jefe de Taller sólo existen en Secundaria; el
+        // Subdirector conserva el nivel que ya tenía.
+        nivelEducativo: nivelEducativoAlAsignar(cargo, elegido),
         especialidad: elegido.especialidad || undefined,
         especialidadesExtras: elegido.especialidadesExtras || undefined,
         cursoAsignado: elegido.especialidad || undefined,

@@ -25,6 +25,28 @@ describe('puedeRestablecerContrasena', () => {
     ).toBe(true);
   });
 
+  it('no aplica si la cuenta ya tiene la clave inicial (DNI)', () => {
+    expect(
+      puedeRestablecerContrasena({
+        ...base,
+        tieneCapacidad: true,
+        miDocenteId: 'otro',
+        contrasenaInicial: true,
+      }),
+    ).toBe(false);
+  });
+
+  it('aplica si el usuario ya cambió su clave', () => {
+    expect(
+      puedeRestablecerContrasena({
+        ...base,
+        tieneCapacidad: true,
+        miDocenteId: 'otro',
+        contrasenaInicial: false,
+      }),
+    ).toBe(true);
+  });
+
   it('no aplica al personal dado de baja', () => {
     expect(
       puedeRestablecerContrasena({

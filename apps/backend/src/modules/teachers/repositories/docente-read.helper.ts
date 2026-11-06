@@ -5,7 +5,7 @@ import type { Prisma } from '../../../generated/prisma/client.js';
 import { CargoNombre } from '../../../common/enums/cargo.enum.js';
 
 const DOCENTE_INCLUDE = {
-  persona: true,
+  persona: { include: { usuario: { select: { isFirstLogin: true } } } },
   docenteCargos: { include: { cargo: true } },
   docenteCursos: { include: { curso: true } },
   docenteEspecialidades: { include: { especialidad: true } },

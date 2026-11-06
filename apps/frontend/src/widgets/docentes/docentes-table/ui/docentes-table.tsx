@@ -46,7 +46,12 @@ interface DocentesTableWidgetProps {
   onEdit?: (docente: Docente) => void;
   onView: (docente: Docente) => void;
   instituciones: { id: string; nombre: string }[];
-  targetCargo?: 'Director' | 'Coordinador Pedagógico' | 'Jefe de Taller' | 'Docente de Aula' | 'Subdirector';
+  targetCargo?:
+    | 'Director'
+    | 'Coordinador Pedagógico'
+    | 'Jefe de Taller'
+    | 'Docente de Aula'
+    | 'Subdirector';
   routePrefix?: string;
   itemName?: string;
 }
@@ -233,6 +238,7 @@ export const DocentesTableWidget = ({
                   miDocenteId: user?.docenteId,
                   docenteId: docente.id,
                   activo: docente.activo,
+                  contrasenaInicial: docente.contrasenaInicial,
                 })
                   ? () => setARestablecer(docente)
                   : undefined,
@@ -281,7 +287,17 @@ export const DocentesTableWidget = ({
       )}
 
       {aRestablecer && (
-        <ModalRestablecerContrasena docente={aRestablecer} onClose={() => setARestablecer(null)} />
+        <ModalRestablecerContrasena
+          docente={aRestablecer}
+          onClose={() => setARestablecer(null)}
+          onRestablecida={() =>
+            setDocentes((previos) =>
+              previos.map((d) =>
+                d.id === aRestablecer.id ? { ...d, contrasenaInicial: true } : d,
+              ),
+            )
+          }
+        />
       )}
 
       {aAsignar && (

@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { Capability } from '@sistema-monitoreo/shared-contracts';
@@ -80,6 +80,18 @@ export class RestablecerContrasenaService {
       if (!ROLES_RESTABLECIBLES_POR_JEFE_GESTION.includes(usuario.rolCodigo)) {
         throw new ForbiddenException('No puede restablecer la contraseña de este usuario.');
       }
+    }
+
+    // Si la cuenta sigue en primer ingreso con la clave del DNI, restablecer no
+    // cambia nada: se rechaza para que no se repita la acción (y su auditoría).
+    if (
+      usuario.isFirstLogin &&
+      usuario.passwordHash &&
+      (await bcrypt.compare(docente.persona.dni, usuario.passwordHash))
+    ) {
+      throw new ConflictException(
+        'La contraseña ya está en su valor inicial (DNI) y el usuario aún no la cambió.',
+      );
     }
 
     const saltRounds = this.configService.get<number>('BCRYPT_SALT_ROUNDS') ?? 12;

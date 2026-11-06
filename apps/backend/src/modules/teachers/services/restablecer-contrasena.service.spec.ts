@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { jest } from '@jest/globals';
 import * as bcrypt from 'bcrypt';
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { RestablecerContrasenaService } from './restablecer-contrasena.service.js';
 import { TeachersRepository } from '../repositories/teachers.repository.js';
 import { RoleCode } from '../../../common/enums/role.enum.js';
@@ -85,6 +85,33 @@ describe('RestablecerContrasenaService', () => {
     expect(arg.auditoria.eventDetail).toContain('usuario-1');
     expect(arg.auditoria.eventDetail).toContain(INSTITUCION);
     expect(arg.auditoria.eventDetail).not.toContain('12345678');
+  });
+
+  it('rechaza con 409 si la cuenta ya está en primer ingreso con la clave del DNI', async () => {
+    findUsuarioPorPersonaId.mockResolvedValue(
+      usuarioObjetivo({ isFirstLogin: true, passwordHash: await bcrypt.hash('12345678', 4) }),
+    );
+
+    await expect(service.restablecer('docente-1', director, {})).rejects.toThrow(ConflictException);
+    expect(restablecerContrasena).not.toHaveBeenCalled();
+  });
+
+  it('restablece si estaba en primer ingreso pero con una clave distinta al DNI', async () => {
+    findUsuarioPorPersonaId.mockResolvedValue(
+      usuarioObjetivo({ isFirstLogin: true, passwordHash: await bcrypt.hash('otra-clave', 4) }),
+    );
+
+    await service.restablecer('docente-1', director, {});
+    expect(restablecerContrasena).toHaveBeenCalledTimes(1);
+  });
+
+  it('restablece si el usuario ya cambió su clave', async () => {
+    findUsuarioPorPersonaId.mockResolvedValue(
+      usuarioObjetivo({ isFirstLogin: false, passwordHash: await bcrypt.hash('12345678', 4) }),
+    );
+
+    await service.restablecer('docente-1', director, {});
+    expect(restablecerContrasena).toHaveBeenCalledTimes(1);
   });
 
   it('rechaza sin la capacidad', async () => {

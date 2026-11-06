@@ -169,3 +169,20 @@ export function condicionInicial(
     ? (actual as CondicionDelCargo)
     : 'Nombrado';
 }
+
+/**
+ * Nivel educativo con el que se guarda al docente al asignarle el cargo.
+ *
+ * Coordinador Pedagógico y Jefe de Taller sólo existen en Secundaria. El
+ * Subdirector puede ser de cualquier nivel, así que conserva el que ya tenía:
+ * forzarlo a Secundaria lo movía de nivel (y lo dejaba sin su especialidad
+ * válida) al asignarlo.
+ */
+export function nivelEducativoAlAsignar(
+  cargo: CargoAsignable,
+  docente: { nivelEducativo?: string | null } | null | undefined,
+): string {
+  const actual = docente?.nivelEducativo;
+  if (cargo !== 'Subdirector' || !actual) return 'Secundaria';
+  return actual.charAt(0).toUpperCase() + actual.slice(1).toLowerCase();
+}

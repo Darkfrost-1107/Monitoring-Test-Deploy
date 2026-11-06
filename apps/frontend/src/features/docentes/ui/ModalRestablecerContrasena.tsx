@@ -7,13 +7,20 @@ interface Props {
   docente: { id: string; nombres: string; apellidos: string };
   onClose: () => void;
   onConfirm?: () => Promise<void>;
+  /** Se invoca al restablecer con éxito, para que la lista refleje la clave inicial. */
+  onRestablecida?: () => void;
 }
 
 /**
  * Confirma y ejecuta el restablecimiento de la contraseña de una persona del
  * personal. En caso de error el modal queda abierto para poder reintentar.
  */
-export const ModalRestablecerContrasena = ({ docente, onClose, onConfirm }: Props) => {
+export const ModalRestablecerContrasena = ({
+  docente,
+  onClose,
+  onConfirm,
+  onRestablecida,
+}: Props) => {
   const { mutate, isPending } = useRestablecerContrasena();
   const [ejecutando, setEjecutando] = useState(false);
 
@@ -37,6 +44,7 @@ export const ModalRestablecerContrasena = ({ docente, onClose, onConfirm }: Prop
     mutate(docente.id, {
       onSuccess: () => {
         toast.success('Contraseña restablecida. Indícale que ingrese con su DNI');
+        onRestablecida?.();
         onClose();
       },
       onError: (e) => toast.error(e.message),
