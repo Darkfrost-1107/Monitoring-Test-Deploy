@@ -78,10 +78,13 @@ export const ModalDetalleCronograma = ({
     try {
       const blob = await requestBlob(ruta);
       const url = URL.createObjectURL(blob);
-      const nuevaVentana = window.open(url, '_blank', 'noopener,noreferrer');
-      if (!nuevaVentana) {
-        toast.error('El navegador bloqueó la ventana emergente. Permití las ventanas emergentes.');
-      }
+      const link = document.createElement('a');
+      link.href = url;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
       setTimeout(() => URL.revokeObjectURL(url), 60_000);
     } catch {
       toast.error('No se pudo abrir el documento de sustento.');
