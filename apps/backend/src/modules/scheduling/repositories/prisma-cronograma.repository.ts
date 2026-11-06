@@ -8,6 +8,7 @@ import type {
   TipoMonitoreo,
   TipoAccionExcepcional,
   IOperacionExcepcional,
+  IOperacionExcepcionalDetalle,
 } from '@sistema-monitoreo/shared-contracts';
 import {
   CronogramaRepository,
@@ -398,6 +399,50 @@ export class PrismaCronogramaRepository implements CronogramaRepository {
       ejecutadoPorId: row.ejecutadoPorId,
       createdAt: row.createdAt.toISOString(),
     };
+  }
+
+  async findAllOperacionesExcepcionales(): Promise<IOperacionExcepcionalDetalle[]> {
+    const rows = await this.prisma.operacionExcepcional.findMany({
+      include: {
+        cronograma: {
+          include: {
+            institucion: true,
+            evaluado: { include: { persona: true } },
+            monitor: { include: { persona: true } },
+          },
+        },
+        ejecutadoPor: { include: { persona: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return rows.map((row) => ({
+      id: row.id,
+      cronogramaId: row.cronogramaId,
+      fichaId: row.fichaId,
+      tipoAccion: row.tipoAccion as TipoAccionExcepcional,
+      numeroExpediente: row.numeroExpediente,
+      motivo: row.motivo,
+      archivoSustentoUrl: row.archivoSustentoUrl,
+      ejecutadoPorId: row.ejecutadoPorId,
+      createdAt: row.createdAt.toISOString(),
+      institucionNombre: row.cronograma?.institucion?.nombre ?? 'I.E. Sin Nombre',
+      institucionCodigoModular: row.cronograma?.institucion?.codigoModular ?? '',
+      evaluadoNombre: row.cronograma?.evaluado?.persona
+        ? `${row.cronograma.evaluado.persona.apellidos}, ${row.cronograma.evaluado.persona.nombres}`
+        : 'Docente no asignado',
+      evaluadoNumeroDocumento: row.cronograma?.evaluado?.persona?.dni ?? '',
+      monitorNombre: row.cronograma?.monitor?.persona
+        ? `${row.cronograma.monitor.persona.apellidos}, ${row.cronograma.monitor.persona.nombres}`
+        : 'Monitor no asignado',
+      ejecutadoPorNombre: row.ejecutadoPor?.persona
+        ? `${row.ejecutadoPor.persona.apellidos}, ${row.ejecutadoPor.persona.nombres}`
+        : 'Operador UGEL',
+      fechaVisita: row.cronograma?.fechaProgramada
+        ? row.cronograma.fechaProgramada.toISOString().split('T')[0]
+        : '',
+      numeroVisita: row.cronograma?.numeroVisita ?? 1,
+    }));
   }
 }
 

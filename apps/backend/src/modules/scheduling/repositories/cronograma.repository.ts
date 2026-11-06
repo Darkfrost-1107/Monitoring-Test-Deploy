@@ -5,6 +5,7 @@ import type {
   EstadoVisita,
   TipoAccionExcepcional,
   IOperacionExcepcional,
+  IOperacionExcepcionalDetalle,
 } from '@sistema-monitoreo/shared-contracts';
 
 export type { IVisita };
@@ -146,6 +147,7 @@ export abstract class CronogramaRepository {
   abstract findOperacionExcepcionalByCronograma(
     cronogramaId: string,
   ): Promise<IOperacionExcepcional | null>;
+  abstract findAllOperacionesExcepcionales(): Promise<IOperacionExcepcionalDetalle[]>;
 }
 
 export abstract class SolicitudReprogramacionRepository {

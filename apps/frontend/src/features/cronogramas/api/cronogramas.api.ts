@@ -6,6 +6,7 @@ import type {
   EstadoVisita,
   IAccionExcepcionalInput,
   IOperacionExcepcional,
+  IOperacionExcepcionalDetalle,
 } from '@sistema-monitoreo/shared-contracts';
 import { request } from '@shared/config/api';
 
@@ -98,4 +99,7 @@ export const cronogramasApi = {
 
   findOperacionExcepcional: (id: string) =>
     request<IOperacionExcepcional | null>(`/api/cronogramas/${id}/operacion-excepcional`),
+
+  findAllOperacionesExcepcionales: () =>
+    request<IOperacionExcepcionalDetalle[]>('/api/cronogramas/operaciones-excepcionales'),
 };

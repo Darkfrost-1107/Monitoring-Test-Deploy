@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, ShieldAlert } from 'lucide-react';
 import { Button } from '@shared/ui/button';
 import { useListadoCronogramas } from '@features/cronogramas/hooks/use-listado-cronogramas';
 import { useProgramacionCronograma } from '@features/cronogramas/hooks/use-programacion-cronograma';
@@ -13,6 +13,7 @@ import {
 import { BarraFiltros } from './cronograma/BarraFiltros';
 import { ModalCronograma } from './cronograma/ModalCronograma';
 import { TablaCronogramas } from './cronograma/TablaCronogramas';
+import { TablaHistorialMesaPartes } from './cronograma/TablaHistorialMesaPartes';
 import { ModalDetalleCronograma } from './cronograma/ModalDetalleCronograma';
 import { ModalAccionExcepcional } from '@features/cronogramas/ui/ModalAccionExcepcional';
 import { PageHeader } from '@shared/ui/pageHeader';
@@ -76,6 +77,7 @@ export const CronogramaPage = () => {
 
   // --- Estados de Detalles / Ver ---
   const [viewCronograma, setViewCronograma] = useState<Cronograma | null>(null);
+  const [tabActiva, setTabActiva] = useState<'visitas' | 'mesa_partes'>('visitas');
 
   // --- Estado de Trámite Excepcional ---
   const [accionExcepcionalCronograma, setAccionExcepcionalCronograma] = useState<Cronograma | null>(null);
@@ -113,7 +115,7 @@ export const CronogramaPage = () => {
         title="Cronogramas de Monitoreo"
         description="Programación de visitas de monitoreo pedagógico y administrativo."
         action={
-          puedeRegistrar ? (
+          puedeRegistrar && tabActiva === 'visitas' ? (
             <Button
               onClick={programacion.abrirCreacion}
               className="flex items-center gap-2 font-bold cursor-pointer bg-primary hover:bg-primary/90 text-white transition-colors"
@@ -125,32 +127,66 @@ export const CronogramaPage = () => {
         }
       />
 
-      <BarraFiltros
-        filtros={listado.filtros}
-        onCambiar={listado.cambiarFiltro}
-        instituciones={uniqueInstituciones}
-        esDirector={isDirector}
-      />
+      {puedeAccionExcepcional && (
+        <div className="flex items-center gap-2 border-b border-border -mt-2">
+          <button
+            type="button"
+            onClick={() => setTabActiva('visitas')}
+            className={`pb-2.5 px-3 text-xs font-bold transition-colors cursor-pointer border-b-2 -mb-px ${
+              tabActiva === 'visitas'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-text-muted hover:text-text'
+            }`}
+          >
+            Visitas Programadas
+          </button>
+          <button
+            type="button"
+            onClick={() => setTabActiva('mesa_partes')}
+            className={`pb-2.5 px-3 text-xs font-bold transition-colors cursor-pointer border-b-2 -mb-px flex items-center gap-1.5 ${
+              tabActiva === 'mesa_partes'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-text-muted hover:text-text'
+            }`}
+          >
+            <ShieldAlert className="w-3.5 h-3.5 text-amber-500" />
+            Historial de Mesa de Partes
+          </button>
+        </div>
+      )}
 
-      <TablaCronogramas
-        cronogramas={listado.paginados}
-        esDirector={isDirector}
-        paginacion={{
-          desde: listado.desde,
-          hasta: listado.hasta,
-          total: listado.filtrados.length,
-          pagina: listado.pagina,
-          totalPaginas: listado.totalPaginas,
-          onPagina: listado.irAPagina,
-        }}
-        onVer={setViewCronograma}
-        onEditar={programacion.abrirEdicion}
-        onEliminar={setDeleteCronogramaId}
-        formatearFechaHora={fechaYHoraDeTabla}
-        colorDeIniciales={colorDeIniciales}
-        estiloTipo={estiloDeTipo}
-        estiloEstado={estiloDeEstado}
-      />
+      {tabActiva === 'visitas' ? (
+        <>
+          <BarraFiltros
+            filtros={listado.filtros}
+            onCambiar={listado.cambiarFiltro}
+            instituciones={uniqueInstituciones}
+            esDirector={isDirector}
+          />
+
+          <TablaCronogramas
+            cronogramas={listado.paginados}
+            esDirector={isDirector}
+            paginacion={{
+              desde: listado.desde,
+              hasta: listado.hasta,
+              total: listado.filtrados.length,
+              pagina: listado.pagina,
+              totalPaginas: listado.totalPaginas,
+              onPagina: listado.irAPagina,
+            }}
+            onVer={setViewCronograma}
+            onEditar={programacion.abrirEdicion}
+            onEliminar={setDeleteCronogramaId}
+            formatearFechaHora={fechaYHoraDeTabla}
+            colorDeIniciales={colorDeIniciales}
+            estiloTipo={estiloDeTipo}
+            estiloEstado={estiloDeEstado}
+          />
+        </>
+      ) : (
+        <TablaHistorialMesaPartes />
+      )}
 
       {programacion.abierto && (
         <ModalCronograma

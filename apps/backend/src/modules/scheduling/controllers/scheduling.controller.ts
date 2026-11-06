@@ -18,6 +18,7 @@ import type {
   IVisita,
   ISolicitudReprogramacion,
   IOperacionExcepcional,
+  IOperacionExcepcionalDetalle,
 } from '@sistema-monitoreo/shared-contracts';
 import { SchedulingService } from '../services/scheduling.service.js';
 import type { SessionUser } from '../../../shared/types/session-user.js';
@@ -56,6 +57,14 @@ export class SchedulingController {
     @Req() req: AuthenticatedRequest,
   ): Promise<IVisita[]> {
     return this.service.findAllVisitas(query, this.toSession(req));
+  }
+
+  @Get('cronogramas/operaciones-excepcionales')
+  @RequirePermissions('monitoreo:read')
+  async listarOperacionesExcepcionales(
+    @Req() req: AuthenticatedRequest,
+  ): Promise<IOperacionExcepcionalDetalle[]> {
+    return this.service.findAllOperacionesExcepcionales(this.toSession(req));
   }
 
   @Get('cronogramas/:id')

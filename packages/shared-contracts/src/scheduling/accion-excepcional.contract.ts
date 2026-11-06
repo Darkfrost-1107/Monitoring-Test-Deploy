@@ -19,3 +19,14 @@ export interface IOperacionExcepcional {
   ejecutadoPorId: string;
   createdAt: string;
 }
+
+export interface IOperacionExcepcionalDetalle extends IOperacionExcepcional {
+  institucionNombre: string;
+  institucionCodigoModular: string;
+  evaluadoNombre: string;
+  evaluadoNumeroDocumento: string;
+  monitorNombre: string;
+  ejecutadoPorNombre: string;
+  fechaVisita: string;
+  numeroVisita: number;
+}

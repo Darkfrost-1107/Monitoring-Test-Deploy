@@ -4,6 +4,7 @@ import type {
   IVisita,
   ISolicitudReprogramacion,
   IOperacionExcepcional,
+  IOperacionExcepcionalDetalle,
 } from '@sistema-monitoreo/shared-contracts';
 import {
   CronogramaRepository,
@@ -179,5 +180,11 @@ export class SchedulingService {
     session: SessionUser,
   ): Promise<IOperacionExcepcional | null> {
     return findOperacionExcepcionalByCronograma(this.cronogramaRepo, cronogramaId, session);
+  }
+
+  async findAllOperacionesExcepcionales(
+    _session: SessionUser,
+  ): Promise<IOperacionExcepcionalDetalle[]> {
+    return this.cronogramaRepo.findAllOperacionesExcepcionales();
   }
 }

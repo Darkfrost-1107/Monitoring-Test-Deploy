@@ -73,6 +73,7 @@ describe('SchedulingService - Reprogramaciones', () => {
       applyReprogramacion: jest.fn<any>().mockResolvedValue(undefined),
       ejecutarAccionExcepcional: jest.fn<any>(),
       findOperacionExcepcionalByCronograma: jest.fn<any>(),
+      findAllOperacionesExcepcionales: jest.fn<any>(),
     };
     const mockSol: Partial<jest.Mocked<SolicitudReprogramacionRepository>> = {
       findAll: jest.fn<any>(),
@@ -1054,6 +1055,33 @@ describe('SchedulingService - Reprogramaciones', () => {
 
       const res = await service.findOperacionExcepcionalByCronograma('vis-1', sesionJefe);
       expect(res).toEqual(mockOp);
+    });
+
+    it('obtiene el listado de todas las operaciones excepcionales', async () => {
+      const mockLista = [
+        {
+          id: 'op-1',
+          cronogramaId: 'vis-1',
+          tipoAccion: 'ANULACION_TOTAL' as const,
+          numeroExpediente: 'EXP-123',
+          motivo: 'Motivo explicativo',
+          archivoSustentoUrl: '/storage/sustento.pdf',
+          ejecutadoPorId: 'user-jefe',
+          createdAt: '2026-05-01T10:00:00Z',
+          institucionNombre: 'I.E. 80001',
+          institucionCodigoModular: '1234567',
+          evaluadoNombre: 'Pérez, Juan',
+          evaluadoNumeroDocumento: '12345678',
+          monitorNombre: 'Gómez, Carlos',
+          ejecutadoPorNombre: 'Jefe, María',
+          fechaVisita: '2026-05-01',
+          numeroVisita: 1,
+        },
+      ];
+      (cronogramaRepo.findAllOperacionesExcepcionales as any).mockResolvedValue(mockLista);
+
+      const res = await service.findAllOperacionesExcepcionales(sesionJefe);
+      expect(res).toEqual(mockLista);
     });
   });
 });
