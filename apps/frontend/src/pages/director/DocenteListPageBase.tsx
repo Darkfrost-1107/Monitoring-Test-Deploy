@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, UserPlus } from 'lucide-react';
 import { Button } from '@shared/ui/button';
 import { PageHeader } from '@shared/ui/pageHeader';
 import { Spinner } from '@shared/ui/Spinner';
@@ -17,6 +17,7 @@ import { RoleCode } from '@sistema-monitoreo/shared-contracts';
 interface DocenteListPageBaseProps {
   title: string;
   description: string;
+  /** Texto del botón principal (asignar desde padrón existente). */
   actionText: string;
   createPath: string;
   targetCargo: 'Docente de Aula' | 'Coordinador Pedagógico' | 'Jefe de Taller' | 'Director' | 'Subdirector';
@@ -25,6 +26,10 @@ interface DocenteListPageBaseProps {
   filterCargoOut?: string;
   /** Si se indica, solo muestra docentes cuya especialidad incluya este valor (ej. 'EPT'). */
   filterEspecialidad?: string;
+  /** Texto del botón secundario "Registrar nuevo". Si se omite, no se muestra. */
+  secondaryActionText?: string;
+  /** Ruta del formulario de registro directo. Requerido si secondaryActionText está presente. */
+  secondaryCreatePath?: string;
 }
 
 export const DocenteListPageBase = ({
@@ -37,6 +42,8 @@ export const DocenteListPageBase = ({
   loadingLabel,
   filterCargoOut,
   filterEspecialidad,
+  secondaryActionText,
+  secondaryCreatePath,
 }: DocenteListPageBaseProps) => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -111,13 +118,25 @@ export const DocenteListPageBase = ({
         title={title}
         description={description}
         action={
-          <Button
-            onClick={() => navigate(createPath, { state: { from: location.pathname } })}
-            className="flex items-center gap-2 font-bold cursor-pointer bg-primary hover:bg-primary-hover text-white"
-          >
-            <PlusCircle className="w-[18px] h-[18px]" strokeWidth={2} />
-            {actionText}
-          </Button>
+          <div className="flex items-center gap-2">
+            {secondaryActionText && secondaryCreatePath && (
+              <Button
+                variant="outline"
+                onClick={() => navigate(secondaryCreatePath, { state: { from: location.pathname } })}
+                className="flex items-center gap-2 font-bold cursor-pointer"
+              >
+                <UserPlus className="w-[18px] h-[18px]" strokeWidth={2} />
+                {secondaryActionText}
+              </Button>
+            )}
+            <Button
+              onClick={() => navigate(createPath, { state: { from: location.pathname } })}
+              className="flex items-center gap-2 font-bold cursor-pointer bg-primary hover:bg-primary-hover text-white"
+            >
+              <PlusCircle className="w-[18px] h-[18px]" strokeWidth={2} />
+              {actionText}
+            </Button>
+          </div>
         }
       />
 

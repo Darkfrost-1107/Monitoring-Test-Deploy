@@ -199,7 +199,23 @@ describe('condicionInicial', () => {
 });
 
 describe('CARGOS_ASIGNABLES', () => {
-  it('son los dos cargos que esta pantalla asigna', () => {
-    expect(CARGOS_ASIGNABLES).toEqual(['Coordinador Pedagógico', 'Jefe de Taller']);
+  it('son los cargos que esta pantalla asigna', () => {
+    expect(CARGOS_ASIGNABLES).toEqual(['Coordinador Pedagógico', 'Jefe de Taller', 'Subdirector']);
+  });
+});
+
+describe('asignación de Subdirector', () => {
+  it('propone Encargado como condición', () => {
+    expect(condicionInicial(null, 'Subdirector')).toBe('Encargado');
+    expect(condicionInicial(docente({ condicion: 'Nombrado' }), 'Subdirector')).toBe('Encargado');
+  });
+
+  it('admite a cualquier docente activo, no solo de aula', () => {
+    const lista = [
+      docente({ id: 'a', activo: true, cargo: 'Docente de Aula' }),
+      docente({ id: 'b', activo: true, cargo: 'PIP' }),
+      docente({ id: 'c', activo: false, cargo: 'Docente de Aula' }),
+    ];
+    expect(candidatosParaCargo(lista, 'Subdirector').map((d) => d.id)).toEqual(['a', 'b']);
   });
 });

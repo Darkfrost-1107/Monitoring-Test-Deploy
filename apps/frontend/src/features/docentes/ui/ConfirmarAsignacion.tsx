@@ -4,9 +4,11 @@ import { twoCols } from '@shared/ui/form-controls.types';
 import type { Docente } from '@entities/model-docentes';
 import {
   CONDICIONES_DEL_CARGO,
+  CONDICIONES_SUBDIRECTOR,
   cargaHorariaDelCargo,
   type CargoAsignable,
   type CondicionDelCargo,
+  type CondicionSubdirector,
 } from '../lib/asignacion-de-cargo';
 
 /**
@@ -17,8 +19,8 @@ import {
 interface Props {
   cargo: CargoAsignable;
   docente: Docente;
-  condicion: CondicionDelCargo;
-  onCondicionChange: (condicion: CondicionDelCargo) => void;
+  condicion: CondicionDelCargo | CondicionSubdirector;
+  onCondicionChange: (condicion: CondicionDelCargo | CondicionSubdirector) => void;
   cargaHoraria: number;
   onCargaHorariaChange: (horas: number) => void;
 }
@@ -32,6 +34,10 @@ export const ConfirmarAsignacion = ({
   onCargaHorariaChange,
 }: Props) => {
   const cargaFija = cargo === 'Coordinador Pedagógico';
+  const esSubdirector = cargo === 'Subdirector';
+  const condiciones = esSubdirector
+    ? CONDICIONES_SUBDIRECTOR.map((c) => ({ value: c, label: c }))
+    : CONDICIONES_DEL_CARGO.map((c) => ({ value: c, label: c }));
 
   return (
     <div className="animate-in slide-in-from-bottom-2 duration-300 flex flex-col gap-6">
@@ -39,14 +45,23 @@ export const ConfirmarAsignacion = ({
         <div className="p-4 bg-muted/30 border border-border/80 rounded-xl mb-5">
           <h4 className="text-sm font-bold text-text mb-1">Requisitos del Cargo</h4>
           <p className="text-xs text-text-muted">
-            El cargo de {cargo} requiere condición laboral <strong>Nombrado</strong> o{' '}
-            <strong>Destacado</strong>.
-            {cargaFija && (
-              <span>
-                {' '}
-                La carga horaria se actualizará automáticamente a{' '}
-                <strong>{cargaHorariaDelCargo(cargo, null)} horas</strong>.
-              </span>
+            {esSubdirector ? (
+              <>
+                El cargo de {cargo} requiere condición laboral{' '}
+                <strong>Encargado</strong> (encargatura directiva).
+              </>
+            ) : (
+              <>
+                El cargo de {cargo} requiere condición laboral <strong>Nombrado</strong> o{' '}
+                <strong>Destacado</strong>.
+                {cargaFija && (
+                  <span>
+                    {' '}
+                    La carga horaria se actualizará automáticamente a{' '}
+                    <strong>{cargaHorariaDelCargo(cargo, null)} horas</strong>.
+                  </span>
+                )}
+              </>
             )}
           </p>
         </div>
@@ -56,8 +71,8 @@ export const ConfirmarAsignacion = ({
             label="Condición Laboral en el Cargo"
             required
             value={condicion}
-            onChange={(v) => onCondicionChange(v as CondicionDelCargo)}
-            options={CONDICIONES_DEL_CARGO.map((c) => ({ value: c, label: c }))}
+            onChange={(v) => onCondicionChange(v as CondicionDelCargo | CondicionSubdirector)}
+            options={condiciones}
             placeholder="Seleccione Condición"
           />
 

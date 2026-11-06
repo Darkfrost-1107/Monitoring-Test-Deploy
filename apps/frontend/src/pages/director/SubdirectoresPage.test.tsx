@@ -36,7 +36,7 @@ vi.mock('@shared/hooks/useCan', () => ({
 }));
 
 describe('SubdirectoresPage', () => {
-  it('renderiza el título y la acción de registrar subdirector', async () => {
+  it('renderiza el título y las acciones de asignar y registrar subdirector', async () => {
     render(
       <MemoryRouter>
         <SubdirectoresPage />
@@ -44,6 +44,7 @@ describe('SubdirectoresPage', () => {
     );
 
     expect(await screen.findByText('Gestión de Subdirectores')).toBeInTheDocument();
-    expect(screen.getByText('Registrar Subdirector')).toBeInTheDocument();
+    expect(screen.getByText('Asignar Subdirector')).toBeInTheDocument();
+    expect(screen.getByText('Registrar nuevo')).toBeInTheDocument();
   });
 });

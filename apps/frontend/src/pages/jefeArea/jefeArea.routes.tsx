@@ -4,6 +4,7 @@ import { ProtectedRoute } from '@shared/ui/ProtectedRoute';
 import {
   CalendarioPage,
   CoordinadorCreatePage,
+  CoordinadorCreateDirectoPage,
   CoordinadorListPage,
   CronogramaPage,
   DocenteCreatePage,
@@ -18,8 +19,10 @@ import {
   JefeAreaDetailPage,
   JefeAreaEditPage,
   JefeTallerAssignPage,
+  JefeTallerCreatePage,
   JefesAreaPage,
   JefesTallerPage,
+  SubdirectorAssignPage,
   SubdirectorCreatePage,
   SubdirectoresPage,
 } from './jefeArea.lazy';
@@ -122,7 +125,17 @@ export const adminRoutes: RouteObject[] = [
         ),
       },
       {
+        // Asignar subdirector desde padrón existente
         path: 'instituciones/subdirectores/nuevo',
+        element: (
+          <LazyLoader>
+            <SubdirectorAssignPage />
+          </LazyLoader>
+        ),
+      },
+      {
+        // Registrar subdirector nuevo directamente
+        path: 'instituciones/subdirectores/registrar',
         element: (
           <LazyLoader>
             <SubdirectorCreatePage />
@@ -148,6 +161,15 @@ export const adminRoutes: RouteObject[] = [
         element: (
           <LazyLoader>
             <CoordinadorCreatePage />
+          </LazyLoader>
+        ),
+      },
+      {
+        // Registrar coordinador nuevo directamente (sin pasar por padrón de docentes)
+        path: 'instituciones/coordinadores/registrar',
+        element: (
+          <LazyLoader>
+            <CoordinadorCreateDirectoPage />
           </LazyLoader>
         ),
       },
@@ -186,6 +208,15 @@ export const adminRoutes: RouteObject[] = [
         element: (
           <LazyLoader>
             <JefeTallerAssignPage />
+          </LazyLoader>
+        ),
+      },
+      {
+        // Registrar jefe de taller nuevo directamente
+        path: 'instituciones/jefes-taller/registrar',
+        element: (
+          <LazyLoader>
+            <JefeTallerCreatePage />
           </LazyLoader>
         ),
       },
