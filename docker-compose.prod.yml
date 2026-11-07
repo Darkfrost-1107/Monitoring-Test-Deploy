@@ -52,7 +52,7 @@ services:
     expose:
       - '3000'
     volumes:
-      - backend_uploads:/app/uploads
+      - backend_uploads:/app/apps/backend/uploads
     networks:
       - monitoring-network
 
