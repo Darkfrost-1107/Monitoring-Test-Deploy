@@ -57,7 +57,9 @@ export const DocenteListPageBase = ({
     try {
       let docentesMapped = await fetchDocentes();
       if (filterCargoOut) {
-        const isDirectorIe = user?.role === RoleCode.DIRECTOR_INSTITUCION;
+        const isDirectorIe =
+          user?.role === RoleCode.DIRECTOR_INSTITUCION ||
+          user?.role === RoleCode.SUBDIRECTOR;
         if (isDirectorIe) {
           docentesMapped = docentesMapped.filter((d) => d.cargo !== filterCargoOut);
         }

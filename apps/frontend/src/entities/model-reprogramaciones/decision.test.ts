@@ -26,7 +26,7 @@ const visita = (over: Partial<VisitaDecidible> = {}): VisitaDecidible => ({
 const usuario = (over: Partial<UsuarioDecisor> & { role: string }): UsuarioDecisor => ({ ...over });
 
 describe('esSolicitudDeInstitucion', () => {
-  it.each([[RoleCode.COORDINADOR_PEDAGOGICO], [RoleCode.JEFE_TALLER]])(
+  it.each([[RoleCode.COORDINADOR_PEDAGOGICO], [RoleCode.JEFE_TALLER], [RoleCode.SUBDIRECTOR]])(
     'reconoce a %s como solicitante de la institución',
     (rol) => {
       expect(esSolicitudDeInstitucion(rol)).toBe(true);
@@ -53,9 +53,12 @@ describe('puedeDecidirReprogramacion', () => {
   });
 
   describe('monitores de campo: solicitan, no deciden', () => {
-    it.each([[RoleCode.ESPECIALISTA], [RoleCode.COORDINADOR_PEDAGOGICO], [RoleCode.JEFE_TALLER]])(
-      '%s nunca decide',
-      (rol) => {
+    it.each([
+      [RoleCode.ESPECIALISTA],
+      [RoleCode.SUBDIRECTOR],
+      [RoleCode.COORDINADOR_PEDAGOGICO],
+      [RoleCode.JEFE_TALLER],
+    ])('%s nunca decide', (rol) => {
         expect(
           puedeDecidirReprogramacion(usuario({ role: rol }), visita(), RoleCode.ESPECIALISTA),
         ).toBe(false);

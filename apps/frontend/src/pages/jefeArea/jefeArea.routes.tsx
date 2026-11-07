@@ -142,6 +142,22 @@ export const adminRoutes: RouteObject[] = [
           </LazyLoader>
         ),
       },
+      {
+        path: 'instituciones/subdirectores/:id/editar',
+        element: (
+          <LazyLoader>
+            <DocenteEditPage />
+          </LazyLoader>
+        ),
+      },
+      {
+        path: 'instituciones/subdirectores/:id',
+        element: (
+          <LazyLoader>
+            <DocenteDetailPage />
+          </LazyLoader>
+        ),
+      },
     ],
   },
   // Padrón de Jefes de Gestión (Coordinadores) apuntados temporalmente a JefesArea para que compile sin archivos perdidos
@@ -217,6 +233,22 @@ export const adminRoutes: RouteObject[] = [
         element: (
           <LazyLoader>
             <JefeTallerCreatePage />
+          </LazyLoader>
+        ),
+      },
+      {
+        path: 'instituciones/jefes-taller/:id/editar',
+        element: (
+          <LazyLoader>
+            <DocenteEditPage />
+          </LazyLoader>
+        ),
+      },
+      {
+        path: 'instituciones/jefes-taller/:id',
+        element: (
+          <LazyLoader>
+            <DocenteDetailPage />
           </LazyLoader>
         ),
       },

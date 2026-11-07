@@ -56,6 +56,7 @@ export class ScopeFilter {
   isInstitucionScope(role: RoleCode): boolean {
     return (
       role === RoleCode.DIRECTOR_INSTITUCION ||
+      role === RoleCode.SUBDIRECTOR ||
       role === RoleCode.COORDINADOR_PEDAGOGICO ||
       role === RoleCode.JEFE_TALLER
     );

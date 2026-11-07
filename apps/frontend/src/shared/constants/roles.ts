@@ -119,6 +119,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, MenuItem[]> = {
 
   subdirector: [
     'dashboard',
+    'instituciones_docentes',
     'monitoreo',
     'monitoreo_plan_anual',
     'monitoreo_cronograma',

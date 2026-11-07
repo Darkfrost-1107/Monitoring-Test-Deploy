@@ -25,6 +25,7 @@ import { RoleCode } from '@sistema-monitoreo/shared-contracts';
 /** Roles cuya plantilla pertenece a una institución educativa. */
 const ROLES_DE_INSTITUCION: readonly RoleCode[] = [
   RoleCode.DIRECTOR_INSTITUCION,
+  RoleCode.SUBDIRECTOR,
   RoleCode.COORDINADOR_PEDAGOGICO,
   RoleCode.JEFE_TALLER,
 ];

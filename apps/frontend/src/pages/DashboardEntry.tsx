@@ -5,13 +5,16 @@ import { RoleCode } from '@sistema-monitoreo/shared-contracts';
 
 /**
  * Punto de entrada de `/dashboard`. Selecciona el dashboard según el rol:
- *   - director_institucion → dashboard de su IE (KPIs, semáforo, recientes).
+ *   - director_institucion, subdirector → dashboard de su IE (KPIs, semáforo, recientes).
  *   - resto (director_ugel, admin, invitado) → dashboard provincial UGEL.
  */
 export const DashboardEntry = () => {
   const { user } = useUser();
 
-  if (user?.role === RoleCode.DIRECTOR_INSTITUCION) {
+  if (
+    user?.role === RoleCode.DIRECTOR_INSTITUCION ||
+    user?.role === RoleCode.SUBDIRECTOR
+  ) {
     return <DashboardDirectorPage />;
   }
 

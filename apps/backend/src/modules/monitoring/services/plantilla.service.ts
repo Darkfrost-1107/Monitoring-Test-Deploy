@@ -34,6 +34,7 @@ export class PlantillaService {
   private isSchoolStaff(session: SessionUser): boolean {
     return (
       session.role === RoleCode.DIRECTOR_INSTITUCION ||
+      session.role === RoleCode.SUBDIRECTOR ||
       session.role === RoleCode.COORDINADOR_PEDAGOGICO ||
       session.role === RoleCode.JEFE_TALLER
     );
@@ -224,12 +225,13 @@ export class PlantillaService {
 
     const isSchoolStaffUser =
       session.role === RoleCode.DIRECTOR_INSTITUCION ||
+      session.role === RoleCode.SUBDIRECTOR ||
       session.role === RoleCode.COORDINADOR_PEDAGOGICO ||
       session.role === RoleCode.JEFE_TALLER;
 
     if (session.role !== RoleCode.JEFE_GESTION && !isSchoolStaffUser) {
       throw new ForbiddenException(
-        'Solo el Jefe de Gestion, Director IE, Coordinador o Jefe de Taller pueden eliminar plantillas.',
+        'Solo el Jefe de Gestion, Director IE, Subdirector, Coordinador o Jefe de Taller pueden eliminar plantillas.',
       );
     }
 
@@ -284,12 +286,13 @@ export class PlantillaService {
 
     const isSchoolStaffUserDupl =
       session.role === RoleCode.DIRECTOR_INSTITUCION ||
+      session.role === RoleCode.SUBDIRECTOR ||
       session.role === RoleCode.COORDINADOR_PEDAGOGICO ||
       session.role === RoleCode.JEFE_TALLER;
 
     if (session.role !== RoleCode.JEFE_GESTION && !isSchoolStaffUserDupl) {
       throw new ForbiddenException(
-        'Solo Jefe de Gestion, Directores IE, Coordinadores o Jefes de Taller pueden duplicar plantillas.',
+        'Solo Jefe de Gestion, Directores IE, Subdirectores, Coordinadores o Jefes de Taller pueden duplicar plantillas.',
       );
     }
 

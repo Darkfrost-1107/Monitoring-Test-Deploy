@@ -56,7 +56,8 @@ export interface VisitaDecidible {
  */
 export const esSolicitudDeInstitucion = (solicitanteRolAlCrear?: string): boolean =>
   solicitanteRolAlCrear === RoleCode.COORDINADOR_PEDAGOGICO ||
-  solicitanteRolAlCrear === RoleCode.JEFE_TALLER;
+  solicitanteRolAlCrear === RoleCode.JEFE_TALLER ||
+  solicitanteRolAlCrear === RoleCode.SUBDIRECTOR;
 
 /** ¿El usuario y la visita corresponden a la misma institución educativa? */
 const esMismaInstitucion = (usuario: UsuarioDecisor, visita: VisitaDecidible): boolean =>

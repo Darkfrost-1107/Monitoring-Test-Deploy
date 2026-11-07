@@ -47,6 +47,7 @@ export function validarReglas(dto: CreatePlantillaDto): void {
 function isSchoolStaff(session: SessionUser): boolean {
   return (
     session.role === RoleCode.DIRECTOR_INSTITUCION ||
+    session.role === RoleCode.SUBDIRECTOR ||
     session.role === RoleCode.COORDINADOR_PEDAGOGICO ||
     session.role === RoleCode.JEFE_TALLER
   );
@@ -66,6 +67,7 @@ export const esAutorDeInstitucion = (autor: RolAutorPlantilla): boolean =>
 /** El autor que corresponde a cada rol del personal de institución. */
 const AUTOR_POR_ROL: Record<string, RolAutorPlantilla> = {
   [RoleCode.DIRECTOR_INSTITUCION]: 'director_ie',
+  [RoleCode.SUBDIRECTOR]: 'director_ie',
   [RoleCode.COORDINADOR_PEDAGOGICO]: 'coordinador_pedagogico',
   [RoleCode.JEFE_TALLER]: 'jefe_taller',
 };

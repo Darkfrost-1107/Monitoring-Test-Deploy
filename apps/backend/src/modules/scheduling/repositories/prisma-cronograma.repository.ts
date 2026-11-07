@@ -38,6 +38,7 @@ import { CargoNombre } from '../../../common/enums/cargo.enum.js';
  */
 const AUTOR_DE_PLANTILLA_POR_ROL: Record<string, string> = {
   director_institucion: 'director_ie',
+  subdirector: 'director_ie',
   coordinador_pedagogico: 'coordinador_pedagogico',
   jefe_taller: 'jefe_taller',
 };
