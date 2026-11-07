@@ -42,6 +42,7 @@ export const BandejaReprogramaciones = () => {
   const {
     cronogramas,
     reprogramaciones,
+    historialReprogramaciones,
     submitRescheduleRequest,
     approveRescheduleRequest,
     rejectRescheduleRequest,
@@ -164,6 +165,9 @@ export const BandejaReprogramaciones = () => {
             user,
             visita,
             solicitudAbierta.solicitanteRolAlCrear,
+          )}
+          historialPrevio={historialReprogramaciones[visita.id]?.filter(
+            (s) => s.id !== solicitudAbierta.id,
           )}
           onApprove={(visitId, comentario) => {
             approveRescheduleRequest(visitId, comentario);

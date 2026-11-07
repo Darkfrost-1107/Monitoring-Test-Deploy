@@ -59,6 +59,7 @@ export const CalendarioSidebar = ({
   const {
     cronogramas,
     reprogramaciones,
+    historialReprogramaciones,
     submitRescheduleRequest,
     approveRescheduleRequest,
     rejectRescheduleRequest,
@@ -361,6 +362,9 @@ export const CalendarioSidebar = ({
           visit={selectedVisit}
           request={activeRequest}
           canDecide={canDecide}
+          historialPrevio={historialReprogramaciones[selectedVisit.id]?.filter(
+            (s) => s.id !== activeRequest.id,
+          )}
           onApprove={(visitId, comment) => {
             approveRescheduleRequest(visitId, comment);
             setShowReprogramarModal(false);

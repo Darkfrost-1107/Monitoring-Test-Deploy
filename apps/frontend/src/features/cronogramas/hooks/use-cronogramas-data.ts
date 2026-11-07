@@ -18,6 +18,7 @@ import type {
   ICreateVisitaRequest,
   IUpdateVisitaRequest,
   IAccionExcepcionalInput,
+  ISolicitudReprogramacion,
 } from '@sistema-monitoreo/shared-contracts';
 
 export interface EspecialistaLite {
@@ -189,6 +190,20 @@ export const useCronogramasData = (enabled = true) => {
     });
   }, [cronosQuery.data, especialistas, instituciones, docentes]);
 
+  const mapearSolicitud = (s: ISolicitudReprogramacion): SolicitudReprogramacion => ({
+    id: s.id,
+    fechaOriginal: `${s.fechaOriginal}T${s.horaOriginal}`,
+    fechaNueva: `${s.fechaPropuesta}T${s.horaPropuesta}`,
+    motivo: s.justificacion,
+    adjunto: adjuntoDeSolicitud(s.archivoSustentoUrl),
+    estado: s.estado as 'PENDIENTE' | 'APROBADO' | 'RECHAZADO',
+    fechaRegistro: s.createdAt,
+    aprobador: nombreDelAprobador(s.resueltoPorRol, s.resueltoPorNombre) ?? undefined,
+    aprobadorComentario: s.comentarioResolucion || undefined,
+    fechaAprobacion: s.fechaResolucion || undefined,
+    solicitanteRolAlCrear: s.solicitanteRolAlCrear,
+  });
+
   const reprogramaciones: Record<string, SolicitudReprogramacion> = useMemo(() => {
     if (!solQuery.data) return {};
     const solMap: Record<string, SolicitudReprogramacion> = {};
@@ -203,24 +218,25 @@ export const useCronogramasData = (enabled = true) => {
 
     ordenadas.forEach((s) => {
       if (!solMap[s.cronogramaId]) {
-        solMap[s.cronogramaId] = {
-          id: s.id,
-          fechaOriginal: `${s.fechaOriginal}T${s.horaOriginal}`,
-          fechaNueva: `${s.fechaPropuesta}T${s.horaPropuesta}`,
-          motivo: s.justificacion,
-          adjunto: adjuntoDeSolicitud(s.archivoSustentoUrl),
-          estado: s.estado as 'PENDIENTE' | 'APROBADO' | 'RECHAZADO',
-          fechaRegistro: s.createdAt,
-          // Sin nombre queda sin aprobador: el respaldo era `resueltoPorId`, de
-          // modo que la trazabilidad mostraba un UUID donde va un nombre.
-          aprobador: nombreDelAprobador(s.resueltoPorRol, s.resueltoPorNombre) ?? undefined,
-          aprobadorComentario: s.comentarioResolucion || undefined,
-          fechaAprobacion: s.fechaResolucion || undefined,
-          solicitanteRolAlCrear: s.solicitanteRolAlCrear,
-        };
+        solMap[s.cronogramaId] = mapearSolicitud(s);
       }
     });
     return solMap;
+  }, [solQuery.data]);
+
+  const historialReprogramaciones: Record<string, SolicitudReprogramacion[]> = useMemo(() => {
+    if (!solQuery.data) return {};
+    const histMap: Record<string, SolicitudReprogramacion[]> = {};
+    const ordenadas = [...solQuery.data].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
+    for (const s of ordenadas) {
+      if (!histMap[s.cronogramaId]) {
+        histMap[s.cronogramaId] = [];
+      }
+      histMap[s.cronogramaId].push(mapearSolicitud(s));
+    }
+    return histMap;
   }, [solQuery.data]);
 
   const crearVisita = useCrearVisita();
@@ -307,6 +323,7 @@ export const useCronogramasData = (enabled = true) => {
   return {
     cronogramas,
     reprogramaciones,
+    historialReprogramaciones,
     especialistas,
     instituciones,
     docentes,
