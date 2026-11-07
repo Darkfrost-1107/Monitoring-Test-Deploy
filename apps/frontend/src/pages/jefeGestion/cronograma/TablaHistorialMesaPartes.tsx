@@ -113,7 +113,7 @@ export const TablaHistorialMesaPartes = () => {
         <div className="flex items-center gap-2">
           <select
             value={tipoFiltro}
-            onChange={(e) => setTipoFiltro(e.target.value as any)}
+            onChange={(e) => setTipoFiltro(e.target.value as 'TODOS' | TipoAccionExcepcional)}
             className="h-9 px-3 text-xs bg-background border border-border rounded-lg text-text focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
           >
             <option value="TODOS">Todas las acciones</option>

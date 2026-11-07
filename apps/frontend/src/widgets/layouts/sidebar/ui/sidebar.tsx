@@ -96,7 +96,7 @@ export const Sidebar = () => {
 
           // Procesa ítems con lógica de rol y auto-aplanado para hijos únicos
           const processedItems = baseItems.map((item) => {
-            let visibleChildren = item.children.filter((c) => has(c.id as string));
+            const visibleChildren = item.children.filter((c) => has(c.id as string));
 
             if (item.id === 'reportes' && isEvaluatedRole) {
               return {

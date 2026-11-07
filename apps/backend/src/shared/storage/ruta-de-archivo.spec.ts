@@ -19,14 +19,12 @@ describe('rutaDeArchivo', () => {
     );
   });
 
-  it.each([
-    'evidencias',
-    'planes',
-    'reprogramaciones',
-    'sustentos-excepcionales',
-  ])('conoce el cajón %s', (cajon) => {
-    expect(rutaDeArchivo(RAIZ, cajon, 'x.pdf')).not.toBeNull();
-  });
+  it.each(['evidencias', 'planes', 'reprogramaciones', 'sustentos-excepcionales'])(
+    'conoce el cajón %s',
+    (cajon) => {
+      expect(rutaDeArchivo(RAIZ, cajon, 'x.pdf')).not.toBeNull();
+    },
+  );
 
   it.each([
     ['un cajón inventado', 'secretos', 'x.pdf'],

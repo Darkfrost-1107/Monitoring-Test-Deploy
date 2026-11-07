@@ -38,7 +38,7 @@ export function useHidratacionDeFicha({
   if (abierta && visitaId && hidratadaPara !== claveHidratacion) {
     setHidratadaPara(claveHidratacion);
     const local = leerEstadoGuardado(localStorage.getItem(claveEstadoLocal(visitaId, templateId)));
-    let fuente: FuenteDeEstado | null = null;
+    let fuente: FuenteDeEstado | null;
     if (initialState?.estado === 'FINALIZADO') {
       fuente = initialState;
     } else if (initialState && local) {
