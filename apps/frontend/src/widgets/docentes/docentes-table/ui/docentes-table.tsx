@@ -238,10 +238,12 @@ export const DocentesTableWidget = ({
                   miDocenteId: user?.docenteId,
                   docenteId: docente.id,
                   activo: docente.activo,
-                  contrasenaInicial: docente.contrasenaInicial,
                 })
                   ? () => setARestablecer(docente)
                   : undefined,
+                restablecerContrasenaDeshabilitado: Boolean(docente.contrasenaInicial),
+                motivoRestablecerDeshabilitado:
+                  'La contraseña ya se encuentra en su valor inicial (DNI)',
                 rotuloFinalizar: esDesignacion
                   ? `Finalizar Cargo de ${targetCargo}`
                   : 'Desactivar docente',

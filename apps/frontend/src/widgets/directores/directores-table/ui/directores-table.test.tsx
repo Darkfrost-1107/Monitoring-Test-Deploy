@@ -95,6 +95,17 @@ describe('DirectoresTableWidget - Restablecer Contraseña', () => {
     expect(screen.queryByTitle('Restablecer contraseña')).not.toBeInTheDocument();
   });
 
+  it('muestra el botón deshabilitado cuando el director ya tiene la contraseña inicial', async () => {
+    mockPermissions.push('personal:restablecer_contrasena');
+    montar([{ ...directorActivo, contrasenaInicial: true }]);
+
+    const botonDeshabilitado = screen.getByTitle('La contraseña ya se encuentra en su valor inicial (DNI)');
+    expect(botonDeshabilitado).toBeInTheDocument();
+
+    await userEvent.click(botonDeshabilitado);
+    expect(screen.queryByTestId('modal-restablecer')).not.toBeInTheDocument();
+  });
+
   it('al hacer clic en el botón abre el modal de restablecer contraseña', async () => {
     mockPermissions.push('personal:restablecer_contrasena');
     montar();

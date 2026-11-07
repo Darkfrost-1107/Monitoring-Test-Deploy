@@ -199,10 +199,12 @@ export const DirectoresTableWidget = ({
                   onFinalize={designacionVigente(dir) ? () => setFinalizing(dir) : undefined}
                   onRestore={!dir.activo ? () => setRestoring(dir) : undefined}
                   onResetPassword={
-                    tieneCapacidadRestablecer && dir.activo && dir.id !== user?.docenteId && !dir.contrasenaInicial
+                    tieneCapacidadRestablecer && dir.activo && dir.id !== user?.docenteId
                       ? () => setARestablecer(dir)
                       : undefined
                   }
+                  resetPasswordDisabled={Boolean(dir.contrasenaInicial)}
+                  resetPasswordDisabledReason="La contraseña ya se encuentra en su valor inicial (DNI)"
                   viewTitle="Ver ficha"
                   restoreTitle="Reactivar director"
                   finalizeTitle="Cesar como Director"
