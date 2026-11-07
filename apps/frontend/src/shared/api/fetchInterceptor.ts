@@ -7,11 +7,24 @@ export const setupFetchInterceptor = () => {
   const originalFetch = window.fetch;
 
   window.fetch = async (...args) => {
-    // Configurar credentials por defecto
+    // Configurar credentials por defecto y Bearer token si existe
+    const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+
     if (typeof args[0] === 'string' || args[0] instanceof URL) {
       args[1] = args[1] || {};
       if (args[1].credentials === undefined) {
         args[1].credentials = 'include';
+      }
+      if (token) {
+        const headers = new Headers(args[1].headers);
+        if (!headers.has('Authorization')) {
+          headers.set('Authorization', `Bearer ${token}`);
+          args[1].headers = headers;
+        }
+      }
+    } else if (args[0] instanceof Request) {
+      if (token && !args[0].headers.has('Authorization')) {
+        args[0].headers.set('Authorization', `Bearer ${token}`);
       }
     }
 
@@ -37,13 +50,21 @@ export const setupFetchInterceptor = () => {
       if (!isPublicAuthUrl) {
         if (!isRefreshing) {
           isRefreshing = true;
-          // Llamamos a refresh() asumiendo que las cookies se enviarán automáticamente.
-          // Enviamos 'from-cookie' para pasar la validación @IsNotEmpty() del backend.
+          const storedRefreshToken =
+            typeof window !== 'undefined' ? localStorage.getItem('refreshToken') : null;
+          // Enviamos el refreshToken guardado o 'from-cookie' para retrocompatibilidad
           refreshPromise = authApi
-            .refreshToken('from-cookie')
+            .refreshToken(storedRefreshToken || 'from-cookie')
             .then((res) => {
               isRefreshing = false;
-              return res.ok;
+              if (res.ok && res.data) {
+                if (typeof window !== 'undefined') {
+                  localStorage.setItem('accessToken', res.data.accessToken);
+                  localStorage.setItem('refreshToken', res.data.refreshToken);
+                }
+                return true;
+              }
+              return false;
             })
             .catch(() => {
               isRefreshing = false;
@@ -53,13 +74,23 @@ export const setupFetchInterceptor = () => {
 
         const success = await refreshPromise;
         if (success) {
-          // Reintentar la llamada original
+          const newToken =
+            typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+          // Reintentar la llamada original actualizando el header de autorización
           if (typeof args[0] === 'string' || args[0] instanceof URL) {
             const url = args[0];
             const options = { ...(args[1] as RequestInit) };
+            if (newToken) {
+              const headers = new Headers(options.headers);
+              headers.set('Authorization', `Bearer ${newToken}`);
+              options.headers = headers;
+            }
             return await originalFetch(url, options);
           } else if (args[0] instanceof Request) {
             const req = args[0].clone();
+            if (newToken) {
+              req.headers.set('Authorization', `Bearer ${newToken}`);
+            }
             return await originalFetch(req, args[1] as RequestInit);
           }
         }
@@ -67,7 +98,11 @@ export const setupFetchInterceptor = () => {
         console.warn(
           'HTTP Interceptor: Token expirado y sin token de refresco válido. Forzando deslogueo...',
         );
-        localStorage.removeItem('user');
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('user');
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('refreshToken');
+        }
         window.dispatchEvent(new Event('auth-invalidation'));
       }
     }

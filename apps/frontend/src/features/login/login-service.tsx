@@ -113,6 +113,13 @@ export const useLoginService = () => {
     setIntentosRestantes(null);
     setTimeLeft(0);
 
+    if (data.accessToken) {
+      localStorage.setItem('accessToken', data.accessToken);
+    }
+    if (data.refreshToken) {
+      localStorage.setItem('refreshToken', data.refreshToken);
+    }
+
     setUser({
       id: data.user.id,
       dni: data.user.dni,

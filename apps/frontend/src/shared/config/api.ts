@@ -34,6 +34,11 @@ export async function request<T>(
     reqHeaders.set('Content-Type', 'application/json');
   }
 
+  const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+  if (token && !reqHeaders.has('Authorization')) {
+    reqHeaders.set('Authorization', `Bearer ${token}`);
+  }
+
   const response = await fetch(`${API_BASE_URL}${path}`, {
     credentials: 'include',
     ...init,
@@ -73,6 +78,10 @@ export async function requestBlob(
   init?: RequestInit,
 ): Promise<Blob> {
   const reqHeaders = new Headers(init?.headers);
+  const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+  if (token && !reqHeaders.has('Authorization')) {
+    reqHeaders.set('Authorization', `Bearer ${token}`);
+  }
 
   const response = await fetch(`${API_BASE_URL}${path}`, {
     credentials: 'include',
