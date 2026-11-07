@@ -32,12 +32,13 @@ export const Topbar = ({ onOpenMobileSidebar }: TopbarProps) => {
   // 2. Cálculo automático del título basado en la URL
   const title = getPageTitle(location.pathname, user?.role);
 
-  // Las acciones offline aplican a todo evaluador que levanta fichas en aula
-  // (especialista, jefe de área, director de institución, subdirector, coordinador, jefe de taller).
+  // Las acciones offline aplican a todo evaluador que realiza monitoreo
+  // (especialista, jefe de área, jefe de gestión, director de institución, subdirector, coordinador, jefe de taller).
   const esMonitorDeCampo =
     isMonitorCampo ||
     user?.role === RoleCode.DIRECTOR_INSTITUCION ||
-    user?.role === RoleCode.JEFE_AREA;
+    user?.role === RoleCode.JEFE_AREA ||
+    user?.role === RoleCode.JEFE_GESTION;
   // Evitamos "UGEL Lampa › UGEL Lampa" cuando el título cae al prefijo raíz.
   const showRootCrumb = title !== ROOT_CRUMB;
 
