@@ -20,17 +20,21 @@ export class StorageService implements OnModuleInit {
   }
 
   /**
-   * Guarda un buffer de imagen en el disco local y devuelve su URL relativa.
-   * En producción, esto debería reemplazarse por la carga a un bucket S3.
+   * Guarda un buffer de imagen en el disco local (si está disponible) y devuelve
+   * su representación en Data URI Base64 para persistencia garantizada en la BD.
+   * Esto previene la pérdida de firmas en entornos con almacenamiento efímero (sin volúmenes).
    */
   async saveSignature(buffer: Buffer): Promise<string> {
     const fileName = `firma-${randomUUID()}.png`;
     const filePath = path.join(this.uploadDir, fileName);
 
-    await fs.writeFile(filePath, buffer);
+    try {
+      await fs.writeFile(filePath, buffer);
+    } catch {
+      // Si el directorio no es accesible o el disco es de solo lectura, no bloquea el guardado en BD.
+    }
 
-    // Retornamos una URL relativa o pública según se sirvan los estáticos
-    return `/uploads/${fileName}`;
+    return `data:image/png;base64,${buffer.toString('base64')}`;
   }
 
   /**

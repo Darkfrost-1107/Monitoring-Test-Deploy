@@ -287,29 +287,45 @@ export class FirmasController {
   }
 
   /**
-   * Abre el archivo de una firma a partir de la ruta guardada.
+   * Abre el archivo de una firma a partir de la ruta o data URI guardado.
    *
-   * La ruta viene de la base y nunca del cliente, pero se resuelve contra el
-   * directorio de subidas y se comprueba que no lo abandone: una ruta con `..`
-   * en la fila permitiría leer cualquier archivo del servidor.
+   * Si la firma está persistida como Data URI Base64 en la base de datos,
+   * se entrega directamente desde la memoria (resistencia total a discos efímeros).
+   * Si es una ruta de archivo, se resuelve contra el directorio de subidas.
    */
   private async streamDeFirma(rutaGuardada: string | null | undefined): Promise<StreamableFile> {
     if (!rutaGuardada) throw new NotFoundException('Firma no encontrada.');
 
-    const raiz = path.resolve(process.cwd(), 'uploads');
-    const absoluta = path.resolve(raiz, path.basename(rutaGuardada));
-
-    if (!absoluta.startsWith(raiz + path.sep)) {
-      throw new NotFoundException('Firma no encontrada.');
+    // 1. Data URI Base64 (persistido en BD)
+    if (rutaGuardada.startsWith('data:image/')) {
+      const base64Data = rutaGuardada.split(',')[1];
+      if (!base64Data) throw new NotFoundException('Firma no encontrada.');
+      const buffer = Buffer.from(base64Data, 'base64');
+      return new StreamableFile(buffer, { type: 'image/png' });
     }
 
-    try {
-      await access(absoluta);
-    } catch {
-      throw new NotFoundException('Firma no encontrada.');
+    // 2. Ruta física en disco con tolerancia a diferentes puntos de montaje
+    const directorios = [
+      path.resolve(process.cwd(), 'uploads'),
+      path.resolve(process.cwd(), 'apps/backend/uploads'),
+      '/app/apps/backend/uploads',
+      '/app/uploads',
+    ];
+
+    const nombre = path.basename(rutaGuardada);
+    for (const dir of directorios) {
+      const absoluta = path.resolve(dir, nombre);
+      if (absoluta.startsWith(dir + path.sep)) {
+        try {
+          await access(absoluta);
+          return new StreamableFile(createReadStream(absoluta), { type: 'image/png' });
+        } catch {
+          // Intentar en el siguiente directorio
+        }
+      }
     }
 
-    return new StreamableFile(createReadStream(absoluta), { type: 'image/png' });
+    throw new NotFoundException('Firma no encontrada.');
   }
 
   @Post(':id/firmas')
