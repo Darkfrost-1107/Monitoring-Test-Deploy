@@ -5,6 +5,7 @@ import { Toaster } from 'sonner';
 import { UserProvider } from '@entities/model-user';
 import { setupFetchInterceptor } from '@shared/api/fetchInterceptor';
 import { setupChunkReloadHandler } from '@shared/lib/chunk-reload';
+import { setupPwaAutoUpdate } from '@shared/lib/pwa-update';
 import { STALE_TIMES } from '@shared/config/constants';
 import { persister, MAX_AGE_CACHE } from './query-persistence';
 
@@ -13,6 +14,9 @@ setupFetchInterceptor();
 
 // 2. Activamos la auto-recuperación ante desfase de chunks por nuevos despliegues
 setupChunkReloadHandler();
+
+// 3. Activamos la detección y auto-actualización transparente de la PWA
+setupPwaAutoUpdate();
 
 // 2. Cliente de TanStack Query (cache, retries, deduplicacion de requests)
 const queryClient = new QueryClient({
