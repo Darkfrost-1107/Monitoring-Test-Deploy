@@ -257,6 +257,27 @@ export class PrismaFichaRepository implements FichaRepository {
     return this.buildFicha(fichaId);
   }
 
+  async guardarBorrador(
+    fichaId: string,
+    data: {
+      observaciones?: string;
+      sugerencias?: string;
+      compromisos?: string;
+      evidenciaGeneral?: string;
+    },
+  ): Promise<IFichaMonitoreo> {
+    await this.prisma.fichaMonitoreo.update({
+      where: { id: fichaId },
+      data: {
+        observaciones: data.observaciones !== undefined ? data.observaciones : undefined,
+        sugerencias: data.sugerencias !== undefined ? data.sugerencias : undefined,
+        compromisos: data.compromisos !== undefined ? data.compromisos : undefined,
+        evidenciaGeneral: data.evidenciaGeneral !== undefined ? data.evidenciaGeneral : undefined,
+      },
+    });
+    return this.buildFicha(fichaId);
+  }
+
   async plantillaEstaHistorica(plantillaId: string): Promise<boolean> {
     const p = await this.prisma.plantillaMonitoreo.findUnique({
       where: { id: plantillaId },

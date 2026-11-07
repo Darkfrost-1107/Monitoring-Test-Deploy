@@ -37,10 +37,25 @@ export function useHidratacionDeFicha({
 
   if (abierta && visitaId && hidratadaPara !== claveHidratacion) {
     setHidratadaPara(claveHidratacion);
-    hidratar(
-      initialState ??
-        leerEstadoGuardado(localStorage.getItem(claveEstadoLocal(visitaId, templateId))),
-    );
+    const local = leerEstadoGuardado(localStorage.getItem(claveEstadoLocal(visitaId, templateId)));
+    let fuente: FuenteDeEstado | null = null;
+    if (initialState?.estado === 'FINALIZADO') {
+      fuente = initialState;
+    } else if (initialState && local) {
+      fuente = {
+        ...local,
+        ...initialState,
+        generalComments: initialState.generalComments || local.generalComments || '',
+        sugerencias: initialState.sugerencias || local.sugerencias || '',
+        compromisos: initialState.compromisos || local.compromisos || '',
+        evidenciaUrls: { ...(local.evidenciaUrls ?? {}), ...(initialState.evidenciaUrls ?? {}) },
+        observacionesEjeItem: { ...(local.observacionesEjeItem ?? {}), ...(initialState.observacionesEjeItem ?? {}) },
+        rubricComments: { ...(local.rubricComments ?? {}), ...(initialState.rubricComments ?? {}) },
+      };
+    } else {
+      fuente = initialState ?? local;
+    }
+    hidratar(fuente);
   }
 
   // Al cerrar se olvida, para que la próxima apertura vuelva a cargar.

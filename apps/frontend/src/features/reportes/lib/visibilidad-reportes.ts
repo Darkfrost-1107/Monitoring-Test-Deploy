@@ -80,6 +80,8 @@ export function reportesPropios<T extends ReporteVisible>(
  */
 export const veSoloLoQueMonitoreo = (usuario: UsuarioDeReportes | null | undefined): boolean =>
   !!usuario &&
+  usuario.role !== RoleCode.DIRECTOR_INSTITUCION &&
+  usuario.role !== RoleCode.SUBDIRECTOR &&
   ((MONITOR_CAMPO_ROLES as readonly string[]).includes(usuario.role) ||
     usuario.role === RoleCode.JEFE_AREA);
 
@@ -88,7 +90,7 @@ export const veSoloLoQueMonitoreo = (usuario: UsuarioDeReportes | null | undefin
  *
  * Excluye siempre lo que evalúa al propio usuario —eso vive en «mis reportes»—
  * y después acota según su papel: quien puede figurar como evaluador ve lo
- * suyo; el director de institución, lo de su colegio.
+ * suyo; el equipo directivo de la institución (director y subdirector), lo de su colegio.
  */
 export function reportesVisibles<T extends ReporteVisible>(
   reportes: readonly T[],
@@ -98,14 +100,17 @@ export function reportesVisibles<T extends ReporteVisible>(
 
   const ajenos = reportes.filter((r) => !evaluaAlUsuario(r, usuario));
 
+  if (
+    usuario.role === RoleCode.DIRECTOR_INSTITUCION ||
+    usuario.role === RoleCode.SUBDIRECTOR
+  ) {
+    if (!usuario.institucion) return [];
+    return ajenos.filter((r) => r.institucionId === usuario.institucion);
+  }
+
   if (veSoloLoQueMonitoreo(usuario)) {
     if (!usuario.especialistaId) return [];
     return ajenos.filter((r) => r.monitorId === usuario.especialistaId);
-  }
-
-  if (usuario.role === RoleCode.DIRECTOR_INSTITUCION) {
-    if (!usuario.institucion) return [];
-    return ajenos.filter((r) => r.institucionId === usuario.institucion);
   }
 
   return ajenos;

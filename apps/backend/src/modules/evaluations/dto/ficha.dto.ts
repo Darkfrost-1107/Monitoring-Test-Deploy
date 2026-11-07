@@ -107,3 +107,5 @@ export class FinalizarFichaDto {
   @IsString()
   evidenciaGeneral?: string;
 }
+
+export class GuardarBorradorFichaDto extends FinalizarFichaDto {}

@@ -28,6 +28,7 @@ import {
   SaveRespuestaDesempenoDto,
   SaveRespuestaEjeItemDto,
   FinalizarFichaDto,
+  GuardarBorradorFichaDto,
 } from '../dto/ficha.dto.js';
 import { AuthGuard } from '../../auth/guards/auth.guard.js';
 import { PermissionsGuard } from '../../auth/guards/permissions.guard.js';
@@ -117,6 +118,16 @@ export class FichaController {
     @Req() req: AuthenticatedRequest,
   ): Promise<IFichaMonitoreo> {
     return this.service.guardarRespuestaAspecto(id, aspectoId, body.marcado, this.toSession(req));
+  }
+
+  @Patch(':id/borrador')
+  @RequirePermissions('monitoreo:execute')
+  async guardarBorrador(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() dto: GuardarBorradorFichaDto,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<IFichaMonitoreo> {
+    return this.service.guardarBorrador(id, dto, this.toSession(req));
   }
 
   @Patch(':id/finalizar')

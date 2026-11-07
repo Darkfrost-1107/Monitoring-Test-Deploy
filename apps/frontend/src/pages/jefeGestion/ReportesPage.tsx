@@ -32,10 +32,10 @@ export const ReportesPage = () => {
   const location = useLocation();
   const isMyReportsPath = location.pathname === '/reportes';
   const { user } = useUser();
-  const { isInstitution, isMonitorCampo } = useScope();
-  // Vista «mis reportes»: los monitoreos hechos A esta persona. Aplica a todo el
-  // personal del lado de la institución, que es a quien se evalúa.
-  const isEvaluatedView = isMyReportsPath && isInstitution;
+  const { isMonitorCampo } = useScope();
+  // Vista «mis reportes»: los monitoreos hechos A esta persona. Aplica al docente,
+  // que es evaluado y no conduce monitoreos de institución.
+  const isEvaluatedView = isMyReportsPath && user?.role === RoleCode.DOCENTE;
 
   // Quienes figuran como AUTOR de una ficha, y por tanto ven «completadas por
   // usted» en lugar de «completadas por los especialistas».

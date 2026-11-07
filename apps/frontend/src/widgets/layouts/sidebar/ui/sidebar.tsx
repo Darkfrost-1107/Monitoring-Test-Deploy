@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useUser } from '@entities/model-user';
-import { ROLE_LABELS } from '@sistema-monitoreo/shared-contracts';
+import { ROLE_LABELS, RoleCode } from '@sistema-monitoreo/shared-contracts';
 import { ROLE_PERMISSIONS } from '@shared/constants/roles';
 import type { MenuItem } from '@shared/constants/roles';
 import { HelpCircle, LogOut, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -75,9 +75,8 @@ export const Sidebar = () => {
       {/* ── Navegación Dinámica ── */}
       <nav className="flex-1 p-2 flex flex-col gap-0.5 overflow-y-auto">
         {(() => {
-          // Quien es evaluado, en lugar de evaluar: todo el personal del lado de
-          // la institución educativa. Antes se enumeraban sus cuatro roles.
-          const isEvaluatedRole = isInstitution;
+          // Quien es estrictamente evaluado, en lugar de evaluar en aula: el docente.
+          const isEvaluatedRole = user?.role === RoleCode.DOCENTE;
 
           const baseItems = SIDEBAR_CONFIG.filter((item) => {
             // Los cargos de Coordinador Pedagógico y Jefe de Taller sólo existen

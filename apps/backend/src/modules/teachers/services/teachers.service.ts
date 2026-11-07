@@ -69,7 +69,12 @@ export class TeachersService {
     requirePermission(currentUser, 'docentes:read');
 
     const filter: DocenteFilter = {};
-    if (currentUser.role === RoleCode.DIRECTOR_INSTITUCION) {
+    if (
+      currentUser.role === RoleCode.DIRECTOR_INSTITUCION ||
+      currentUser.role === RoleCode.SUBDIRECTOR ||
+      currentUser.role === RoleCode.COORDINADOR_PEDAGOGICO ||
+      currentUser.role === RoleCode.JEFE_TALLER
+    ) {
       filter.institucionId = getDirectorInstitucionId(currentUser);
     }
     if (currentUser.role === RoleCode.JEFE_AREA && currentUser.especialista_nivel) {

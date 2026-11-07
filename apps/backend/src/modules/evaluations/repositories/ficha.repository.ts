@@ -102,6 +102,15 @@ export abstract class FichaRepository {
     compromisos?: string,
     evidenciaGeneral?: string,
   ): Promise<IFichaMonitoreo>;
+  abstract guardarBorrador(
+    fichaId: string,
+    data: {
+      observaciones?: string;
+      sugerencias?: string;
+      compromisos?: string;
+      evidenciaGeneral?: string;
+    },
+  ): Promise<IFichaMonitoreo>;
   abstract plantillaEstaHistorica(plantillaId: string): Promise<boolean>;
 
   abstract findPlantillaVigente(tipo: string, anio: number): Promise<PlantillaBasic | null>;

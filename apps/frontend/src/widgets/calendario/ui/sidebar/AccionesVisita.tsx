@@ -135,41 +135,52 @@ export const AccionesVisita = ({
 
             {sinInstrumento && <AvisoSinInstrumento motivo={instrumentoNoDisponible} />}
 
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                disabled={fueraDeFecha || sinInstrumento}
-                onClick={onIniciarFicha}
-                className="flex-1 justify-center border-emerald-600 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 disabled:opacity-50 disabled:bg-slate-50 disabled:border-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed transition-colors font-bold text-xs py-2.5 h-10 flex items-center gap-2 cursor-pointer"
-              >
-                <PlayCircle className="h-4.5 w-4.5" />
-                <span>{sinIniciar ? 'Iniciar Monitoreo' : 'Continuar Monitoreo'}</span>
-              </Button>
+            {puedeReprogramar && solicitudRechazada ? (
+              <div className="flex flex-col gap-2 w-full">
+                <Button
+                  variant="outline"
+                  disabled={fueraDeFecha || sinInstrumento}
+                  onClick={onIniciarFicha}
+                  className="w-full justify-center border-emerald-600 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 disabled:opacity-50 disabled:bg-slate-50 disabled:border-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed transition-colors font-bold text-xs py-2.5 h-10 flex items-center gap-2 cursor-pointer"
+                >
+                  <PlayCircle className="h-4.5 w-4.5" />
+                  <span>{sinIniciar ? 'Iniciar Monitoreo' : 'Continuar Monitoreo'}</span>
+                </Button>
 
-              {/* Reprogramar: lo solicita la persona asignada o quien realiza monitoreo de campo. */}
-              {puedeReprogramar &&
-                (solicitudRechazada ? (
-                  <div className="flex gap-1.5 shrink-0">
-                    <Button
-                      variant="outline"
-                      onClick={onVerSolicitud}
-                      title="Ver detalle del rechazo"
-                      className="border-slate-300 text-slate-700 hover:bg-slate-50 transition-colors font-semibold text-xs py-2.5 px-3 h-10 flex items-center gap-1 shrink-0 cursor-pointer"
-                    >
-                      <Eye className="h-3.5 w-3.5 text-slate-500" />
-                      <span className="hidden sm:inline">Ver Rechazo</span>
-                    </Button>
-                    <Button
-                      variant="default"
-                      onClick={onSolicitarReprogramacion}
-                      title="Proponer nueva fecha de reprogramación"
-                      className="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs py-2.5 px-3 h-10 flex items-center gap-1.5 shrink-0 cursor-pointer shadow-sm"
-                    >
-                      <RefreshCw className="h-3.5 w-3.5 text-white" />
-                      <span>Reprogramar</span>
-                    </Button>
-                  </div>
-                ) : (
+                <div className="grid grid-cols-2 gap-2 w-full">
+                  <Button
+                    variant="outline"
+                    onClick={onVerSolicitud}
+                    title="Ver detalle del rechazo"
+                    className="w-full justify-center border-slate-300 text-slate-700 hover:bg-slate-50 transition-colors font-semibold text-xs py-2.5 px-2 h-10 flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Eye className="h-3.5 w-3.5 text-slate-500" />
+                    <span>Ver Rechazo</span>
+                  </Button>
+                  <Button
+                    variant="default"
+                    onClick={onSolicitarReprogramacion}
+                    title="Proponer nueva fecha de reprogramación"
+                    className="w-full justify-center bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs py-2.5 px-2 h-10 flex items-center gap-1.5 cursor-pointer shadow-sm"
+                  >
+                    <RefreshCw className="h-3.5 w-3.5 text-white" />
+                    <span>Reprogramar</span>
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex gap-2 w-full">
+                <Button
+                  variant="outline"
+                  disabled={fueraDeFecha || sinInstrumento}
+                  onClick={onIniciarFicha}
+                  className="flex-1 justify-center border-emerald-600 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 disabled:opacity-50 disabled:bg-slate-50 disabled:border-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed transition-colors font-bold text-xs py-2.5 h-10 flex items-center gap-2 cursor-pointer"
+                >
+                  <PlayCircle className="h-4.5 w-4.5" />
+                  <span>{sinIniciar ? 'Iniciar Monitoreo' : 'Continuar Monitoreo'}</span>
+                </Button>
+
+                {puedeReprogramar && (
                   <Button
                     variant={esFechaPasada && !solicitud ? 'default' : 'outline'}
                     onClick={solicitudPendiente ? onVerSolicitud : onSolicitarReprogramacion}
@@ -184,8 +195,9 @@ export const AccionesVisita = ({
                     />
                     <span>{solicitudPendiente ? 'Ver Solicitud' : 'Reprogramar'}</span>
                   </Button>
-                ))}
-            </div>
+                )}
+              </div>
+            )}
           </div>
         ) : (
           <div className="flex flex-col gap-2">

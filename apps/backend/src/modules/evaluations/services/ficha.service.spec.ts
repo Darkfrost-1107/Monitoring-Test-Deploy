@@ -46,6 +46,7 @@ describe('FichaService - ILA-0046 409 PLANTILLA_VERSIONADA', () => {
             create: jest.fn<any>(),
             saveRespuestaDesempeno: jest.fn<any>(),
             saveRespuestaAspecto: jest.fn<any>(),
+            guardarBorrador: jest.fn<any>(),
             findPlantillaBasicById: jest.fn<any>(),
             findPlantillaVigente: jest.fn<any>(),
             existsWithScope: jest.fn<any>().mockResolvedValue(true),
@@ -186,6 +187,36 @@ describe('FichaService - ILA-0046 409 PLANTILLA_VERSIONADA', () => {
       }
 
       expect(repo.saveRespuestaAspecto).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('guardarBorrador', () => {
+    it('guarda observaciones, sugerencias y compromisos en estado borrador', async () => {
+      repo.findById = jest.fn<any>().mockResolvedValue(baseFicha);
+      const fichaActualizada = {
+        ...baseFicha,
+        observaciones: 'Obs borrador',
+        sugerencias: 'Sugerencias borrador',
+        compromisos: 'Compromisos borrador',
+      };
+      repo.guardarBorrador = jest.fn<any>().mockResolvedValue(fichaActualizada);
+
+      const result = await service.guardarBorrador(
+        'ficha-1',
+        {
+          observaciones: 'Obs borrador',
+          sugerencias: 'Sugerencias borrador',
+          compromisos: 'Compromisos borrador',
+        },
+        { id: 'user-1', role: RoleCode.ESPECIALISTA, especialistaId: 'esp-1' },
+      );
+
+      expect(repo.guardarBorrador).toHaveBeenCalledWith('ficha-1', {
+        observaciones: 'Obs borrador',
+        sugerencias: 'Sugerencias borrador',
+        compromisos: 'Compromisos borrador',
+      });
+      expect(result.observaciones).toBe('Obs borrador');
     });
   });
 
