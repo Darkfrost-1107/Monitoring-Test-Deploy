@@ -1,4 +1,8 @@
 import { useState } from 'react';
+import { Capability } from '@sistema-monitoreo/shared-contracts';
+import { useCan } from '@shared/auth/use-can';
+import { useUser } from '@entities/model-user';
+import { ModalRestablecerContrasena } from '@features/docentes/ui/ModalRestablecerContrasena';
 import { FastActions } from '@shared/ui/FastActions';
 import type { Docente, CondicionDirectiva } from '@entities/model-docentes';
 import { CONDICION_DIRECTIVA_COLOR } from '@entities/model-docentes';
@@ -12,7 +16,7 @@ import { Avatar, AvatarFallback } from '@shared/ui/avatar';
 import { Badge } from '@shared/ui/badge';
 import { TableCell, TableHead, TableRow } from '@shared/ui/table';
 import { hoyISO } from '@shared/lib/fecha/fecha';
-import { directorFilter } from './filtro-directores';
+import { directorFilter, subdirectorFilter } from './filtro-directores';
 
 // Escala magisterial romana → número con cero (V → "05"), como en el mockup.
 const ESCALA_NUM: Record<string, string> = {
@@ -30,13 +34,10 @@ const ESCALA_NUM: Record<string, string> = {
 const nivelLabel = (nivel: string) => nivel.charAt(0) + nivel.slice(1).toLowerCase();
 
 /**
- * La designación de Director vigente, o `undefined` si ya fue cesada.
- *
- * Es lo que distingue a quien dirige hoy de quien dirigió alguna vez: una
- * designación cerrada conserva su fila en el historial, con `fechaFin`.
+ * La designación directiva vigente, o `undefined` si ya fue cesada.
  */
-const designacionVigente = (dir: Docente) =>
-  dir.cargosList?.find((c) => c.nombre === 'Director' && c.fechaFin === null);
+const designacionVigente = (dir: Docente, cargo: string) =>
+  dir.cargosList?.find((c) => c.nombre === cargo && c.fechaFin === null);
 
 
 interface DirectoresTableWidgetProps {
@@ -45,6 +46,7 @@ interface DirectoresTableWidgetProps {
   instituciones: { id: string; nombre: string }[];
   onView: (director: Docente) => void;
   onEdit?: (director: Docente) => void;
+  targetCargo?: 'Director' | 'Subdirector';
 }
 
 export const DirectoresTableWidget = ({
@@ -53,14 +55,25 @@ export const DirectoresTableWidget = ({
   instituciones,
   onView,
   onEdit,
+  targetCargo = 'Director',
 }: DirectoresTableWidgetProps) => {
+  const { can } = useCan();
+  const { user } = useUser();
+  const tieneCapacidadRestablecer = can(Capability.PERSONAL_RESTABLECER_CONTRASENA);
+
   const [finalizing, setFinalizing] = useState<Docente | null>(null);
   const [restoring, setRestoring] = useState<Docente | null>(null);
-
-  const pagination = useEntityTable({ data: directores, filterFn: directorFilter });
+  const [aRestablecer, setARestablecer] = useState<Docente | null>(null);
 
   const getInstName = (id: string) =>
     instituciones.find((i) => i.id === id)?.nombre ?? 'I.E. No Asignada';
+
+  const filterFn = (dir: Docente, params: URLSearchParams) =>
+    targetCargo === 'Subdirector'
+      ? subdirectorFilter(dir, params, getInstName)
+      : directorFilter(dir, params, getInstName);
+
+  const pagination = useEntityTable({ data: directores, filterFn });
 
   const { error, setError, ejecutar } = useAccionDelPadron();
 
@@ -69,19 +82,18 @@ export const DirectoresTableWidget = ({
     const id = finalizing.id;
 
     const designacion = finalizing.cargosList?.find(
-      (c) => c.nombre === 'Director' && c.fechaFin === null,
+      (c) => c.nombre === targetCargo && c.fechaFin === null,
     );
 
-    // Antes salía por un `return` mudo: se confirmaba la baja y no pasaba nada.
     if (!designacion) {
-      setError('No se encontró la designación vigente de Director para este registro.');
+      setError(`No se encontró la designación vigente de ${targetCargo} para este registro.`);
       setFinalizing(null);
       return;
     }
 
     const ok = await ejecutar(
       () => teachersApi.finalizeCargo(id, designacion.id),
-      'Error al finalizar el cargo de director.',
+      `Error al finalizar el cargo de ${targetCargo.toLowerCase()}.`,
       () => setFinalizing(null),
     );
     if (!ok) return;
@@ -108,7 +120,7 @@ export const DirectoresTableWidget = ({
 
     const ok = await ejecutar(
       () => teachersApi.activate(id),
-      'Error al reactivar el director.',
+      `Error al reactivar el ${targetCargo.toLowerCase()}.`,
       () => setRestoring(null),
     );
     if (!ok) return;
@@ -134,8 +146,8 @@ export const DirectoresTableWidget = ({
           </>
         }
         pagination={pagination}
-        emptyMessage="No se encontraron directores con los filtros seleccionados."
-        itemName="directores"
+        emptyMessage={`No se encontraron ${targetCargo.toLowerCase()}es con los filtros seleccionados.`}
+        itemName={`${targetCargo.toLowerCase()}es`}
       >
         {pagination.pageItems.map((dir) => (
           <TableRow key={dir.id} className="hover:bg-muted/30 transition-colors">
@@ -153,13 +165,8 @@ export const DirectoresTableWidget = ({
               </div>
             </TableCell>
             <TableCell className="font-semibold text-text">{dir.dni}</TableCell>
-            {/*
-              Decía «Director de {nivel}» escrito a mano, para toda fila del
-              padrón: una designación cesada seguía figurando como Director.
-              El cargo vigente lo resuelve el servicio filtrando por `fechaFin`.
-            */}
             <TableCell className="text-xs font-medium text-text">
-              {designacionVigente(dir) ? `Director de ${nivelLabel(dir.nivelEducativo)}` : dir.cargo}
+              {designacionVigente(dir, targetCargo) ? `${targetCargo} de ${nivelLabel(dir.nivelEducativo)}` : (dir.cargo || targetCargo)}
             </TableCell>
             <TableCell className="text-xs font-medium text-text">{getInstName(dir.institucionId)}</TableCell>
             <TableCell>
@@ -184,14 +191,18 @@ export const DirectoresTableWidget = ({
                 <FastActions
                   onView={() => onView(dir)}
                   onEdit={dir.activo && onEdit ? () => onEdit(dir) : undefined}
-                  // Sólo se cesa a quien tiene la designación vigente: antes
-                  // bastaba con estar activo y la opción reaparecía sobre un
-                  // director ya cesado.
-                  onFinalize={designacionVigente(dir) ? () => setFinalizing(dir) : undefined}
+                  onFinalize={designacionVigente(dir, targetCargo) ? () => setFinalizing(dir) : undefined}
                   onRestore={!dir.activo ? () => setRestoring(dir) : undefined}
+                  onResetPassword={
+                    tieneCapacidadRestablecer && dir.activo && dir.id !== user?.docenteId
+                      ? () => setARestablecer(dir)
+                      : undefined
+                  }
+                  resetPasswordDisabled={Boolean(dir.contrasenaInicial)}
+                  resetPasswordDisabledReason="La contraseña ya se encuentra en su valor inicial (DNI)"
                   viewTitle="Ver ficha"
-                  restoreTitle="Reactivar director"
-                  finalizeTitle="Cesar como Director"
+                  restoreTitle={`Reactivar ${targetCargo.toLowerCase()}`}
+                  finalizeTitle={`Cesar como ${targetCargo}`}
                 />
             </TableCell>
           </TableRow>
@@ -201,9 +212,9 @@ export const DirectoresTableWidget = ({
       {finalizing && (
         <ConfirmModal
           danger
-          title="¿Finalizar Designación de Director?"
-          message={<>Esta acción cesará a <strong>{finalizing.nombres} {finalizing.apellidos}</strong> como Director. Saldrá de esta tabla y pasará a figurar como docente de aula, sin institución asignada, y su acceso al sistema será desactivado. Desde el padrón de docentes puede volver a designarlo.</>}
-          confirmLabel="Cesar Director"
+          title={`¿Finalizar Designación de ${targetCargo}?`}
+          message={<>Esta acción cesará a <strong>{finalizing.nombres} {finalizing.apellidos}</strong> como {targetCargo}. Saldrá de esta tabla y pasará a figurar como docente de aula, sin institución asignada, y su acceso al sistema será desactivado. Desde el padrón de docentes puede volver a designarlo.</>}
+          confirmLabel={`Cesar ${targetCargo}`}
           cancelLabel="Cancelar"
           onConfirm={confirmFinalize}
           onCancel={() => setFinalizing(null)}
@@ -212,12 +223,24 @@ export const DirectoresTableWidget = ({
 
       {restoring && (
         <ConfirmModal
-          title="¿Reactivar Director?"
-          message={`Esta acción reactivará el registro de ${restoring.apellidos}, ${restoring.nombres} en el padrón de directores.`}
+          title={`¿Reactivar ${targetCargo}?`}
+          message={`Esta acción reactivará el registro de ${restoring.apellidos}, ${restoring.nombres} en el padrón de ${targetCargo.toLowerCase()}es.`}
           confirmLabel="Reactivar"
           cancelLabel="Cancelar"
           onConfirm={confirmRestore}
           onCancel={() => setRestoring(null)}
+        />
+      )}
+
+      {aRestablecer && (
+        <ModalRestablecerContrasena
+          docente={aRestablecer}
+          onClose={() => setARestablecer(null)}
+          onRestablecida={() =>
+            setDirectores((prev) =>
+              prev.map((d) => (d.id === aRestablecer.id ? { ...d, contrasenaInicial: true } : d)),
+            )
+          }
         />
       )}
     </>

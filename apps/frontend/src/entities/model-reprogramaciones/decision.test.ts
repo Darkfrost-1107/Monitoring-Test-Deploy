@@ -26,7 +26,7 @@ const visita = (over: Partial<VisitaDecidible> = {}): VisitaDecidible => ({
 const usuario = (over: Partial<UsuarioDecisor> & { role: string }): UsuarioDecisor => ({ ...over });
 
 describe('esSolicitudDeInstitucion', () => {
-  it.each([[RoleCode.COORDINADOR_PEDAGOGICO], [RoleCode.JEFE_TALLER]])(
+  it.each([[RoleCode.COORDINADOR_PEDAGOGICO], [RoleCode.JEFE_TALLER], [RoleCode.SUBDIRECTOR]])(
     'reconoce a %s como solicitante de la institución',
     (rol) => {
       expect(esSolicitudDeInstitucion(rol)).toBe(true);
@@ -53,9 +53,12 @@ describe('puedeDecidirReprogramacion', () => {
   });
 
   describe('monitores de campo: solicitan, no deciden', () => {
-    it.each([[RoleCode.ESPECIALISTA], [RoleCode.COORDINADOR_PEDAGOGICO], [RoleCode.JEFE_TALLER]])(
-      '%s nunca decide',
-      (rol) => {
+    it.each([
+      [RoleCode.ESPECIALISTA],
+      [RoleCode.SUBDIRECTOR],
+      [RoleCode.COORDINADOR_PEDAGOGICO],
+      [RoleCode.JEFE_TALLER],
+    ])('%s nunca decide', (rol) => {
         expect(
           puedeDecidirReprogramacion(usuario({ role: rol }), visita(), RoleCode.ESPECIALISTA),
         ).toBe(false);
@@ -68,6 +71,10 @@ describe('puedeDecidirReprogramacion', () => {
 
     it('decide una solicitud de un especialista', () => {
       expect(puedeDecidirReprogramacion(jefeGestion, visita(), RoleCode.ESPECIALISTA)).toBe(true);
+    });
+
+    it('decide una solicitud de un responsable de nivel', () => {
+      expect(puedeDecidirReprogramacion(jefeGestion, visita(), RoleCode.JEFE_AREA)).toBe(true);
     });
 
     it.each([[RoleCode.COORDINADOR_PEDAGOGICO], [RoleCode.JEFE_TALLER]])(
@@ -107,6 +114,11 @@ describe('puedeDecidirReprogramacion', () => {
     it('no decide una solicitud nacida en la institución, aunque el nivel coincida', () => {
       const u = usuario({ role: RoleCode.JEFE_AREA, especialistaNivel: 'Secundaria' });
       expect(puedeDecidirReprogramacion(u, visita(), RoleCode.JEFE_TALLER)).toBe(false);
+    });
+
+    it('no decide una solicitud creada por un responsable de nivel', () => {
+      const u = usuario({ role: RoleCode.JEFE_AREA, especialistaNivel: 'Secundaria' });
+      expect(puedeDecidirReprogramacion(u, visita(), RoleCode.JEFE_AREA)).toBe(false);
     });
   });
 

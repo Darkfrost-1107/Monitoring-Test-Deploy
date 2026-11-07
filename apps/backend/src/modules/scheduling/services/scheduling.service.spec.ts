@@ -19,6 +19,7 @@ describe('SchedulingService - Reprogramaciones', () => {
   let cronogramaRepo: jest.Mocked<CronogramaRepository>;
   let solicitudRepo: jest.Mocked<SolicitudReprogramacionRepository>;
   let storage: any;
+  let eventEmitter: EventEmitter2;
 
   const sesionEspecialista = { id: 'esp-1', role: RoleCode.ESPECIALISTA };
   const sesionJefe = { id: 'jefe-1', role: RoleCode.JEFE_GESTION };
@@ -70,6 +71,9 @@ describe('SchedulingService - Reprogramaciones', () => {
       remove: jest.fn<any>(),
       findMonitorEspecialidades: jest.fn<any>().mockResolvedValue([]),
       applyReprogramacion: jest.fn<any>().mockResolvedValue(undefined),
+      ejecutarAccionExcepcional: jest.fn<any>(),
+      findOperacionExcepcionalByCronograma: jest.fn<any>(),
+      findAllOperacionesExcepcionales: jest.fn<any>(),
     };
     const mockSol: Partial<jest.Mocked<SolicitudReprogramacionRepository>> = {
       findAll: jest.fn<any>(),
@@ -116,6 +120,7 @@ describe('SchedulingService - Reprogramaciones', () => {
     cronogramaRepo = moduleRef.get(CronogramaRepository);
     solicitudRepo = moduleRef.get(SolicitudReprogramacionRepository);
     storage = moduleRef.get(STORAGE_SERVICE);
+    eventEmitter = moduleRef.get(EventEmitter2);
   });
 
   describe('crearVisita - plan vigente requerido', () => {
@@ -317,11 +322,16 @@ describe('SchedulingService - Reprogramaciones', () => {
     });
   });
 
-  describe('crearVisita - max 3 pendientes por especialista', () => {
-    it('rechaza crear si el especialista ya tiene 3 o más visitas activas', async () => {
+  describe('crearVisita - límite de visitas por monitor (máximo 3 por día, ilimitado en días distintos)', () => {
+    it('rechaza crear si el monitor ya tiene 3 visitas en el mismo día', async () => {
       cronogramaRepo.findPlanVigentePara.mockResolvedValue('plan-ugel-2026');
-      cronogramaRepo.countPendientesByMonitor.mockResolvedValue(3);
+      cronogramaRepo.findVisitasMonitorPorFecha.mockResolvedValue([
+        { ...visitaBase, id: 'v-1', horaInicio: '08:00:00' },
+        { ...visitaBase, id: 'v-2', horaInicio: '11:00:00' },
+        { ...visitaBase, id: 'v-3', horaInicio: '14:00:00' },
+      ]);
       cronogramaRepo.create.mockResolvedValue(visitaBase);
+
       await expect(
         service.crearVisita(
           {
@@ -331,13 +341,45 @@ describe('SchedulingService - Reprogramaciones', () => {
             tipoMonitoreo: 'DOCENTE',
             numeroVisita: 2,
             fechaProgramada: '2099-04-01',
-            horaInicio: '10:00:00',
+            horaInicio: '17:00:00',
             modalidad: 'EBR',
             nivelEducativo: 'Primaria',
           } as any,
           sesionJefe,
         ),
-      ).rejects.toThrow(BadRequestException);
+      ).rejects.toThrow(
+        new BadRequestException(
+          'El monitor ya tiene 3 visitas programadas para este día. El límite máximo es de 3 visitas por día.',
+        ),
+      );
+    });
+
+    it('permite crear visita si el monitor tiene 3 o más visitas en días distintos pero menos de 3 el mismo día', async () => {
+      cronogramaRepo.findPlanVigentePara.mockResolvedValue('plan-ugel-2026');
+      // En el mismo día sólo tiene 1 visita programada
+      cronogramaRepo.findVisitasMonitorPorFecha.mockResolvedValue([
+        { ...visitaBase, id: 'v-1', horaInicio: '08:00:00' },
+      ]);
+      // En otros días tiene muchas visitas pendientes (simuladas con countPendientesByMonitor = 10)
+      cronogramaRepo.countPendientesByMonitor.mockResolvedValue(10);
+      cronogramaRepo.create.mockResolvedValue(visitaBase);
+
+      const r = await service.crearVisita(
+        {
+          monitorId: 'esp-1',
+          institucionId: 'ie-1',
+          evaluadoId: 'doc-1',
+          tipoMonitoreo: 'DOCENTE',
+          numeroVisita: 1,
+          fechaProgramada: '2099-04-01',
+          horaInicio: '11:00:00',
+          modalidad: 'EBR',
+          nivelEducativo: 'Primaria',
+        } as any,
+        sesionJefe,
+      );
+
+      expect(r.id).toBe('vis-1');
     });
   });
 
@@ -697,7 +739,7 @@ describe('SchedulingService - Reprogramaciones', () => {
       await service.crearSolicitud(
         {
           cronogramaId: 'vis-1',
-          fechaPropuesta: '2026-04-01',
+          fechaPropuesta: '2099-04-01',
           horaPropuesta: '10:00:00',
           justificacion: 'Huelga distrital sin PDF',
         },
@@ -709,6 +751,22 @@ describe('SchedulingService - Reprogramaciones', () => {
       );
     });
 
+    it('rechaza si la fecha propuesta es anterior a la fecha actual', async () => {
+      cronogramaRepo.findById.mockResolvedValue({ ...visitaBase, nivelEducativo: 'Secundaria' });
+      solicitudRepo.findPendienteByCronograma.mockResolvedValue(null);
+      await expect(
+        service.crearSolicitud(
+          {
+            cronogramaId: 'vis-1',
+            fechaPropuesta: '2020-01-01',
+            horaPropuesta: '10:00:00',
+            justificacion: 'Fecha en el pasado',
+          } as any,
+          sesionEspecialista,
+        ),
+      ).rejects.toThrow(BadRequestException);
+    });
+
     it('rechaza si ya existe una solicitud PENDIENTE', async () => {
       cronogramaRepo.findById.mockResolvedValue({ ...visitaBase, nivelEducativo: 'Secundaria' });
       solicitudRepo.findPendienteByCronograma.mockResolvedValue({ id: 'sol-pend' } as any);
@@ -716,7 +774,7 @@ describe('SchedulingService - Reprogramaciones', () => {
         service.crearSolicitud(
           {
             cronogramaId: 'vis-1',
-            fechaPropuesta: '2026-04-01',
+            fechaPropuesta: '2099-04-01',
             horaPropuesta: '10:00:00',
             justificacion: 'Huelga',
           } as any,
@@ -732,7 +790,7 @@ describe('SchedulingService - Reprogramaciones', () => {
       const res = await service.crearSolicitud(
         {
           cronogramaId: 'vis-1',
-          fechaPropuesta: '2026-04-01',
+          fechaPropuesta: '2099-04-01',
           horaPropuesta: '10:00:00',
           justificacion: 'Huelga distrital nivel primaria',
         },
@@ -749,7 +807,7 @@ describe('SchedulingService - Reprogramaciones', () => {
       await service.crearSolicitud(
         {
           cronogramaId: 'vis-1',
-          fechaPropuesta: '2026-04-01',
+          fechaPropuesta: '2099-04-01',
           horaPropuesta: '10:00:00',
           justificacion: 'Huelga distrital programada',
           archivoSustentoBase64: Buffer.from('PDF').toString('base64'),
@@ -763,6 +821,59 @@ describe('SchedulingService - Reprogramaciones', () => {
         expect.any(Buffer),
       );
       expect(solicitudRepo.create).toHaveBeenCalled();
+    });
+
+    it('permite a un Subdirector solicitar reprogramación para visita de su institución', async () => {
+      cronogramaRepo.findById.mockResolvedValue({
+        ...visitaBase,
+        institucionId: 'ie-1',
+        nivelEducativo: 'Primaria',
+      });
+      solicitudRepo.findPendienteByCronograma.mockResolvedValue(null);
+      solicitudRepo.create.mockResolvedValue({ id: 'sol-sub' } as any);
+
+      const res = await service.crearSolicitud(
+        {
+          cronogramaId: 'vis-1',
+          fechaPropuesta: '2099-04-05',
+          horaPropuesta: '09:00:00',
+          justificacion: 'Feria de ciencias institucional',
+        },
+        { id: 'sub-1', role: RoleCode.SUBDIRECTOR, institucionId: 'ie-1' },
+      );
+
+      expect(res.id).toBe('sol-sub');
+      expect(solicitudRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          solicitanteRolAlCrear: RoleCode.SUBDIRECTOR,
+        }),
+      );
+    });
+
+    it('permite a un Responsable de Nivel (Jefe de Área) solicitar reprogramación de visita asignada', async () => {
+      cronogramaRepo.findById.mockResolvedValue({
+        ...visitaBase,
+        nivelEducativo: 'Primaria',
+      });
+      solicitudRepo.findPendienteByCronograma.mockResolvedValue(null);
+      solicitudRepo.create.mockResolvedValue({ id: 'sol-jefe-area' } as any);
+
+      const res = await service.crearSolicitud(
+        {
+          cronogramaId: 'vis-1',
+          fechaPropuesta: '2099-04-06',
+          horaPropuesta: '08:30:00',
+          justificacion: 'Reunión de emergencia en UGEL',
+        },
+        { id: 'jarea-1', role: RoleCode.JEFE_AREA, especialistaNivel: 'Primaria' },
+      );
+
+      expect(res.id).toBe('sol-jefe-area');
+      expect(solicitudRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          solicitanteRolAlCrear: RoleCode.JEFE_AREA,
+        }),
+      );
     });
   });
 
@@ -814,6 +925,91 @@ describe('SchedulingService - Reprogramaciones', () => {
       });
 
       const r = await service.aprobarSolicitud('sol-1', { comentario: 'Aprobado' }, sesionJefe);
+      expect(cronogramaRepo.applyReprogramacion).toHaveBeenCalledWith(
+        'vis-1',
+        new Date('2026-04-01'),
+        '10:00:00',
+      );
+      expect(r.estado).toBe('APROBADO');
+    });
+
+    it('permite al Director de IE aprobar solicitud de reprogramación del Subdirector', async () => {
+      const solicitudSub = {
+        ...solicitudPendiente,
+        solicitanteRolAlCrear: RoleCode.SUBDIRECTOR,
+      };
+      solicitudRepo.findById.mockResolvedValue(solicitudSub);
+      cronogramaRepo.findById.mockResolvedValue({
+        ...visitaBase,
+        institucionId: 'ie-1',
+        nivelEducativo: 'Primaria',
+      });
+      solicitudRepo.resolver.mockResolvedValue({
+        ...solicitudSub,
+        estado: 'APROBADO' as const,
+      });
+      cronogramaRepo.update.mockResolvedValue({
+        ...visitaBase,
+        estado: 'REPROGRAMADO' as const,
+      });
+
+      const r = await service.aprobarSolicitud(
+        'sol-1',
+        { comentario: 'Aprobado por el Director' },
+        sesionDirector,
+      );
+
+      expect(cronogramaRepo.applyReprogramacion).toHaveBeenCalledWith(
+        'vis-1',
+        new Date('2026-04-01'),
+        '10:00:00',
+      );
+      expect(r.estado).toBe('APROBADO');
+    });
+
+    it('rechaza si un Jefe de Área intenta resolver una solicitud creada por un Jefe de Área', async () => {
+      const solicitudJefeArea = {
+        ...solicitudPendiente,
+        solicitanteId: 'jarea-otro',
+        solicitanteRolAlCrear: RoleCode.JEFE_AREA,
+      };
+      solicitudRepo.findById.mockResolvedValue(solicitudJefeArea);
+      cronogramaRepo.findById.mockResolvedValue({
+        ...visitaBase,
+        nivelEducativo: 'Primaria',
+      });
+
+      await expect(
+        service.aprobarSolicitud(
+          'sol-1',
+          { comentario: 'Intento de resolución indebida' },
+          { id: 'jarea-1', role: RoleCode.JEFE_AREA, especialistaNivel: 'Primaria' },
+        ),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('permite al Jefe de Gestión aprobar la solicitud creada por un Jefe de Área', async () => {
+      const solicitudJefeArea = {
+        ...solicitudPendiente,
+        solicitanteId: 'jarea-1',
+        solicitanteRolAlCrear: RoleCode.JEFE_AREA,
+      };
+      solicitudRepo.findById.mockResolvedValue(solicitudJefeArea);
+      cronogramaRepo.findById.mockResolvedValue({
+        ...visitaBase,
+        nivelEducativo: 'Primaria',
+      });
+      solicitudRepo.resolver.mockResolvedValue({
+        ...solicitudJefeArea,
+        estado: 'APROBADO' as const,
+      });
+
+      const r = await service.aprobarSolicitud(
+        'sol-1',
+        { comentario: 'Aprobado por Jefe de Gestión' },
+        sesionJefe,
+      );
+
       expect(cronogramaRepo.applyReprogramacion).toHaveBeenCalledWith(
         'vis-1',
         new Date('2026-04-01'),
@@ -897,6 +1093,88 @@ describe('SchedulingService - Reprogramaciones', () => {
         detalles: undefined,
         estado: 'EN_PROCESO',
       });
+    });
+  });
+
+  describe('ejecutarAccionExcepcional', () => {
+    it('ejecuta accion y emite evento cronograma.accion_excepcional', async () => {
+      const mockOp = {
+        id: 'op-1',
+        cronogramaId: 'vis-1',
+        tipoAccion: 'ANULACION_TOTAL' as const,
+        numeroExpediente: 'EXP-123',
+        motivo: 'Motivo explicativo mayor a diez caracteres',
+        archivoSustentoUrl: '/storage/sustento.pdf',
+        ejecutadoPorId: 'user-jefe',
+        createdAt: '2026-05-01T10:00:00Z',
+      };
+      cronogramaRepo.findById.mockResolvedValue(visitaBase);
+      (cronogramaRepo.ejecutarAccionExcepcional as any).mockResolvedValue(mockOp);
+
+      const res = await service.ejecutarAccionExcepcional(
+        'vis-1',
+        {
+          tipoAccion: 'ANULACION_TOTAL',
+          numeroExpediente: 'EXP-123',
+          motivo: 'Motivo explicativo mayor a diez caracteres',
+          archivoSustentoBase64: 'QUJD',
+        },
+        sesionJefe,
+      );
+
+      expect(res).toEqual(mockOp);
+      expect(eventEmitter.emit).toHaveBeenCalledWith(
+        'cronograma.accion_excepcional',
+        expect.objectContaining({
+          cronogramaId: 'vis-1',
+          tipoAccion: 'ANULACION_TOTAL',
+        }),
+      );
+    });
+
+    it('obtiene la operacion excepcional por cronograma', async () => {
+      const mockOp = {
+        id: 'op-1',
+        cronogramaId: 'vis-1',
+        tipoAccion: 'ANULACION_TOTAL' as const,
+        numeroExpediente: 'EXP-123',
+        motivo: 'Motivo explicativo',
+        archivoSustentoUrl: '/storage/sustento.pdf',
+        ejecutadoPorId: 'user-jefe',
+        createdAt: '2026-05-01T10:00:00Z',
+      };
+      cronogramaRepo.findById.mockResolvedValue(visitaBase);
+      (cronogramaRepo.findOperacionExcepcionalByCronograma as any).mockResolvedValue(mockOp);
+
+      const res = await service.findOperacionExcepcionalByCronograma('vis-1', sesionJefe);
+      expect(res).toEqual(mockOp);
+    });
+
+    it('obtiene el listado de todas las operaciones excepcionales', async () => {
+      const mockLista = [
+        {
+          id: 'op-1',
+          cronogramaId: 'vis-1',
+          tipoAccion: 'ANULACION_TOTAL' as const,
+          numeroExpediente: 'EXP-123',
+          motivo: 'Motivo explicativo',
+          archivoSustentoUrl: '/storage/sustento.pdf',
+          ejecutadoPorId: 'user-jefe',
+          createdAt: '2026-05-01T10:00:00Z',
+          institucionNombre: 'I.E. 80001',
+          institucionCodigoModular: '1234567',
+          evaluadoNombre: 'Pérez, Juan',
+          evaluadoNumeroDocumento: '12345678',
+          monitorNombre: 'Gómez, Carlos',
+          ejecutadoPorNombre: 'Jefe, María',
+          fechaVisita: '2026-05-01',
+          numeroVisita: 1,
+        },
+      ];
+      (cronogramaRepo.findAllOperacionesExcepcionales as any).mockResolvedValue(mockLista);
+
+      const res = await service.findAllOperacionesExcepcionales(sesionJefe);
+      expect(res).toEqual(mockLista);
     });
   });
 });

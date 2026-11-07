@@ -38,8 +38,9 @@ describe('ScopeFilter', () => {
   });
 
   describe('isInstitucionScope', () => {
-    it('true para director_institucion, coord_pedagogico, jefe_taller', () => {
+    it('true para director_institucion, subdirector, coord_pedagogico, jefe_taller', () => {
       expect(filter.isInstitucionScope(RoleCode.DIRECTOR_INSTITUCION)).toBe(true);
+      expect(filter.isInstitucionScope(RoleCode.SUBDIRECTOR)).toBe(true);
       expect(filter.isInstitucionScope(RoleCode.COORDINADOR_PEDAGOGICO)).toBe(true);
       expect(filter.isInstitucionScope(RoleCode.JEFE_TALLER)).toBe(true);
     });
@@ -112,6 +113,7 @@ describe('ScopeFilter', () => {
 
     it.each([
       RoleCode.DIRECTOR_INSTITUCION,
+      RoleCode.SUBDIRECTOR,
       RoleCode.ESPECIALISTA,
       RoleCode.JEFE_AREA,
       RoleCode.JEFE_GESTION,

@@ -129,6 +129,54 @@ describe('useOpcionesDeEvaluacion — personal de la institución', () => {
     // Y no se ofrece a sí mismo: su visita la programa la UGEL.
     expect(ofrecidos.sort()).toEqual(['Bertha', 'Marlene']);
   });
+
+  it('el subdirector evalúa a todo el personal de la institución sin limitarse a una cartera y sin auto-evaluarse', () => {
+    const subdirector = docente({
+      id: 'doc-subdir',
+      personaId: 'per-subdir',
+      nombres: 'Carlos Subdirector',
+      cargo: 'Subdirector',
+    });
+
+    const ofrecidos = nombresOfrecidos(
+      parametros({
+        docentes: [subdirector, asignada, ajena],
+        especialistas: [{ id: 'esp-subdir', personaId: 'per-subdir' }],
+        evaluadorElegidoId: 'esp-subdir',
+        especialidadesDelEvaluador: [],
+      }),
+    );
+
+    // Evalúa a todos los docentes de la I.E. y no a sí mismo
+    expect(ofrecidos.sort()).toEqual(['Bertha', 'Marlene']);
+  });
+
+  it('el director puede evaluar al subdirector de la institución', () => {
+    const director = docente({
+      id: 'doc-dir',
+      personaId: 'per-dir',
+      nombres: 'Andrés',
+      cargo: 'Director',
+    });
+    const subdirector = docente({
+      id: 'doc-subdir',
+      personaId: 'per-subdir',
+      nombres: 'Carlos Subdirector',
+      cargo: 'Subdirector',
+    });
+
+    const ofrecidos = nombresOfrecidos(
+      parametros({
+        docentes: [director, subdirector, asignada],
+        especialistas: [{ id: 'esp-dir', personaId: 'per-dir' }],
+        evaluadorElegidoId: 'esp-dir',
+        especialidadesDelEvaluador: [],
+      }),
+    );
+
+    // El director ve al subdirector y a los demás docentes
+    expect(ofrecidos.sort()).toEqual(['Bertha', 'Carlos Subdirector']);
+  });
 });
 
 describe('useOpcionesDeEvaluacion — especialista de UGEL', () => {

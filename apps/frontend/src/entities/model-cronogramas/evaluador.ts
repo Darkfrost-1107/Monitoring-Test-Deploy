@@ -35,6 +35,7 @@ import { RoleCode } from '@sistema-monitoreo/shared-contracts';
  */
 export const ROLES_EVALUADORES: readonly RoleCode[] = [
   RoleCode.ESPECIALISTA,
+  RoleCode.SUBDIRECTOR,
   RoleCode.COORDINADOR_PEDAGOGICO,
   RoleCode.JEFE_TALLER,
   RoleCode.JEFE_GESTION,

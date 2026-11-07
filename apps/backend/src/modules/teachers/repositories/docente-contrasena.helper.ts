@@ -7,9 +7,16 @@ export async function findUsuarioPorPersonaId(
 ): Promise<UsuarioDePersona | null> {
   const usuario = await prisma.usuario.findUnique({
     where: { personaId },
-    select: { id: true, rol: { select: { codigo: true } } },
+    select: { id: true, isFirstLogin: true, passwordHash: true, rol: { select: { codigo: true } } },
   });
-  return usuario ? { id: usuario.id, rolCodigo: usuario.rol.codigo } : null;
+  return usuario
+    ? {
+        id: usuario.id,
+        rolCodigo: usuario.rol.codigo,
+        isFirstLogin: usuario.isFirstLogin,
+        passwordHash: usuario.passwordHash,
+      }
+    : null;
 }
 
 /**

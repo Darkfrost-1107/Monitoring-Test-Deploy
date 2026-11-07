@@ -49,9 +49,13 @@ export const AdjuntoDeSustento = ({ adjunto }: { adjunto: AdjuntoDeSolicitud }) 
     try {
       const blob = await requestBlob(ruta);
       const url = URL.createObjectURL(blob);
-      if (!window.open(url, '_blank', 'noopener,noreferrer')) {
-        toast.error('El navegador bloqueó la ventana. Permití las ventanas emergentes.');
-      }
+      const link = document.createElement('a');
+      link.href = url;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
       setTimeout(() => URL.revokeObjectURL(url), MS_ANTES_DE_LIBERAR);
     } catch {
       toast.error('No se pudo abrir el documento de sustento.');

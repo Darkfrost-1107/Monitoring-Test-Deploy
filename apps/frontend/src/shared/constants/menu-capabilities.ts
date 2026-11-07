@@ -53,6 +53,7 @@ export const MENU_CAPABILITIES: Record<MenuItem, Capability | null> = {
   instituciones_padron: Capability.INSTITUCIONES_READ,
   instituciones_padron_lista: Capability.INSTITUCIONES_READ,
   instituciones_padron_personal: Capability.INSTITUCIONES_READ,
+  instituciones_subdirectores: Capability.DOCENTES_READ,
   instituciones_docentes: Capability.DOCENTES_READ,
   instituciones_coordinadores: Capability.DOCENTES_READ,
   instituciones_jefes_taller: Capability.DOCENTES_READ,

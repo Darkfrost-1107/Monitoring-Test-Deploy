@@ -161,6 +161,17 @@ describe('reportesVisibles — director de institución', () => {
   it('sin institución asignada no ve ninguno', () => {
     expect(reportesVisibles([reporte()], director({ institucion: undefined }))).toEqual([]);
   });
+
+  it('el subdirector ve también los reportes de su institución', () => {
+    const subdirector = usuario({
+      role: RoleCode.SUBDIRECTOR,
+      institucion: 'ie-1',
+    });
+    const deSuColegio = reporte({ id: 'suyo', institucionId: 'ie-1' });
+    const deOtroColegio = reporte({ id: 'ajeno', institucionId: 'ie-9' });
+
+    expect(ids(reportesVisibles([deSuColegio, deOtroColegio], subdirector))).toEqual(['suyo']);
+  });
 });
 
 describe('veSoloLoQueMonitoreo', () => {
@@ -178,7 +189,12 @@ describe('veSoloLoQueMonitoreo', () => {
     expect(veSoloLoQueMonitoreo({ role })).toBe(true);
   });
 
-  it.each([RoleCode.DIRECTOR_INSTITUCION, RoleCode.JEFE_GESTION, RoleCode.DIRECTOR_UGEL])(
+  it.each([
+    RoleCode.DIRECTOR_INSTITUCION,
+    RoleCode.SUBDIRECTOR,
+    RoleCode.JEFE_GESTION,
+    RoleCode.DIRECTOR_UGEL,
+  ])(
     '%s: puede ver el trabajo de varios monitores',
     (role) => {
       expect(veSoloLoQueMonitoreo({ role })).toBe(false);

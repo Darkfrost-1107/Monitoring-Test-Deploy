@@ -1,8 +1,13 @@
-import type { ReactNode } from 'react';
-import { BookOpen, Calendar, Compass, Layers, User, X } from 'lucide-react';
+import { useState, type ReactNode } from 'react';
+import { BookOpen, Calendar, Compass, ExternalLink, FileText, Layers, Loader2, ShieldAlert, User, X } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { Badge } from '@shared/ui/badge';
 import { Button } from '@shared/ui/button';
+import { requestBlob } from '@shared/config/api';
+import { rutaDeDescarga } from '@shared/lib/archivo-guardado';
 import type { Cronograma } from '@entities/model-cronogramas';
+import { cronogramasApi } from '@features/cronogramas/api/cronogramas.api';
 
 interface ModalDetalleCronogramaProps {
   cronograma: Cronograma;
@@ -13,6 +18,8 @@ interface ModalDetalleCronogramaProps {
   colorDeIniciales: (iniciales: string) => string;
   estiloTipo: (tipo: Cronograma['tipo']) => string;
   estiloEstado: (estado: Cronograma['estado']) => string;
+  puedeAccionExcepcional?: boolean;
+  onAbrirAccionExcepcional?: (cronograma: Cronograma) => void;
 }
 
 const Separador = () => <div className="border-t border-border/60 my-1" />;
@@ -44,13 +51,52 @@ export const ModalDetalleCronograma = ({
   colorDeIniciales,
   estiloTipo,
   estiloEstado,
+  puedeAccionExcepcional = false,
+  onAbrirAccionExcepcional,
 }: ModalDetalleCronogramaProps) => {
   const { datePart, timePart } = formatearFechaHora(cronograma.fechaHora);
 
+  const { data: operacionExcepcional } = useQuery({
+    queryKey: ['operacion-excepcional', cronograma.id],
+    queryFn: async () => {
+      const res = await cronogramasApi.findOperacionExcepcional(cronograma.id);
+      return res ?? null;
+    },
+    enabled: cronograma.estado === 'ANULADO',
+  });
+
+  const [abriendoSustento, setAbriendoSustento] = useState(false);
+
+  const abrirSustento = async () => {
+    if (!operacionExcepcional?.archivoSustentoUrl) return;
+    const ruta = rutaDeDescarga(operacionExcepcional.archivoSustentoUrl);
+    if (!ruta) {
+      toast.error('Ruta de archivo no válida.');
+      return;
+    }
+    setAbriendoSustento(true);
+    try {
+      const blob = await requestBlob(ruta);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch {
+      toast.error('No se pudo abrir el documento de sustento.');
+    } finally {
+      setAbriendoSustento(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in-0 duration-200">
-      <div className="bg-surface border border-border w-full max-w-md rounded-2xl shadow-xl overflow-hidden animate-in zoom-in-95 duration-200">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+      <div className="bg-surface border border-border w-full max-w-md rounded-2xl shadow-xl overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
           <h3 className="text-base font-bold text-text flex items-center gap-2">
             <Compass className="w-5 h-5 text-primary" />
             Detalle del Cronograma
@@ -63,7 +109,7 @@ export const ModalDetalleCronograma = ({
           </button>
         </div>
 
-        <div className="p-5 flex flex-col gap-4">
+        <div className="p-5 flex flex-col gap-4 overflow-y-auto flex-1 min-h-0">
           <div className="flex flex-col gap-3">
             <div className="flex items-center gap-3 p-3 bg-muted/40 rounded-xl border border-border/80">
               <div
@@ -162,16 +208,75 @@ export const ModalDetalleCronograma = ({
                 </Dato>
               </>
             )}
-          </div>
 
-          <div className="flex justify-end mt-4 border-t border-border pt-4">
-            <Button
-              onClick={onCerrar}
-              className="bg-primary hover:bg-primary/95 text-white font-bold cursor-pointer transition-colors"
-            >
-              Cerrar
-            </Button>
+            {operacionExcepcional && (
+              <>
+                <Separador />
+                <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl flex flex-col gap-2">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-amber-700 dark:text-amber-400">
+                    <ShieldAlert className="w-4 h-4 shrink-0" />
+                    Trámite Excepcional (Mesa de Partes)
+                  </div>
+                  <div className="text-xs text-text flex flex-col gap-1">
+                    <div>
+                      <span className="font-semibold text-text-muted">Expediente:</span>{' '}
+                      <span className="font-mono font-bold">{operacionExcepcional.numeroExpediente}</span>
+                    </div>
+                    <div>
+                      <span className="font-semibold text-text-muted">Acción:</span>{' '}
+                      <Badge className="text-[9px] font-bold px-1.5 py-0.2 bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500/40">
+                        {operacionExcepcional.tipoAccion}
+                      </Badge>
+                    </div>
+                    <div>
+                      <span className="font-semibold text-text-muted">Motivo:</span>{' '}
+                      <span>{operacionExcepcional.motivo}</span>
+                    </div>
+                    {operacionExcepcional.archivoSustentoUrl && (
+                      <div className="pt-1">
+                        <button
+                          type="button"
+                          onClick={abrirSustento}
+                          disabled={abriendoSustento}
+                          className="inline-flex items-center gap-1.5 text-[11px] font-bold text-primary hover:underline cursor-pointer disabled:opacity-60"
+                        >
+                          {abriendoSustento ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <FileText className="w-3.5 h-3.5" />
+                          )}
+                          Ver Documento de Sustento
+                          <ExternalLink className="w-3 h-3" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
+        </div>
+
+        <div className="flex items-center justify-between px-5 py-3.5 border-t border-border shrink-0 bg-muted/20">
+          {puedeAccionExcepcional && cronograma.estado !== 'ANULADO' && onAbrirAccionExcepcional ? (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onAbrirAccionExcepcional(cronograma)}
+              className="text-xs font-bold text-amber-600 dark:text-amber-400 border-amber-500/30 hover:bg-amber-500/10 cursor-pointer"
+            >
+              <ShieldAlert className="w-3.5 h-3.5 mr-1.5" />
+              Trámite Excepcional
+            </Button>
+          ) : (
+            <div />
+          )}
+          <Button
+            onClick={onCerrar}
+            className="bg-primary hover:bg-primary/95 text-white font-bold cursor-pointer transition-colors"
+          >
+            Cerrar
+          </Button>
         </div>
       </div>
     </div>

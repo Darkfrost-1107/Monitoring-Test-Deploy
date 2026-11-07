@@ -46,7 +46,12 @@ interface DocentesTableWidgetProps {
   onEdit?: (docente: Docente) => void;
   onView: (docente: Docente) => void;
   instituciones: { id: string; nombre: string }[];
-  targetCargo?: 'Director' | 'Coordinador Pedagógico' | 'Jefe de Taller' | 'Docente de Aula';
+  targetCargo?:
+    | 'Director'
+    | 'Coordinador Pedagógico'
+    | 'Jefe de Taller'
+    | 'Docente de Aula'
+    | 'Subdirector';
   routePrefix?: string;
   itemName?: string;
 }
@@ -236,6 +241,9 @@ export const DocentesTableWidget = ({
                 })
                   ? () => setARestablecer(docente)
                   : undefined,
+                restablecerContrasenaDeshabilitado: Boolean(docente.contrasenaInicial),
+                motivoRestablecerDeshabilitado:
+                  'La contraseña ya se encuentra en su valor inicial (DNI)',
                 rotuloFinalizar: esDesignacion
                   ? `Finalizar Cargo de ${targetCargo}`
                   : 'Desactivar docente',
@@ -281,7 +289,17 @@ export const DocentesTableWidget = ({
       )}
 
       {aRestablecer && (
-        <ModalRestablecerContrasena docente={aRestablecer} onClose={() => setARestablecer(null)} />
+        <ModalRestablecerContrasena
+          docente={aRestablecer}
+          onClose={() => setARestablecer(null)}
+          onRestablecida={() =>
+            setDocentes((previos) =>
+              previos.map((d) =>
+                d.id === aRestablecer.id ? { ...d, contrasenaInicial: true } : d,
+              ),
+            )
+          }
+        />
       )}
 
       {aAsignar && (

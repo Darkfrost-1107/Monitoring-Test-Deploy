@@ -10,25 +10,22 @@ import { tieneElCargo } from '@features/docentes/lib/padron-docentes';
  * prueba mejor sin montar la tabla entera.
  */
 
-export const directorFilter = (dir: Docente, params: URLSearchParams) => {
-  // Sólo quien dirige hoy. Antes bastaba con tener alguna designación de
-  // Director, cerrada o no, así que un cesado seguía figurando en la tabla de
-  // directores —el puesto que acababa de dejar—. Cesar no lo hace desaparecer
-  // del sistema: al quedarse sin designación abierta pasa a listarse como
-  // docente de aula, que es donde corresponde y desde donde se lo puede volver
-  // a designar.
-  //
-  // La condición se delega en `tieneElCargo`, la misma que usa el padrón de
-  // docentes. Acá estaba escrita a mano y omitía `fechaFin`: dos versiones de
-  // una regla que debía ser una sola.
-  if (!tieneElCargo(dir, 'Director')) return false;
+export const directivoFilter = (
+  cargo: 'Director' | 'Subdirector',
+  dir: Docente,
+  params: URLSearchParams,
+  getInstName?: (id: string) => string,
+) => {
+  if (!tieneElCargo(dir, cargo)) return false;
 
   const searchQuery = params.get('search') || '';
+  const instName = getInstName ? getInstName(dir.institucionId) : '';
   const matchSearch =
     !searchQuery ||
     dir.nombres.toLowerCase().includes(searchQuery.toLowerCase()) ||
     dir.apellidos.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    dir.dni.includes(searchQuery);
+    dir.dni.includes(searchQuery) ||
+    (Boolean(instName) && instName.toLowerCase().includes(searchQuery.toLowerCase()));
 
   const condicion = params.get('condicion') || '';
   const matchCondicion =
@@ -38,7 +35,7 @@ export const directorFilter = (dir: Docente, params: URLSearchParams) => {
   const matchNivel =
     !nivel || (dir.nivelEducativo ?? '').toLowerCase() === nivel.toLowerCase();
 
-  // El padrón no guarda la modalidad del director, pero cada nivel pertenece a
+  // El padrón no guarda la modalidad del directivo, pero cada nivel pertenece a
   // una sola: se deduce del mapa en vez de agregar un campo que ya está implícito.
   const modalidad = params.get('modalidad') || '';
   const nivelesDeLaModalidad = (MODALIDAD_NIVEL_MAP[modalidad] ?? []).map((n) => n.toLowerCase());
@@ -47,4 +44,16 @@ export const directorFilter = (dir: Docente, params: URLSearchParams) => {
 
   return matchSearch && matchCondicion && matchNivel && matchModalidad;
 };
+
+export const directorFilter = (
+  dir: Docente,
+  params: URLSearchParams,
+  getInstName?: (id: string) => string,
+) => directivoFilter('Director', dir, params, getInstName);
+
+export const subdirectorFilter = (
+  dir: Docente,
+  params: URLSearchParams,
+  getInstName?: (id: string) => string,
+) => directivoFilter('Subdirector', dir, params, getInstName);
 

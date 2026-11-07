@@ -19,9 +19,12 @@ describe('rutaDeArchivo', () => {
     );
   });
 
-  it.each(['evidencias', 'planes', 'reprogramaciones'])('conoce el cajón %s', (cajon) => {
-    expect(rutaDeArchivo(RAIZ, cajon, 'x.pdf')).not.toBeNull();
-  });
+  it.each(['evidencias', 'planes', 'reprogramaciones', 'sustentos-excepcionales'])(
+    'conoce el cajón %s',
+    (cajon) => {
+      expect(rutaDeArchivo(RAIZ, cajon, 'x.pdf')).not.toBeNull();
+    },
+  );
 
   it.each([
     ['un cajón inventado', 'secretos', 'x.pdf'],
@@ -54,8 +57,9 @@ describe('rutaDeArchivo', () => {
 });
 
 describe('esCajonConocido', () => {
-  it('acepta sólo los tres declarados', () => {
+  it('acepta sólo los declarados', () => {
     expect(esCajonConocido('evidencias')).toBe(true);
+    expect(esCajonConocido('sustentos-excepcionales')).toBe(true);
     expect(esCajonConocido('firmas')).toBe(false);
   });
 });

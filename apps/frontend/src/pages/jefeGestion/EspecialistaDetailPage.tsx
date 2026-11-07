@@ -1,6 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Edit, Mail, Phone, User, Briefcase, BookOpen, BadgeCheck } from 'lucide-react';
+import { ArrowLeft, Edit, KeyRound, Mail, Phone, User, Briefcase, BookOpen, BadgeCheck } from 'lucide-react';
+import { Capability } from '@sistema-monitoreo/shared-contracts';
+import { useCan } from '@shared/auth/use-can';
+import { useUser } from '@entities/model-user';
+import { ModalRestablecerContrasena } from '@features/docentes/ui/ModalRestablecerContrasena';
+import { especialistasApi } from '@shared/api/especialistas.api';
 import { type Especialista } from '@entities/model-especialistas';
 import { Card } from '@shared/ui/card';
 import { Button } from '@shared/ui/button';
@@ -12,8 +17,16 @@ export const EspecialistaDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
+  const { can } = useCan();
+  const { user } = useUser();
   const [especialista, setEspecialista] = useState<Especialista | null>(null);
   const [loading, setLoading] = useState(true);
+  const [aRestablecer, setARestablecer] = useState<Especialista | null>(null);
+
+  const puedeRestablecer =
+    can(Capability.PERSONAL_RESTABLECER_CONTRASENA) &&
+    Boolean(especialista?.activo) &&
+    especialista?.id !== user?.especialistaId;
 
   useEffect(() => {
     const fetchDetail = async () => {
@@ -72,13 +85,41 @@ export const EspecialistaDetailPage = () => {
           </div>
         </div>
 
-        <Button
-          onClick={() => navigate(`/especialistas/${especialista.id}/editar`)}
-          className="flex items-center gap-2 font-bold cursor-pointer bg-primary text-white hover:bg-primary-hover"
-        >
-          <Edit className="h-[16px] w-[16px]" />
-          Editar Ficha
-        </Button>
+        <div className="flex items-center gap-2">
+          {puedeRestablecer && (
+            <span
+              title={
+                especialista.contrasenaInicial
+                  ? 'La contraseña ya se encuentra en su valor inicial (DNI)'
+                  : 'Restablecer a contraseña por defecto (DNI)'
+              }
+            >
+              <Button
+                variant="outline"
+                disabled={especialista.contrasenaInicial}
+                onClick={() => setARestablecer(especialista)}
+                className={
+                  especialista.contrasenaInicial
+                    ? 'flex items-center gap-2 font-medium opacity-50 cursor-not-allowed text-text-muted border-border pointer-events-none'
+                    : 'flex items-center gap-2 font-medium cursor-pointer text-amber-600 border-amber-200 hover:bg-amber-50 hover:text-amber-700'
+                }
+              >
+                <KeyRound className="h-[16px] w-[16px]" />
+                {especialista.contrasenaInicial
+                  ? 'Contraseña Reiniciada (DNI)'
+                  : 'Restablecer Contraseña'}
+              </Button>
+            </span>
+          )}
+
+          <Button
+            onClick={() => navigate(`/especialistas/${especialista.id}/editar`)}
+            className="flex items-center gap-2 font-bold cursor-pointer bg-primary text-white hover:bg-primary-hover"
+          >
+            <Edit className="h-[16px] w-[16px]" />
+            Editar Ficha
+          </Button>
+        </div>
       </div>
 
       {/* Ficha Completa */}
@@ -263,6 +304,25 @@ export const EspecialistaDetailPage = () => {
           )}
         </div>
       </Card>
+
+      {aRestablecer && (
+        <ModalRestablecerContrasena
+          docente={aRestablecer}
+          onClose={() => setARestablecer(null)}
+          onRestablecida={() =>
+            setEspecialista((prev) => (prev ? { ...prev, contrasenaInicial: true } : prev))
+          }
+          onConfirm={async () => {
+            const res = await especialistasApi.restablecerContrasena(aRestablecer.id);
+            if (!res.ok) {
+              throw new Error(
+                (res.error as { message?: string })?.message ||
+                  'No se pudo restablecer la contraseña.',
+              );
+            }
+          }}
+        />
+      )}
     </div>
   );
 };

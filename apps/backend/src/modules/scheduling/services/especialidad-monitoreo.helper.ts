@@ -32,6 +32,7 @@ const norm = (s: string): string => s.normalize('NFD').replace(/[̀-ͯ]/g, '').t
  */
 const ROLES_DE_INSTITUCION: readonly string[] = [
   RoleCode.DIRECTOR_INSTITUCION,
+  RoleCode.SUBDIRECTOR,
   RoleCode.COORDINADOR_PEDAGOGICO,
   RoleCode.JEFE_TALLER,
 ];

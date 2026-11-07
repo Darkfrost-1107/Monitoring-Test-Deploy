@@ -18,6 +18,9 @@ export interface AccionesDeFila {
   onAsignar?: () => void;
   /** Sólo se ofrece a quien tiene la capacidad y sobre la fila de otra persona. */
   onRestablecerContrasena?: () => void;
+  /** Si la contraseña ya está en estado inicial (DNI), la acción se muestra deshabilitada. */
+  restablecerContrasenaDeshabilitado?: boolean;
+  motivoRestablecerDeshabilitado?: string;
   /** Rótulo del botón de baja: depende de si el cargo se finaliza o el docente se desactiva. */
   rotuloFinalizar: string;
 }
@@ -83,6 +86,8 @@ export const FilaDeDocente = ({ docente, cargoFinalizado, acciones }: Props) => 
         onFinalize={acciones.onFinalizar}
         onAssign={acciones.onAsignar}
         onResetPassword={acciones.onRestablecerContrasena}
+        resetPasswordDisabled={acciones.restablecerContrasenaDeshabilitado}
+        resetPasswordDisabledReason={acciones.motivoRestablecerDeshabilitado}
         viewTitle="Ver ficha"
         restoreTitle="Reactivar docente"
         finalizeTitle={acciones.rotuloFinalizar}

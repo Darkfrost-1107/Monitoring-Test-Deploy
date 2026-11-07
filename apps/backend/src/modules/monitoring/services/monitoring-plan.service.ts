@@ -255,10 +255,11 @@ export class MonitoringPlanService {
     return true;
   }
 
-  /** Personal de IE: Director, Coordinador Pedagógico y Jefe de Taller. */
+  /** Personal de IE: Director, Subdirector, Coordinador Pedagógico y Jefe de Taller. */
   private isSchoolStaff(session: SessionUser): boolean {
     return (
       session.role === RoleCode.DIRECTOR_INSTITUCION ||
+      session.role === RoleCode.SUBDIRECTOR ||
       session.role === RoleCode.COORDINADOR_PEDAGOGICO ||
       session.role === RoleCode.JEFE_TALLER
     );
@@ -268,6 +269,7 @@ export class MonitoringPlanService {
   private toRolAutor(role: RoleCode): string {
     switch (role) {
       case RoleCode.DIRECTOR_INSTITUCION:
+      case RoleCode.SUBDIRECTOR:
         return 'director_ie';
       case RoleCode.COORDINADOR_PEDAGOGICO:
         return 'coordinador_pedagogico';

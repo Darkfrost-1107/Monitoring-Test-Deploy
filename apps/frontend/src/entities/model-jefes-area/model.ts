@@ -15,6 +15,8 @@ export interface JefeArea {
    */
   nivelEducativo: NivelJefeArea | null;
   activo: boolean;
+  /** La cuenta conserva la clave inicial (DNI): aún no la cambió o se restableció. */
+  contrasenaInicial?: boolean;
   fechaCreacion: string;
   cargo: string;
   especialidades?: string[] | null;

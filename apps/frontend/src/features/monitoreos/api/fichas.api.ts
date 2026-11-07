@@ -69,6 +69,18 @@ export const fichasApi = {
     });
   },
 
+  guardarBorrador: (
+    fichaId: string,
+    observaciones?: string,
+    sugerencias?: string,
+    compromisos?: string,
+    evidenciaGeneral?: string,
+  ) =>
+    request<IFichaMonitoreo>(`/api/fichas/${fichaId}/borrador`, {
+      method: 'PATCH',
+      body: JSON.stringify({ observaciones, sugerencias, compromisos, evidenciaGeneral }),
+    }),
+
   finalizar: (fichaId: string, observaciones?: string, sugerencias?: string, compromisos?: string, evidenciaGeneral?: string) =>
     request<IFichaMonitoreo>(`/api/fichas/${fichaId}/finalizar`, {
       method: 'PATCH',

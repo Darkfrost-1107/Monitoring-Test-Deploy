@@ -4,7 +4,7 @@ export type NivelLogro =
   | 'LOGRO_ESPERADO'
   | 'LOGRO_DESTACADO';
 
-export type EstadoFicha = 'BORRADOR' | 'FINALIZADO' | 'MIGRADA';
+export type EstadoFicha = 'BORRADOR' | 'FINALIZADO' | 'MIGRADA' | 'ANULADO';
 
 export interface IFichaContexto {
   id: string;

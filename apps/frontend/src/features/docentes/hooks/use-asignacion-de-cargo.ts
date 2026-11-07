@@ -6,8 +6,10 @@ import {
   candidatosParaCargo,
   cargaHorariaDelCargo,
   condicionInicial,
+  nivelEducativoAlAsignar,
   type CargoAsignable,
   type CondicionDelCargo,
+  type CondicionSubdirector,
 } from '../lib/asignacion-de-cargo';
 
 /**
@@ -31,7 +33,9 @@ export function useAsignacionDeCargo({ cargo, onAsignado }: Opciones) {
   const [errorDeCarga, setErrorDeCarga] = useState<string | null>(null);
 
   const [docenteId, setDocenteId] = useState('');
-  const [condicion, setCondicion] = useState<CondicionDelCargo>('Nombrado');
+  const [condicion, setCondicion] = useState<CondicionDelCargo | CondicionSubdirector>(() =>
+    condicionInicial(null, cargo),
+  );
   const [cargaHoraria, setCargaHoraria] = useState(() => cargaHorariaDelCargo(cargo, null));
 
   const [guardando, setGuardando] = useState(false);
@@ -81,7 +85,7 @@ export function useAsignacionDeCargo({ cargo, onAsignado }: Opciones) {
   const [sembradoPara, setSembradoPara] = useState<string | null>(null);
   if (elegido && sembradoPara !== elegido.id) {
     setSembradoPara(elegido.id);
-    setCondicion(condicionInicial(elegido));
+    setCondicion(condicionInicial(elegido, cargo));
     setCargaHoraria(cargaHorariaDelCargo(cargo, elegido));
   }
 
@@ -102,8 +106,9 @@ export function useAsignacionDeCargo({ cargo, onAsignado }: Opciones) {
         apellidos: elegido.apellidos,
         correo: elegido.correo || undefined,
         telefono: elegido.celular || undefined,
-        // Coordinador Pedagógico y Jefe de Taller sólo existen en Secundaria.
-        nivelEducativo: 'Secundaria',
+        // Coordinador Pedagógico y Jefe de Taller sólo existen en Secundaria; el
+        // Subdirector conserva el nivel que ya tenía.
+        nivelEducativo: nivelEducativoAlAsignar(cargo, elegido),
         especialidad: elegido.especialidad || undefined,
         especialidadesExtras: elegido.especialidadesExtras || undefined,
         cursoAsignado: elegido.especialidad || undefined,

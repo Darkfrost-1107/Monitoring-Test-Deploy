@@ -1,5 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Capability } from '@sistema-monitoreo/shared-contracts';
+import { useCan } from '@shared/auth/use-can';
+import { useUser } from '@entities/model-user';
+import { ModalRestablecerContrasena } from '@features/docentes/ui/ModalRestablecerContrasena';
 import { FastActions } from '@shared/ui/FastActions';
 import type { Especialista } from '@entities/model-especialistas';
 import { CARGO_COLORS } from '@entities/model-especialistas';
@@ -42,8 +46,13 @@ export const EspecialistasTableWidget = ({
   onView,
 }: EspecialistasTableWidgetProps) => {
   const navigate = useNavigate();
+  const { can } = useCan();
+  const { user } = useUser();
+  const tieneCapacidadRestablecer = can(Capability.PERSONAL_RESTABLECER_CONTRASENA);
+
   const [finalizingDoc, setFinalizingDoc] = useState<Especialista | null>(null);
   const [restoringDoc, setRestoringDoc] = useState<Especialista | null>(null);
+  const [aRestablecer, setARestablecer] = useState<Especialista | null>(null);
 
   const pagination = useEntityTable({ data: especialistas, filterFn: especialistaFilter });
 
@@ -142,6 +151,13 @@ export const EspecialistasTableWidget = ({
                 onEdit={doc.activo ? () => { if (onEdit) onEdit(doc); else navigate(`/especialistas/${doc.id}/editar`); } : undefined}
                 onFinalize={doc.activo ? () => setFinalizingDoc(doc) : undefined}
                 onRestore={!doc.activo ? () => setRestoringDoc(doc) : undefined}
+                onResetPassword={
+                  tieneCapacidadRestablecer && doc.activo && doc.id !== user?.especialistaId
+                    ? () => setARestablecer(doc)
+                    : undefined
+                }
+                resetPasswordDisabled={Boolean(doc.contrasenaInicial)}
+                resetPasswordDisabledReason="La contraseña ya se encuentra en su valor inicial (DNI)"
                 viewTitle="Ver ficha"
                 restoreTitle="Reactivar especialista"
                 finalizeTitle="Desactivar especialista"
@@ -171,6 +187,27 @@ export const EspecialistasTableWidget = ({
           cancelLabel="Cancelar"
           onConfirm={confirmRestore}
           onCancel={() => setRestoringDoc(null)}
+        />
+      )}
+
+      {aRestablecer && (
+        <ModalRestablecerContrasena
+          docente={aRestablecer}
+          onClose={() => setARestablecer(null)}
+          onRestablecida={() =>
+            setEspecialistas((prev) =>
+              prev.map((e) => (e.id === aRestablecer.id ? { ...e, contrasenaInicial: true } : e)),
+            )
+          }
+          onConfirm={async () => {
+            const res = await especialistasApi.restablecerContrasena(aRestablecer.id);
+            if (!res.ok) {
+              throw new Error(
+                (res.error as { message?: string })?.message ||
+                  'No se pudo restablecer la contraseña.',
+              );
+            }
+          }}
         />
       )}
     </>

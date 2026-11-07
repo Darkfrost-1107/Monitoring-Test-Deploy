@@ -75,6 +75,15 @@ const CAPACIDADES_POR_ROL: Record<string, readonly Capability[]> = {
     Capability.CARPETA_PEDAGOGICA_WRITE,
     Capability.SOLICITUDES_PLANTILLA_SOLICITAR,
   ],
+  [RoleCode.SUBDIRECTOR]: [
+    Capability.DASHBOARD_READ,
+    Capability.MONITOREO_EXECUTE,
+    Capability.DOCENTES_READ,
+    Capability.ESPECIALISTAS_READ,
+    Capability.INSTITUCIONES_READ,
+    Capability.CARPETA_PEDAGOGICA_READ,
+    Capability.CARPETA_PEDAGOGICA_WRITE,
+  ],
   [RoleCode.COORDINADOR_PEDAGOGICO]: [
     Capability.MONITOREO_EXECUTE,
     Capability.DOCENTES_READ,

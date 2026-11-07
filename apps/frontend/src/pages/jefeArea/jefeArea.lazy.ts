@@ -50,12 +50,34 @@ export const CoordinadorCreatePage = lazy(() =>
   import('../director/DocenteSwitchers').then((m) => ({ default: m.CoordinadorCreateSwitcher })),
 );
 
+export const SubdirectoresPage = lazy(() =>
+  import('../director/SubdirectoresPage').then((m) => ({ default: m.SubdirectoresPage })),
+);
+
+export const SubdirectorCreatePage = lazy(() =>
+  import('../director/SubdirectorCreatePage').then((m) => ({ default: m.SubdirectorCreatePage })),
+);
+
+export const SubdirectorAssignPage = lazy(() =>
+  import('../director/SubdirectorAssignPage').then((m) => ({ default: m.SubdirectorAssignPage })),
+);
+
 export const JefesTallerPage = lazy(() =>
   import('../director/JefesTallerPage').then((m) => ({ default: m.JefesTallerPage })),
 );
 
 export const JefeTallerAssignPage = lazy(() =>
   import('../director/JefeTallerAssignPage').then((m) => ({ default: m.JefeTallerAssignPage })),
+);
+
+export const JefeTallerCreatePage = lazy(() =>
+  import('../director/JefeTallerCreatePage').then((m) => ({ default: m.JefeTallerCreatePage })),
+);
+
+export const CoordinadorCreateDirectoPage = lazy(() =>
+  import('../director/CoordinadorCreateDirectoPage').then((m) => ({
+    default: m.CoordinadorCreateDirectoPage,
+  })),
 );
 
 export const JefesAreaPage = lazy(() =>

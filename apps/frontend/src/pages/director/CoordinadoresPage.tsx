@@ -7,6 +7,8 @@ export const CoordinadoresPage = () => {
       description="Administración y asignación de Coordinadores Pedagógicos de la institución."
       actionText="Asignar Coordinador"
       createPath="/instituciones/coordinadores/nuevo"
+      secondaryActionText="Registrar nuevo"
+      secondaryCreatePath="/instituciones/coordinadores/registrar"
       targetCargo="Coordinador Pedagógico"
       itemName="coordinadores"
       loadingLabel="Cargando coordinadores..."

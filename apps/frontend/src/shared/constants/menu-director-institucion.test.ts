@@ -15,6 +15,10 @@ import { hasPermission } from './roles';
  * institución, ambos sólo en Secundaria. El director gestiona a los dos.
  */
 describe('menú del Director de I.E.', () => {
+  it('gestiona a sus Subdirectores', () => {
+    expect(hasPermission('director_institucion', 'instituciones_subdirectores')).toBe(true);
+  });
+
   it('gestiona a su Coordinador Pedagógico', () => {
     expect(hasPermission('director_institucion', 'instituciones_coordinadores')).toBe(true);
   });

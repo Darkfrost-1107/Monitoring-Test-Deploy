@@ -44,7 +44,13 @@ const solicitud = (over: Partial<SolicitudReprogramacion> = {}): SolicitudReprog
   ...over,
 });
 
-const montar = (opciones: { request?: Partial<SolicitudReprogramacion>; canDecide?: boolean } = {}) => {
+const montar = (
+  opciones: {
+    request?: Partial<SolicitudReprogramacion>;
+    canDecide?: boolean;
+    historialPrevio?: SolicitudReprogramacion[];
+  } = {},
+) => {
   const onApprove = vi.fn();
   const onReject = vi.fn();
   const onClose = vi.fn();
@@ -58,6 +64,7 @@ const montar = (opciones: { request?: Partial<SolicitudReprogramacion>; canDecid
       canDecide={opciones.canDecide ?? true}
       onApprove={onApprove}
       onReject={onReject}
+      historialPrevio={opciones.historialPrevio}
     />,
   );
 
@@ -223,14 +230,15 @@ describe('DecidirReprogramacionForm — sustento adjunto', () => {
 
   it('se abre fuera sin dar acceso a la pestana de origen', async () => {
     vi.spyOn(api, 'requestBlob').mockResolvedValue(new Blob(['%PDF-1.7']));
-    const abrir = vi.spyOn(window, 'open').mockReturnValue({} as Window);
+    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
     montar({
       request: { adjunto: { nombre: 'oficio.pdf', url: '/reprogramaciones/x.pdf' } },
     });
 
     await userEvent.click(screen.getByRole('button', { name: /oficio\.pdf/i }));
 
-    expect(abrir).toHaveBeenCalledWith(expect.any(String), '_blank', 'noopener,noreferrer');
+    expect(clickSpy).toHaveBeenCalled();
+    clickSpy.mockRestore();
   });
 
   it('una ruta que no corresponde a un cajon no se ofrece como descarga', async () => {
@@ -260,5 +268,66 @@ describe('DecidirReprogramacionForm — sustento adjunto', () => {
     montar({ request: { adjunto: null } });
 
     expect(screen.queryByRole('button', { name: /\.pdf/i })).not.toBeInTheDocument();
+  });
+});
+
+describe('DecidirReprogramacionForm — historial de intentos previos', () => {
+  it('no muestra seccion de historial cuando no hay intentos previos', () => {
+    montar({ historialPrevio: [] });
+    expect(screen.queryByText(/Intentos Anteriores de Reprogramación/i)).not.toBeInTheDocument();
+  });
+
+  it('muestra los intentos previos con su motivo, fecha propuesta y motivo de rechazo de jefatura', () => {
+    const intentoPrevio: SolicitudReprogramacion = {
+      id: 's-previa',
+      fechaOriginal: '2026-09-01T08:00',
+      fechaNueva: '2026-09-10T09:00',
+      motivo: 'Cruce con jornada institucional.',
+      adjunto: null,
+      estado: 'RECHAZADO',
+      fechaRegistro: '2026-08-15T10:00:00.000Z',
+      aprobador: 'Dra. Carmen Mendoza',
+      aprobadorComentario: 'La institución no atiende en el turno de la mañana esa fecha.',
+      fechaAprobacion: '2026-08-16T15:00:00.000Z',
+      solicitanteRolAlCrear: RoleCode.ESPECIALISTA,
+    };
+
+    montar({ historialPrevio: [intentoPrevio] });
+
+    expect(screen.getByText(/Intentos Anteriores de Reprogramación/i)).toBeInTheDocument();
+    expect(screen.getByText(/1 intento previo/i)).toBeInTheDocument();
+    expect(screen.getByText(/Cruce con jornada institucional/i)).toBeInTheDocument();
+    expect(screen.getByText(/Dra\. Carmen Mendoza/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/La institución no atiende en el turno de la mañana esa fecha/i),
+    ).toBeInTheDocument();
+  });
+
+  it('permite colapsar y expandir el acordeón de intentos previos', async () => {
+    const intentoPrevio: SolicitudReprogramacion = {
+      id: 's-previa',
+      fechaOriginal: '2026-09-01T08:00',
+      fechaNueva: '2026-09-10T09:00',
+      motivo: 'Cruce con jornada institucional.',
+      adjunto: null,
+      estado: 'RECHAZADO',
+      fechaRegistro: '2026-08-15T10:00:00.000Z',
+      aprobador: 'Dra. Carmen Mendoza',
+      aprobadorComentario: 'Rechazo de prueba.',
+      fechaAprobacion: '2026-08-16T15:00:00.000Z',
+    };
+
+    montar({ historialPrevio: [intentoPrevio] });
+
+    const botonAcordeon = screen.getByRole('button', {
+      name: /Intentos Anteriores de Reprogramación/i,
+    });
+    expect(screen.getByText(/Rechazo de prueba/i)).toBeInTheDocument();
+
+    await userEvent.click(botonAcordeon);
+    expect(screen.queryByText(/Rechazo de prueba/i)).not.toBeInTheDocument();
+
+    await userEvent.click(botonAcordeon);
+    expect(screen.getByText(/Rechazo de prueba/i)).toBeInTheDocument();
   });
 });

@@ -94,7 +94,15 @@ export async function guardarBorradorFicha({
   plantillaId,
   datos,
 }: PayloadFinalizarFicha): Promise<void> {
-  await escribirRespuestasFicha(visitId, plantillaId, datos, false);
+  const fichaId = await escribirRespuestasFicha(visitId, plantillaId, datos, false);
+  const generales = extraerEvidenciasGenerales(datos.evidenciaUrls);
+  await fichasApi.guardarBorrador(
+    fichaId,
+    datos.generalComments,
+    datos.sugerencias,
+    datos.compromisos,
+    Object.keys(generales).length > 0 ? JSON.stringify(generales) : undefined,
+  );
 }
 
 /** Cuerpo que viaja en la cola para una firma hecha offline. */

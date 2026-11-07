@@ -67,6 +67,7 @@ export const JefesAreaPage = () => {
       {/* Tabla dedicada con redirección nativa */}
       <JefesTableWidget
         jefes={jefes}
+        setJefes={setJefes}
         onView={(jefe) => navigate(`/jefes-area/${jefe.id}`, { state: { from: location.pathname } })}
         onEdit={(jefe) => navigate(`/jefes-area/${jefe.id}/editar`, { state: { from: location.pathname } })}
         onChanged={fetchJefes}

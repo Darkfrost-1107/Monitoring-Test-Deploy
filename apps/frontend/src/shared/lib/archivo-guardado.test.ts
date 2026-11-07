@@ -19,6 +19,11 @@ describe('rutaDeDescarga', () => {
       '/reprogramaciones/reprogramaciones-abc.pdf',
       '/api/archivos/reprogramaciones/reprogramaciones-abc.pdf',
     ],
+    [
+      'un sustento excepcional',
+      '/sustentos-excepcionales/sustento-123.pdf',
+      '/api/archivos/sustentos-excepcionales/sustento-123.pdf',
+    ],
   ])('traduce %s', (_caso, guardada, esperada) => {
     expect(rutaDeDescarga(guardada)).toBe(esperada);
   });

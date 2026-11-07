@@ -14,7 +14,12 @@ import {
   adjuntoDeSolicitud,
   nombreDelAprobador,
 } from '@features/reprogramaciones/lib/adjunto-de-solicitud';
-import type { ICreateVisitaRequest, IUpdateVisitaRequest } from '@sistema-monitoreo/shared-contracts';
+import type {
+  ICreateVisitaRequest,
+  IUpdateVisitaRequest,
+  IAccionExcepcionalInput,
+  ISolicitudReprogramacion,
+} from '@sistema-monitoreo/shared-contracts';
 
 export interface EspecialistaLite {
   id: string;
@@ -185,27 +190,53 @@ export const useCronogramasData = (enabled = true) => {
     });
   }, [cronosQuery.data, especialistas, instituciones, docentes]);
 
+  const mapearSolicitud = (s: ISolicitudReprogramacion): SolicitudReprogramacion => ({
+    id: s.id,
+    fechaOriginal: `${s.fechaOriginal}T${s.horaOriginal}`,
+    fechaNueva: `${s.fechaPropuesta}T${s.horaPropuesta}`,
+    motivo: s.justificacion,
+    adjunto: adjuntoDeSolicitud(s.archivoSustentoUrl),
+    estado: s.estado as 'PENDIENTE' | 'APROBADO' | 'RECHAZADO',
+    fechaRegistro: s.createdAt,
+    aprobador: nombreDelAprobador(s.resueltoPorRol, s.resueltoPorNombre) ?? undefined,
+    aprobadorComentario: s.comentarioResolucion || undefined,
+    fechaAprobacion: s.fechaResolucion || undefined,
+    solicitanteRolAlCrear: s.solicitanteRolAlCrear,
+  });
+
   const reprogramaciones: Record<string, SolicitudReprogramacion> = useMemo(() => {
     if (!solQuery.data) return {};
     const solMap: Record<string, SolicitudReprogramacion> = {};
-    solQuery.data.forEach((s) => {
-      solMap[s.cronogramaId] = {
-        id: s.id,
-        fechaOriginal: `${s.fechaOriginal}T${s.horaOriginal}`,
-        fechaNueva: `${s.fechaPropuesta}T${s.horaPropuesta}`,
-        motivo: s.justificacion,
-        adjunto: adjuntoDeSolicitud(s.archivoSustentoUrl),
-        estado: s.estado as 'PENDIENTE' | 'APROBADO' | 'RECHAZADO',
-        fechaRegistro: s.createdAt,
-        // Sin nombre queda sin aprobador: el respaldo era `resueltoPorId`, de
-        // modo que la trazabilidad mostraba un UUID donde va un nombre.
-        aprobador: nombreDelAprobador(s.resueltoPorRol, s.resueltoPorNombre) ?? undefined,
-        aprobadorComentario: s.comentarioResolucion || undefined,
-        fechaAprobacion: s.fechaResolucion || undefined,
-        solicitanteRolAlCrear: s.solicitanteRolAlCrear,
-      };
+    // Prioridad por cronograma:
+    // 1) Si hay una solicitud PENDIENTE, esa es la vigente/activa.
+    // 2) Si no, la solicitud más reciente por fecha de registro.
+    const ordenadas = [...solQuery.data].sort((a, b) => {
+      if (a.estado === 'PENDIENTE' && b.estado !== 'PENDIENTE') return -1;
+      if (b.estado === 'PENDIENTE' && a.estado !== 'PENDIENTE') return 1;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+
+    ordenadas.forEach((s) => {
+      if (!solMap[s.cronogramaId]) {
+        solMap[s.cronogramaId] = mapearSolicitud(s);
+      }
     });
     return solMap;
+  }, [solQuery.data]);
+
+  const historialReprogramaciones: Record<string, SolicitudReprogramacion[]> = useMemo(() => {
+    if (!solQuery.data) return {};
+    const histMap: Record<string, SolicitudReprogramacion[]> = {};
+    const ordenadas = [...solQuery.data].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
+    for (const s of ordenadas) {
+      if (!histMap[s.cronogramaId]) {
+        histMap[s.cronogramaId] = [];
+      }
+      histMap[s.cronogramaId].push(mapearSolicitud(s));
+    }
+    return histMap;
   }, [solQuery.data]);
 
   const crearVisita = useCrearVisita();
@@ -224,6 +255,16 @@ export const useCronogramasData = (enabled = true) => {
 
   const deleteCronograma = async (id: string) => {
     await eliminarVisita.mutateAsync(id);
+  };
+
+  const ejecutarAccionExcepcional = async (id: string, data: IAccionExcepcionalInput) => {
+    const res = await cronogramasApi.ejecutarAccionExcepcional(id, data);
+    await Promise.all([
+      qc.invalidateQueries({ queryKey: ['cronogramas'] }),
+      qc.invalidateQueries({ queryKey: ['fichas'] }),
+      qc.invalidateQueries({ queryKey: ['operacion-excepcional', id] }),
+    ]);
+    return res;
   };
 
   const refetch = async () => {
@@ -282,6 +323,7 @@ export const useCronogramasData = (enabled = true) => {
   return {
     cronogramas,
     reprogramaciones,
+    historialReprogramaciones,
     especialistas,
     instituciones,
     docentes,
@@ -293,5 +335,6 @@ export const useCronogramasData = (enabled = true) => {
     approveRescheduleRequest,
     rejectRescheduleRequest,
     deleteCronograma,
+    ejecutarAccionExcepcional,
   };
 };

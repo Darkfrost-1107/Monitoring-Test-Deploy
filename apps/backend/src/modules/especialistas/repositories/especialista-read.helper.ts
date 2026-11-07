@@ -48,6 +48,23 @@ export async function findUserIdByEspecialistaId(
   return esp?.persona?.usuario?.id ?? null;
 }
 
+export async function findUsuarioInfoByEspecialistaId(
+  prisma: PrismaService,
+  especialistaId: string,
+): Promise<{ id: string; isFirstLogin: boolean; passwordHash: string } | null> {
+  const esp = await prisma.especialista.findUnique({
+    where: { id: especialistaId },
+    select: {
+      persona: {
+        select: {
+          usuario: { select: { id: true, isFirstLogin: true, passwordHash: true } },
+        },
+      },
+    },
+  });
+  return esp?.persona?.usuario ?? null;
+}
+
 export async function findCargosByEspecialistaId(
   prisma: PrismaService,
   especialistaId: string,

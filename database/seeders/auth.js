@@ -19,6 +19,7 @@ const ROLES = [
   { code: 'jefe_gestion', name: 'Jefe de Gestión', description: 'Jefe de Gestión de la UGEL Lampa' },
   { code: 'especialista', name: 'Especialista', description: 'Especialista de Monitoreo de la UGEL' },
   { code: 'director_institucion', name: 'Director de Institución', description: 'Director de Institución Educativa' },
+  { code: 'subdirector', name: 'Subdirector', description: 'Subdirector de Institución Educativa' },
   { code: 'coordinador_pedagogico', name: 'Coordinador Pedagógico', description: 'Coordinador Pedagógico de Secundaria' },
   { code: 'jefe_taller', name: 'Jefe de Taller', description: 'Jefe de Taller de Secundaria' },
   { code: 'docente', name: 'Docente', description: 'Docente de Aula' },

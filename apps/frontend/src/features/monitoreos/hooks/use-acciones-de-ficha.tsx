@@ -49,7 +49,7 @@ export function useAccionesDeFicha({ visit, template, estado, onSave, onFinalize
 
     toast.success('Ficha finalizada con éxito', {
       description:
-        'El PDF oficial se está generando y enviando por correo al docente evaluado de forma automática.',
+        'Ficha finalizada con éxito. Proceda a registrar las firmas correspondientes para generar el informe oficial.',
       duration: 6000,
       icon: <CheckCircle2 className="h-5 w-5 text-emerald-500" />,
     });

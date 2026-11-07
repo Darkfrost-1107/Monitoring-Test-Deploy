@@ -8,14 +8,21 @@ import { CARGA_HORARIA } from '@shared/config/constants';
  */
 
 /** Cargos que esta pantalla asigna promoviendo a un docente de aula. */
-export const CARGOS_ASIGNABLES = ['Coordinador Pedagógico', 'Jefe de Taller'] as const;
+export const CARGOS_ASIGNABLES = ['Coordinador Pedagógico', 'Jefe de Taller', 'Subdirector'] as const;
 
 export type CargoAsignable = (typeof CARGOS_ASIGNABLES)[number];
 
-/** Condiciones laborales que habilitan estos cargos. */
+/** Condiciones laborales para Coordinador y Jefe de Taller. */
 export const CONDICIONES_DEL_CARGO = ['Nombrado', 'Destacado'] as const;
 
 export type CondicionDelCargo = (typeof CONDICIONES_DEL_CARGO)[number];
+
+/** Condiciones laborales para Subdirector (encargatura directiva). */
+export const CONDICIONES_SUBDIRECTOR = ['Encargado'] as const;
+
+export type CondicionSubdirector = (typeof CONDICIONES_SUBDIRECTOR)[number];
+
+export type TodasLasCondiciones = CondicionDelCargo | CondicionSubdirector;
 
 /** Cargo desde el que se promueve. */
 const DOCENTE_DE_AULA = 'Docente de Aula';
@@ -39,7 +46,7 @@ export const normalizarTexto = (s: string): string =>
 const EPT_REGEX = /\b(ept|educacion para el trabajo)\b/;
 
 /** Carga horaria propia de cada cargo cuando no hay una previa que respetar. */
-const CARGA_DEL_CARGO: Record<CargoAsignable, number> = {
+const CARGA_DEL_CARGO: Record<Exclude<CargoAsignable, 'Subdirector'>, number> = {
   'Coordinador Pedagógico': CARGA_HORARIA.ESPECIALISTA,
   'Jefe de Taller': CARGA_HORARIA.DOCENTE,
 };
@@ -111,7 +118,13 @@ export function candidatosParaCargo<T extends DocenteCandidato>(
   cargo: CargoAsignable,
 ): T[] {
   return docentes.filter((d) => {
-    if (!d.activo || d.cargo !== DOCENTE_DE_AULA) return false;
+    if (!d.activo) return false;
+
+    // El Subdirector puede provenir de cualquier cargo docente activo.
+    if (cargo === 'Subdirector') return true;
+
+    // Coordinador y Jefe de Taller se asignan sobre docentes de aula.
+    if (d.cargo !== DOCENTE_DE_AULA) return false;
 
     // Los dos cargos se reparten el aula por especialidad: EPT es del Jefe de
     // Taller y el resto del Coordinador Pedagógico. La regla exigía EPT para el
@@ -130,27 +143,46 @@ export function candidatosParaCargo<T extends DocenteCandidato>(
  *
  * El Coordinador Pedagógico la tiene fija en 40 horas por definición del cargo;
  * el Jefe de Taller conserva la que ya tenía el docente, porque sigue dictando.
+ * El Subdirector conserva la carga previa si la tiene.
  */
 export function cargaHorariaDelCargo(
   cargo: CargoAsignable,
   docente: DocenteCandidato | null | undefined,
 ): number {
   if (cargo === 'Coordinador Pedagógico') return CARGA_DEL_CARGO[cargo];
-  return docente?.cargaHoraria || CARGA_DEL_CARGO[cargo];
+  return docente?.cargaHoraria || CARGA_DEL_CARGO['Jefe de Taller'];
 }
 
 /**
  * Condición laboral con la que se abre el formulario.
  *
- * El cargo exige Nombrado o Destacado. Si el docente ya tiene una de las dos se
- * conserva; si no, se propone Nombrado para que el usuario lo confirme o lo
- * corrija antes de guardar.
+ * Coordinador/JefeTaller exigen Nombrado o Destacado.
+ * Subdirector usa encargatura directiva ('Encargado').
  */
 export function condicionInicial(
   docente: DocenteCandidato | null | undefined,
-): CondicionDelCargo {
+  cargo?: CargoAsignable,
+): CondicionDelCargo | CondicionSubdirector {
+  if (cargo === 'Subdirector') return 'Encargado';
   const actual = docente?.condicion;
   return CONDICIONES_DEL_CARGO.includes(actual as CondicionDelCargo)
     ? (actual as CondicionDelCargo)
     : 'Nombrado';
+}
+
+/**
+ * Nivel educativo con el que se guarda al docente al asignarle el cargo.
+ *
+ * Coordinador Pedagógico y Jefe de Taller sólo existen en Secundaria. El
+ * Subdirector puede ser de cualquier nivel, así que conserva el que ya tenía:
+ * forzarlo a Secundaria lo movía de nivel (y lo dejaba sin su especialidad
+ * válida) al asignarlo.
+ */
+export function nivelEducativoAlAsignar(
+  cargo: CargoAsignable,
+  docente: { nivelEducativo?: string | null } | null | undefined,
+): string {
+  const actual = docente?.nivelEducativo;
+  if (cargo !== 'Subdirector' || !actual) return 'Secundaria';
+  return actual.charAt(0).toUpperCase() + actual.slice(1).toLowerCase();
 }

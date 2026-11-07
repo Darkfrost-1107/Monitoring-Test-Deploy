@@ -15,6 +15,8 @@ export interface Especialista {
   cargaLaboral: number;
   estado: string; // 'Activo' | 'Inactivo'
   activo: boolean; // UI-friendly mapped flag (true if estado === 'Activo')
+  /** La cuenta conserva la clave inicial (DNI): aún no la cambió o se restableció. */
+  contrasenaInicial?: boolean;
   especialidades?: string[] | null;
   especialidad?: string | null;
   especialidadesExtras?: string[] | null;

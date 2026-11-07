@@ -124,6 +124,36 @@ describe('solicitudesVisibles — quien decide', () => {
     expect(solicitudesVisibles(bandeja, actor).map((s) => s.id)).toEqual(['suyo']);
   });
 
+  it('el jefe de área ve las solicitudes de sus propias visitas además de las que decide en su nivel', () => {
+    const actor = usuario({
+      role: RoleCode.JEFE_AREA,
+      especialistaId: 'jarea-1',
+      especialistaNivel: 'Primaria',
+    });
+    const bandeja = [
+      solicitud({
+        id: 'propia-jefe',
+        solicitanteRolAlCrear: RoleCode.JEFE_AREA,
+        visit: visita({ monitorId: 'jarea-1', nivel: 'Primaria' }),
+      }),
+      solicitud({
+        id: 'especialista-primaria',
+        solicitanteRolAlCrear: RoleCode.ESPECIALISTA,
+        visit: visita({ monitorId: 'esp-9', nivel: 'Primaria' }),
+      }),
+      solicitud({
+        id: 'especialista-secundaria',
+        solicitanteRolAlCrear: RoleCode.ESPECIALISTA,
+        visit: visita({ monitorId: 'esp-8', nivel: NivelEducativoEBR.SECUNDARIA }),
+      }),
+    ];
+
+    expect(solicitudesVisibles(bandeja, actor).map((s) => s.id)).toEqual([
+      'propia-jefe',
+      'especialista-primaria',
+    ]);
+  });
+
   it('el director ve lo nacido en su colegio', () => {
     const actor = usuario({ role: RoleCode.DIRECTOR_INSTITUCION, institucion: 'ie-1' });
     const bandeja = [
@@ -189,15 +219,37 @@ describe('solicitudesVisibles — filtro de estado', () => {
 });
 
 describe('visitasReprogramables', () => {
-  it('son las visitas propias que siguen programadas', () => {
+  it('son las visitas propias que siguen programadas o reprogramadas', () => {
     const actor = usuario({ role: RoleCode.ESPECIALISTA, especialistaId: 'esp-1' });
     const visitas = [
       visita({ id: 'propia-programada', monitorId: 'esp-1', estado: 'PROGRAMADO' }),
+      visita({ id: 'propia-reprogramada', monitorId: 'esp-1', estado: 'REPROGRAMADO' }),
       visita({ id: 'propia-realizada', monitorId: 'esp-1', estado: 'REALIZADO' }),
       visita({ id: 'ajena', monitorId: 'esp-9', estado: 'PROGRAMADO' }),
     ];
 
-    expect(visitasReprogramables(visitas, actor).map((v) => v.id)).toEqual(['propia-programada']);
+    expect(visitasReprogramables(visitas, actor).map((v) => v.id)).toEqual([
+      'propia-programada',
+      'propia-reprogramada',
+    ]);
+  });
+
+  it('excluye visitas con solicitud pendiente pero admite visitas con solicitud rechazada para nuevo intento', () => {
+    const actor = usuario({ role: RoleCode.ESPECIALISTA, especialistaId: 'esp-1' });
+    const visitas = [
+      visita({ id: 'v-pendiente', monitorId: 'esp-1', estado: 'PROGRAMADO' }),
+      visita({ id: 'v-rechazada', monitorId: 'esp-1', estado: 'PROGRAMADO' }),
+      visita({ id: 'v-sin-solicitud', monitorId: 'esp-1', estado: 'PROGRAMADO' }),
+    ];
+    const porVisita = {
+      'v-pendiente': { estado: 'PENDIENTE' },
+      'v-rechazada': { estado: 'RECHAZADO' },
+    };
+
+    expect(visitasReprogramables(visitas, actor, porVisita).map((v) => v.id)).toEqual([
+      'v-rechazada',
+      'v-sin-solicitud',
+    ]);
   });
 
   it('sin identificador de especialista no hay ninguna', () => {

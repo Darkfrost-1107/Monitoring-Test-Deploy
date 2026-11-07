@@ -3,6 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
   ForbiddenException,
+  ConflictException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
@@ -11,7 +12,7 @@ import { CreateEspecialistaDto } from '../dto/create-especialista.dto.js';
 import { UpdateEspecialistaDto } from '../dto/update-especialista.dto.js';
 import { QueryEspecialistaDto } from '../dto/query-especialista.dto.js';
 import type { IEspecialistaResponse } from '@sistema-monitoreo/shared-contracts';
-import { CargoEspecialista } from '@sistema-monitoreo/shared-contracts';
+import { Capability, CargoEspecialista } from '@sistema-monitoreo/shared-contracts';
 import { CatalogsRepository } from '../../catalogs/repositories/catalogs.repository.js';
 import { SessionRepository } from '../../auth/repositories/session.repository.js';
 import { CargoNombre } from '../../../common/enums/cargo.enum.js';
@@ -339,6 +340,60 @@ export class EspecialistaService {
     }
 
     return this.repository.transicionDocenteAEspecialista(personaId, dto, role.id);
+  }
+
+  async restablecerContrasena(
+    especialistaId: string,
+    currentUser: JwtPayload,
+    meta: { ipAddress?: string; userAgent?: string },
+  ): Promise<{ success: true; message: string }> {
+    if (!currentUser.permissions?.includes(Capability.PERSONAL_RESTABLECER_CONTRASENA)) {
+      throw new ForbiddenException('No tiene permisos para realizar esta acción.');
+    }
+
+    if (currentUser.role !== RoleCode.JEFE_GESTION && currentUser.role !== RoleCode.SUPERUSUARIO) {
+      throw new ForbiddenException('No tiene permisos para realizar esta acción.');
+    }
+
+    const esp = await this.repository.findById(especialistaId);
+    if (!esp) {
+      throw new NotFoundException('El especialista especificado no existe.');
+    }
+
+    const usuario = await this.repository.findUsuarioInfoByEspecialistaId(especialistaId);
+    if (!usuario) {
+      throw new NotFoundException('El especialista no tiene una cuenta de usuario.');
+    }
+
+    if (usuario.id === currentUser.sub) {
+      throw new ForbiddenException('No puede restablecer su propia contraseña desde aquí.');
+    }
+
+    if (
+      usuario.isFirstLogin &&
+      usuario.passwordHash &&
+      (await bcrypt.compare(esp.persona.dni, usuario.passwordHash))
+    ) {
+      throw new ConflictException(
+        'La contraseña ya está en su valor inicial (DNI) y el usuario aún no la cambió.',
+      );
+    }
+
+    const saltRounds = this.configService.get<number>('BCRYPT_SALT_ROUNDS') ?? 12;
+    const passwordHash = await bcrypt.hash(esp.persona.dni, saltRounds);
+
+    await this.repository.restablecerContrasena({
+      usuarioId: usuario.id,
+      passwordHash,
+      auditoria: {
+        actorUsuarioId: currentUser.sub,
+        eventType: 'PASSWORD_RESET_BY_JEFE_GESTION',
+        eventDetail: `Restablecida la contraseña del especialista ${especialistaId} (DNI ${esp.persona.dni})`,
+        ...meta,
+      },
+    });
+
+    return { success: true, message: 'Contraseña restablecida.' };
   }
 }
 

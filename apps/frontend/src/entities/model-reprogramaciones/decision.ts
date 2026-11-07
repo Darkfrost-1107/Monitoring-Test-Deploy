@@ -56,7 +56,8 @@ export interface VisitaDecidible {
  */
 export const esSolicitudDeInstitucion = (solicitanteRolAlCrear?: string): boolean =>
   solicitanteRolAlCrear === RoleCode.COORDINADOR_PEDAGOGICO ||
-  solicitanteRolAlCrear === RoleCode.JEFE_TALLER;
+  solicitanteRolAlCrear === RoleCode.JEFE_TALLER ||
+  solicitanteRolAlCrear === RoleCode.SUBDIRECTOR;
 
 /** ¿El usuario y la visita corresponden a la misma institución educativa? */
 const esMismaInstitucion = (usuario: UsuarioDecisor, visita: VisitaDecidible): boolean =>
@@ -80,6 +81,8 @@ export function puedeDecidirReprogramacion(
 
   if (usuario.role === RoleCode.JEFE_AREA) {
     if (esDeInstitucion) return false;
+    // Las solicitudes creadas por un Responsable de Nivel solo las resuelve el Jefe de Gestión
+    if (solicitanteRolAlCrear === RoleCode.JEFE_AREA) return false;
     // Sin nivel asignado, el jefe de área no queda restringido.
     if (usuario.especialistaNivel && visita.nivel !== usuario.especialistaNivel) return false;
     return true;

@@ -29,8 +29,10 @@ export function requireAnyPermission(currentUser: CurrentUser, permissions: stri
 export function getDirectorInstitucionId(currentUser: CurrentUser): string {
   const userInstitucionId = currentUser.colegio_id || currentUser.institucion_id;
   if (!userInstitucionId) {
+    const cargo =
+      currentUser.role === RoleCode.DIRECTOR_INSTITUCION ? 'El director de IE' : 'El usuario';
     throw new ForbiddenException(
-      'El director de IE no tiene una institución educativa asignada en su token.',
+      `${cargo} no tiene una institución educativa asignada en su token.`,
     );
   }
   return userInstitucionId;

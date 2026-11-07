@@ -35,6 +35,7 @@ export const mapApiJefeAreaToFrontend = (apiJefe: IJefeAreaResponse): JefeArea =
     cargaHoraria: apiJefe.cargaLaboral || CARGA_HORARIA.JEFE_AREA,
     nivelEducativo: normalizarNivel(apiJefe.nivelEducativo),
     activo: apiJefe.estado === 'Activo',
+    contrasenaInicial: apiJefe.contrasenaInicial,
     // Vacía si el registro no la trae: poner la de hoy sería afirmar una fecha
     // de alta que nadie registró.
     fechaCreacion: apiJefe.createdAt ? aFechaISOLocal(apiJefe.createdAt) : '',

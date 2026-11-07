@@ -7,6 +7,8 @@ export interface IEspecialistaResponse {
   nivelEducativo: string;
   modalidad?: string | null;
   estado: string;
+  /** `true` mientras la cuenta conserva la clave inicial (DNI): aún no la cambió o se restableció. */
+  contrasenaInicial?: boolean;
   cargaLaboral?: number | null;
   cargo: string;
   condicionLaboral?: string | null;

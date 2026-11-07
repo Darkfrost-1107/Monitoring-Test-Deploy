@@ -75,6 +75,8 @@ export const ROL_CAPABILITIES: Record<RoleCode, readonly Capability[]> = {
     Capability.VISITAS_SOLICITAR,
     Capability.CARPETA_PEDAGOGICA_READ,
     Capability.SOLICITUDES_PLANTILLA_GESTIONAR,
+    Capability.PERSONAL_RESTABLECER_CONTRASENA,
+    Capability.MONITOREO_ACCION_EXCEPCIONAL,
   ],
   [RoleCode.JEFE_AREA]: [
     Capability.MONITOREO_EXECUTE,
@@ -110,6 +112,15 @@ export const ROL_CAPABILITIES: Record<RoleCode, readonly Capability[]> = {
     Capability.SOLICITUDES_PLANTILLA_SOLICITAR,
     Capability.PERSONAL_RESTABLECER_CONTRASENA,
   ],
+  [RoleCode.SUBDIRECTOR]: [
+    Capability.DASHBOARD_READ,
+    Capability.MONITOREO_EXECUTE,
+    Capability.DOCENTES_READ,
+    Capability.ESPECIALISTAS_READ,
+    Capability.INSTITUCIONES_READ,
+    Capability.CARPETA_PEDAGOGICA_READ,
+    Capability.CARPETA_PEDAGOGICA_WRITE,
+  ],
   [RoleCode.COORDINADOR_PEDAGOGICO]: [
     Capability.MONITOREO_EXECUTE,
     Capability.DOCENTES_READ,
@@ -132,6 +143,8 @@ export const ROL_CAPABILITIES: Record<RoleCode, readonly Capability[]> = {
     Capability.SUPERADMIN_ACCESS,
     Capability.ESPECIALISTAS_READ,
     Capability.ESPECIALISTAS_WRITE,
+    Capability.PERSONAL_RESTABLECER_CONTRASENA,
+    Capability.MONITOREO_ACCION_EXCEPCIONAL,
   ],
 };
 
@@ -150,6 +163,8 @@ export const ESPECIALISTA_CARGO_CAPABILITIES: Record<EspecialistaCargoEnum, read
       Capability.INSTITUCIONES_WRITE,
       Capability.DOCENTES_WRITE,
       Capability.VISITAS_GESTIONAR,
+      Capability.PERSONAL_RESTABLECER_CONTRASENA,
+      Capability.MONITOREO_ACCION_EXCEPCIONAL,
     ],
   };
 
@@ -165,7 +180,13 @@ export const DOCENTE_CARGO_CAPABILITIES: Record<CargoNombre, readonly Capability
     Capability.SOLICITUDES_PLANTILLA_SOLICITAR,
     Capability.PERSONAL_RESTABLECER_CONTRASENA,
   ],
-  [CargoNombre.SUBDIRECTOR]: [Capability.DOCENTES_WRITE, Capability.MONITOREO_EXECUTE],
+  [CargoNombre.SUBDIRECTOR]: [
+    Capability.DASHBOARD_READ,
+    Capability.MONITOREO_EXECUTE,
+    Capability.DOCENTES_READ,
+    Capability.CARPETA_PEDAGOGICA_READ,
+    Capability.CARPETA_PEDAGOGICA_WRITE,
+  ],
   [CargoNombre.COORDINADOR_PEDAGOGICO]: [Capability.MONITOREO_EXECUTE],
   [CargoNombre.JEFE_DE_TALLER]: [Capability.MONITOREO_EXECUTE],
   [CargoNombre.DOCENTE_DE_AULA]: [],

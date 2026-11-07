@@ -1,6 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Edit, Mail, Phone, User, Briefcase, BookOpen } from 'lucide-react';
+import { ArrowLeft, Edit, KeyRound, Mail, Phone, User, Briefcase, BookOpen } from 'lucide-react';
+import { Capability } from '@sistema-monitoreo/shared-contracts';
+import { useCan } from '@shared/auth/use-can';
+import { useUser } from '@entities/model-user';
+import { ModalRestablecerContrasena } from '@features/docentes/ui/ModalRestablecerContrasena';
+import { especialistasApi } from '@shared/api/especialistas.api';
 import { CARGA_HORARIA } from '@shared/config/constants';
 import { Card } from '@shared/ui/card';
 import { Button } from '@shared/ui/button';
@@ -15,8 +20,16 @@ export const JefeAreaDetailPage = () => {
   const location = useLocation();
   const backPath = location.state?.from || '/jefes-area';
 
+  const { can } = useCan();
+  const { user } = useUser();
   const [jefe, setJefe] = useState<JefeArea | null>(null);
   const [loading, setLoading] = useState(true);
+  const [aRestablecer, setARestablecer] = useState<JefeArea | null>(null);
+
+  const puedeRestablecer =
+    can(Capability.PERSONAL_RESTABLECER_CONTRASENA) &&
+    Boolean(jefe?.activo) &&
+    jefe?.id !== user?.especialistaId;
 
   useEffect(() => {
     const fetchDetail = async () => {
@@ -81,13 +94,41 @@ export const JefeAreaDetailPage = () => {
           </div>
         </div>
 
-        <Button
-          onClick={() => navigate(`${backPath}/${jefe.id}/editar`, { state: { from: backPath } })}
-          className="flex items-center gap-2 font-bold cursor-pointer bg-primary text-white hover:bg-primary-hover"
-        >
-          <Edit className="h-[16px] w-[16px]" />
-          Editar Ficha
-        </Button>
+        <div className="flex items-center gap-2">
+          {puedeRestablecer && (
+            <span
+              title={
+                jefe.contrasenaInicial
+                  ? 'La contraseña ya se encuentra en su valor inicial (DNI)'
+                  : 'Restablecer a contraseña por defecto (DNI)'
+              }
+            >
+              <Button
+                variant="outline"
+                disabled={jefe.contrasenaInicial}
+                onClick={() => setARestablecer(jefe)}
+                className={
+                  jefe.contrasenaInicial
+                    ? 'flex items-center gap-2 font-medium opacity-50 cursor-not-allowed text-text-muted border-border pointer-events-none'
+                    : 'flex items-center gap-2 font-medium cursor-pointer text-amber-600 border-amber-200 hover:bg-amber-50 hover:text-amber-700'
+                }
+              >
+                <KeyRound className="h-[16px] w-[16px]" />
+                {jefe.contrasenaInicial
+                  ? 'Contraseña Reiniciada (DNI)'
+                  : 'Restablecer Contraseña'}
+              </Button>
+            </span>
+          )}
+
+          <Button
+            onClick={() => navigate(`${backPath}/${jefe.id}/editar`, { state: { from: backPath } })}
+            className="flex items-center gap-2 font-bold cursor-pointer bg-primary text-white hover:bg-primary-hover"
+          >
+            <Edit className="h-[16px] w-[16px]" />
+            Editar Ficha
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -217,6 +258,25 @@ export const JefeAreaDetailPage = () => {
           </div>
         </div>
       </Card>
+
+      {aRestablecer && (
+        <ModalRestablecerContrasena
+          docente={aRestablecer}
+          onClose={() => setARestablecer(null)}
+          onRestablecida={() =>
+            setJefe((prev) => (prev ? { ...prev, contrasenaInicial: true } : prev))
+          }
+          onConfirm={async () => {
+            const res = await especialistasApi.restablecerContrasena(aRestablecer.id);
+            if (!res.ok) {
+              throw new Error(
+                (res.error as { message?: string })?.message ||
+                  'No se pudo restablecer la contraseña.',
+              );
+            }
+          }}
+        />
+      )}
     </div>
   );
 };

@@ -14,6 +14,7 @@
 /** Cargos desde los que se levanta una ficha de monitoreo. */
 export const CARGOS_DE_MONITOREO = [
   'Director',
+  'Subdirector',
   'Coordinador Pedagógico',
   'Jefe de Taller',
 ] as const;

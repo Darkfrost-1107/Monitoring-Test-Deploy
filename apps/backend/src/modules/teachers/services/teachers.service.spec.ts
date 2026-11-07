@@ -208,6 +208,23 @@ describe('TeachersService', () => {
       expect(findDocentesMock).toHaveBeenCalledWith({ institucionId: 'inst-uuid' });
     });
 
+    it('should return teachers filtered by institution for subdirector', async () => {
+      const mockList = [{ id: 'docente-sub-1' }];
+      findDocentesMock.mockResolvedValue(mockList);
+
+      const mockSubdirectorUser: CurrentUser = {
+        sub: 'subdirector-uuid',
+        role: RoleCode.SUBDIRECTOR,
+        permissions: ['docentes:read'],
+        institucion_id: 'inst-uuid',
+      };
+
+      const result = await service.getDocentes(mockSubdirectorUser);
+
+      expect(result).toBe(mockList);
+      expect(findDocentesMock).toHaveBeenCalledWith({ institucionId: 'inst-uuid' });
+    });
+
     it('should query all teachers if user is director_ugel', async () => {
       findDocentesMock.mockResolvedValue(mockTeachersList);
 

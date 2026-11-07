@@ -28,7 +28,10 @@ import { JefeAreaCreatePage } from '../jefeGestion/JefeAreaCreatePage';
  */
 const useEsDirectorDeInstitucion = (): boolean => {
   const { user } = useUser();
-  return user?.role === RoleCode.DIRECTOR_INSTITUCION;
+  return (
+    user?.role === RoleCode.DIRECTOR_INSTITUCION ||
+    user?.role === RoleCode.SUBDIRECTOR
+  );
 };
 
 export const DocenteListSwitcher = () =>

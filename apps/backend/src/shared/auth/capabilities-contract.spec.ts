@@ -191,10 +191,11 @@ describe('Contrato de capacidades', () => {
       // caen en el mismo ámbito, habría que revisar si el conjunto sigue
       // haciendo falta o si `useScope` ya lo expresa.
       expect(isUgelRole(RoleCode.ESPECIALISTA)).toBe(true);
+      expect(isInstitutionRole(RoleCode.SUBDIRECTOR)).toBe(true);
       expect(isInstitutionRole(RoleCode.COORDINADOR_PEDAGOGICO)).toBe(true);
       expect(isInstitutionRole(RoleCode.JEFE_TALLER)).toBe(true);
 
-      expect(MONITOR_CAMPO_ROLES).toHaveLength(3);
+      expect(MONITOR_CAMPO_ROLES).toHaveLength(4);
     });
 
     it('ejecutar monitoreo no implica ser monitor de campo', () => {

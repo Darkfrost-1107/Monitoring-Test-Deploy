@@ -132,6 +132,7 @@ export function puedeCopiarParaSuInstitucion(
  */
 const ROLES_QUE_CREAN_EN_LA_IE: readonly RoleCode[] = [
   RoleCode.DIRECTOR_INSTITUCION,
+  RoleCode.SUBDIRECTOR,
   RoleCode.COORDINADOR_PEDAGOGICO,
   RoleCode.JEFE_TALLER,
 ];

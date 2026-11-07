@@ -21,11 +21,12 @@ export const ESCALAS_MAGISTERIALES: { value: EscalaMagisterial; label: string }[
   { value: 'VIII', label: 'VIII — Octava Escala' },
 ];
 
-export const CARGOS = ['Director', 'Coordinador Pedagógico', 'Jefe de Taller', 'Docente de Aula'] as const;
+export const CARGOS = ['Director', 'Subdirector', 'Coordinador Pedagógico', 'Jefe de Taller', 'Docente de Aula'] as const;
 export type CargoDocente = (typeof CARGOS)[number];
 
 export const CARGO_COLOR: Record<CargoDocente, string> = {
   Director: '#22c55e', // Green
+  Subdirector: '#8b5cf6', // Violet
   'Coordinador Pedagógico': '#3b82f6', // Blue
   'Jefe de Taller': '#f59e0b', // Amber/Orange
   'Docente de Aula': '#6b7280', // Gray

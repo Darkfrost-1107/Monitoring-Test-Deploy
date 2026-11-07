@@ -5,6 +5,7 @@ import type { Cronograma } from '@entities/model-cronogramas';
 import type { SolicitudReprogramacion } from '@entities/model-reprogramaciones';
 import { ResumenDeSolicitud } from './decidir/ResumenDeSolicitud';
 import { LineaDeTiempo } from './decidir/LineaDeTiempo';
+import { HistorialDeIntentos } from './decidir/HistorialDeIntentos';
 import { RevisionDeJefatura, EnRevisionPorOtro } from './decidir/RevisionDeJefatura';
 
 /**
@@ -22,6 +23,7 @@ interface DecidirReprogramacionFormProps {
   canDecide: boolean;
   onApprove: (visitId: string, comment: string) => void;
   onReject: (visitId: string, comment: string) => void;
+  historialPrevio?: SolicitudReprogramacion[];
 }
 
 export const DecidirReprogramacionForm = ({
@@ -32,6 +34,7 @@ export const DecidirReprogramacionForm = ({
   canDecide,
   onApprove,
   onReject,
+  historialPrevio,
 }: DecidirReprogramacionFormProps) => {
   if (!isOpen || !visit || !request) return null;
 
@@ -69,6 +72,10 @@ export const DecidirReprogramacionForm = ({
 
           <div className="flex-1 p-6 overflow-y-auto space-y-5">
             <LineaDeTiempo solicitud={request} solicitante={visit.especialista} />
+
+            {historialPrevio && historialPrevio.length > 0 && (
+              <HistorialDeIntentos intentos={historialPrevio} />
+            )}
 
             {pendiente &&
               (canDecide ? (

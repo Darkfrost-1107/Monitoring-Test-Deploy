@@ -49,20 +49,28 @@ export function especialidadesDelNivel(nivel: string, actual?: string | null): s
 
 /** Condiciones laborales que corresponden al cargo. */
 export const condicionesDelCargo = (cargo: string): string[] =>
-  cargo === 'Director' ? [...CONDICION_DIRECTIVA] : [...CONDICION_LABORAL];
+  cargo === 'Director' || cargo === 'Subdirector'
+    ? [...CONDICION_DIRECTIVA]
+    : [...CONDICION_LABORAL];
 
 /**
  * Cargos elegibles en el formulario.
  *
- * «Director» no se elige acá, pero si el registro ya lo tiene hay que
- * ofrecerlo: sin eso el selector se abre en otro cargo y guardar degrada al
- * director sin que nadie lo pidiera.
+ * «Director» y «Subdirector» se gestionan en sus propias pantallas, pero si
+ * el registro ya los tiene (o se está creando desde su respectivo flujo),
+ * hay que ofrecerlos para no degradar el cargo al guardar.
  */
 export function cargosDisponibles(nivel: string, cargoActual: string): string[] {
   const disponibles =
     nivel === 'SECUNDARIA' ? [...CARGOS_DE_SECUNDARIA, DOCENTE_DE_AULA] : [DOCENTE_DE_AULA];
 
-  return cargoActual === 'Director' ? ['Director', ...disponibles] : disponibles;
+  if (cargoActual === 'Director') {
+    return ['Director', ...disponibles];
+  }
+  if (cargoActual === 'Subdirector') {
+    return ['Subdirector', ...disponibles];
+  }
+  return disponibles;
 }
 
 export interface SeccionACargo {

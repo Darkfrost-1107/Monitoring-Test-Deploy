@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { toast } from 'sonner';
 import { ConfirmModal } from '@shared/ui/ConfirmModal';
 import { useRestablecerContrasena } from '../hooks/use-restablecer-contrasena';
@@ -5,20 +6,45 @@ import { useRestablecerContrasena } from '../hooks/use-restablecer-contrasena';
 interface Props {
   docente: { id: string; nombres: string; apellidos: string };
   onClose: () => void;
+  onConfirm?: () => Promise<void>;
+  /** Se invoca al restablecer con éxito, para que la lista refleje la clave inicial. */
+  onRestablecida?: () => void;
 }
 
 /**
  * Confirma y ejecuta el restablecimiento de la contraseña de una persona del
  * personal. En caso de error el modal queda abierto para poder reintentar.
  */
-export const ModalRestablecerContrasena = ({ docente, onClose }: Props) => {
+export const ModalRestablecerContrasena = ({
+  docente,
+  onClose,
+  onConfirm,
+  onRestablecida,
+}: Props) => {
   const { mutate, isPending } = useRestablecerContrasena();
+  const [ejecutando, setEjecutando] = useState(false);
 
-  const confirmar = () => {
+  const confirmar = async () => {
+    if (onConfirm) {
+      if (ejecutando) return;
+      setEjecutando(true);
+      try {
+        await onConfirm();
+        toast.success('Contraseña restablecida. Indícale que ingrese con su DNI');
+        onClose();
+      } catch (err) {
+        toast.error((err as Error).message || 'Error al restablecer la contraseña');
+      } finally {
+        setEjecutando(false);
+      }
+      return;
+    }
+
     if (isPending) return;
     mutate(docente.id, {
       onSuccess: () => {
         toast.success('Contraseña restablecida. Indícale que ingrese con su DNI');
+        onRestablecida?.();
         onClose();
       },
       onError: (e) => toast.error(e.message),

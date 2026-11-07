@@ -36,6 +36,7 @@ describe('ROLES_EVALUADORES', () => {
     expect([...ROLES_EVALUADORES].sort()).toEqual(
       [
         RoleCode.ESPECIALISTA,
+        RoleCode.SUBDIRECTOR,
         RoleCode.COORDINADOR_PEDAGOGICO,
         RoleCode.JEFE_TALLER,
         RoleCode.JEFE_GESTION,

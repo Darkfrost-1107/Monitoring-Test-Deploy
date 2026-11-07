@@ -4,9 +4,10 @@ import { EntityStats } from '@shared/ui/EntityStats';
 
 interface Props {
   directores: Docente[];
+  titlePrefix?: string;
 }
 
-export const DirectoresStatsWidget = ({ directores }: Props) => {
+export const DirectoresStatsWidget = ({ directores, titlePrefix = 'Directores' }: Props) => {
   const total = directores.length;
   const designados = directores.filter((d) => d.condicion === 'Designado').length;
   const encargados = directores.filter((d) => d.condicion === 'Encargado').length;
@@ -17,7 +18,7 @@ export const DirectoresStatsWidget = ({ directores }: Props) => {
       columns={4}
       cards={[
         {
-          title: 'Total Directores',
+          title: `Total ${titlePrefix}`,
           icon: <Users className="w-5 h-5 text-primary" strokeWidth={2} />,
           value: total,
           trendText: `${total} registrados en el padrón`,

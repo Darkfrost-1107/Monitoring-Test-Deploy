@@ -6,11 +6,15 @@ import type {
   IVisita,
   ISolicitudReprogramacion,
   TipoMonitoreo,
+  TipoAccionExcepcional,
+  IOperacionExcepcional,
+  IOperacionExcepcionalDetalle,
 } from '@sistema-monitoreo/shared-contracts';
 import {
   CronogramaRepository,
   CreateVisitaData,
   UpdateVisitaData,
+  CreateOperacionExcepcionalData,
   SolicitudReprogramacionRepository,
   CreateSolicitudData,
   ResolverSolicitudData,
@@ -34,6 +38,7 @@ import { CargoNombre } from '../../../common/enums/cargo.enum.js';
  */
 const AUTOR_DE_PLANTILLA_POR_ROL: Record<string, string> = {
   director_institucion: 'director_ie',
+  subdirector: 'director_ie',
   coordinador_pedagogico: 'coordinador_pedagogico',
   jefe_taller: 'jefe_taller',
 };
@@ -296,6 +301,149 @@ export class PrismaCronogramaRepository implements CronogramaRepository {
         },
       }),
     ]);
+  }
+
+  async ejecutarAccionExcepcional(
+    data: CreateOperacionExcepcionalData,
+  ): Promise<IOperacionExcepcional> {
+    return this.prisma.$transaction(async (tx) => {
+      // 1. Si la acción es ANULACION_TOTAL:
+      if (data.tipoAccion === 'ANULACION_TOTAL') {
+        await tx.cronograma.update({
+          where: { id: data.cronogramaId },
+          data: { estado: 'ANULADO' },
+        });
+
+        if (data.fichaId) {
+          await tx.fichaMonitoreo.update({
+            where: { id: data.fichaId },
+            data: { estado: 'ANULADO' },
+          });
+        } else {
+          const ficha = await tx.fichaMonitoreo.findFirst({
+            where: { cronogramaId: data.cronogramaId },
+            select: { id: true },
+          });
+          if (ficha) {
+            await tx.fichaMonitoreo.update({
+              where: { id: ficha.id },
+              data: { estado: 'ANULADO' },
+            });
+          }
+        }
+      } else if (data.tipoAccion === 'REAPERTURA_FICHA') {
+        const ficha = data.fichaId
+          ? await tx.fichaMonitoreo.findUnique({
+              where: { id: data.fichaId },
+              select: { id: true, fichaContextoId: true },
+            })
+          : await tx.fichaMonitoreo.findFirst({
+              where: { cronogramaId: data.cronogramaId },
+              select: { id: true, fichaContextoId: true },
+            });
+
+        if (ficha) {
+          await tx.fichaMonitoreo.delete({ where: { id: ficha.id } });
+          if (ficha.fichaContextoId) {
+            await tx.fichaContexto.delete({ where: { id: ficha.fichaContextoId } });
+          }
+        }
+
+        await tx.cronograma.update({
+          where: { id: data.cronogramaId },
+          data: { estado: 'PROGRAMADO' },
+        });
+      }
+
+      const operacion = await tx.operacionExcepcional.create({
+        data: {
+          cronogramaId: data.cronogramaId,
+          fichaId: data.fichaId ?? null,
+          tipoAccion: data.tipoAccion,
+          numeroExpediente: data.numeroExpediente,
+          motivo: data.motivo,
+          archivoSustentoUrl: data.archivoSustentoUrl,
+          ejecutadoPorId: data.ejecutadoPorId,
+        },
+      });
+
+      return {
+        id: operacion.id,
+        cronogramaId: operacion.cronogramaId,
+        fichaId: operacion.fichaId,
+        tipoAccion: operacion.tipoAccion as TipoAccionExcepcional,
+        numeroExpediente: operacion.numeroExpediente,
+        motivo: operacion.motivo,
+        archivoSustentoUrl: operacion.archivoSustentoUrl,
+        ejecutadoPorId: operacion.ejecutadoPorId,
+        createdAt: operacion.createdAt.toISOString(),
+      };
+    });
+  }
+
+  async findOperacionExcepcionalByCronograma(
+    cronogramaId: string,
+  ): Promise<IOperacionExcepcional | null> {
+    const row = await this.prisma.operacionExcepcional.findFirst({
+      where: { cronogramaId },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (!row) return null;
+    return {
+      id: row.id,
+      cronogramaId: row.cronogramaId,
+      fichaId: row.fichaId,
+      tipoAccion: row.tipoAccion as TipoAccionExcepcional,
+      numeroExpediente: row.numeroExpediente,
+      motivo: row.motivo,
+      archivoSustentoUrl: row.archivoSustentoUrl,
+      ejecutadoPorId: row.ejecutadoPorId,
+      createdAt: row.createdAt.toISOString(),
+    };
+  }
+
+  async findAllOperacionesExcepcionales(): Promise<IOperacionExcepcionalDetalle[]> {
+    const rows = await this.prisma.operacionExcepcional.findMany({
+      include: {
+        cronograma: {
+          include: {
+            institucion: true,
+            evaluado: { include: { persona: true } },
+            monitor: { include: { persona: true } },
+          },
+        },
+        ejecutadoPor: { include: { persona: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return rows.map((row) => ({
+      id: row.id,
+      cronogramaId: row.cronogramaId,
+      fichaId: row.fichaId,
+      tipoAccion: row.tipoAccion as TipoAccionExcepcional,
+      numeroExpediente: row.numeroExpediente,
+      motivo: row.motivo,
+      archivoSustentoUrl: row.archivoSustentoUrl,
+      ejecutadoPorId: row.ejecutadoPorId,
+      createdAt: row.createdAt.toISOString(),
+      institucionNombre: row.cronograma?.institucion?.nombre ?? 'I.E. Sin Nombre',
+      institucionCodigoModular: row.cronograma?.institucion?.codigoModular ?? '',
+      evaluadoNombre: row.cronograma?.evaluado?.persona
+        ? `${row.cronograma.evaluado.persona.apellidos}, ${row.cronograma.evaluado.persona.nombres}`
+        : 'Docente no asignado',
+      evaluadoNumeroDocumento: row.cronograma?.evaluado?.persona?.dni ?? '',
+      monitorNombre: row.cronograma?.monitor?.persona
+        ? `${row.cronograma.monitor.persona.apellidos}, ${row.cronograma.monitor.persona.nombres}`
+        : 'Monitor no asignado',
+      ejecutadoPorNombre: row.ejecutadoPor?.persona
+        ? `${row.ejecutadoPor.persona.apellidos}, ${row.ejecutadoPor.persona.nombres}`
+        : 'Operador UGEL',
+      fechaVisita: row.cronograma?.fechaProgramada
+        ? row.cronograma.fechaProgramada.toISOString().split('T')[0]
+        : '',
+      numeroVisita: row.cronograma?.numeroVisita ?? 1,
+    }));
   }
 }
 

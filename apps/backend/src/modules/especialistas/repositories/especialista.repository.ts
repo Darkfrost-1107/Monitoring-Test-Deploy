@@ -14,6 +14,18 @@ export interface CargoRecord {
   esPrincipal: boolean;
 }
 
+export interface RestablecerContrasenaData {
+  usuarioId: string;
+  passwordHash: string;
+  auditoria: {
+    actorUsuarioId: string;
+    eventType: string;
+    eventDetail: string;
+    ipAddress?: string;
+    userAgent?: string;
+  };
+}
+
 export abstract class EspecialistaRepository {
   /**
    * Devuelve al rol de Especialista a quien ostentaba un cargo único.
@@ -50,6 +62,9 @@ export abstract class EspecialistaRepository {
 
   abstract deactivate(id: string): Promise<IEspecialistaResponse>;
   abstract findUserIdByEspecialistaId(especialistaId: string): Promise<string | null>;
+  abstract findUsuarioInfoByEspecialistaId(
+    especialistaId: string,
+  ): Promise<{ id: string; isFirstLogin: boolean; passwordHash: string } | null>;
   abstract findCargosByEspecialistaId(especialistaId: string): Promise<CargoRecord[]>;
   abstract findCargoById(id: string): Promise<CargoRecord | null>;
   abstract countActiveCargos(especialistaId: string): Promise<number>;
@@ -69,4 +84,5 @@ export abstract class EspecialistaRepository {
     data: ICreateEspecialistaRequest,
     roleId: string,
   ): Promise<IEspecialistaResponse>;
+  abstract restablecerContrasena(data: RestablecerContrasenaData): Promise<void>;
 }

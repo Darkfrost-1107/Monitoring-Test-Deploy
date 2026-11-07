@@ -10,6 +10,7 @@ import {
   BookOpen,
   Clock,
   BadgeCheck,
+  KeyRound,
 } from 'lucide-react';
 import { type Docente } from '@entities/model-docentes';
 import { Card } from '@shared/ui/card';
@@ -18,6 +19,9 @@ import { Badge } from '@shared/ui/badge';
 import { Spinner } from '@shared/ui/Spinner';
 import { fetchDocenteById } from '@features/docentes/docente-service';
 import { fetchInstitucionById } from '@features/institutions/institution-service';
+import { useCan, Capability } from '@shared/auth';
+import { useUser } from '@entities/model-user';
+import { ModalRestablecerContrasena } from '@features/docentes/ui/ModalRestablecerContrasena';
 
 export const DocenteDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -28,6 +32,16 @@ export const DocenteDetailPage = () => {
   const [docente, setDocente] = useState<Docente | null>(null);
   const [instName, setInstName] = useState('I.E. No Asignada');
   const [loading, setLoading] = useState(true);
+  const [aRestablecer, setARestablecer] = useState<Docente | null>(null);
+
+  const { can } = useCan();
+  const { user } = useUser();
+  const tieneCapacidadRestablecer = can(Capability.PERSONAL_RESTABLECER_CONTRASENA);
+  const puedeRestablecer =
+    docente &&
+    tieneCapacidadRestablecer &&
+    docente.activo &&
+    docente.id !== user?.docenteId;
 
   useEffect(() => {
     const fetchDetail = async () => {
@@ -99,13 +113,42 @@ export const DocenteDetailPage = () => {
           </div>
         </div>
 
-        <Button
-          onClick={() => navigate(`${backPath}/${docente.id}/editar`, { state: { from: backPath } })}
-          className="flex items-center gap-2 font-bold cursor-pointer bg-primary text-white hover:bg-primary-hover"
-        >
-          <Edit className="h-[16px] w-[16px]" />
-          Editar Ficha
-        </Button>
+        <div className="flex items-center gap-2">
+          {puedeRestablecer && (
+            <span
+              title={
+                docente.contrasenaInicial
+                  ? 'La contraseña ya se encuentra en su valor inicial (DNI)'
+                  : 'Restablecer contraseña al valor inicial (DNI)'
+              }
+              className={docente.contrasenaInicial ? 'inline-flex cursor-not-allowed' : undefined}
+            >
+              <Button
+                variant="outline"
+                disabled={docente.contrasenaInicial}
+                onClick={() => setARestablecer(docente)}
+                className={
+                  docente.contrasenaInicial
+                    ? 'flex items-center gap-2 font-medium opacity-50 cursor-not-allowed text-text-muted border-border pointer-events-none'
+                    : 'flex items-center gap-2 font-medium cursor-pointer text-amber-600 border-amber-200 hover:bg-amber-50 hover:text-amber-700'
+                }
+              >
+                <KeyRound className="h-[16px] w-[16px]" />
+                {docente.contrasenaInicial
+                  ? 'Contraseña Reiniciada (DNI)'
+                  : 'Restablecer Contraseña'}
+              </Button>
+            </span>
+          )}
+
+          <Button
+            onClick={() => navigate(`${backPath}/${docente.id}/editar`, { state: { from: backPath } })}
+            className="flex items-center gap-2 font-bold cursor-pointer bg-primary text-white hover:bg-primary-hover"
+          >
+            <Edit className="h-[16px] w-[16px]" />
+            Editar Ficha
+          </Button>
+        </div>
       </div>
 
       {/* Ficha Completa */}
@@ -261,6 +304,15 @@ export const DocenteDetailPage = () => {
         </div>
       </Card>
 
+      {aRestablecer && (
+        <ModalRestablecerContrasena
+          docente={aRestablecer}
+          onClose={() => setARestablecer(null)}
+          onRestablecida={() =>
+            setDocente((prev) => (prev ? { ...prev, contrasenaInicial: true } : prev))
+          }
+        />
+      )}
     </div>
   );
 };

@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import type {
   IFichaMonitoreo,
   IHistorialPedagogicoResponse,
@@ -14,7 +14,9 @@ import type {
   SaveRespuestaDesempenoDto,
   SaveRespuestaEjeItemDto,
   FinalizarFichaDto,
+  GuardarBorradorFichaDto,
 } from '../dto/ficha.dto.js';
+import { assertEsMonitorAsignado } from './evaluador-guard.js';
 import {
   findByVisitaId,
   findByVisitaYPlantilla,
@@ -115,6 +117,27 @@ export class FichaService {
     });
 
     return result;
+  }
+
+  async guardarBorrador(
+    fichaId: string,
+    dto: GuardarBorradorFichaDto,
+    session: SessionUser,
+  ): Promise<IFichaMonitoreo> {
+    const ficha = await this.repository.findById(fichaId);
+    if (!ficha) throw new NotFoundException(`Ficha ${fichaId} no encontrada.`);
+
+    const basic = await this.repository.findCronogramaBasicById(ficha.cronogramaId);
+    if (basic) {
+      assertEsMonitorAsignado(session, basic.monitorId);
+    }
+
+    return this.repository.guardarBorrador(fichaId, {
+      observaciones: dto.observaciones,
+      sugerencias: dto.sugerencias,
+      compromisos: dto.compromisos,
+      evidenciaGeneral: dto.evidenciaGeneral,
+    });
   }
 
   async migrarPlantilla(

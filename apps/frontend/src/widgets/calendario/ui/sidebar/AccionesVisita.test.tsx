@@ -128,11 +128,25 @@ describe('AccionesVisita — con instrumento disponible', () => {
 });
 
 describe('AccionesVisita — restricción de fecha', () => {
-  it('fuera del día programado no se inicia, y se dice cuál es', () => {
-    montar({ evaluador: { esFechaCoincidente: false } });
+  it('para una visita futura fuera del día programado no se inicia, y se avisa la restricción', () => {
+    montar({
+      visita: { fechaHora: '2099-09-01T08:00:00.000Z' },
+      evaluador: { esFechaCoincidente: false },
+    });
 
     expect(botonIniciar()).toBeDisabled();
     expect(screen.getByText(/Restricción de Fecha/i)).toBeInTheDocument();
+  });
+
+  it('para una visita vencida en el pasado se avisa que no fue realizada y se orienta a reprogramar', () => {
+    montar({
+      visita: { fechaHora: '2020-09-01T08:00:00.000Z' },
+      evaluador: { esFechaCoincidente: false },
+    });
+
+    expect(botonIniciar()).toBeDisabled();
+    expect(screen.getByText(/Visita no realizada en la fecha programada/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Reprogramar/i })).toBeInTheDocument();
   });
 
   /** Una visita ya en proceso se continúa cualquier día: la fecha ya se cumplió. */
@@ -154,5 +168,41 @@ describe('AccionesVisita — quien no es la persona asignada', () => {
     montar({ evaluador: { puedeEvaluar: false } });
 
     expect(screen.getByText(/Ana Torres/)).toBeInTheDocument();
+  });
+});
+
+describe('AccionesVisita — reprogramación rechazada (flujo flexible)', () => {
+  const solicitudRechazada: SolicitudReprogramacion = {
+    id: 'sol-rec',
+    fechaOriginal: '2026-09-01T08:00:00.000Z',
+    fechaNueva: '2026-09-05T08:00:00.000Z',
+    motivo: 'Cruce de horario',
+    adjunto: null,
+    estado: 'RECHAZADO',
+    fechaRegistro: '2026-08-30T10:00:00.000Z',
+    aprobador: 'Prof. Carlos Director',
+    aprobadorComentario: 'Fecha no disponible por simulacro, proponer otra fecha',
+  };
+
+  it('muestra el aviso de rechazo con el comentario del aprobador', () => {
+    montar({ solicitud: solicitudRechazada });
+
+    expect(screen.getByText(/Reprogramación anterior rechazada/i)).toBeInTheDocument();
+    expect(screen.getByText(/Fecha no disponible por simulacro/i)).toBeInTheDocument();
+    expect(screen.getByText(/Prof. Carlos Director/i)).toBeInTheDocument();
+  });
+
+  it('permite al evaluador volver a solicitar reprogramación con nueva fecha', async () => {
+    const { onSolicitarReprogramacion } = montar({ solicitud: solicitudRechazada });
+
+    await userEvent.click(screen.getByRole('button', { name: /Reprogramar/i }));
+    expect(onSolicitarReprogramacion).toHaveBeenCalled();
+  });
+
+  it('permite al evaluador ver el detalle del rechazo', async () => {
+    const { onVerSolicitud } = montar({ solicitud: solicitudRechazada });
+
+    await userEvent.click(screen.getByRole('button', { name: /Ver Rechazo/i }));
+    expect(onVerSolicitud).toHaveBeenCalled();
   });
 });

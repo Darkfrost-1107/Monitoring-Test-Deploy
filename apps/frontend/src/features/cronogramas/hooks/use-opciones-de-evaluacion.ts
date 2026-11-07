@@ -22,7 +22,7 @@ import { docenteEvaluablePorEspecialista, especialidadesDelDocente } from '../li
  */
 
 /** Cargos de una institución educativa que levantan ficha. */
-const CARGOS_EVALUADORES = ['Director', 'Coordinador Pedagógico', 'Jefe de Taller'];
+const CARGOS_EVALUADORES = ['Director', 'Subdirector', 'Coordinador Pedagógico', 'Jefe de Taller'];
 
 /** Cargos que sólo evalúan al personal que tienen asignado. */
 const CARGOS_CON_CARTERA = ['Coordinador Pedagógico', 'Jefe de Taller'];
@@ -162,11 +162,15 @@ export function useOpcionesDeEvaluacion({
         (d) => d.personaId === personaDelEvaluador && d.institucionId === institucionDelUsuarioId,
       );
 
+      const personalFiltrado = evaluador
+        ? personal.filter((d) => d.id !== evaluador.id)
+        : personal;
+
       if (evaluador && CARGOS_CON_CARTERA.includes(evaluador.cargo)) {
-        return personal.filter((d) => d.evaluadorActual?.evaluadorId === evaluador.id);
+        return personalFiltrado.filter((d) => d.evaluadorActual?.evaluadorId === evaluador.id);
       }
 
-      return personal;
+      return personalFiltrado;
     }
 
     if (!institucion) return [];

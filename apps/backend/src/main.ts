@@ -30,8 +30,26 @@ async function bootstrap() {
   const port = configService.getOrThrow<number>('PORT');
   const host = configService.getOrThrow<string>('HOST');
 
+  const allowedOrigins = frontendUrl.split(',').map((o) => o.trim());
+
   app.enableCors({
-    origin: frontendUrl,
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+      // En desarrollo o pruebas, permitir orígenes locales, red LAN privada y previews de Vercel
+      const isLocalOrPrivate =
+        /^https?:\/\/(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+)(:\d+)?$/.test(
+          origin,
+        );
+      const isVercelOrigin = /^https:\/\/[a-zA-Z0-9_-]+\.vercel\.app$/.test(origin);
+      if (process.env.NODE_ENV !== 'production' && (isLocalOrPrivate || isVercelOrigin)) {
+        callback(null, true);
+        return;
+      }
+      callback(new Error('No permitido por política CORS'));
+    },
     credentials: true,
   });
 

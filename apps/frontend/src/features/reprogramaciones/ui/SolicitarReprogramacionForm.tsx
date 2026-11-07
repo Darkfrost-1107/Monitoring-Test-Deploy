@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { formatearFechaConMes } from '@shared/lib/fecha/fecha';
 import {
   X,
-  RefreshCw
+  RefreshCw,
+  AlertTriangle,
 } from 'lucide-react';
 import { Button } from '@/shared/ui/button';
 import { Card } from '@/shared/ui/card';
@@ -33,6 +34,15 @@ export const SolicitarReprogramacionForm = ({
   const [reprogramarNuevaFecha, setReprogramarNuevaFecha] = useState<string>('');
   const [reprogramarMotivo, setReprogramarMotivo] = useState<string>('');
 
+  // Fecha y hora mínima permitida: a partir de hoy (no se permite reprogramar al pasado).
+  const minDateTime = useMemo(() => {
+    const ahora = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${ahora.getFullYear()}-${pad(ahora.getMonth() + 1)}-${pad(ahora.getDate())}T00:00`;
+  }, []);
+
+  const esFechaPasada = Boolean(reprogramarNuevaFecha && reprogramarNuevaFecha < minDateTime);
+
   // Si la visita elegida ya no está entre las disponibles, se vuelve a la que
   // abrió el formulario. Se ajusta durante el render: es estado de este mismo
   // componente y antes se difería con `setTimeout(…, 0)`.
@@ -44,7 +54,7 @@ export const SolicitarReprogramacionForm = ({
   const activeVisit = availableVisits?.find(v => v.id === selectedVisitId) || visit;
 
   const handleSendClick = () => {
-    if (!reprogramarNuevaFecha || !reprogramarMotivo || !activeVisit) return;
+    if (!reprogramarNuevaFecha || !reprogramarMotivo || !activeVisit || esFechaPasada) return;
     onSubmit({
       visitId: activeVisit.id,
       fechaOriginal: activeVisit.fechaHora,
@@ -114,10 +124,17 @@ export const SolicitarReprogramacionForm = ({
             </label>
             <input
               type="datetime-local"
+              min={minDateTime}
               value={reprogramarNuevaFecha}
               onChange={(e) => setReprogramarNuevaFecha(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-primary shadow-inner"
+              className={`w-full bg-slate-50 border ${esFechaPasada ? 'border-rose-300 focus:ring-rose-400' : 'border-slate-200 focus:ring-primary'} rounded-xl p-3 text-xs text-slate-700 focus:outline-none focus:ring-1 shadow-inner`}
             />
+            {esFechaPasada && (
+              <p className="text-[11px] font-semibold text-rose-600 mt-1 flex items-center gap-1">
+                <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                <span>La nueva fecha debe ser igual o posterior a hoy. No es posible reprogramar hacia el pasado.</span>
+              </p>
+            )}
           </div>
 
           {/* Justificación */}
@@ -145,7 +162,7 @@ export const SolicitarReprogramacionForm = ({
           </Button>
           <Button
             onClick={handleSendClick}
-            disabled={!reprogramarNuevaFecha || !reprogramarMotivo}
+            disabled={!reprogramarNuevaFecha || !reprogramarMotivo || esFechaPasada}
             className="bg-primary hover:bg-primary-hover text-white font-bold text-xs py-2 px-5 h-10 rounded-xl shadow cursor-pointer disabled:opacity-50"
           >
             Enviar Solicitud

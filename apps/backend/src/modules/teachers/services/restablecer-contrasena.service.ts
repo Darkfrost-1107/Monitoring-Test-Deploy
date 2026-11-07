@@ -1,4 +1,9 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { Capability } from '@sistema-monitoreo/shared-contracts';
@@ -12,13 +17,24 @@ import {
 } from './docente-service.validator.js';
 
 /** Roles del personal de una I.E. cuya clave puede restablecer su director. */
-const ROLES_RESTABLECIBLES: readonly string[] = [
+const ROLES_RESTABLECIBLES_POR_DIRECTOR: readonly string[] = [
   RoleCode.DOCENTE,
+  RoleCode.SUBDIRECTOR,
+  RoleCode.COORDINADOR_PEDAGOGICO,
+  RoleCode.JEFE_TALLER,
+];
+
+/** Roles del personal que puede restablecer el jefe de gestión (o superusuario). */
+const ROLES_RESTABLECIBLES_POR_JEFE_GESTION: readonly string[] = [
+  RoleCode.DIRECTOR_INSTITUCION,
+  RoleCode.DOCENTE,
+  RoleCode.SUBDIRECTOR,
   RoleCode.COORDINADOR_PEDAGOGICO,
   RoleCode.JEFE_TALLER,
 ];
 
 export const EVENTO_RESTABLECIMIENTO_POR_DIRECTOR = 'PASSWORD_RESET_BY_DIRECTOR';
+export const EVENTO_RESTABLECIMIENTO_POR_JEFE_GESTION = 'PASSWORD_RESET_BY_JEFE_GESTION';
 
 export interface RestablecerContrasenaResponse {
   success: true;
@@ -38,14 +54,21 @@ export class RestablecerContrasenaService {
     meta: { ipAddress?: string; userAgent?: string },
   ): Promise<RestablecerContrasenaResponse> {
     requirePermission(currentUser, Capability.PERSONAL_RESTABLECER_CONTRASENA);
-    if (currentUser.role !== RoleCode.DIRECTOR_INSTITUCION) {
+
+    const esDirector = currentUser.role === RoleCode.DIRECTOR_INSTITUCION;
+    const esJefeGestion =
+      currentUser.role === RoleCode.JEFE_GESTION || currentUser.role === RoleCode.SUPERUSUARIO;
+
+    if (!esDirector && !esJefeGestion) {
       throw new ForbiddenException('No tiene permisos para realizar esta acción.');
     }
-    const institucionId = getDirectorInstitucionId(currentUser);
 
     const docente = await this.teachersRepository.findDocenteById(docenteId);
     if (!docente) throw new NotFoundException('El personal especificado no existe.');
-    validateInstitucionOwnership(currentUser, docente.institucionId);
+
+    if (esDirector) {
+      validateInstitucionOwnership(currentUser, docente.institucionId);
+    }
 
     const usuario = await this.teachersRepository.findUsuarioPorPersonaId(docente.personaId);
     if (!usuario) throw new NotFoundException('El personal no tiene una cuenta de usuario.');
@@ -53,20 +76,47 @@ export class RestablecerContrasenaService {
     if (usuario.id === currentUser.sub) {
       throw new ForbiddenException('No puede restablecer su propia contraseña desde aquí.');
     }
-    if (!ROLES_RESTABLECIBLES.includes(usuario.rolCodigo)) {
-      throw new ForbiddenException('No puede restablecer la contraseña de este usuario.');
+
+    if (esDirector) {
+      if (!ROLES_RESTABLECIBLES_POR_DIRECTOR.includes(usuario.rolCodigo)) {
+        throw new ForbiddenException('No puede restablecer la contraseña de este usuario.');
+      }
+    } else {
+      if (!ROLES_RESTABLECIBLES_POR_JEFE_GESTION.includes(usuario.rolCodigo)) {
+        throw new ForbiddenException('No puede restablecer la contraseña de este usuario.');
+      }
+    }
+
+    // Si la cuenta sigue en primer ingreso con la clave del DNI, restablecer no
+    // cambia nada: se rechaza para que no se repita la acción (y su auditoría).
+    if (
+      usuario.isFirstLogin &&
+      usuario.passwordHash &&
+      (await bcrypt.compare(docente.persona.dni, usuario.passwordHash))
+    ) {
+      throw new ConflictException(
+        'La contraseña ya está en su valor inicial (DNI) y el usuario aún no la cambió.',
+      );
     }
 
     const saltRounds = this.configService.get<number>('BCRYPT_SALT_ROUNDS') ?? 12;
     const passwordHash = await bcrypt.hash(docente.persona.dni, saltRounds);
+
+    const eventType = esDirector
+      ? EVENTO_RESTABLECIMIENTO_POR_DIRECTOR
+      : EVENTO_RESTABLECIMIENTO_POR_JEFE_GESTION;
+
+    const eventDetail = esDirector
+      ? `Restablecida la contraseña del usuario ${usuario.id} (institución ${getDirectorInstitucionId(currentUser)})`
+      : `Restablecida la contraseña del personal ${usuario.id} por Jefe de Gestión`;
 
     await this.teachersRepository.restablecerContrasena({
       usuarioId: usuario.id,
       passwordHash,
       auditoria: {
         actorUsuarioId: currentUser.sub,
-        eventType: EVENTO_RESTABLECIMIENTO_POR_DIRECTOR,
-        eventDetail: `Restablecida la contraseña del usuario ${usuario.id} (institución ${institucionId})`,
+        eventType,
+        eventDetail,
         ...meta,
       },
     });

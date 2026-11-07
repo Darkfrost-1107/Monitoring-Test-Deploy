@@ -14,7 +14,12 @@ import * as path from 'node:path';
  */
 
 /** Cajones conocidos. Un valor fuera de esta lista no se resuelve. */
-export const CAJONES = ['evidencias', 'planes', 'reprogramaciones'] as const;
+export const CAJONES = [
+  'evidencias',
+  'planes',
+  'reprogramaciones',
+  'sustentos-excepcionales',
+] as const;
 export type Cajon = (typeof CAJONES)[number];
 
 export const esCajonConocido = (valor: string): valor is Cajon =>

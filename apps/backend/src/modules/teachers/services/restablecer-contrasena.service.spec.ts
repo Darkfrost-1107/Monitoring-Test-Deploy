@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { jest } from '@jest/globals';
 import * as bcrypt from 'bcrypt';
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { RestablecerContrasenaService } from './restablecer-contrasena.service.js';
 import { TeachersRepository } from '../repositories/teachers.repository.js';
 import { RoleCode } from '../../../common/enums/role.enum.js';
@@ -16,6 +16,12 @@ const director: CurrentUser = {
   permissions: ['personal:restablecer_contrasena'],
   colegio_id: INSTITUCION,
   institucion_id: INSTITUCION,
+};
+
+const jefeGestion: CurrentUser = {
+  sub: 'usuario-jg',
+  role: RoleCode.JEFE_GESTION,
+  permissions: ['personal:restablecer_contrasena'],
 };
 
 const docente = (over: Record<string, unknown> = {}) => ({
@@ -81,6 +87,33 @@ describe('RestablecerContrasenaService', () => {
     expect(arg.auditoria.eventDetail).not.toContain('12345678');
   });
 
+  it('rechaza con 409 si la cuenta ya está en primer ingreso con la clave del DNI', async () => {
+    findUsuarioPorPersonaId.mockResolvedValue(
+      usuarioObjetivo({ isFirstLogin: true, passwordHash: await bcrypt.hash('12345678', 4) }),
+    );
+
+    await expect(service.restablecer('docente-1', director, {})).rejects.toThrow(ConflictException);
+    expect(restablecerContrasena).not.toHaveBeenCalled();
+  });
+
+  it('restablece si estaba en primer ingreso pero con una clave distinta al DNI', async () => {
+    findUsuarioPorPersonaId.mockResolvedValue(
+      usuarioObjetivo({ isFirstLogin: true, passwordHash: await bcrypt.hash('otra-clave', 4) }),
+    );
+
+    await service.restablecer('docente-1', director, {});
+    expect(restablecerContrasena).toHaveBeenCalledTimes(1);
+  });
+
+  it('restablece si el usuario ya cambió su clave', async () => {
+    findUsuarioPorPersonaId.mockResolvedValue(
+      usuarioObjetivo({ isFirstLogin: false, passwordHash: await bcrypt.hash('12345678', 4) }),
+    );
+
+    await service.restablecer('docente-1', director, {});
+    expect(restablecerContrasena).toHaveBeenCalledTimes(1);
+  });
+
   it('rechaza sin la capacidad', async () => {
     await expect(
       service.restablecer('docente-1', { ...director, permissions: [] }, {}),
@@ -88,10 +121,46 @@ describe('RestablecerContrasenaService', () => {
     expect(restablecerContrasena).not.toHaveBeenCalled();
   });
 
-  it('rechaza a quien no es director de I.E. aunque tenga la capacidad', async () => {
+  it('rechaza a un rol no autorizado (ej. docente) aunque tenga la capacidad', async () => {
     await expect(
-      service.restablecer('docente-1', { ...director, role: RoleCode.JEFE_GESTION }, {}),
+      service.restablecer('docente-1', { ...director, role: RoleCode.DOCENTE }, {}),
     ).rejects.toThrow(ForbiddenException);
+  });
+
+  describe('Jefe de Gestión', () => {
+    it('permite al Jefe de Gestión restablecer la contraseña de un Director de I.E.', async () => {
+      findUsuarioPorPersonaId.mockResolvedValue(
+        usuarioObjetivo({ rolCodigo: RoleCode.DIRECTOR_INSTITUCION }),
+      );
+      const res = await service.restablecer('docente-1', jefeGestion, { ipAddress: '2.2.2.2' });
+
+      expect(res.success).toBe(true);
+      const arg = restablecerContrasena.mock.calls[0][0] as any;
+      expect(arg.auditoria).toMatchObject({
+        actorUsuarioId: 'usuario-jg',
+        eventType: 'PASSWORD_RESET_BY_JEFE_GESTION',
+        ipAddress: '2.2.2.2',
+      });
+    });
+
+    it('permite al Jefe de Gestión restablecer personal sin importar la institución', async () => {
+      findDocenteById.mockResolvedValue(docente({ institucionId: 'otra-ie' }));
+      findUsuarioPorPersonaId.mockResolvedValue(
+        usuarioObjetivo({ rolCodigo: RoleCode.DIRECTOR_INSTITUCION }),
+      );
+
+      await expect(service.restablecer('docente-1', jefeGestion, {})).resolves.toBeDefined();
+    });
+
+    it('rechaza que el Jefe de Gestión se restablezca a sí mismo', async () => {
+      findUsuarioPorPersonaId.mockResolvedValue(
+        usuarioObjetivo({ id: 'usuario-jg', rolCodigo: RoleCode.JEFE_GESTION }),
+      );
+
+      await expect(service.restablecer('docente-1', jefeGestion, {})).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
   });
 
   it('rechaza al director sin institucion en el token', async () => {
@@ -146,11 +215,13 @@ describe('RestablecerContrasenaService', () => {
     expect(restablecerContrasena).not.toHaveBeenCalled();
   });
 
-  it.each([RoleCode.DOCENTE, RoleCode.COORDINADOR_PEDAGOGICO, RoleCode.JEFE_TALLER])(
-    'permite al objetivo con rol %s',
-    async (rolCodigo) => {
-      findUsuarioPorPersonaId.mockResolvedValue(usuarioObjetivo({ rolCodigo }));
-      await expect(service.restablecer('docente-1', director, {})).resolves.toBeDefined();
-    },
-  );
+  it.each([
+    RoleCode.DOCENTE,
+    RoleCode.SUBDIRECTOR,
+    RoleCode.COORDINADOR_PEDAGOGICO,
+    RoleCode.JEFE_TALLER,
+  ])('permite al objetivo con rol %s', async (rolCodigo) => {
+    findUsuarioPorPersonaId.mockResolvedValue(usuarioObjetivo({ rolCodigo }));
+    await expect(service.restablecer('docente-1', director, {})).resolves.toBeDefined();
+  });
 });

@@ -41,6 +41,21 @@ describe('FilaDeDocente - restablecer contraseña', () => {
     expect(onRestablecerContrasena).toHaveBeenCalled();
   });
 
+  it('muestra el boton deshabilitado con mensaje cuando la contraseña ya está en estado inicial', async () => {
+    const onRestablecerContrasena = vi.fn();
+    montar({
+      onRestablecerContrasena,
+      restablecerContrasenaDeshabilitado: true,
+      motivoRestablecerDeshabilitado: 'La contraseña ya se encuentra en su valor inicial (DNI)',
+    });
+
+    const botonDeshabilitado = screen.getByTitle('La contraseña ya se encuentra en su valor inicial (DNI)');
+    expect(botonDeshabilitado).toBeInTheDocument();
+
+    await userEvent.click(botonDeshabilitado);
+    expect(onRestablecerContrasena).not.toHaveBeenCalled();
+  });
+
   it('no muestra el boton si la accion no se ofrece', () => {
     montar({});
     expect(screen.queryByTitle('Restablecer contraseña')).not.toBeInTheDocument();

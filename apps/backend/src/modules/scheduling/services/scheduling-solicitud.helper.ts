@@ -42,20 +42,23 @@ export async function crearSolicitud(
   if (!cronograma) throw new NotFoundException(`Visita ${dto.cronogramaId} no encontrada.`);
 
   const esEspecialista = (session.role as string) === (RoleCode.ESPECIALISTA as string);
+  const esJefeArea = (session.role as string) === (RoleCode.JEFE_AREA as string);
   const esSolicitanteIE =
     (session.role as string) === (RoleCode.COORDINADOR_PEDAGOGICO as string) ||
-    (session.role as string) === (RoleCode.JEFE_TALLER as string);
+    (session.role as string) === (RoleCode.JEFE_TALLER as string) ||
+    (session.role as string) === (RoleCode.SUBDIRECTOR as string);
 
-  if (!esEspecialista && !esSolicitanteIE) {
+  if (!esEspecialista && !esJefeArea && !esSolicitanteIE) {
     throw new ForbiddenException(
-      'Solo los Especialistas (a nivel UGEL) o los Coordinadores Pedagógicos y Jefes de Taller (a nivel IE Secundaria) pueden solicitar reprogramaciones.',
+      'Solo los Especialistas o Responsables de Nivel (a nivel UGEL) o el personal de monitoreo de IE (Subdirector, Coordinador, Jefe de Taller) pueden solicitar reprogramaciones.',
     );
   }
 
   if (esSolicitanteIE) {
-    if (cronograma.nivelEducativo !== 'Secundaria') {
+    const esSubdirector = (session.role as string) === (RoleCode.SUBDIRECTOR as string);
+    if (!esSubdirector && cronograma.nivelEducativo !== 'Secundaria') {
       throw new ForbiddenException(
-        'A nivel institucional (IE), solo existe reprogramación en nivel Secundaria.',
+        'A nivel institucional (IE), solo existe reprogramación en nivel Secundaria para coordinadores y jefes de taller.',
       );
     }
     if (session.institucionId && cronograma.institucionId !== session.institucionId) {
@@ -69,6 +72,18 @@ export async function crearSolicitud(
   if (pendiente) {
     throw new BadRequestException(
       `Ya existe una solicitud PENDIENTE para esta visita. Id: ${pendiente.id}.`,
+    );
+  }
+
+  const fechaPropuestaDate = new Date(dto.fechaPropuesta);
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+  const fechaPropuestaDia = new Date(fechaPropuestaDate);
+  fechaPropuestaDia.setHours(0, 0, 0, 0);
+
+  if (fechaPropuestaDia < hoy) {
+    throw new BadRequestException(
+      'La fecha propuesta para la reprogramación debe ser igual o posterior a la fecha actual.',
     );
   }
 
@@ -152,18 +167,20 @@ async function resolverSolicitud(
 
   const esSolicitudIE =
     solicitud.solicitanteRolAlCrear === (RoleCode.COORDINADOR_PEDAGOGICO as string) ||
-    solicitud.solicitanteRolAlCrear === (RoleCode.JEFE_TALLER as string);
+    solicitud.solicitanteRolAlCrear === (RoleCode.JEFE_TALLER as string) ||
+    solicitud.solicitanteRolAlCrear === (RoleCode.SUBDIRECTOR as string);
 
   if (esSolicitudIE) {
-    // 2do: Nivel IE (Secundaria) -> Dirigida única y exclusivamente a su Director de IE
+    // 2do: Nivel IE -> Dirigida única y exclusivamente a su Director de IE
     if ((session.role as string) !== (RoleCode.DIRECTOR_INSTITUCION as string)) {
       throw new ForbiddenException(
         'Las solicitudes de reprogramación a nivel institucional (IE) están dirigidas única y exclusivamente a su Director de IE.',
       );
     }
-    if (cronograma.nivelEducativo !== 'Secundaria') {
+    const esSubdirector = solicitud.solicitanteRolAlCrear === (RoleCode.SUBDIRECTOR as string);
+    if (!esSubdirector && cronograma.nivelEducativo !== 'Secundaria') {
       throw new ForbiddenException(
-        'A nivel institucional (IE), solo existe reprogramación en nivel Secundaria.',
+        'A nivel institucional (IE), solo existe reprogramación en nivel Secundaria para coordinadores y jefes de taller.',
       );
     }
     if (session.institucionId && cronograma.institucionId !== session.institucionId) {
@@ -189,6 +206,16 @@ async function resolverSolicitud(
     }
 
     if (isJefeArea) {
+      if (solicitud.solicitanteId === session.id) {
+        throw new ForbiddenException(
+          'No puede resolver su propia solicitud de reprogramación. Debe ser aprobada por el Jefe de Gestión.',
+        );
+      }
+      if (solicitud.solicitanteRolAlCrear === (RoleCode.JEFE_AREA as string)) {
+        throw new ForbiddenException(
+          'Las solicitudes de reprogramación creadas por un Responsable de Nivel solo pueden ser resueltas por el Jefe de Gestión.',
+        );
+      }
       if (cronograma.nivelEducativo !== session.especialistaNivel) {
         throw new ForbiddenException(
           'El Responsable de Nivel solo puede resolver solicitudes de su propio nivel educativo.',

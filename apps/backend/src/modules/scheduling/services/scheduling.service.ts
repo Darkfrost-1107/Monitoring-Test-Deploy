@@ -1,11 +1,17 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { STORAGE_SERVICE, type StorageService } from '../../../shared/storage/storage.constants.js';
-import type { IVisita, ISolicitudReprogramacion } from '@sistema-monitoreo/shared-contracts';
+import type {
+  IVisita,
+  ISolicitudReprogramacion,
+  IOperacionExcepcional,
+  IOperacionExcepcionalDetalle,
+} from '@sistema-monitoreo/shared-contracts';
 import {
   CronogramaRepository,
   SolicitudReprogramacionRepository,
 } from '../repositories/cronograma.repository.js';
 import type { CreateVisitaDto, UpdateVisitaDto } from '../dto/create-visita.dto.js';
+import type { AccionExcepcionalDto } from '../dto/accion-excepcional.dto.js';
 import type {
   CreateSolicitudReprogramacionDto,
   ResolverSolicitudDto,
@@ -26,6 +32,10 @@ import {
   aprobarSolicitud,
   rechazarSolicitud,
 } from './scheduling-solicitud.helper.js';
+import {
+  ejecutarAccionExcepcional,
+  findOperacionExcepcionalByCronograma,
+} from './scheduling-accion-excepcional.helper.js';
 
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrerrequisitosDirectorService } from '../../monitoring/services/prerrequisitos-director.service.js';
@@ -142,5 +152,39 @@ export class SchedulingService {
       comentario: dto.comentario,
     });
     return resuelta;
+  }
+
+  async ejecutarAccionExcepcional(
+    cronogramaId: string,
+    dto: AccionExcepcionalDto,
+    session: SessionUser,
+  ): Promise<IOperacionExcepcional> {
+    const res = await ejecutarAccionExcepcional(
+      this.cronogramaRepo,
+      this.storage,
+      cronogramaId,
+      dto,
+      session,
+    );
+    this.eventEmitter.emit('cronograma.accion_excepcional', {
+      cronogramaId,
+      ejecutorId: session.id,
+      tipoAccion: dto.tipoAccion,
+      numeroExpediente: dto.numeroExpediente,
+    });
+    return res;
+  }
+
+  async findOperacionExcepcionalByCronograma(
+    cronogramaId: string,
+    session: SessionUser,
+  ): Promise<IOperacionExcepcional | null> {
+    return findOperacionExcepcionalByCronograma(this.cronogramaRepo, cronogramaId, session);
+  }
+
+  async findAllOperacionesExcepcionales(
+    _session: SessionUser,
+  ): Promise<IOperacionExcepcionalDetalle[]> {
+    return this.cronogramaRepo.findAllOperacionesExcepcionales();
   }
 }

@@ -9,6 +9,8 @@ interface FastActionsProps {
   onFinalize?: () => void;
   onAssign?: () => void;
   onResetPassword?: () => void;
+  resetPasswordDisabled?: boolean;
+  resetPasswordDisabledReason?: string;
   viewTitle?: string;
   editTitle?: string;
   deleteTitle?: string;
@@ -26,6 +28,8 @@ export const FastActions = ({
   onFinalize,
   onAssign,
   onResetPassword,
+  resetPasswordDisabled = false,
+  resetPasswordDisabledReason = 'La contraseña ya se encuentra en su valor inicial (DNI)',
   viewTitle = 'Ver detalle',
   editTitle = 'Editar',
   deleteTitle = 'Eliminar',
@@ -107,18 +111,35 @@ export const FastActions = ({
         </Button>
       )}
       {onResetPassword && (
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={(e) => {
-            e.stopPropagation();
-            onResetPassword();
-          }}
-          className="h-8 w-8 cursor-pointer rounded-lg text-text-muted hover:text-amber-600 hover:bg-amber-50"
-          title={resetPasswordTitle}
-        >
-          <KeyRound className="h-4 w-4" />
-        </Button>
+        resetPasswordDisabled ? (
+          <span
+            title={resetPasswordDisabledReason}
+            className="inline-flex cursor-not-allowed"
+          >
+            <Button
+              variant="ghost"
+              size="icon"
+              disabled
+              tabIndex={-1}
+              className="h-8 w-8 rounded-lg text-slate-300 dark:text-slate-600 opacity-40 hover:bg-transparent pointer-events-none"
+            >
+              <KeyRound className="h-4 w-4" />
+            </Button>
+          </span>
+        ) : (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={(e) => {
+              e.stopPropagation();
+              onResetPassword();
+            }}
+            className="h-8 w-8 cursor-pointer rounded-lg text-text-muted hover:text-amber-600 hover:bg-amber-50"
+            title={resetPasswordTitle}
+          >
+            <KeyRound className="h-4 w-4" />
+          </Button>
+        )
       )}
       {onDelete && (
         <Button

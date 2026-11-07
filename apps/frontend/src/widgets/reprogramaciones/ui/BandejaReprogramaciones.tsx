@@ -42,6 +42,7 @@ export const BandejaReprogramaciones = () => {
   const {
     cronogramas,
     reprogramaciones,
+    historialReprogramaciones,
     submitRescheduleRequest,
     approveRescheduleRequest,
     rejectRescheduleRequest,
@@ -66,9 +67,12 @@ export const BandejaReprogramaciones = () => {
   );
 
   const reprogramables = useMemo(
-    () => visitasReprogramables(cronogramas, user),
-    [cronogramas, user],
+    () => visitasReprogramables(cronogramas, user, reprogramaciones),
+    [cronogramas, user, reprogramaciones],
   );
+
+  // Puede solicitar si es monitor de campo habitual o si tiene visitas asignadas reprogramables.
+  const puedeSolicitar = solicita || reprogramables.length > 0;
 
   const visita = cronogramas.find((c) => c.id === visitaAbierta) ?? null;
   const solicitudAbierta = visitaAbierta ? (reprogramaciones[visitaAbierta] ?? null) : null;
@@ -98,7 +102,7 @@ export const BandejaReprogramaciones = () => {
     <Card className="p-6 border border-border bg-surface shadow-sm space-y-6 animate-in fade-in duration-300">
       <CabeceraDeBandeja
         descripcion={descripcion}
-        onNuevaSolicitud={solicita ? nuevaSolicitud : undefined}
+        onNuevaSolicitud={puedeSolicitar ? nuevaSolicitud : undefined}
       />
 
       {/* Antes era un `alert()` del navegador: bloqueaba la pestaña entera y se
@@ -161,6 +165,9 @@ export const BandejaReprogramaciones = () => {
             user,
             visita,
             solicitudAbierta.solicitanteRolAlCrear,
+          )}
+          historialPrevio={historialReprogramaciones[visita.id]?.filter(
+            (s) => s.id !== solicitudAbierta.id,
           )}
           onApprove={(visitId, comentario) => {
             approveRescheduleRequest(visitId, comentario);
