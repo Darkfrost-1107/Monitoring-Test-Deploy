@@ -156,6 +156,8 @@ export const EspecialistasTableWidget = ({
                     ? () => setARestablecer(doc)
                     : undefined
                 }
+                resetPasswordDisabled={Boolean(doc.contrasenaInicial)}
+                resetPasswordDisabledReason="La contraseña ya se encuentra en su valor inicial (DNI)"
                 viewTitle="Ver ficha"
                 restoreTitle="Reactivar especialista"
                 finalizeTitle="Desactivar especialista"
@@ -192,6 +194,11 @@ export const EspecialistasTableWidget = ({
         <ModalRestablecerContrasena
           docente={aRestablecer}
           onClose={() => setARestablecer(null)}
+          onRestablecida={() =>
+            setEspecialistas((prev) =>
+              prev.map((e) => (e.id === aRestablecer.id ? { ...e, contrasenaInicial: true } : e)),
+            )
+          }
           onConfirm={async () => {
             const res = await especialistasApi.restablecerContrasena(aRestablecer.id);
             if (!res.ok) {

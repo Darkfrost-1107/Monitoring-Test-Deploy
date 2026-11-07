@@ -62,6 +62,9 @@ export abstract class EspecialistaRepository {
 
   abstract deactivate(id: string): Promise<IEspecialistaResponse>;
   abstract findUserIdByEspecialistaId(especialistaId: string): Promise<string | null>;
+  abstract findUsuarioInfoByEspecialistaId(
+    especialistaId: string,
+  ): Promise<{ id: string; isFirstLogin: boolean; passwordHash: string } | null>;
   abstract findCargosByEspecialistaId(especialistaId: string): Promise<CargoRecord[]>;
   abstract findCargoById(id: string): Promise<CargoRecord | null>;
   abstract countActiveCargos(especialistaId: string): Promise<number>;

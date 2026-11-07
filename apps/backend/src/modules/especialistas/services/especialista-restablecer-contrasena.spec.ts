@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { jest } from '@jest/globals';
 import * as bcrypt from 'bcrypt';
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, NotFoundException, ConflictException } from '@nestjs/common';
 import { EspecialistaService } from './especialista.service.js';
 import { EspecialistaRepository } from '../repositories/especialista.repository.js';
 import { CatalogsRepository } from '../../catalogs/repositories/catalogs.repository.js';
@@ -62,11 +62,17 @@ describe('EspecialistaService.restablecerContrasena', () => {
   let service: EspecialistaService;
   let findById: jest.Mock<any>;
   let findUserIdByEspecialistaId: jest.Mock<any>;
+  let findUsuarioInfoByEspecialistaId: jest.Mock<any>;
   let restablecerContrasena: jest.Mock<any>;
 
   beforeEach(async () => {
     findById = jest.fn<any>().mockResolvedValue(especialistaMock);
     findUserIdByEspecialistaId = jest.fn<any>().mockResolvedValue('usuario-esp-1');
+    findUsuarioInfoByEspecialistaId = jest.fn<any>().mockResolvedValue({
+      id: 'usuario-esp-1',
+      isFirstLogin: false,
+      passwordHash: 'otro-hash',
+    });
     restablecerContrasena = jest.fn<any>().mockResolvedValue(undefined);
 
     const module: TestingModule = await Test.createTestingModule({
@@ -74,7 +80,12 @@ describe('EspecialistaService.restablecerContrasena', () => {
         EspecialistaService,
         {
           provide: EspecialistaRepository,
-          useValue: { findById, findUserIdByEspecialistaId, restablecerContrasena },
+          useValue: {
+            findById,
+            findUserIdByEspecialistaId,
+            findUsuarioInfoByEspecialistaId,
+            restablecerContrasena,
+          },
         },
         { provide: CatalogsRepository, useValue: {} },
         { provide: SessionRepository, useValue: {} },
@@ -132,16 +143,32 @@ describe('EspecialistaService.restablecerContrasena', () => {
   });
 
   it('lanza 404 si el especialista no tiene usuario', async () => {
-    findUserIdByEspecialistaId.mockResolvedValue(null);
+    findUsuarioInfoByEspecialistaId.mockResolvedValue(null);
     await expect(service.restablecerContrasena('esp-1', jefeGestion, {})).rejects.toThrow(
       NotFoundException,
     );
   });
 
   it('rechaza si el usuario intenta restablecerse a sí mismo', async () => {
-    findUserIdByEspecialistaId.mockResolvedValue('usuario-jg');
+    findUsuarioInfoByEspecialistaId.mockResolvedValue({
+      id: 'usuario-jg',
+      isFirstLogin: false,
+      passwordHash: 'hash',
+    });
     await expect(service.restablecerContrasena('esp-1', jefeGestion, {})).rejects.toThrow(
       ForbiddenException,
+    );
+  });
+
+  it('rechaza con 409 si la cuenta ya está en primer ingreso con la clave del DNI', async () => {
+    findUsuarioInfoByEspecialistaId.mockResolvedValue({
+      id: 'usuario-esp-1',
+      isFirstLogin: true,
+      passwordHash: await bcrypt.hash('87654321', 4),
+    });
+
+    await expect(service.restablecerContrasena('esp-1', jefeGestion, {})).rejects.toThrow(
+      ConflictException,
     );
   });
 });

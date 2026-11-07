@@ -15,6 +15,7 @@ import {
   findAll,
   findById,
   findUserIdByEspecialistaId,
+  findUsuarioInfoByEspecialistaId,
   findCargosByEspecialistaId,
   findCargoById,
   countActiveCargos,
@@ -96,6 +97,12 @@ export class PrismaEspecialistaRepository implements EspecialistaRepository {
 
   async findUserIdByEspecialistaId(especialistaId: string): Promise<string | null> {
     return findUserIdByEspecialistaId(this.prisma, especialistaId);
+  }
+
+  async findUsuarioInfoByEspecialistaId(
+    especialistaId: string,
+  ): Promise<{ id: string; isFirstLogin: boolean; passwordHash: string } | null> {
+    return findUsuarioInfoByEspecialistaId(this.prisma, especialistaId);
   }
 
   async findCargosByEspecialistaId(especialistaId: string): Promise<CargoRecord[]> {

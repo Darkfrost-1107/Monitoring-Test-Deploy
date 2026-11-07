@@ -37,6 +37,7 @@ export const mapApiEspecialistaToFrontend = (apiEsp: IEspecialistaResponse): Esp
     modalidad: apiEsp.modalidad || 'EBR',
     estado: apiEsp.estado,
     activo: apiEsp.estado === 'Activo',
+    contrasenaInicial: apiEsp.contrasenaInicial,
     // Vacía si el registro no la trae: poner la de hoy sería afirmar una fecha
     // de alta que nadie registró.
     fechaCreacion: apiEsp.createdAt ? aFechaISOLocal(apiEsp.createdAt) : '',

@@ -3,6 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
   ForbiddenException,
+  ConflictException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
@@ -359,25 +360,35 @@ export class EspecialistaService {
       throw new NotFoundException('El especialista especificado no existe.');
     }
 
-    const usuarioId = await this.repository.findUserIdByEspecialistaId(especialistaId);
-    if (!usuarioId) {
+    const usuario = await this.repository.findUsuarioInfoByEspecialistaId(especialistaId);
+    if (!usuario) {
       throw new NotFoundException('El especialista no tiene una cuenta de usuario.');
     }
 
-    if (usuarioId === currentUser.sub) {
+    if (usuario.id === currentUser.sub) {
       throw new ForbiddenException('No puede restablecer su propia contraseña desde aquí.');
+    }
+
+    if (
+      usuario.isFirstLogin &&
+      usuario.passwordHash &&
+      (await bcrypt.compare(esp.persona.dni, usuario.passwordHash))
+    ) {
+      throw new ConflictException(
+        'La contraseña ya está en su valor inicial (DNI) y el usuario aún no la cambió.',
+      );
     }
 
     const saltRounds = this.configService.get<number>('BCRYPT_SALT_ROUNDS') ?? 12;
     const passwordHash = await bcrypt.hash(esp.persona.dni, saltRounds);
 
     await this.repository.restablecerContrasena({
-      usuarioId,
+      usuarioId: usuario.id,
       passwordHash,
       auditoria: {
         actorUsuarioId: currentUser.sub,
         eventType: 'PASSWORD_RESET_BY_JEFE_GESTION',
-        eventDetail: `Restablecida la contraseña del especialista ${usuarioId} (DNI ${esp.persona.dni})`,
+        eventDetail: `Restablecida la contraseña del especialista ${especialistaId} (DNI ${esp.persona.dni})`,
         ...meta,
       },
     });

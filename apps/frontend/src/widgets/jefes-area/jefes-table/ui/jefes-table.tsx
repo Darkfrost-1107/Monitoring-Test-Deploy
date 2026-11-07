@@ -1,5 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Capability } from '@sistema-monitoreo/shared-contracts';
+import { useCan } from '@shared/auth/use-can';
+import { useUser } from '@entities/model-user';
+import { ModalRestablecerContrasena } from '@features/docentes/ui/ModalRestablecerContrasena';
 import { FastActions } from '@shared/ui/FastActions';
 import type { JefeArea } from '@entities/model-jefes-area';
 import { useEntityTable } from '@shared/hooks/useEntityTable';
@@ -10,6 +14,7 @@ import { ConfirmModal } from '@shared/ui/ConfirmModal';
 import { TableCell, TableHead, TableRow } from '@shared/ui/table';
 import { Badge } from '@shared/ui/badge';
 import { jefesAreaApi } from '@shared/api/jefes-area.api';
+import { especialistasApi } from '@shared/api/especialistas.api';
 
 const jefeFilter = (jefe: JefeArea, params: URLSearchParams) => {
   const searchQuery = params.get('search') || '';
@@ -27,15 +32,27 @@ const jefeFilter = (jefe: JefeArea, params: URLSearchParams) => {
 
 interface JefesTableWidgetProps {
   jefes: JefeArea[];
+  setJefes?: React.Dispatch<React.SetStateAction<JefeArea[]>>;
   onEdit?: (jefe: JefeArea) => void;
   onView: (jefe: JefeArea) => void;
   onChanged?: () => void;
 }
 
-export const JefesTableWidget = ({ jefes, onEdit, onView, onChanged }: JefesTableWidgetProps) => {
+export const JefesTableWidget = ({
+  jefes,
+  setJefes,
+  onEdit,
+  onView,
+  onChanged,
+}: JefesTableWidgetProps) => {
   const navigate = useNavigate();
+  const { can } = useCan();
+  const { user } = useUser();
+  const tieneCapacidadRestablecer = can(Capability.PERSONAL_RESTABLECER_CONTRASENA);
+
   const [finalizingDoc, setFinalizingDoc] = useState<JefeArea | null>(null);
   const [restoringDoc, setRestoringDoc] = useState<JefeArea | null>(null);
+  const [aRestablecer, setARestablecer] = useState<JefeArea | null>(null);
 
   const pagination = useEntityTable({ data: jefes, filterFn: jefeFilter });
   const { error, setError, ejecutar } = useAccionDelPadron();
@@ -116,6 +133,13 @@ export const JefesTableWidget = ({ jefes, onEdit, onView, onChanged }: JefesTabl
                 onEdit={doc.activo ? () => { if (onEdit) onEdit(doc); else navigate(`/jefes-area/${doc.id}/editar`); } : undefined}
                 onFinalize={doc.activo ? () => setFinalizingDoc(doc) : undefined}
                 onRestore={!doc.activo ? () => setRestoringDoc(doc) : undefined}
+                onResetPassword={
+                  tieneCapacidadRestablecer && doc.activo && doc.id !== user?.especialistaId
+                    ? () => setARestablecer(doc)
+                    : undefined
+                }
+                resetPasswordDisabled={Boolean(doc.contrasenaInicial)}
+                resetPasswordDisabledReason="La contraseña ya se encuentra en su valor inicial (DNI)"
                 viewTitle="Ver ficha"
                 restoreTitle="Reactivar responsable de nivel"
                 finalizeTitle="Desactivar responsable de nivel"
@@ -155,6 +179,28 @@ export const JefesTableWidget = ({ jefes, onEdit, onView, onChanged }: JefesTabl
           cancelLabel="Cancelar"
           onConfirm={confirmRestore}
           onCancel={() => setRestoringDoc(null)}
+        />
+      )}
+
+      {aRestablecer && (
+        <ModalRestablecerContrasena
+          docente={aRestablecer}
+          onClose={() => setARestablecer(null)}
+          onRestablecida={() => {
+            setJefes?.((prev) =>
+              prev.map((j) => (j.id === aRestablecer.id ? { ...j, contrasenaInicial: true } : j)),
+            );
+            onChanged?.();
+          }}
+          onConfirm={async () => {
+            const res = await especialistasApi.restablecerContrasena(aRestablecer.id);
+            if (!res.ok) {
+              throw new Error(
+                (res.error as { message?: string })?.message ||
+                  'No se pudo restablecer la contraseña.',
+              );
+            }
+          }}
         />
       )}
     </>

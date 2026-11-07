@@ -40,6 +40,7 @@ export function mapEspecialista(esp: EspecialistaWithRelations): IEspecialistaRe
     nivelEducativo: esp.nivelEducativo,
     modalidad: esp.modalidad ?? null,
     estado: esp.estado,
+    contrasenaInicial: esp.persona.usuario?.isFirstLogin,
     cargaLaboral: esp.cargaLaboral,
     cargo: cargoEfectivo,
     condicionLaboral: esp.condicionLaboral ?? null,

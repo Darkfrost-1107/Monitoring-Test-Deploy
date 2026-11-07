@@ -119,4 +119,16 @@ describe('EspecialistasTableWidget - Restablecer Contraseña', () => {
 
     expect(especialistasApi.restablecerContrasena).toHaveBeenCalledWith('esp-1');
   });
+
+  it('deshabilita el botón con tooltip explicativo si la contraseña ya es la inicial (DNI)', () => {
+    mockPermissions.push('personal:restablecer_contrasena');
+    montar([{ ...especialistaActivo, contrasenaInicial: true }]);
+
+    const spanDisabled = screen.getByTitle(
+      'La contraseña ya se encuentra en su valor inicial (DNI)',
+    );
+    expect(spanDisabled).toBeInTheDocument();
+    const btn = spanDisabled.querySelector('button');
+    expect(btn).toBeDisabled();
+  });
 });
