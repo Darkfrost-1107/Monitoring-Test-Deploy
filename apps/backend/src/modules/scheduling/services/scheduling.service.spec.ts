@@ -833,6 +833,32 @@ describe('SchedulingService - Reprogramaciones', () => {
         }),
       );
     });
+
+    it('permite a un Responsable de Nivel (Jefe de Área) solicitar reprogramación de visita asignada', async () => {
+      cronogramaRepo.findById.mockResolvedValue({
+        ...visitaBase,
+        nivelEducativo: 'Primaria',
+      });
+      solicitudRepo.findPendienteByCronograma.mockResolvedValue(null);
+      solicitudRepo.create.mockResolvedValue({ id: 'sol-jefe-area' } as any);
+
+      const res = await service.crearSolicitud(
+        {
+          cronogramaId: 'vis-1',
+          fechaPropuesta: '2026-04-06',
+          horaPropuesta: '08:30:00',
+          justificacion: 'Reunión de emergencia en UGEL',
+        },
+        { id: 'jarea-1', role: RoleCode.JEFE_AREA, especialistaNivel: 'Primaria' },
+      );
+
+      expect(res.id).toBe('sol-jefe-area');
+      expect(solicitudRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          solicitanteRolAlCrear: RoleCode.JEFE_AREA,
+        }),
+      );
+    });
   });
 
   describe('aprobarSolicitud - mutacion sincrona del cronograma (ESP-0054A)', () => {
@@ -915,6 +941,57 @@ describe('SchedulingService - Reprogramaciones', () => {
         'sol-1',
         { comentario: 'Aprobado por el Director' },
         sesionDirector,
+      );
+
+      expect(cronogramaRepo.applyReprogramacion).toHaveBeenCalledWith(
+        'vis-1',
+        new Date('2026-04-01'),
+        '10:00:00',
+      );
+      expect(r.estado).toBe('APROBADO');
+    });
+
+    it('rechaza si un Jefe de Área intenta resolver una solicitud creada por un Jefe de Área', async () => {
+      const solicitudJefeArea = {
+        ...solicitudPendiente,
+        solicitanteId: 'jarea-otro',
+        solicitanteRolAlCrear: RoleCode.JEFE_AREA,
+      };
+      solicitudRepo.findById.mockResolvedValue(solicitudJefeArea);
+      cronogramaRepo.findById.mockResolvedValue({
+        ...visitaBase,
+        nivelEducativo: 'Primaria',
+      });
+
+      await expect(
+        service.aprobarSolicitud(
+          'sol-1',
+          { comentario: 'Intento de resolución indebida' },
+          { id: 'jarea-1', role: RoleCode.JEFE_AREA, especialistaNivel: 'Primaria' },
+        ),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('permite al Jefe de Gestión aprobar la solicitud creada por un Jefe de Área', async () => {
+      const solicitudJefeArea = {
+        ...solicitudPendiente,
+        solicitanteId: 'jarea-1',
+        solicitanteRolAlCrear: RoleCode.JEFE_AREA,
+      };
+      solicitudRepo.findById.mockResolvedValue(solicitudJefeArea);
+      cronogramaRepo.findById.mockResolvedValue({
+        ...visitaBase,
+        nivelEducativo: 'Primaria',
+      });
+      solicitudRepo.resolver.mockResolvedValue({
+        ...solicitudJefeArea,
+        estado: 'APROBADO' as const,
+      });
+
+      const r = await service.aprobarSolicitud(
+        'sol-1',
+        { comentario: 'Aprobado por Jefe de Gestión' },
+        sesionJefe,
       );
 
       expect(cronogramaRepo.applyReprogramacion).toHaveBeenCalledWith(

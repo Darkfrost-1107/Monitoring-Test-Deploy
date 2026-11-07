@@ -128,11 +128,25 @@ describe('AccionesVisita — con instrumento disponible', () => {
 });
 
 describe('AccionesVisita — restricción de fecha', () => {
-  it('fuera del día programado no se inicia, y se dice cuál es', () => {
-    montar({ evaluador: { esFechaCoincidente: false } });
+  it('para una visita futura fuera del día programado no se inicia, y se avisa la restricción', () => {
+    montar({
+      visita: { fechaHora: '2099-09-01T08:00:00.000Z' },
+      evaluador: { esFechaCoincidente: false },
+    });
 
     expect(botonIniciar()).toBeDisabled();
     expect(screen.getByText(/Restricción de Fecha/i)).toBeInTheDocument();
+  });
+
+  it('para una visita vencida en el pasado se avisa que no fue realizada y se orienta a reprogramar', () => {
+    montar({
+      visita: { fechaHora: '2020-09-01T08:00:00.000Z' },
+      evaluador: { esFechaCoincidente: false },
+    });
+
+    expect(botonIniciar()).toBeDisabled();
+    expect(screen.getByText(/Visita no realizada en la fecha programada/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Reprogramar/i })).toBeInTheDocument();
   });
 
   /** Una visita ya en proceso se continúa cualquier día: la fecha ya se cumplió. */

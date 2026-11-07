@@ -73,6 +73,10 @@ describe('puedeDecidirReprogramacion', () => {
       expect(puedeDecidirReprogramacion(jefeGestion, visita(), RoleCode.ESPECIALISTA)).toBe(true);
     });
 
+    it('decide una solicitud de un responsable de nivel', () => {
+      expect(puedeDecidirReprogramacion(jefeGestion, visita(), RoleCode.JEFE_AREA)).toBe(true);
+    });
+
     it.each([[RoleCode.COORDINADOR_PEDAGOGICO], [RoleCode.JEFE_TALLER]])(
       'no decide una solicitud nacida en la institución (%s)',
       (rol) => {
@@ -110,6 +114,11 @@ describe('puedeDecidirReprogramacion', () => {
     it('no decide una solicitud nacida en la institución, aunque el nivel coincida', () => {
       const u = usuario({ role: RoleCode.JEFE_AREA, especialistaNivel: 'Secundaria' });
       expect(puedeDecidirReprogramacion(u, visita(), RoleCode.JEFE_TALLER)).toBe(false);
+    });
+
+    it('no decide una solicitud creada por un responsable de nivel', () => {
+      const u = usuario({ role: RoleCode.JEFE_AREA, especialistaNivel: 'Secundaria' });
+      expect(puedeDecidirReprogramacion(u, visita(), RoleCode.JEFE_AREA)).toBe(false);
     });
   });
 

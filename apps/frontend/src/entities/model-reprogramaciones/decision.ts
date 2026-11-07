@@ -81,6 +81,8 @@ export function puedeDecidirReprogramacion(
 
   if (usuario.role === RoleCode.JEFE_AREA) {
     if (esDeInstitucion) return false;
+    // Las solicitudes creadas por un Responsable de Nivel solo las resuelve el Jefe de Gestión
+    if (solicitanteRolAlCrear === RoleCode.JEFE_AREA) return false;
     // Sin nivel asignado, el jefe de área no queda restringido.
     if (usuario.especialistaNivel && visita.nivel !== usuario.especialistaNivel) return false;
     return true;

@@ -2,6 +2,7 @@ import { Clock, PlayCircle, RefreshCw, CheckCircle2, AlertTriangle } from 'lucid
 import { Button } from '@/shared/ui/button';
 import type { Cronograma } from '@entities/model-cronogramas';
 import type { SolicitudReprogramacion } from '@entities/model-reprogramaciones';
+import { claveDeHoy } from '@/shared/lib/calendario/grid';
 import { formatearFechaVisita } from '../../lib/visita-presentacion';
 
 /** Situación del usuario frente a esta visita, que es lo que habilita cada acción. */
@@ -72,20 +73,38 @@ export const AccionesVisita = ({
   const fueraDeFecha = sinIniciar && !evaluador.esFechaCoincidente;
   const sinInstrumento = instrumentoNoDisponible !== null;
 
+  const fechaVisitaStr = visita.fechaHora.substring(0, 10);
+  const hoyStr = claveDeHoy();
+  const esFechaPasada = fueraDeFecha && fechaVisitaStr < hoyStr;
+  const puedeReprogramar = evaluador.puedeEvaluar || evaluador.esMonitorCampo;
+
   return (
     <div className="space-y-2 pt-4 border-t border-border mt-6">
       {enCurso &&
         (evaluador.puedeEvaluar ? (
           <div className="flex flex-col gap-2.5">
-            {fueraDeFecha && (
-              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-[11px] font-semibold flex items-start gap-2 shadow-sm animate-in fade-in duration-200">
-                <AlertTriangle className="h-4.5 w-4.5 text-amber-600 mt-0.5 shrink-0" />
-                <span>
-                  <strong>Restricción de Fecha:</strong> Solo puede iniciar esta visita el día
-                  programado ({formatearFechaVisita(visita.fechaHora)}).
-                </span>
-              </div>
-            )}
+            {fueraDeFecha &&
+              (esFechaPasada ? (
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-[11px] font-semibold flex items-start gap-2 shadow-sm animate-in fade-in duration-200">
+                  <AlertTriangle className="h-4.5 w-4.5 text-amber-600 mt-0.5 shrink-0" />
+                  <div className="flex flex-col gap-0.5">
+                    <span>
+                      <strong>Visita no realizada en la fecha programada ({formatearFechaVisita(visita.fechaHora)}):</strong>
+                    </span>
+                    <span className="text-[10px] font-normal text-amber-700">
+                      El plazo previsto venció sin que se iniciara el monitoreo. Solicite una reprogramación para fijar una nueva fecha y habilitar la ficha.
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-blue-800 text-[11px] font-semibold flex items-start gap-2 shadow-sm animate-in fade-in duration-200">
+                  <Clock className="h-4.5 w-4.5 text-blue-600 mt-0.5 shrink-0" />
+                  <span>
+                    <strong>Restricción de Fecha:</strong> Solo puede iniciar esta visita el día
+                    programado ({formatearFechaVisita(visita.fechaHora)}).
+                  </span>
+                </div>
+              ))}
 
             {sinInstrumento && <AvisoSinInstrumento motivo={instrumentoNoDisponible} />}
 
@@ -100,14 +119,20 @@ export const AccionesVisita = ({
                 <span>{sinIniciar ? 'Iniciar Monitoreo' : 'Continuar Monitoreo'}</span>
               </Button>
 
-              {/* Reprogramar: lo solicita quien levanta la ficha en el aula. */}
-              {evaluador.esMonitorCampo && (
+              {/* Reprogramar: lo solicita la persona asignada o quien realiza monitoreo de campo. */}
+              {puedeReprogramar && (
                 <Button
-                  variant="outline"
+                  variant={esFechaPasada && !solicitud ? 'default' : 'outline'}
                   onClick={solicitud ? onVerSolicitud : onSolicitarReprogramacion}
-                  className="border-slate-300 text-slate-700 hover:bg-slate-50 transition-colors font-semibold text-xs py-2.5 h-10 flex items-center gap-1.5 shrink-0 cursor-pointer"
+                  className={
+                    esFechaPasada && !solicitud
+                      ? 'bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs py-2.5 h-10 flex items-center gap-1.5 shrink-0 cursor-pointer shadow-sm'
+                      : 'border-slate-300 text-slate-700 hover:bg-slate-50 transition-colors font-semibold text-xs py-2.5 h-10 flex items-center gap-1.5 shrink-0 cursor-pointer'
+                  }
                 >
-                  <RefreshCw className="h-3.5 w-3.5 text-primary" />
+                  <RefreshCw
+                    className={`h-3.5 w-3.5 ${esFechaPasada && !solicitud ? 'text-white' : 'text-primary'}`}
+                  />
                   <span>{solicitud ? 'Ver Solicitud' : 'Reprogramar'}</span>
                 </Button>
               )}
@@ -115,6 +140,20 @@ export const AccionesVisita = ({
           </div>
         ) : (
           <div className="flex flex-col gap-2">
+            {esFechaPasada && (
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-[11px] font-semibold flex items-start gap-2 shadow-sm animate-in fade-in duration-200">
+                <AlertTriangle className="h-4.5 w-4.5 text-amber-600 mt-0.5 shrink-0" />
+                <div className="flex flex-col gap-0.5">
+                  <span>
+                    <strong>Visita no realizada en la fecha programada ({formatearFechaVisita(visita.fechaHora)}):</strong>
+                  </span>
+                  <span className="text-[10px] font-normal text-amber-700">
+                    El plazo de esta visita venció sin ejecución. Pendiente de reprogramación por parte del monitor asignado ({visita.especialista}).
+                  </span>
+                </div>
+              </div>
+            )}
+
             <div className="p-3 bg-blue-50/50 border border-blue-100 rounded-xl text-blue-800 text-[11px] font-medium leading-relaxed flex items-start gap-2 shadow-sm animate-in fade-in duration-200">
               <Clock className="h-4.5 w-4.5 text-blue-500 mt-0.5 shrink-0" />
               <span>

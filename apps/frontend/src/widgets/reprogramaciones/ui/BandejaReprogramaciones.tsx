@@ -70,6 +70,9 @@ export const BandejaReprogramaciones = () => {
     [cronogramas, user],
   );
 
+  // Puede solicitar si es monitor de campo habitual o si tiene visitas asignadas reprogramables.
+  const puedeSolicitar = solicita || reprogramables.length > 0;
+
   const visita = cronogramas.find((c) => c.id === visitaAbierta) ?? null;
   const solicitudAbierta = visitaAbierta ? (reprogramaciones[visitaAbierta] ?? null) : null;
 
@@ -98,7 +101,7 @@ export const BandejaReprogramaciones = () => {
     <Card className="p-6 border border-border bg-surface shadow-sm space-y-6 animate-in fade-in duration-300">
       <CabeceraDeBandeja
         descripcion={descripcion}
-        onNuevaSolicitud={solicita ? nuevaSolicitud : undefined}
+        onNuevaSolicitud={puedeSolicitar ? nuevaSolicitud : undefined}
       />
 
       {/* Antes era un `alert()` del navegador: bloqueaba la pestaña entera y se

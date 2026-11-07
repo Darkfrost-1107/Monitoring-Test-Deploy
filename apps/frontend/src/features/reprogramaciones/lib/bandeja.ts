@@ -97,14 +97,19 @@ export function solicitudesVisibles<S extends SolicitudEnBandeja>(
 ): S[] {
   if (!usuario) return [];
 
-  const propias = solicita(usuario);
+  const soloSolicita = solicita(usuario);
 
   return bandeja.filter((solicitud) => {
     if (estado !== TODOS_LOS_ESTADOS && solicitud.estado !== estado) return false;
 
-    return propias
-      ? esSuya(usuario, solicitud.visit)
-      : puedeDecidirReprogramacion(usuario, solicitud.visit, solicitud.solicitanteRolAlCrear);
+    const esPropia = esSuya(usuario, solicitud.visit);
+    const puedeDecidir = puedeDecidirReprogramacion(
+      usuario,
+      solicitud.visit,
+      solicitud.solicitanteRolAlCrear,
+    );
+
+    return soloSolicita ? esPropia : esPropia || puedeDecidir;
   });
 }
 
@@ -120,5 +125,7 @@ export function visitasReprogramables<V extends VisitaDeBandeja>(
 ): V[] {
   if (!usuario) return [];
 
-  return visitas.filter((v) => v.estado === 'PROGRAMADO' && esSuya(usuario, v));
+  return visitas.filter(
+    (v) => (v.estado === 'PROGRAMADO' || v.estado === 'REPROGRAMADO') && esSuya(usuario, v),
+  );
 }

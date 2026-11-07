@@ -309,7 +309,7 @@ export const CalendarioSidebar = ({
             solicitud={activeRequest}
             evaluador={{
               puedeEvaluar: isEvaluadorAutorizado,
-              esMonitorCampo: isMonitorCampo,
+              esMonitorCampo: isMonitorCampo || isEvaluadorAutorizado,
               esFechaCoincidente: isFechaCoincidente,
             }}
             instrumentoNoDisponible={instrumentoNoDisponible}
