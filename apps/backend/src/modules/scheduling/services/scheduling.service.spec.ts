@@ -739,7 +739,7 @@ describe('SchedulingService - Reprogramaciones', () => {
       await service.crearSolicitud(
         {
           cronogramaId: 'vis-1',
-          fechaPropuesta: '2026-04-01',
+          fechaPropuesta: '2099-04-01',
           horaPropuesta: '10:00:00',
           justificacion: 'Huelga distrital sin PDF',
         },
@@ -751,6 +751,22 @@ describe('SchedulingService - Reprogramaciones', () => {
       );
     });
 
+    it('rechaza si la fecha propuesta es anterior a la fecha actual', async () => {
+      cronogramaRepo.findById.mockResolvedValue({ ...visitaBase, nivelEducativo: 'Secundaria' });
+      solicitudRepo.findPendienteByCronograma.mockResolvedValue(null);
+      await expect(
+        service.crearSolicitud(
+          {
+            cronogramaId: 'vis-1',
+            fechaPropuesta: '2020-01-01',
+            horaPropuesta: '10:00:00',
+            justificacion: 'Fecha en el pasado',
+          } as any,
+          sesionEspecialista,
+        ),
+      ).rejects.toThrow(BadRequestException);
+    });
+
     it('rechaza si ya existe una solicitud PENDIENTE', async () => {
       cronogramaRepo.findById.mockResolvedValue({ ...visitaBase, nivelEducativo: 'Secundaria' });
       solicitudRepo.findPendienteByCronograma.mockResolvedValue({ id: 'sol-pend' } as any);
@@ -758,7 +774,7 @@ describe('SchedulingService - Reprogramaciones', () => {
         service.crearSolicitud(
           {
             cronogramaId: 'vis-1',
-            fechaPropuesta: '2026-04-01',
+            fechaPropuesta: '2099-04-01',
             horaPropuesta: '10:00:00',
             justificacion: 'Huelga',
           } as any,
@@ -774,7 +790,7 @@ describe('SchedulingService - Reprogramaciones', () => {
       const res = await service.crearSolicitud(
         {
           cronogramaId: 'vis-1',
-          fechaPropuesta: '2026-04-01',
+          fechaPropuesta: '2099-04-01',
           horaPropuesta: '10:00:00',
           justificacion: 'Huelga distrital nivel primaria',
         },
@@ -791,7 +807,7 @@ describe('SchedulingService - Reprogramaciones', () => {
       await service.crearSolicitud(
         {
           cronogramaId: 'vis-1',
-          fechaPropuesta: '2026-04-01',
+          fechaPropuesta: '2099-04-01',
           horaPropuesta: '10:00:00',
           justificacion: 'Huelga distrital programada',
           archivoSustentoBase64: Buffer.from('PDF').toString('base64'),
@@ -819,7 +835,7 @@ describe('SchedulingService - Reprogramaciones', () => {
       const res = await service.crearSolicitud(
         {
           cronogramaId: 'vis-1',
-          fechaPropuesta: '2026-04-05',
+          fechaPropuesta: '2099-04-05',
           horaPropuesta: '09:00:00',
           justificacion: 'Feria de ciencias institucional',
         },
@@ -845,7 +861,7 @@ describe('SchedulingService - Reprogramaciones', () => {
       const res = await service.crearSolicitud(
         {
           cronogramaId: 'vis-1',
-          fechaPropuesta: '2026-04-06',
+          fechaPropuesta: '2099-04-06',
           horaPropuesta: '08:30:00',
           justificacion: 'Reunión de emergencia en UGEL',
         },

@@ -75,6 +75,18 @@ export async function crearSolicitud(
     );
   }
 
+  const fechaPropuestaDate = new Date(dto.fechaPropuesta);
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+  const fechaPropuestaDia = new Date(fechaPropuestaDate);
+  fechaPropuestaDia.setHours(0, 0, 0, 0);
+
+  if (fechaPropuestaDia < hoy) {
+    throw new BadRequestException(
+      'La fecha propuesta para la reprogramación debe ser igual o posterior a la fecha actual.',
+    );
+  }
+
   let archivoSustentoUrl = '';
   if (dto.archivoSustentoBase64) {
     const buffer = Buffer.from(dto.archivoSustentoBase64, 'base64');
