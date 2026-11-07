@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { directorFilter } from './filtro-directores';
+import { directorFilter, subdirectorFilter } from './filtro-directores';
 import { tieneElCargo } from '@features/docentes/lib/padron-docentes';
 import type { Docente } from '@entities/model-docentes';
 
@@ -83,5 +83,43 @@ describe('tabla de directores — los filtros de la URL siguen aplicando', () =>
     const params = new URLSearchParams({ modalidad: 'EBR' });
 
     expect(directorFilter(director([DESIGNACION_ABIERTA]), params)).toBe(true);
+  });
+});
+
+describe('tabla de subdirectores — filtro de subdirector', () => {
+  const SUBDIRECTOR_ABIERTO = { id: 'c-sub', nombre: 'Subdirector', fechaFin: null };
+  const SUBDIRECTOR_CERRADO = { id: 'c-sub', nombre: 'Subdirector', fechaFin: '2026-10-01' };
+
+  const subdirector = (cargosList: { id: string; nombre: string; fechaFin: string | null }[]) =>
+    ({
+      id: 'sub-1',
+      nombres: 'MARCIA',
+      apellidos: 'ZAPANA YERBA',
+      dni: '29533362',
+      cargo: 'Subdirector',
+      activo: true,
+      nivelEducativo: 'Secundaria',
+      condicion: 'Encargado',
+      institucionId: 'ie-123',
+      cargosList,
+    }) as unknown as Docente;
+
+  it('lista a quien tiene la designación abierta de subdirector', () => {
+    expect(subdirectorFilter(subdirector([SUBDIRECTOR_ABIERTO]), sinFiltros())).toBe(true);
+  });
+
+  it('no lista a un subdirector cesado con designación cerrada', () => {
+    expect(subdirectorFilter(subdirector([SUBDIRECTOR_CERRADO]), sinFiltros())).toBe(false);
+  });
+
+  it('no lista a un director en la tabla de subdirectores', () => {
+    expect(subdirectorFilter(director([DESIGNACION_ABIERTA]), sinFiltros())).toBe(false);
+  });
+
+  it('permite buscar por nombre de I.E.', () => {
+    const getInstName = (id: string) => (id === 'ie-123' ? 'I.E. Juan Bustamante' : 'Otra');
+    const params = new URLSearchParams({ search: 'Bustamante' });
+
+    expect(subdirectorFilter(subdirector([SUBDIRECTOR_ABIERTO]), params, getInstName)).toBe(true);
   });
 });

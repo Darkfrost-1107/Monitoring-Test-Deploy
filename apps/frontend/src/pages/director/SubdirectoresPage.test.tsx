@@ -25,9 +25,17 @@ vi.mock('@features/docentes/docente-service', () => ({
       dni: '29533362',
       cargo: 'Subdirector',
       institucionId: 'ie-123',
+      nivelEducativo: 'Secundaria',
+      condicion: 'Encargado',
       activo: true,
       cargosList: [{ id: 'c-1', nombre: 'Subdirector', fechaFin: null, esPrincipal: true }],
     },
+  ]),
+}));
+
+vi.mock('@features/institutions/institution-service', () => ({
+  fetchInstituciones: vi.fn().mockResolvedValue([
+    { id: 'ie-123', nombre: 'I.E. Juan Bustamante' },
   ]),
 }));
 
@@ -46,5 +54,7 @@ describe('SubdirectoresPage', () => {
     expect(await screen.findByText('Gestión de Subdirectores')).toBeInTheDocument();
     expect(screen.getByText('Asignar Subdirector')).toBeInTheDocument();
     expect(screen.getByText('Registrar nuevo')).toBeInTheDocument();
+    expect(await screen.findByText('I.E. Juan Bustamante')).toBeInTheDocument();
+    expect(screen.getByText('Subdirector de Secundaria')).toBeInTheDocument();
   });
 });
