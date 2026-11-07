@@ -66,8 +66,8 @@ export const BandejaReprogramaciones = () => {
   );
 
   const reprogramables = useMemo(
-    () => visitasReprogramables(cronogramas, user),
-    [cronogramas, user],
+    () => visitasReprogramables(cronogramas, user, reprogramaciones),
+    [cronogramas, user, reprogramaciones],
   );
 
   // Puede solicitar si es monitor de campo habitual o si tiene visitas asignadas reprogramables.

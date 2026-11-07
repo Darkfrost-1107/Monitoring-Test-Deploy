@@ -1,4 +1,12 @@
-import { Clock, PlayCircle, RefreshCw, CheckCircle2, AlertTriangle } from 'lucide-react';
+import {
+  Clock,
+  PlayCircle,
+  RefreshCw,
+  CheckCircle2,
+  AlertTriangle,
+  XCircle,
+  Eye,
+} from 'lucide-react';
 import { Button } from '@/shared/ui/button';
 import type { Cronograma } from '@entities/model-cronogramas';
 import type { SolicitudReprogramacion } from '@entities/model-reprogramaciones';
@@ -77,12 +85,31 @@ export const AccionesVisita = ({
   const hoyStr = claveDeHoy();
   const esFechaPasada = fueraDeFecha && fechaVisitaStr < hoyStr;
   const puedeReprogramar = evaluador.puedeEvaluar || evaluador.esMonitorCampo;
+  const solicitudRechazada = solicitud?.estado === 'RECHAZADO';
+  const solicitudPendiente = solicitud?.estado === 'PENDIENTE';
 
   return (
     <div className="space-y-2 pt-4 border-t border-border mt-6">
       {enCurso &&
         (evaluador.puedeEvaluar ? (
           <div className="flex flex-col gap-2.5">
+            {solicitudRechazada && (
+              <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 text-[11px] font-semibold flex items-start gap-2 shadow-sm animate-in fade-in duration-200">
+                <XCircle className="h-4.5 w-4.5 text-rose-600 mt-0.5 shrink-0" />
+                <div className="flex flex-col gap-0.5">
+                  <span>
+                    <strong>Reprogramación anterior rechazada:</strong>{' '}
+                    {solicitud.aprobadorComentario || 'Sin observaciones registradas.'}
+                  </span>
+                  {solicitud.aprobador && (
+                    <span className="text-[10px] font-normal text-rose-700">
+                      Revisado por: {solicitud.aprobador}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+
             {fueraDeFecha &&
               (esFechaPasada ? (
                 <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-[11px] font-semibold flex items-start gap-2 shadow-sm animate-in fade-in duration-200">
@@ -120,27 +147,66 @@ export const AccionesVisita = ({
               </Button>
 
               {/* Reprogramar: lo solicita la persona asignada o quien realiza monitoreo de campo. */}
-              {puedeReprogramar && (
-                <Button
-                  variant={esFechaPasada && !solicitud ? 'default' : 'outline'}
-                  onClick={solicitud ? onVerSolicitud : onSolicitarReprogramacion}
-                  className={
-                    esFechaPasada && !solicitud
-                      ? 'bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs py-2.5 h-10 flex items-center gap-1.5 shrink-0 cursor-pointer shadow-sm'
-                      : 'border-slate-300 text-slate-700 hover:bg-slate-50 transition-colors font-semibold text-xs py-2.5 h-10 flex items-center gap-1.5 shrink-0 cursor-pointer'
-                  }
-                >
-                  <RefreshCw
-                    className={`h-3.5 w-3.5 ${esFechaPasada && !solicitud ? 'text-white' : 'text-primary'}`}
-                  />
-                  <span>{solicitud ? 'Ver Solicitud' : 'Reprogramar'}</span>
-                </Button>
-              )}
+              {puedeReprogramar &&
+                (solicitudRechazada ? (
+                  <div className="flex gap-1.5 shrink-0">
+                    <Button
+                      variant="outline"
+                      onClick={onVerSolicitud}
+                      title="Ver detalle del rechazo"
+                      className="border-slate-300 text-slate-700 hover:bg-slate-50 transition-colors font-semibold text-xs py-2.5 px-3 h-10 flex items-center gap-1 shrink-0 cursor-pointer"
+                    >
+                      <Eye className="h-3.5 w-3.5 text-slate-500" />
+                      <span className="hidden sm:inline">Ver Rechazo</span>
+                    </Button>
+                    <Button
+                      variant="default"
+                      onClick={onSolicitarReprogramacion}
+                      title="Proponer nueva fecha de reprogramación"
+                      className="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs py-2.5 px-3 h-10 flex items-center gap-1.5 shrink-0 cursor-pointer shadow-sm"
+                    >
+                      <RefreshCw className="h-3.5 w-3.5 text-white" />
+                      <span>Reprogramar</span>
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    variant={esFechaPasada && !solicitud ? 'default' : 'outline'}
+                    onClick={solicitudPendiente ? onVerSolicitud : onSolicitarReprogramacion}
+                    className={
+                      esFechaPasada && !solicitud
+                        ? 'bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs py-2.5 h-10 flex items-center gap-1.5 shrink-0 cursor-pointer shadow-sm'
+                        : 'border-slate-300 text-slate-700 hover:bg-slate-50 transition-colors font-semibold text-xs py-2.5 h-10 flex items-center gap-1.5 shrink-0 cursor-pointer'
+                    }
+                  >
+                    <RefreshCw
+                      className={`h-3.5 w-3.5 ${esFechaPasada && !solicitud ? 'text-white' : 'text-primary'}`}
+                    />
+                    <span>{solicitudPendiente ? 'Ver Solicitud' : 'Reprogramar'}</span>
+                  </Button>
+                ))}
             </div>
           </div>
         ) : (
           <div className="flex flex-col gap-2">
-            {esFechaPasada && (
+            {solicitudRechazada && (
+              <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 text-[11px] font-semibold flex items-start gap-2 shadow-sm animate-in fade-in duration-200">
+                <XCircle className="h-4.5 w-4.5 text-rose-600 mt-0.5 shrink-0" />
+                <div className="flex flex-col gap-0.5">
+                  <span>
+                    <strong>Reprogramación anterior rechazada:</strong>{' '}
+                    {solicitud.aprobadorComentario || 'Sin observaciones registradas.'}
+                  </span>
+                  {solicitud.aprobador && (
+                    <span className="text-[10px] font-normal text-rose-700">
+                      Revisado por: {solicitud.aprobador}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {esFechaPasada && !solicitudRechazada && (
               <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-[11px] font-semibold flex items-start gap-2 shadow-sm animate-in fade-in duration-200">
                 <AlertTriangle className="h-4.5 w-4.5 text-amber-600 mt-0.5 shrink-0" />
                 <div className="flex flex-col gap-0.5">
@@ -169,7 +235,7 @@ export const AccionesVisita = ({
                 className="w-full justify-center border-slate-300 text-slate-700 hover:bg-slate-50 font-bold text-xs py-2 h-10 flex items-center gap-1.5 shadow-sm cursor-pointer"
               >
                 <RefreshCw className="h-3.5 w-3.5 text-primary" />
-                <span>Ver Solicitud de Cambio ({solicitud.estado})</span>
+                <span>Ver Solicitud ({solicitud.estado === 'RECHAZADO' ? 'Rechazada' : 'Pendiente'})</span>
               </Button>
             )}
           </div>

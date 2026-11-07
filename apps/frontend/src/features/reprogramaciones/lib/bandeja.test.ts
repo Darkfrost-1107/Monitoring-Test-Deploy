@@ -234,6 +234,24 @@ describe('visitasReprogramables', () => {
     ]);
   });
 
+  it('excluye visitas con solicitud pendiente pero admite visitas con solicitud rechazada para nuevo intento', () => {
+    const actor = usuario({ role: RoleCode.ESPECIALISTA, especialistaId: 'esp-1' });
+    const visitas = [
+      visita({ id: 'v-pendiente', monitorId: 'esp-1', estado: 'PROGRAMADO' }),
+      visita({ id: 'v-rechazada', monitorId: 'esp-1', estado: 'PROGRAMADO' }),
+      visita({ id: 'v-sin-solicitud', monitorId: 'esp-1', estado: 'PROGRAMADO' }),
+    ];
+    const porVisita = {
+      'v-pendiente': { estado: 'PENDIENTE' },
+      'v-rechazada': { estado: 'RECHAZADO' },
+    };
+
+    expect(visitasReprogramables(visitas, actor, porVisita).map((v) => v.id)).toEqual([
+      'v-rechazada',
+      'v-sin-solicitud',
+    ]);
+  });
+
   it('sin identificador de especialista no hay ninguna', () => {
     expect(visitasReprogramables([visita()], usuario({ role: RoleCode.ESPECIALISTA }))).toEqual([]);
   });

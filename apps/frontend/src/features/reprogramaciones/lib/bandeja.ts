@@ -116,16 +116,24 @@ export function solicitudesVisibles<S extends SolicitudEnBandeja>(
 /**
  * Visitas propias que todavía se pueden reprogramar.
  *
- * Una visita ya realizada o cancelada no admite cambio de fecha: pedirlo sería
- * pedir que se mueva algo que ya ocurrió.
+ * Una visita ya realizada o cancelada no admite cambio de fecha. Si ya tiene una
+ * solicitud PENDIENTE, no se puede duplicar hasta que sea resuelta. Si fue
+ * RECHAZADA, la visita se mantiene disponible para formular una nueva propuesta.
  */
-export function visitasReprogramables<V extends VisitaDeBandeja>(
+export function visitasReprogramables<
+  V extends VisitaDeBandeja,
+  S extends { estado: string } = { estado: string },
+>(
   visitas: readonly V[],
   usuario: UsuarioDeBandeja | null | undefined,
+  solicitudesPorVisita?: Readonly<Record<string, S>>,
 ): V[] {
   if (!usuario) return [];
 
-  return visitas.filter(
-    (v) => (v.estado === 'PROGRAMADO' || v.estado === 'REPROGRAMADO') && esSuya(usuario, v),
-  );
+  return visitas.filter((v) => {
+    if (v.estado !== 'PROGRAMADO' && v.estado !== 'REPROGRAMADO') return false;
+    if (!esSuya(usuario, v)) return false;
+    if (solicitudesPorVisita && solicitudesPorVisita[v.id]?.estado === 'PENDIENTE') return false;
+    return true;
+  });
 }

@@ -192,22 +192,33 @@ export const useCronogramasData = (enabled = true) => {
   const reprogramaciones: Record<string, SolicitudReprogramacion> = useMemo(() => {
     if (!solQuery.data) return {};
     const solMap: Record<string, SolicitudReprogramacion> = {};
-    solQuery.data.forEach((s) => {
-      solMap[s.cronogramaId] = {
-        id: s.id,
-        fechaOriginal: `${s.fechaOriginal}T${s.horaOriginal}`,
-        fechaNueva: `${s.fechaPropuesta}T${s.horaPropuesta}`,
-        motivo: s.justificacion,
-        adjunto: adjuntoDeSolicitud(s.archivoSustentoUrl),
-        estado: s.estado as 'PENDIENTE' | 'APROBADO' | 'RECHAZADO',
-        fechaRegistro: s.createdAt,
-        // Sin nombre queda sin aprobador: el respaldo era `resueltoPorId`, de
-        // modo que la trazabilidad mostraba un UUID donde va un nombre.
-        aprobador: nombreDelAprobador(s.resueltoPorRol, s.resueltoPorNombre) ?? undefined,
-        aprobadorComentario: s.comentarioResolucion || undefined,
-        fechaAprobacion: s.fechaResolucion || undefined,
-        solicitanteRolAlCrear: s.solicitanteRolAlCrear,
-      };
+    // Prioridad por cronograma:
+    // 1) Si hay una solicitud PENDIENTE, esa es la vigente/activa.
+    // 2) Si no, la solicitud más reciente por fecha de registro.
+    const ordenadas = [...solQuery.data].sort((a, b) => {
+      if (a.estado === 'PENDIENTE' && b.estado !== 'PENDIENTE') return -1;
+      if (b.estado === 'PENDIENTE' && a.estado !== 'PENDIENTE') return 1;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+
+    ordenadas.forEach((s) => {
+      if (!solMap[s.cronogramaId]) {
+        solMap[s.cronogramaId] = {
+          id: s.id,
+          fechaOriginal: `${s.fechaOriginal}T${s.horaOriginal}`,
+          fechaNueva: `${s.fechaPropuesta}T${s.horaPropuesta}`,
+          motivo: s.justificacion,
+          adjunto: adjuntoDeSolicitud(s.archivoSustentoUrl),
+          estado: s.estado as 'PENDIENTE' | 'APROBADO' | 'RECHAZADO',
+          fechaRegistro: s.createdAt,
+          // Sin nombre queda sin aprobador: el respaldo era `resueltoPorId`, de
+          // modo que la trazabilidad mostraba un UUID donde va un nombre.
+          aprobador: nombreDelAprobador(s.resueltoPorRol, s.resueltoPorNombre) ?? undefined,
+          aprobadorComentario: s.comentarioResolucion || undefined,
+          fechaAprobacion: s.fechaResolucion || undefined,
+          solicitanteRolAlCrear: s.solicitanteRolAlCrear,
+        };
+      }
     });
     return solMap;
   }, [solQuery.data]);
