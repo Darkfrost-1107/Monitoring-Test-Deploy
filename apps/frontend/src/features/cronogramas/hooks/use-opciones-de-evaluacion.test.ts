@@ -130,25 +130,78 @@ describe('useOpcionesDeEvaluacion — personal de la institución', () => {
     expect(ofrecidos.sort()).toEqual(['Bertha', 'Marlene']);
   });
 
-  it('el subdirector evalúa a todo el personal de la institución sin limitarse a una cartera y sin auto-evaluarse', () => {
-    const subdirector = docente({
-      id: 'doc-subdir',
-      personaId: 'per-subdir',
-      nombres: 'Carlos Subdirector',
+  it('el subdirector no puede evaluar al director ni a otro subdirector por jerarquía institucional', () => {
+    const director = docente({
+      id: 'doc-dir',
+      personaId: 'per-dir',
+      nombres: 'Andrés Director',
+      cargo: 'Director',
+    });
+    const subdirector1 = docente({
+      id: 'doc-subdir1',
+      personaId: 'per-subdir1',
+      nombres: 'Carlos Subdirector 1',
+      cargo: 'Subdirector',
+    });
+    const subdirector2 = docente({
+      id: 'doc-subdir2',
+      personaId: 'per-subdir2',
+      nombres: 'Elena Subdirectora 2',
       cargo: 'Subdirector',
     });
 
     const ofrecidos = nombresOfrecidos(
       parametros({
-        docentes: [subdirector, asignada, ajena],
-        especialistas: [{ id: 'esp-subdir', personaId: 'per-subdir' }],
-        evaluadorElegidoId: 'esp-subdir',
+        docentes: [director, subdirector1, subdirector2, asignada, ajena],
+        especialistas: [{ id: 'esp-subdir1', personaId: 'per-subdir1' }],
+        evaluadorElegidoId: 'esp-subdir1',
         especialidadesDelEvaluador: [],
       }),
     );
 
-    // Evalúa a todos los docentes de la I.E. y no a sí mismo
+    // No incluye al director, ni al otro subdirector, ni a sí mismo
     expect(ofrecidos.sort()).toEqual(['Bertha', 'Marlene']);
+  });
+
+  it('si quien programa es subdirector, no se le ofrece al director ni a otros subdirectores como evaluador', () => {
+    const director = docente({
+      id: 'doc-dir',
+      personaId: 'per-dir',
+      nombres: 'Andrés Director',
+      cargo: 'Director',
+    });
+    const subdirector1 = docente({
+      id: 'doc-subdir1',
+      personaId: 'per-subdir1',
+      nombres: 'Carlos Subdirector 1',
+      cargo: 'Subdirector',
+    });
+    const subdirector2 = docente({
+      id: 'doc-subdir2',
+      personaId: 'per-subdir2',
+      nombres: 'Elena Subdirectora 2',
+      cargo: 'Subdirector',
+    });
+
+    const hook = renderHook(() =>
+      useOpcionesDeEvaluacion(
+        parametros({
+          docentes: [director, subdirector1, subdirector2, asignada],
+          especialistas: [
+            { id: 'esp-dir', personaId: 'per-dir' },
+            { id: 'esp-subdir1', personaId: 'per-subdir1' },
+            { id: 'esp-subdir2', personaId: 'per-subdir2' },
+          ],
+          usuarioRol: 'subdirector',
+          usuarioEspecialistaId: 'esp-subdir1',
+        }),
+      ),
+    );
+
+    const labels = hook.result.current.opcionesDeEvaluador.map((o) => o.label);
+    expect(labels.some((l) => l.includes('Director'))).toBe(false);
+    expect(labels.some((l) => l.includes('Elena Subdirectora 2'))).toBe(false);
+    expect(labels.some((l) => l.includes('Carlos Subdirector 1'))).toBe(true);
   });
 
   it('el director puede evaluar al subdirector de la institución', () => {

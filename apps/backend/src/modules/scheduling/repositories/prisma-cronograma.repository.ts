@@ -160,19 +160,24 @@ export class PrismaCronogramaRepository implements CronogramaRepository {
       }),
       this.prisma.docente.findUnique({
         where: { id: evaluadoId },
-        // La designación abierta es la que manda: quien fue director y cesó ya
-        // no lo es, y se lo monitorea como al resto. Sus especialidades sirven
-        // para comprobar que comparte área con el monitor en Secundaria.
+        // La designación abierta es la que manda: quien cesó ya no ejerce ese cargo.
+        // Se comprueba si es Director o Subdirector para asegurar las reglas jerárquicas.
         include: {
           docenteCargos: {
-            where: { fechaFin: null, cargo: { nombre: CargoNombre.DIRECTOR } },
-            select: { id: true },
-            take: 1,
+            where: {
+              fechaFin: null,
+              cargo: { nombre: { in: [CargoNombre.DIRECTOR, CargoNombre.SUBDIRECTOR] } },
+            },
+            include: { cargo: { select: { nombre: true } } },
           },
           docenteEspecialidades: { select: { especialidad: { select: { nombre: true } } } },
         },
       }),
     ]);
+
+    const cargosActivos = (evaluado?.docenteCargos ?? [])
+      .map((c) => c.cargo?.nombre)
+      .filter((n): n is string => Boolean(n));
 
     return {
       institucion: ie?.estado === 'Activa',
@@ -182,7 +187,8 @@ export class PrismaCronogramaRepository implements CronogramaRepository {
       monitorNivel: monitor?.nivelEducativo,
       monitorEsDirectorUgel: monitor?.persona?.usuario?.rol?.codigo === RoleCode.DIRECTOR_UGEL,
       monitorEspecialidades: (monitor?.especialidades ?? []).map((e) => e.especialidad.nombre),
-      evaluadoEsDirector: (evaluado?.docenteCargos?.length ?? 0) > 0,
+      evaluadoEsDirector: cargosActivos.includes(CargoNombre.DIRECTOR),
+      evaluadoEsSubdirector: cargosActivos.includes(CargoNombre.SUBDIRECTOR),
       evaluadoEspecialidades: (evaluado?.docenteEspecialidades ?? []).map(
         (e) => e.especialidad.nombre,
       ),
