@@ -146,7 +146,6 @@ describe('cronogramasVisibles — director de institución', () => {
 describe('cronogramasVisibles — monitores de campo', () => {
   it.each([
     [RoleCode.ESPECIALISTA],
-    [RoleCode.SUBDIRECTOR],
     [RoleCode.COORDINADOR_PEDAGOGICO],
     [RoleCode.JEFE_TALLER],
   ])('%s ve sólo las visitas que tiene asignadas', (rol) => {
@@ -164,15 +163,59 @@ describe('cronogramasVisibles — monitores de campo', () => {
 
   it('ve la visita donde él mismo es el evaluado aunque no sea el monitor', () => {
     const actor = usuario({
-      role: RoleCode.SUBDIRECTOR,
+      role: RoleCode.COORDINADOR_PEDAGOGICO,
       especialistaId: 'esp-7',
-      docenteId: 'doc-sub',
+      docenteId: 'doc-coord',
     });
     const propiaMonitoreada = cronograma({ monitorId: 'esp-7', evaluadoId: 'doc-otro' });
-    const evaluacionRecibida = cronograma({ monitorId: 'esp-dir', evaluadoId: 'doc-sub' });
+    const evaluacionRecibida = cronograma({ monitorId: 'esp-dir', evaluadoId: 'doc-coord' });
     const ajena = cronograma({ monitorId: 'esp-9', evaluadoId: 'doc-otro' });
 
     expect(idsVisibles([propiaMonitoreada, evaluacionRecibida, ajena], actor)).toEqual(['c0', 'c1']);
+  });
+});
+
+describe('cronogramasVisibles — subdirector de institución', () => {
+  const subdirector = (over: Partial<UsuarioObservador> = {}) =>
+    usuario({
+      role: RoleCode.SUBDIRECTOR,
+      institucion: 'ie-1',
+      docenteId: 'doc-sub',
+      especialistaId: 'esp-sub',
+      ...over,
+    });
+
+  it('ve todas las visitas pedagógicas a docentes de su institución', () => {
+    const propia = cronograma({ institucionId: 'ie-1', monitorId: 'esp-sub', tipo: 'DOCENTE' });
+    const deOtroMonitor = cronograma({ institucionId: 'ie-1', monitorId: 'esp-dir', tipo: 'DOCENTE' });
+    const deOtraIE = cronograma({ institucionId: 'ie-2', monitorId: 'esp-otro', tipo: 'DOCENTE' });
+
+    expect(idsVisibles([propia, deOtroMonitor, deOtraIE], subdirector())).toEqual(['c0', 'c1']);
+  });
+
+  it('ve la visita directiva donde él mismo es el evaluado', () => {
+    const evaluadoSub = cronograma({
+      institucionId: 'ie-1',
+      monitorId: 'esp-dir',
+      evaluadoId: 'doc-sub',
+      tipo: 'DIRECTIVO',
+    });
+    expect(idsVisibles([evaluadoSub], subdirector())).toEqual(['c0']);
+  });
+
+  it('por jerarquía NO ve la visita directiva donde el evaluado es el Director', () => {
+    const evaluadoDirector = cronograma({
+      institucionId: 'ie-1',
+      monitorId: 'esp-ugel',
+      evaluadoId: 'doc-dir',
+      tipo: 'DIRECTIVO',
+    });
+    expect(idsVisibles([evaluadoDirector], subdirector())).toEqual([]);
+  });
+
+  it('no ve visitas de otra institución', () => {
+    const deOtraIE = cronograma({ institucionId: 'ie-99', tipo: 'DOCENTE' });
+    expect(idsVisibles([deOtraIE], subdirector())).toEqual([]);
   });
 });
 

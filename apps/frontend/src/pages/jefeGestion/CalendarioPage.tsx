@@ -77,7 +77,8 @@ export const CalendarioPage = () => {
     navigate(location.pathname, { replace: true, state: null });
   }, [fechaDeVuelta, location.pathname, navigate]);
 
-  const esDirector = user?.role === RoleCode.DIRECTOR_INSTITUCION;
+  const esDirector =
+    user?.role === RoleCode.DIRECTOR_INSTITUCION || user?.role === RoleCode.SUBDIRECTOR;
 
   // Los seis filtros del calendario, con sus reglas cubiertas en
   // `widgets/calendario/model/filtros.ts`.
