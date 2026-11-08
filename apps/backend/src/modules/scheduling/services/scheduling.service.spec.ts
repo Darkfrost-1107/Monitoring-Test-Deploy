@@ -553,12 +553,16 @@ describe('SchedulingService - Reprogramaciones', () => {
       });
 
       await expect(
-        service.crearVisita(
-          { ...visitaBase, monitorId: 'dir-1' } as any,
-          { id: 'sub-1', role: RoleCode.SUBDIRECTOR, especialistaId: 'esp-sub-1', institucionId: 'ie-1' },
-        ),
+        service.crearVisita({ ...visitaBase, monitorId: 'dir-1' } as any, {
+          id: 'sub-1',
+          role: RoleCode.SUBDIRECTOR,
+          especialistaId: 'esp-sub-1',
+          institucionId: 'ie-1',
+        }),
       ).rejects.toThrow(
-        new ForbiddenException('Un Subdirector no puede asignar visitas al Director por jerarquía institucional.'),
+        new ForbiddenException(
+          'Un Subdirector no puede asignar visitas al Director por jerarquía institucional.',
+        ),
       );
     });
 
@@ -577,12 +581,16 @@ describe('SchedulingService - Reprogramaciones', () => {
       });
 
       await expect(
-        service.crearVisita(
-          { ...visitaBase, monitorId: 'otro-sub-id' } as any,
-          { id: 'sub-1', role: RoleCode.SUBDIRECTOR, especialistaId: 'mi-sub-id', institucionId: 'ie-1' },
-        ),
+        service.crearVisita({ ...visitaBase, monitorId: 'otro-sub-id' } as any, {
+          id: 'sub-1',
+          role: RoleCode.SUBDIRECTOR,
+          especialistaId: 'mi-sub-id',
+          institucionId: 'ie-1',
+        }),
       ).rejects.toThrow(
-        new ForbiddenException('Un Subdirector no puede asignar visitas a otro Subdirector por jerarquía institucional.'),
+        new ForbiddenException(
+          'Un Subdirector no puede asignar visitas a otro Subdirector por jerarquía institucional.',
+        ),
       );
     });
 
@@ -603,10 +611,17 @@ describe('SchedulingService - Reprogramaciones', () => {
       await expect(
         service.crearVisita(
           { ...visitaBase, monitorId: 'mi-sub-id', evaluadoId: 'dir-id' } as any,
-          { id: 'sub-1', role: RoleCode.SUBDIRECTOR, especialistaId: 'mi-sub-id', institucionId: 'ie-1' },
+          {
+            id: 'sub-1',
+            role: RoleCode.SUBDIRECTOR,
+            especialistaId: 'mi-sub-id',
+            institucionId: 'ie-1',
+          },
         ),
       ).rejects.toThrow(
-        new ForbiddenException('Por jerarquía institucional, un Subdirector no puede programar visitas al Director.'),
+        new ForbiddenException(
+          'Por jerarquía institucional, un Subdirector no puede programar visitas al Director.',
+        ),
       );
     });
 
@@ -627,10 +642,17 @@ describe('SchedulingService - Reprogramaciones', () => {
       await expect(
         service.crearVisita(
           { ...visitaBase, monitorId: 'mi-sub-id', evaluadoId: 'otro-sub-id' } as any,
-          { id: 'sub-1', role: RoleCode.SUBDIRECTOR, especialistaId: 'mi-sub-id', institucionId: 'ie-1' },
+          {
+            id: 'sub-1',
+            role: RoleCode.SUBDIRECTOR,
+            especialistaId: 'mi-sub-id',
+            institucionId: 'ie-1',
+          },
         ),
       ).rejects.toThrow(
-        new ForbiddenException('Por jerarquía institucional, un Subdirector no puede programar visitas a otro Subdirector.'),
+        new ForbiddenException(
+          'Por jerarquía institucional, un Subdirector no puede programar visitas a otro Subdirector.',
+        ),
       );
     });
   });
