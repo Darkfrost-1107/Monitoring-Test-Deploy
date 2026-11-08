@@ -100,10 +100,14 @@ export function cronogramasVisibles<T extends CronogramaVisible>(
 ): T[] {
   if (!usuario) return [...cronogramas];
 
-  // Quien levanta la ficha en el aula ve lo que tiene asignado como monitor,
-  // y también la visita donde él mismo es el evaluado (por ejemplo, el subdirector
-  // o coordinador evaluado por su director).
-  if ((MONITOR_CAMPO_ROLES as readonly string[]).includes(usuario.role)) {
+  // Quien levanta la ficha en el aula como monitor de campo ve lo que tiene
+  // asignado, y también la visita donde él mismo es el evaluado.
+  // El subdirector, como directivo de la institución, accede al cronograma institucional
+  // de su colegio bajo reglas jerárquicas (definidas más abajo).
+  if (
+    (MONITOR_CAMPO_ROLES as readonly string[]).includes(usuario.role) &&
+    usuario.role !== RoleCode.SUBDIRECTOR
+  ) {
     return cronogramas.filter(
       (c) =>
         (!!usuario.especialistaId && c.monitorId === usuario.especialistaId) ||
@@ -112,13 +116,26 @@ export function cronogramasVisibles<T extends CronogramaVisible>(
   }
 
   const esDirector = usuario.role === RoleCode.DIRECTOR_INSTITUCION;
+  const esSubdirector = usuario.role === RoleCode.SUBDIRECTOR;
   const esJefeDeArea = usuario.role === RoleCode.JEFE_AREA;
 
-  if (!esDirector && !esJefeDeArea) return [...cronogramas];
+  if (!esDirector && !esSubdirector && !esJefeDeArea) return [...cronogramas];
 
   return cronogramas.filter((cronograma) => {
     if (esDirector && !esDeSuInstitucion(cronograma, usuario) && !evaluaAlUsuario(cronograma, usuario)) {
       return false;
+    }
+
+    if (esSubdirector) {
+      if (!esDeSuInstitucion(cronograma, usuario) && !evaluaAlUsuario(cronograma, usuario)) {
+        return false;
+      }
+      // Jerarquía: ve la programación pedagógica de su I.E., pero no visitas directivas
+      // que evalúan a su superior (el Director de la I.E.), a menos que él sea el evaluado.
+      if (cronograma.tipo === 'DIRECTIVO' && cronograma.evaluadoId !== usuario.docenteId) {
+        return false;
+      }
+      return true;
     }
 
     if (esJefeDeArea && usuario.especialistaNivel) {
