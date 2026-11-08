@@ -120,6 +120,8 @@ export function useProgramacionCronograma({
       evaluadorElegidoId: form.monitorId,
       evaluadoElegidoId: form.evaluadoId,
       especialidadesDelEvaluador,
+      usuarioRol: usuario?.role,
+      usuarioEspecialistaId: usuario?.especialistaId,
     });
 
   useSincronizacionFormulario({

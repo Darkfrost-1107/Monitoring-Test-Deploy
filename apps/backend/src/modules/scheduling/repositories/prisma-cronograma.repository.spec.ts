@@ -56,6 +56,7 @@ describe('PrismaCronogramaRepository', () => {
         monitorEsDirectorUgel: false,
         monitorEspecialidades: [],
         evaluadoEsDirector: false,
+        evaluadoEsSubdirector: false,
         evaluadoEspecialidades: [],
       });
     });
@@ -110,12 +111,27 @@ describe('PrismaCronogramaRepository', () => {
       activas(prisma);
       prisma.docente.findUnique.mockResolvedValue({
         estado: 'Activo',
-        docenteCargos: [{ id: 'dc-1' }],
+        docenteCargos: [{ id: 'dc-1', cargo: { nombre: 'Director' } }],
       });
 
       const r = await repo.validateEntidadesActivas('ie-1', 'm-1', 'd-1');
 
       expect(r.evaluadoEsDirector).toBe(true);
+      expect(r.evaluadoEsSubdirector).toBe(false);
+    });
+
+    it('avisa que el evaluado es subdirector cuando tiene designación abierta de subdirector', async () => {
+      const { repo, prisma } = montar();
+      activas(prisma);
+      prisma.docente.findUnique.mockResolvedValue({
+        estado: 'Activo',
+        docenteCargos: [{ id: 'dc-2', cargo: { nombre: 'Subdirector' } }],
+      });
+
+      const r = await repo.validateEntidadesActivas('ie-1', 'm-1', 'd-1');
+
+      expect(r.evaluadoEsDirector).toBe(false);
+      expect(r.evaluadoEsSubdirector).toBe(true);
     });
 
     it('sólo cuenta la designación vigente, que es la que la consulta filtra', async () => {
@@ -131,7 +147,7 @@ describe('PrismaCronogramaRepository', () => {
       )[0][0];
       expect(args.include.docenteCargos.where).toEqual({
         fechaFin: null,
-        cargo: { nombre: 'Director' },
+        cargo: { nombre: { in: ['Director', 'Subdirector'] } },
       });
     });
 

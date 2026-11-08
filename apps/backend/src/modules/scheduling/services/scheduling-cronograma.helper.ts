@@ -249,6 +249,48 @@ export async function crearVisita(
       }
     }
   }
+
+  // Restricciones de jerarquía de asignación para Subdirector
+  if (session.role === RoleCode.SUBDIRECTOR) {
+    if (activas.monitorCargo === CargoNombre.DIRECTOR) {
+      throw new ForbiddenException(
+        'Un Subdirector no puede asignar visitas al Director por jerarquía institucional.',
+      );
+    }
+    if (
+      activas.monitorCargo === CargoNombre.SUBDIRECTOR &&
+      session.especialistaId &&
+      dto.monitorId !== session.especialistaId
+    ) {
+      throw new ForbiddenException(
+        'Un Subdirector no puede asignar visitas a otro Subdirector por jerarquía institucional.',
+      );
+    }
+    if (activas.evaluadoEsDirector) {
+      throw new ForbiddenException(
+        'Por jerarquía institucional, un Subdirector no puede programar visitas al Director.',
+      );
+    }
+    if (activas.evaluadoEsSubdirector) {
+      throw new ForbiddenException(
+        'Por jerarquía institucional, un Subdirector no puede programar visitas a otro Subdirector.',
+      );
+    }
+  }
+
+  // Restricciones de evaluación para Subdirector como monitor
+  if (activas.monitorCargo === CargoNombre.SUBDIRECTOR) {
+    if (activas.evaluadoEsDirector) {
+      throw new ForbiddenException(
+        'Por jerarquía institucional, un Subdirector no puede evaluar al Director.',
+      );
+    }
+    if (activas.evaluadoEsSubdirector) {
+      throw new ForbiddenException(
+        'Por jerarquía institucional, un Subdirector no puede evaluar a otro Subdirector.',
+      );
+    }
+  }
   // Un Responsable de Nivel (Jefe de Área) puede realizar visitas de monitoreo
   // en su nivel educativo asignado.
   if (activas.monitorCargo === CargoNombre.JEFE_AREA && activas.monitorNivel) {

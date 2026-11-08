@@ -537,6 +537,102 @@ describe('SchedulingService - Reprogramaciones', () => {
         ),
       ).rejects.toThrow(ForbiddenException);
     });
+
+    it('un Subdirector no puede asignar visitas al Director de la I.E.', async () => {
+      cronogramaRepo.findPlanVigentePara.mockResolvedValue('plan-2026');
+      cronogramaRepo.validateEntidadesActivas.mockResolvedValue({
+        institucion: true,
+        monitor: true,
+        evaluado: true,
+        monitorCargo: CargoNombre.DIRECTOR,
+        monitorEsDirectorUgel: false,
+        monitorEspecialidades: [],
+        evaluadoEsDirector: false,
+        evaluadoEsSubdirector: false,
+        evaluadoEspecialidades: [],
+      });
+
+      await expect(
+        service.crearVisita(
+          { ...visitaBase, monitorId: 'dir-1' } as any,
+          { id: 'sub-1', role: RoleCode.SUBDIRECTOR, especialistaId: 'esp-sub-1', institucionId: 'ie-1' },
+        ),
+      ).rejects.toThrow(
+        new ForbiddenException('Un Subdirector no puede asignar visitas al Director por jerarquía institucional.'),
+      );
+    });
+
+    it('un Subdirector no puede asignar visitas a otro Subdirector', async () => {
+      cronogramaRepo.findPlanVigentePara.mockResolvedValue('plan-2026');
+      cronogramaRepo.validateEntidadesActivas.mockResolvedValue({
+        institucion: true,
+        monitor: true,
+        evaluado: true,
+        monitorCargo: CargoNombre.SUBDIRECTOR,
+        monitorEsDirectorUgel: false,
+        monitorEspecialidades: [],
+        evaluadoEsDirector: false,
+        evaluadoEsSubdirector: false,
+        evaluadoEspecialidades: [],
+      });
+
+      await expect(
+        service.crearVisita(
+          { ...visitaBase, monitorId: 'otro-sub-id' } as any,
+          { id: 'sub-1', role: RoleCode.SUBDIRECTOR, especialistaId: 'mi-sub-id', institucionId: 'ie-1' },
+        ),
+      ).rejects.toThrow(
+        new ForbiddenException('Un Subdirector no puede asignar visitas a otro Subdirector por jerarquía institucional.'),
+      );
+    });
+
+    it('un Subdirector no puede programar visitas de monitoreo al Director', async () => {
+      cronogramaRepo.findPlanVigentePara.mockResolvedValue('plan-2026');
+      cronogramaRepo.validateEntidadesActivas.mockResolvedValue({
+        institucion: true,
+        monitor: true,
+        evaluado: true,
+        monitorCargo: CargoNombre.SUBDIRECTOR,
+        monitorEsDirectorUgel: false,
+        monitorEspecialidades: [],
+        evaluadoEsDirector: true,
+        evaluadoEsSubdirector: false,
+        evaluadoEspecialidades: [],
+      });
+
+      await expect(
+        service.crearVisita(
+          { ...visitaBase, monitorId: 'mi-sub-id', evaluadoId: 'dir-id' } as any,
+          { id: 'sub-1', role: RoleCode.SUBDIRECTOR, especialistaId: 'mi-sub-id', institucionId: 'ie-1' },
+        ),
+      ).rejects.toThrow(
+        new ForbiddenException('Por jerarquía institucional, un Subdirector no puede programar visitas al Director.'),
+      );
+    });
+
+    it('un Subdirector no puede programar visitas de monitoreo a otro Subdirector', async () => {
+      cronogramaRepo.findPlanVigentePara.mockResolvedValue('plan-2026');
+      cronogramaRepo.validateEntidadesActivas.mockResolvedValue({
+        institucion: true,
+        monitor: true,
+        evaluado: true,
+        monitorCargo: CargoNombre.SUBDIRECTOR,
+        monitorEsDirectorUgel: false,
+        monitorEspecialidades: [],
+        evaluadoEsDirector: false,
+        evaluadoEsSubdirector: true,
+        evaluadoEspecialidades: [],
+      });
+
+      await expect(
+        service.crearVisita(
+          { ...visitaBase, monitorId: 'mi-sub-id', evaluadoId: 'otro-sub-id' } as any,
+          { id: 'sub-1', role: RoleCode.SUBDIRECTOR, especialistaId: 'mi-sub-id', institucionId: 'ie-1' },
+        ),
+      ).rejects.toThrow(
+        new ForbiddenException('Por jerarquía institucional, un Subdirector no puede programar visitas a otro Subdirector.'),
+      );
+    });
   });
 
   /**

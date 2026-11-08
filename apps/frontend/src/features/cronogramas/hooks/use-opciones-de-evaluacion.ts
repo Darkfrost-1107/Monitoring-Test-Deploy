@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { RoleCode } from '@sistema-monitoreo/shared-contracts';
 import type { Docente } from '@entities/model-docentes';
 import { opcionesDeEvaluadorInterno, type Opcion } from '../lib/opciones-de-asignacion';
 import { docenteEvaluablePorEspecialista, especialidadesDelDocente } from '../lib/asignacion';
@@ -56,6 +57,10 @@ interface OpcionesDeEvaluacionParams {
   evaluadoElegidoId: string;
   /** Especialidades del especialista elegido; en Secundaria acotan a los docentes. */
   especialidadesDelEvaluador?: readonly string[];
+  /** Rol del usuario programador (p. ej. subdirector o director_institucion). */
+  usuarioRol?: string;
+  /** Identificador de especialista del usuario programador. */
+  usuarioEspecialistaId?: string;
 }
 
 const nombreCompleto = (docente: Docente) => `${docente.nombres} ${docente.apellidos}`;
@@ -116,6 +121,8 @@ export function useOpcionesDeEvaluacion({
   evaluadorElegidoId,
   evaluadoElegidoId,
   especialidadesDelEvaluador,
+  usuarioRol,
+  usuarioEspecialistaId,
 }: OpcionesDeEvaluacionParams) {
   /** Institución sobre la que se está programando. */
   const institucion = useMemo(() => {
@@ -130,27 +137,35 @@ export function useOpcionesDeEvaluacion({
    */
   const esSecundaria = institucion?.nivelEducativo.toLowerCase() === 'secundaria';
 
+  const esUsuarioSubdirector = usuarioRol === RoleCode.SUBDIRECTOR;
+
+  const personaDelUsuario = useMemo(() => {
+    if (!usuarioEspecialistaId) return null;
+    return especialistas.find((e) => e.id === usuarioEspecialistaId)?.personaId ?? null;
+  }, [especialistas, usuarioEspecialistaId]);
+
   const evaluadores = useMemo(() => {
     if (!institucion) return [];
-    return docentes.filter(
-      (d) =>
-        d.institucionId === institucion.id &&
-        d.activo === true &&
-        CARGOS_EVALUADORES.includes(d.cargo),
-    );
-  }, [docentes, institucion]);
+    return docentes.filter((d) => {
+      if (d.institucionId !== institucion.id || d.activo !== true) return false;
+      if (!CARGOS_EVALUADORES.includes(d.cargo)) return false;
+
+      // Jerarquía institucional: un Subdirector no puede asignar visitas al Director
+      // ni a otros Subdirectores. Solo puede asignarse a sí mismo o a sus subordinados.
+      if (esUsuarioSubdirector) {
+        if (d.cargo === 'Director') return false;
+        if (d.cargo === 'Subdirector' && personaDelUsuario && d.personaId !== personaDelUsuario) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [docentes, institucion, esUsuarioSubdirector, personaDelUsuario]);
 
   const evaluadosBase = useMemo(() => {
     if (esDirector) {
       if (!institucionDelUsuarioId) return [];
-
-      // El director no se evalúa a sí mismo: su visita la programa la UGEL.
-      const personal = docentes.filter(
-        (d) =>
-          d.institucionId === institucionDelUsuarioId &&
-          d.activo === true &&
-          d.cargo !== 'Director',
-      );
 
       // El formulario guarda el identificador de especialista; para saber qué
       // cargo ocupa hay que volver a su registro docente por persona.
@@ -161,6 +176,21 @@ export function useOpcionesDeEvaluacion({
       const evaluador = docentes.find(
         (d) => d.personaId === personaDelEvaluador && d.institucionId === institucionDelUsuarioId,
       );
+
+      // Jerarquía institucional:
+      // Si el evaluador es Subdirector (o quien programa es Subdirector):
+      // no puede evaluar al Director (ya excluido) ni a otro Subdirector.
+      const evaluadorEsSubdirector =
+        evaluador?.cargo === 'Subdirector' || (!evaluador && esUsuarioSubdirector);
+
+      const personal = docentes.filter((d) => {
+        if (d.institucionId !== institucionDelUsuarioId || d.activo !== true) return false;
+        // El director no se evalúa a sí mismo: su visita la programa la UGEL.
+        if (d.cargo === 'Director') return false;
+        // Un subdirector no evalúa a otro subdirector ni a sí mismo
+        if (evaluadorEsSubdirector && d.cargo === 'Subdirector') return false;
+        return true;
+      });
 
       const personalFiltrado = evaluador
         ? personal.filter((d) => d.id !== evaluador.id)
@@ -188,6 +218,7 @@ export function useOpcionesDeEvaluacion({
     institucion,
     tipoDeVisita,
     evaluadorElegidoId,
+    esUsuarioSubdirector,
   ]);
 
   /**

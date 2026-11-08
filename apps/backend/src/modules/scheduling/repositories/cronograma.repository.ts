@@ -91,6 +91,7 @@ export interface EntidadesActivasValidation {
   monitorEsDirectorUgel: boolean;
   monitorEspecialidades: string[];
   evaluadoEsDirector: boolean;
+  evaluadoEsSubdirector: boolean;
   evaluadoEspecialidades: string[];
 }
 
